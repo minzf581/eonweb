@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EON Protocol - Secure IP Proxy Extension</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #000000, #1a1a1a);
+            color: white;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        nav {
+            padding: 1.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .hero {
+            padding: 6rem 0;
+            text-align: center;
+        }
+
+        .features {
+            padding: 4rem 0;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: rgba(255,255,255,0.05);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .signup-flow {
+            padding: 4rem 0;
+        }
+
+        .flow-steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step-card {
+            background: rgba(255,255,255,0.05);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        .step-card::after {
+            content: '→';
+            position: absolute;
+            right: -1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4f46e5;
+            font-size: 1.5rem;
+        }
+
+        .step-card:last-child::after {
+            display: none;
+        }
+
+        .cta {
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .button {
+            background: #4f46e5;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .button:hover {
+            background: #4338ca;
+        }
+
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 2rem;
+            color: #4f46e5;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container nav-content">
+            <div class="logo">EON Protocol</div>
+            <button class="button">Install Extension</button>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <div class="security-badge">🛡️ Enterprise-Grade Security</div>
+            <h1 style="font-size: 3.5rem; margin-bottom: 1.5rem;">
+                Secure IP Proxy for <br>the Web3 Era
+            </h1>
+            <p style="font-size: 1.25rem; color: #a0a0a0; margin-bottom: 2rem;">
+                EON Protocol's browser extension provides military-grade encryption <br>
+                and decentralized IP routing for ultimate privacy.
+            </p>
+            <button class="button">Get Started - It's Free</button>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <h2 style="text-align: center; font-size: 2.5rem;">Security First, Always</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3 style="margin-bottom: 1rem;">🔒 End-to-End Encryption</h3>
+                    <p style="color: #a0a0a0;">Military-grade encryption ensures your data remains private and secure at all times.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 style="margin-bottom: 1rem;">🌐 Decentralized Network</h3>
+                    <p style="color: #a0a0a0;">Leveraging EON Protocol's decentralized infrastructure for enhanced privacy.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 style="margin-bottom: 1rem;">⚡ Lightning Fast</h3>
+                    <p style="color: #a0a0a0;">Optimized routing ensures minimal impact on your browsing speed.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="signup-flow">
+        <div class="container">
+            <h2 style="text-align: center; font-size: 2.5rem;">Simple & Secure Setup</h2>
+            <div class="flow-steps">
+                <div class="step-card">
+                    <h3 style="margin-bottom: 1rem;">1. Install</h3>
+                    <p style="color: #a0a0a0;">Add EON Proxy to your browser with one click.</p>
+                </div>
+                <div class="step-card">
+                    <h3 style="margin-bottom: 1rem;">2. Create Account</h3>
+                    <p style="color: #a0a0a0;">Secure signup with email verification.</p>
+                </div>
+                <div class="step-card">
+                    <h3 style="margin-bottom: 1rem;">3. Verify Identity</h3>
+                    <p style="color: #a0a0a0;">Two-factor authentication for added security.</p>
+                </div>
+                <div class="step-card">
+                    <h3 style="margin-bottom: 1rem;">4. Start Browsing</h3>
+                    <p style="color: #a0a0a0;">Connect to secure nodes with one click.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="security-features">
+        <div class="container" style="text-align: center; padding: 4rem 0;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">Enterprise-Grade Security</h2>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; max-width: 800px; margin: 0 auto;">
+                <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem;">
+                    <h3 style="margin-bottom: 1rem;">🔐 Zero-Knowledge Protocol</h3>
+                    <p style="color: #a0a0a0;">We never store or access your browsing data. Period.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem;">
+                    <h3 style="margin-bottom: 1rem;">🛡️ DDoS Protection</h3>
+                    <p style="color: #a0a0a0;">Advanced protection against network attacks.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem;">
+                    <h3 style="margin-bottom: 1rem;">📡 Secure DNS</h3>
+                    <p style="color: #a0a0a0;">Encrypted DNS queries prevent tracking.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem;">
+                    <h3 style="margin-bottom: 1rem;">🔍 No Logs Policy</h3>
+                    <p style="color: #a0a0a0;">Your privacy is guaranteed with our strict no-logs policy.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem;">Ready to Secure Your Connection?</h2>
+            <p style="color: #a0a0a0; margin-bottom: 2rem;">Join thousands of users who trust EON Protocol for their privacy needs.</p>
+            <button class="button">Install EON Proxy Extension</button>
+        </div>
+    </section>
+</body>
+</html>
