@@ -9,40 +9,6 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
-// 测试数据库连接
-async function testConnection() {
-    try {
-        const connection = await pool.getConnection();
-        console.log('Database connected successfully!');
-        connection.release();
-    } catch (error) {
-        console.error('Database connection failed:', error);
-    }
-}
-
-testConnection();
-
-// 测试注册路由
-app.get('/test-register', async (req, res) => {
-    try {
-        const userId = await UserService.createUser(
-            'testuser', 
-            'test@example.com', 
-            'password123'
-        );
-        res.json({
-            success: true,
-            message: `User registered with ID: ${userId}`
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-});
-
 // 页面路由
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
