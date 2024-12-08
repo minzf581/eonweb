@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
-const pool = require('./config/database');
-const UserService = require('./services/userService');
+const UserService = require('./services/UserService');
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -112,6 +112,11 @@ app.post('/auth/api/login', async (req, res) => {
         });
     }
 });
+
+// 数据库连接
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
