@@ -56,7 +56,10 @@ app.post('/auth/api/register', async (req, res) => {
 app.post('/auth/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log('Login attempt:', { email, password });
+        
         const user = await UserService.verifyUser(email, password);
+        console.log('User found:', user);
         
         if (user) {
             const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
@@ -70,13 +73,14 @@ app.post('/auth/api/login', async (req, res) => {
                 }
             });
         } else {
+            console.log('Authentication failed - no user found or password mismatch');
             res.status(401).json({
                 success: false,
                 message: 'Invalid email or password'
             });
         }
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('Login error details:', error);
         res.status(500).json({
             success: false,
             message: error.message
