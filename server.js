@@ -23,6 +23,7 @@ app.use(cors({
 mongoose.connect(process.env.MONGODB_URI)
     .then(async () => {
         console.log('MongoDB connected');
+        console.log('MongoDB URI:', process.env.MONGODB_URI);
         
         // 创建默认管理员账户
         try {
@@ -30,21 +31,25 @@ mongoose.connect(process.env.MONGODB_URI)
             const adminPassword = 'vijTo9-kehmet-cessis';
             console.log('Checking for admin account:', adminEmail);
             const existingAdmin = await User.findOne({ email: adminEmail });
+            console.log('Existing admin check result:', existingAdmin);
             
             if (!existingAdmin) {
                 console.log('Creating admin account...');
                 const hashedPassword = await bcrypt.hash(adminPassword, 10);
+                console.log('Password hashed');
                 const admin = new User({
                     email: adminEmail,
                     password: hashedPassword,
                     isAdmin: true
                 });
+                console.log('Admin user object created:', admin);
                 await admin.save();
                 console.log('Default admin account created:', admin);
             } else {
                 console.log('Admin account already exists:', existingAdmin);
             }
         } catch (error) {
+            console.error('Error creating default admin (details):', error.stack);
             console.error('Error creating default admin:', error);
         }
         
