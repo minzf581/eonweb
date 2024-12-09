@@ -124,15 +124,17 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Origin': 'https://w3router.github.io'
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ email, password })
                 });
 
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Login successful!');
-                    window.location.href = '../dashboard/index.html';
+                    localStorage.setItem('token', data.token);
+                    window.location.href = '../public/dashboard/index.html';
                 } else {
                     // 处理不同类型的错误
                     switch (data.errorCode) {
