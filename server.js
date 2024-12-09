@@ -19,10 +19,28 @@ app.use(cors({
 
 // 数据库连接
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
+    .then(async () => {
         console.log('MongoDB connected');
         
-        // 只有在数据库连接成功后才启动服务器
+        // 创建默认管理员账户
+        try {
+            const adminEmail = 'info@eon-protocol.com';
+            const adminPassword = 'vijTo9-kehmet-cessis';
+            console.log('Checking for admin account:', adminEmail);
+            const existingAdmin = await UserService.findUserByEmail(adminEmail);
+            
+            if (!existingAdmin) {
+                console.log('Creating admin account...');
+                await UserService.createUser(adminEmail, adminPassword, true);
+                console.log('Default admin account created');
+            } else {
+                console.log('Admin account already exists');
+            }
+        } catch (error) {
+            console.error('Error creating default admin:', error);
+        }
+        
+        // 启动服务器
         const PORT = process.env.PORT || 3000;
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on port ${PORT}`);
