@@ -9,21 +9,45 @@ const UserService = require('./services/UserService');
 const app = express();
 
 // 中间件
+app.use(express.json());
 app.use(cors({
     origin: 'https://w3router.github.io',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Origin'],
-    exposedHeaders: ['Access-Control-Allow-Origin'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin']
 }));
 
-// 添加额外的 CORS 头
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://w3router.github.io');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    next();
+// 数据库连接
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+        console.log('MongoDB connected');
+        
+        // 只有在数据库连接成功后才启动服务器
+        const PORT = process.env.PORT || 3000;
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    })
+    .catch(err => {
+        console.error('MongoDB connection error:', err);
+        process.exit(1);  // 如果数据库连接失败，退出进程
+    });
+
+// API 路由
+app.post('/auth/api/register', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const userId = await UserService.createUser(email, password);
+        res.json({
+            success: true,
+            message: 'Registration successful',
+            userId
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 });
