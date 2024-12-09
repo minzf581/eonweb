@@ -5,6 +5,8 @@ const path = require('path');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const UserService = require('./services/UserService');
+const User = require('./models/User');
+const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -27,14 +29,20 @@ mongoose.connect(process.env.MONGODB_URI)
             const adminEmail = 'info@eon-protocol.com';
             const adminPassword = 'vijTo9-kehmet-cessis';
             console.log('Checking for admin account:', adminEmail);
-            const existingAdmin = await UserService.findUserByEmail(adminEmail);
+            const existingAdmin = await User.findOne({ email: adminEmail });
             
             if (!existingAdmin) {
                 console.log('Creating admin account...');
-                await UserService.createUser(adminEmail, adminPassword, true);
-                console.log('Default admin account created');
+                const hashedPassword = await bcrypt.hash(adminPassword, 10);
+                const admin = new User({
+                    email: adminEmail,
+                    password: hashedPassword,
+                    isAdmin: true
+                });
+                await admin.save();
+                console.log('Default admin account created:', admin);
             } else {
-                console.log('Admin account already exists');
+                console.log('Admin account already exists:', existingAdmin);
             }
         } catch (error) {
             console.error('Error creating default admin:', error);
