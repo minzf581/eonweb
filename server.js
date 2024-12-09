@@ -51,3 +51,35 @@ app.post('/auth/api/register', async (req, res) => {
         });
     }
 });
+
+// 登录路由
+app.post('/auth/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await UserService.verifyUser(email, password);
+        
+        if (user) {
+            const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
+            res.json({
+                success: true,
+                message: 'Login successful',
+                token,
+                user: {
+                    id: user.id,
+                    email: user.email
+                }
+            });
+        } else {
+            res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
