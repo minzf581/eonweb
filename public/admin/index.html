@@ -95,7 +95,7 @@
                                 <textarea id="taskDescription" required></textarea>
                             </div>
                             <div class="form-group">
-                                <label for="taskPoints">Points</label>
+                                <label for="taskPoints">Credits</label>
                                 <input type="number" id="taskPoints" required min="0">
                             </div>
                             <button type="submit" class="btn btn-primary">Create Task</button>
@@ -162,7 +162,7 @@
                     <li class="task-item">
                         <h4>${task.name}</h4>
                         <p>${task.description}</p>
-                        <p>Points: ${task.points}</p>
+                        <p>Credits: ${task.points}</p>
                         <div class="button-group">
                             <button onclick="editTask(${task.id})" class="btn btn-secondary">Edit</button>
                             <button onclick="deleteTask(${task.id})" class="btn btn-danger">Delete</button>
