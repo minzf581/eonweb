@@ -1,4 +1,4 @@
-const pool = require('../config/database');
+const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const Settings = require('../models/Settings');
@@ -9,6 +9,7 @@ const UserTask = require('../models/UserTask');
 class UserService {
     // 创建用户
     static async createUser(email, password, referralCode = null, isAdmin = false) {
+        const connection = await db.getConnection();
         console.log('Creating user:', email, 'isAdmin:', isAdmin);
         
         // 生成唯一的推荐码
