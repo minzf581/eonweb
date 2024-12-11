@@ -46,9 +46,9 @@ class AuthService {
         if (auth && auth.token) {
             // 已登录，根据角色重定向
             if (this.isAdmin()) {
-                window.location.href = '/eonweb/public/admin/';
+                window.location.href = 'https://w3router.github.io/eonweb/public/admin/';
             } else {
-                window.location.href = '/eonweb/public/dashboard/';
+                window.location.href = 'https://w3router.github.io/eonweb/public/dashboard/';
             }
             return;
         }
