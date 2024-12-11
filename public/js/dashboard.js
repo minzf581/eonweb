@@ -269,8 +269,8 @@ function saveNewTask() {
 // Logout function
 function logout() {
     localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    window.location.href = '/login';
+    localStorage.removeItem('user');
+    window.location.href = '../auth/login.html';
 }
 
 // Initialize dashboard

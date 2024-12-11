@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - EON Protocol</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <script src="/eonweb/public/js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -96,109 +96,77 @@
 <body>
     <div class="register-container">
         <h2>Register for EON Protocol</h2>
-        <form id="registerForm">
+        <form id="registerForm" onsubmit="handleRegister(event)">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" required>
+                <input type="email" id="email" name="email" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" required>
+                <input type="password" id="password" name="password" required>
             </div>
             <div class="form-group">
                 <label for="confirmPassword">Confirm Password</label>
-                <input type="password" id="confirmPassword" required>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
             </div>
             <div class="form-group">
-                <label for="referralCode">
-                    Referral Code
-                    <span class="optional-label">(Optional)</span>
-                </label>
-                <input type="text" id="referralCode" placeholder="Enter referral code if you have one">
-                <div class="referral-info">Get extra rewards by using a referral code</div>
+                <label for="referralCode">Referral Code (Optional)</label>
+                <input type="text" id="referralCode" name="referralCode">
             </div>
             <button type="submit">Register</button>
-            <p>Already have an account? <a href="/login.html" style="color: #4dabf7;">Login here</a></p>
         </form>
+        <div class="links">
+            <a href="/eonweb/public/auth/login.html">Already have an account? Login</a>
+        </div>
     </div>
 
-    <script src="/js/utils/api.js"></script>
     <script>
-        function validateForm() {
+        async function handleRegister(event) {
+            event.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
+            const referralCode = document.getElementById('referralCode').value;
 
-            // 清除之前的错误消息
-            clearErrors();
-
-            // 验证邮箱格式
-            if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                showError('email', 'Please enter a valid email address');
-                return false;
-            }
-
-            // 验证密码长度
-            if (password.length < 6) {
-                showError('password', 'Password must be at least 6 characters long');
-                return false;
-            }
-
-            // 验证密码匹配
             if (password !== confirmPassword) {
-                showError('confirmPassword', 'Passwords do not match');
-                return false;
-            }
-
-            return true;
-        }
-
-        function showError(fieldId, message) {
-            const field = document.getElementById(fieldId);
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
-            field.parentNode.appendChild(errorDiv);
-            field.classList.add('error');
-        }
-
-        function clearErrors() {
-            document.querySelectorAll('.error-message').forEach(el => el.remove());
-            document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
-        }
-
-        async function register() {
-            if (!validateForm()) {
+                alert('Passwords do not match');
                 return;
             }
 
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
             try {
-                const response = await fetch('/auth/api/register', {
+                const response = await fetch('/eonweb/public/auth/api/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ 
+                        email, 
+                        password,
+                        referralCode: referralCode || undefined
+                    }),
                 });
 
                 const data = await response.json();
-                if (data.success) {
+
+                if (response.ok) {
                     alert('Registration successful! Please login.');
-                    window.location.href = '/login.html';
+                    window.location.href = '/eonweb/public/auth/login.html';
                 } else {
-                    showError('email', data.message);
+                    throw new Error(data.message || 'Registration failed');
                 }
             } catch (error) {
-                showError('email', 'Registration failed. Please try again.');
+                console.error('Registration error:', error);
+                alert(error.message || 'Registration failed');
             }
         }
 
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await register();
+        // 检查URL中是否有推荐码
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const referralCode = urlParams.get('ref');
+            if (referralCode) {
+                document.getElementById('referralCode').value = referralCode;
+            }
         });
     </script>
 </body>
