@@ -1,9 +1,9 @@
-const db = pool;
+const pool = require('../config/database');
 
 class TaskService {
     // 获取所有任务（管理员用）
     static async getAllTasks() {
-        const [tasks] = await db.execute(
+        const [tasks] = await pool.execute(
             'SELECT * FROM tasks ORDER BY created_at DESC'
         );
         return tasks;
@@ -11,7 +11,7 @@ class TaskService {
 
     // 获取可用任务（用户用）
     static async getAvailableTasks() {
-        const [tasks] = await db.execute(
+        const [tasks] = await pool.execute(
             'SELECT * FROM tasks WHERE status = "active"'
         );
         return tasks;
@@ -20,7 +20,7 @@ class TaskService {
     // 创建新任务
     static async createTask(taskData) {
         const { task_id, name, description, status = 'active' } = taskData;
-        const [result] = await db.execute(
+        const [result] = await pool.execute(
             'INSERT INTO tasks (task_id, name, description, status) VALUES (?, ?, ?, ?)',
             [task_id, name, description, status]
         );
@@ -30,7 +30,7 @@ class TaskService {
     // 更新任务
     static async updateTask(taskId, taskData) {
         const { name, description, status } = taskData;
-        const [result] = await db.execute(
+        const [result] = await pool.execute(
             'UPDATE tasks SET name = ?, description = ?, status = ? WHERE id = ?',
             [name, description, status, taskId]
         );
@@ -39,7 +39,7 @@ class TaskService {
 
     // 删除任务
     static async deleteTask(taskId) {
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
 
@@ -73,7 +73,7 @@ class TaskService {
 
     // 获取任务统计信息
     static async getTaskStats(taskId) {
-        const [stats] = await db.execute(`
+        const [stats] = await pool.execute(`
             SELECT 
                 COUNT(DISTINCT user_id) as total_users,
                 SUM(points_earned) as total_points,
@@ -87,7 +87,7 @@ class TaskService {
 
     // 开始任务
     static async startTask(userId, taskId) {
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
 
@@ -120,7 +120,7 @@ class TaskService {
 
     // 完成任务
     static async completeTask(userId, taskId, pointsEarned) {
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
 
@@ -153,7 +153,7 @@ class TaskService {
 
     // 获取用户的任务历史
     static async getUserTaskHistory(userId) {
-        const [history] = await db.execute(`
+        const [history] = await pool.execute(`
             SELECT 
                 t.name as task_name,
                 ut.status,

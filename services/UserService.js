@@ -1,7 +1,8 @@
-const User = require('../models/User');
+const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const Settings = require('../models/Settings');
+const User = require('../models/User');
 const PointHistory = require('../models/PointHistory');
 const UserTask = require('../models/UserTask');
 
