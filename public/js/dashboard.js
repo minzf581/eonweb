@@ -1,20 +1,26 @@
 class Dashboard {
     constructor() {
-        this.token = localStorage.getItem('token');
-        this.role = localStorage.getItem('role') || 'user'; // 默认为用户角色
+        this.authService = window.authService;
         this.init();
     }
 
     async init() {
+        // 检查用户是否已登录
+        if (!this.authService.isAuthenticated()) {
+            window.location.href = '/eonweb/public/auth/login.html';
+            return;
+        }
+        
         await this.loadUserInfo();
         this.setupEventListeners();
         this.showDashboard();
     }
 
     async loadUserInfo() {
-        // 模拟加载用户信息
-        document.querySelector('.username').textContent = 
-            this.role === 'admin' ? 'Admin User' : 'Regular User';
+        const { user } = this.authService.getAuth();
+        if (user) {
+            document.querySelector('.username').textContent = user.email;
+        }
     }
 
     showDashboard() {
@@ -22,7 +28,7 @@ class Dashboard {
         const userContent = document.querySelector('.dashboard-content');
         const adminContent = document.querySelector('.admin-section');
 
-        if (this.role === 'admin') {
+        if (this.authService.isAdmin()) {
             // 显示管理员界面，隐藏用户界面
             if (userContent) userContent.style.display = 'none';
             if (adminContent) adminContent.style.display = 'block';
@@ -268,9 +274,7 @@ function saveNewTask() {
 
 // Logout function
 function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '../auth/login.html';
+    window.authService.logout();
 }
 
 // Initialize dashboard
