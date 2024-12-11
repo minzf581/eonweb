@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - EON Protocol</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <script src="../js/authService.js"></script>
+    <link rel="stylesheet" href="/eonweb/public/css/style.css">
+    <script src="/eonweb/public/js/authService.js"></script>
     <style>
         .referral-section {
             padding: 2rem;
@@ -109,11 +109,11 @@
         <!-- Header -->
         <header class="dashboard-header">
             <div class="logo">
-                <img src="../images/enologo.jpg" alt="EON">
+                <img src="/eonweb/public/images/enologo.jpg" alt="EON">
             </div>
             <div class="header-right">
                 <div class="user-info">
-                    <img src="../images/default-avatar.png" alt="" class="user-avatar">
+                    <img src="/eonweb/public/images/default-avatar.png" alt="" class="user-avatar">
                     <span class="username">Loading...</span>
                 </div>
                 <button class="btn-logout" onclick="logout()">Logout</button>
@@ -288,7 +288,7 @@
                                 <tr>
                                     <td>
                                         <div class="user-info-cell">
-                                            <img src="../images/default-avatar.png" alt="" class="user-avatar-small">
+                                            <img src="/eonweb/public/images/default-avatar.png" alt="" class="user-avatar-small">
                                             <span>John Doe</span>
                                         </div>
                                     </td>
@@ -310,7 +310,7 @@
         </div>
     </div>
 
-    <script src="../js/dashboard.js"></script>
+    <script src="/eonweb/public/js/dashboard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script>
         // 检查用户是否已登录且不是管理员
@@ -341,7 +341,7 @@
                 document.getElementById('referralPoints').textContent = data.pointsEarned || 0;
 
                 // 设置推荐链接
-                const referralLink = `${window.location.origin}/eonweb/public/auth/register.html?ref=${data.referralCode}`;
+                const referralLink = `https://w3router.github.io/eonweb/public/auth/register.html?ref=${data.referralCode}`;
                 document.getElementById('referralLink').value = referralLink;
 
                 // 生成二维码
