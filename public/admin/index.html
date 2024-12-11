@@ -57,6 +57,64 @@
         .button-group button {
             flex: 1;
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background: #333;
+            margin: 10% auto;
+            padding: 2rem;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #444;
+            color: #fff;
+        }
+
+        .error-message {
+            color: #ff4444;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -67,7 +125,7 @@
                 <img src="/eonweb/public/images/enologo.jpg" alt="EON">
             </div>
             <nav>
-                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                <button onclick="logout()" class="btn btn-secondary btn-logout">Logout</button>
             </nav>
         </header>
 
@@ -116,23 +174,101 @@
             <div class="admin-section">
                 <h2>User Management</h2>
                 <div class="admin-controls">
+                    <!-- Create User -->
+                    <div class="control-card">
+                        <h3>Create New User</h3>
+                        <form id="createUserForm">
+                            <div class="form-group">
+                                <label for="userEmail">Email</label>
+                                <input type="email" id="userEmail" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userPassword">Password</label>
+                                <input type="password" id="userPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userRole">Role</label>
+                                <select id="userRole" required>
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Create User</button>
+                        </form>
+                    </div>
+
                     <!-- User List -->
                     <div class="control-card">
                         <h3>User List</h3>
-                        <ul id="userList" class="task-list">
-                            <!-- Users will be populated here -->
-                        </ul>
-                    </div>
-
-                    <!-- User Stats -->
-                    <div class="control-card">
-                        <h3>User Statistics</h3>
-                        <div id="userStats">
-                            <!-- Stats will be populated here -->
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Credits</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userList">
+                                    <!-- Users will be populated here -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="editTaskModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('editTaskModal')">&times;</span>
+            <h2>Edit Task</h2>
+            <form id="editTaskForm">
+                <input type="hidden" id="editTaskId">
+                <div class="form-group">
+                    <label for="editTaskName">Task Name</label>
+                    <input type="text" id="editTaskName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editTaskDescription">Description</label>
+                    <textarea id="editTaskDescription" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editTaskPoints">Credits</label>
+                    <input type="number" id="editTaskPoints" required min="0">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('editUserModal')">&times;</span>
+            <h2>Edit User</h2>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label for="editUserEmail">Email</label>
+                    <input type="email" id="editUserEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="editUserRole">Role</label>
+                    <select id="editUserRole" required>
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editUserCredits">Credits</label>
+                    <input type="number" id="editUserCredits" required min="0">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
         </div>
     </div>
 
@@ -142,16 +278,13 @@
             window.location.href = '/eonweb/public/dashboard/index.html';
         }
 
-        // Logout function
-        function logout() {
-            window.authService.logout();
-            window.location.href = '/eonweb/index.html';
-        }
+        // API Base URL
+        const API_BASE_URL = 'https://eonweb-production.up.railway.app';
 
         // Load tasks
         async function loadTasks() {
             try {
-                const response = await fetch('/api/tasks', {
+                const response = await fetch(`${API_BASE_URL}/api/tasks`, {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
@@ -174,6 +307,32 @@
             }
         }
 
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${window.authService.getToken()}`
+                    }
+                });
+                const users = await response.json();
+                const userList = document.getElementById('userList');
+                userList.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.email}</td>
+                        <td>${user.isAdmin ? 'Admin' : 'User'}</td>
+                        <td>${user.points}</td>
+                        <td>
+                            <button onclick="editUser(${user.id})" class="btn btn-secondary">Edit</button>
+                            <button onclick="deleteUser(${user.id})" class="btn btn-danger">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
         // Create task
         document.getElementById('createTaskForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -184,7 +343,7 @@
             };
 
             try {
-                const response = await fetch('/api/tasks', {
+                const response = await fetch(`${API_BASE_URL}/api/tasks`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -204,8 +363,197 @@
             }
         });
 
-        // Load tasks on page load
+        // Create user
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = {
+                email: document.getElementById('userEmail').value,
+                password: document.getElementById('userPassword').value,
+                isAdmin: document.getElementById('userRole').value === 'admin'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window.authService.getToken()}`
+                    },
+                    body: JSON.stringify(user)
+                });
+
+                if (response.ok) {
+                    loadUsers();
+                    e.target.reset();
+                } else {
+                    throw new Error('Failed to create user');
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+            }
+        });
+
+        // Edit task
+        async function editTask(taskId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${window.authService.getToken()}`
+                    }
+                });
+                const task = await response.json();
+
+                document.getElementById('editTaskId').value = task.id;
+                document.getElementById('editTaskName').value = task.name;
+                document.getElementById('editTaskDescription').value = task.description;
+                document.getElementById('editTaskPoints').value = task.points;
+
+                document.getElementById('editTaskModal').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading task:', error);
+            }
+        }
+
+        // Edit user
+        async function editUser(userId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${window.authService.getToken()}`
+                    }
+                });
+                const user = await response.json();
+
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editUserEmail').value = user.email;
+                document.getElementById('editUserRole').value = user.isAdmin ? 'admin' : 'user';
+                document.getElementById('editUserCredits').value = user.points;
+
+                document.getElementById('editUserModal').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading user:', error);
+            }
+        }
+
+        // Delete task
+        async function deleteTask(taskId) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${window.authService.getToken()}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        loadTasks();
+                    } else {
+                        throw new Error('Failed to delete task');
+                    }
+                } catch (error) {
+                    console.error('Error deleting task:', error);
+                }
+            }
+        }
+
+        // Delete user
+        async function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${window.authService.getToken()}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        loadUsers();
+                    } else {
+                        throw new Error('Failed to delete user');
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                }
+            }
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Save task changes
+        document.getElementById('editTaskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const taskId = document.getElementById('editTaskId').value;
+            const task = {
+                name: document.getElementById('editTaskName').value,
+                description: document.getElementById('editTaskDescription').value,
+                points: parseInt(document.getElementById('editTaskPoints').value)
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window.authService.getToken()}`
+                    },
+                    body: JSON.stringify(task)
+                });
+
+                if (response.ok) {
+                    loadTasks();
+                    closeModal('editTaskModal');
+                } else {
+                    throw new Error('Failed to update task');
+                }
+            } catch (error) {
+                console.error('Error updating task:', error);
+            }
+        });
+
+        // Save user changes
+        document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('editUserId').value;
+            const user = {
+                email: document.getElementById('editUserEmail').value,
+                isAdmin: document.getElementById('editUserRole').value === 'admin',
+                points: parseInt(document.getElementById('editUserCredits').value)
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window.authService.getToken()}`
+                    },
+                    body: JSON.stringify(user)
+                });
+
+                if (response.ok) {
+                    loadUsers();
+                    closeModal('editUserModal');
+                } else {
+                    throw new Error('Failed to update user');
+                }
+            } catch (error) {
+                console.error('Error updating user:', error);
+            }
+        });
+
+        // Logout
+        function logout() {
+            window.authService.logout();
+        }
+
+        // Load initial data
         loadTasks();
+        loadUsers();
     </script>
 </body>
 </html>

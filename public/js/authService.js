@@ -41,25 +41,26 @@ class AuthService {
     }
 
     // 处理登录后的重定向
-    async handleAuthRedirect() {
-        if (this.isAuthenticated()) {
-            // 已登录，根据用户类型重定向
+    handleAuthRedirect() {
+        const auth = this.getAuth();
+        if (auth && auth.token) {
+            // 已登录，根据角色重定向
             if (this.isAdmin()) {
-                window.location.href = '/eonweb/public/admin/index.html';
+                window.location.href = '/eonweb/public/admin/';
             } else {
-                window.location.href = '/eonweb/public/dashboard/index.html';
+                window.location.href = '/eonweb/public/dashboard/';
             }
             return;
         }
 
         // 未登录，重定向到注册页面
-        window.location.href = '/eonweb/public/auth/register.html';
+        window.location.href = '/eonweb/auth/register.html';
     }
 
     // 登出
     logout() {
         this.clearAuth();
-        window.location.href = '/eonweb/';
+        window.location.href = '/eonweb/auth/register.html';
     }
 }
 
