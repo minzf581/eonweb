@@ -340,7 +340,9 @@
                 document.getElementById('referralPoints').textContent = data.pointsEarned || 0;
 
                 // 设置推荐链接
-                const referralLink = `https://w3router.github.io/eonweb/public/auth/register.html?ref=${data.referralCode}`;
+                const referralCode = data.referralCode;
+                const referralLink = `/eonweb/auth/register.html?ref=${data.referralCode}`;
+                document.getElementById('referralCode').textContent = referralCode;
                 document.getElementById('referralLink').value = referralLink;
 
                 // 生成二维码
@@ -351,9 +353,6 @@
                     width: 128,
                     height: 128
                 });
-
-                // 设置推荐码
-                document.getElementById('referralCode').textContent = data.referralCode;
             } catch (error) {
                 console.error('Error loading referral info:', error);
             }

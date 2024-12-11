@@ -1123,79 +1123,15 @@ footer p {
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="/eonweb/public/js/authService.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var coll = document.getElementsByClassName("collapsible");
-            for (var i = 0; i < coll.length; i++) {
-                coll[i].addEventListener("click", function() {
-                    this.classList.toggle("active");
-                    var content = this.nextElementSibling;
-                    content.classList.toggle("show");
-                });
-            }
-        });
-        
-        // 初始化 Particles.js
-        particlesJS('particles-js', {
-            particles: {
-                number: {
-                    value: 80,
-                    density: {
-                        enable: true,
-                        value_area: 800
-                    }
-                },
-                color: {
-                    value: '#4dabf7'
-                },
-                shape: {
-                    type: 'circle'
-                },
-                opacity: {
-                    value: 0.5,
-                    random: false
-                },
-                size: {
-                    value: 3,
-                    random: true
-                },
-                line_linked: {
-                    enable: true,
-                    distance: 150,
-                    color: '#4dabf7',
-                    opacity: 0.4,
-                    width: 1
-                },
-                move: {
-                    enable: true,
-                    speed: 6,
-                    direction: 'none',
-                    random: false,
-                    straight: false,
-                    out_mode: 'out',
-                    bounce: false
-                }
-            },
-            interactivity: {
-                detect_on: 'canvas',
-                events: {
-                    onhover: {
-                        enable: true,
-                        mode: 'repulse'
-                    },
-                    onclick: {
-                        enable: true,
-                        mode: 'push'
-                    },
-                    resize: true
-                }
-            },
-            retina_detect: true
+        particlesJS.load('particles-js', '/eonweb/public/js/particles-config.json', function() {
+            console.log('callback - particles.js config loaded');
         });
 
         // 主题切换
         const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
-        
+
         function switchTheme(e) {
             if (e.target.checked) {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -1226,36 +1162,7 @@ footer p {
             updateCounter();
         });
     </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 获取 Get Started 按钮
-            const getStartedBtn = document.querySelector('.cta-button');
-            
-            getStartedBtn.addEventListener('click', async function() {
-                try {
-                    // 使用 authService 检查登录状态
-                    const authService = new AuthService();
-                    if (authService.isAuthenticated()) {
-                        // 如果已登录，根据用户类型重定向
-                        if (authService.isAdmin()) {
-                            window.location.href = '/eonweb/public/admin/index.html';
-                        } else {
-                            window.location.href = '/eonweb/public/dashboard/index.html';
-                        }
-                    } else {
-                        // 如果未登录，重定向到注册页面
-                        window.location.href = '/auth/register.html';
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    // 如果出错，默认重定向到注册页面
-                    window.location.href = '/auth/register.html';
-                }
-            });
-        });
-    </script>
-<!-- 添加Font Awesome图标 -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    <!-- 添加Font Awesome图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </body>
 </html>
