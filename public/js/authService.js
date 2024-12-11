@@ -54,13 +54,13 @@ class AuthService {
         }
 
         // 未登录，重定向到注册页面
-        window.location.href = '/eonweb/auth/register.html';
+        window.location.href = 'https://w3router.github.io/eonweb/auth/register.html';
     }
 
     // 登出
     logout() {
         this.clearAuth();
-        window.location.href = '/eonweb/auth/register.html';
+        window.location.href = 'https://w3router.github.io/eonweb/auth/register.html';
     }
 }
 
