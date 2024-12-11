@@ -134,7 +134,7 @@
                 
                 if (data.success) {
                     localStorage.setItem('token', data.token);
-                    window.location.href = '/eonweb/dashboard/index.html';
+                    window.location.href = '/eonweb/public/dashboard/index.html';
                 } else {
                     // 处理不同类型的错误
                     switch (data.errorCode) {
