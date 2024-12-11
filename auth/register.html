@@ -179,21 +179,27 @@
                 const response = await fetch('https://eonweb-production.up.railway.app/auth/api/register', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     credentials: 'include',
                     body: JSON.stringify({ email, password })
                 });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Registration failed');
+                }
 
                 const data = await response.json();
                 if (data.success) {
                     alert('Registration successful! Please login.');
                     window.location.href = 'login.html';
                 } else {
-                    showError('email', data.message);
+                    throw new Error(data.message || 'Registration failed');
                 }
             } catch (error) {
-                showError('email', 'Registration failed. Please try again.');
+                showError('email', error.message);
             }
         }
 
@@ -203,4 +209,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
