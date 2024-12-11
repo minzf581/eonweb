@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - EON Protocol</title>
+    <link rel="stylesheet" href="/eonweb/public/css/style.css">
+    <script src="/eonweb/public/js/authService.js"></script>
+    <style>
+        .admin-section {
+            padding: 2rem;
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .admin-controls {
+            display: flex;
+            gap: 2rem;
+            align-items: stretch;
+        }
+
+        .control-card {
+            background: #333;
+            padding: 1.5rem;
+            border-radius: 8px;
+            flex: 1;
+        }
+
+        .control-card h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .task-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .task-item {
+            background: #444;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+
+        .task-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="logo">
+                <img src="/eonweb/public/images/enologo.jpg" alt="EON">
+            </div>
+            <nav>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <div class="admin-content">
+            <!-- Dashboard Title -->
+            <div class="dashboard-title">
+                <h1>Admin Dashboard</h1>
+            </div>
+
+            <!-- Task Management Section -->
+            <div class="admin-section">
+                <h2>Task Management</h2>
+                <div class="admin-controls">
+                    <!-- Create Task -->
+                    <div class="control-card">
+                        <h3>Create New Task</h3>
+                        <form id="createTaskForm">
+                            <div class="form-group">
+                                <label for="taskName">Task Name</label>
+                                <input type="text" id="taskName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="taskDescription">Description</label>
+                                <textarea id="taskDescription" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="taskPoints">Points</label>
+                                <input type="number" id="taskPoints" required min="0">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Create Task</button>
+                        </form>
+                    </div>
+
+                    <!-- Task List -->
+                    <div class="control-card">
+                        <h3>Active Tasks</h3>
+                        <ul id="taskList" class="task-list">
+                            <!-- Tasks will be populated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management Section -->
+            <div class="admin-section">
+                <h2>User Management</h2>
+                <div class="admin-controls">
+                    <!-- User List -->
+                    <div class="control-card">
+                        <h3>User List</h3>
+                        <ul id="userList" class="task-list">
+                            <!-- Users will be populated here -->
+                        </ul>
+                    </div>
+
+                    <!-- User Stats -->
+                    <div class="control-card">
+                        <h3>User Statistics</h3>
+                        <div id="userStats">
+                            <!-- Stats will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is admin
+        if (!window.authService.isAdmin()) {
+            window.location.href = '/eonweb/public/dashboard/index.html';
+        }
+
+        // Logout function
+        function logout() {
+            window.authService.logout();
+            window.location.href = '/eonweb/index.html';
+        }
+
+        // Load tasks
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/tasks', {
+                    headers: {
+                        'Authorization': `Bearer ${window.authService.getToken()}`
+                    }
+                });
+                const tasks = await response.json();
+                const taskList = document.getElementById('taskList');
+                taskList.innerHTML = tasks.map(task => `
+                    <li class="task-item">
+                        <h4>${task.name}</h4>
+                        <p>${task.description}</p>
+                        <p>Points: ${task.points}</p>
+                        <div class="button-group">
+                            <button onclick="editTask(${task.id})" class="btn btn-secondary">Edit</button>
+                            <button onclick="deleteTask(${task.id})" class="btn btn-danger">Delete</button>
+                        </div>
+                    </li>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        // Create task
+        document.getElementById('createTaskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const task = {
+                name: document.getElementById('taskName').value,
+                description: document.getElementById('taskDescription').value,
+                points: parseInt(document.getElementById('taskPoints').value)
+            };
+
+            try {
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window.authService.getToken()}`
+                    },
+                    body: JSON.stringify(task)
+                });
+
+                if (response.ok) {
+                    loadTasks();
+                    e.target.reset();
+                } else {
+                    throw new Error('Failed to create task');
+                }
+            } catch (error) {
+                console.error('Error creating task:', error);
+            }
+        });
+
+        // Load tasks on page load
+        loadTasks();
+    </script>
+</body>
+</html>
