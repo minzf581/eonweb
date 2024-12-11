@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const UserService = require('./services/UserService');
 const User = require('./models/User');
 const bcrypt = require('bcryptjs');
+const TaskService = require('./services/TaskService');
 
 const app = express();
 
@@ -67,8 +68,8 @@ mongoose.connect(process.env.MONGODB_URI)
 // API 路由
 app.post('/auth/api/register', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const userId = await UserService.createUser(email, password);
+        const { email, password, referralCode } = req.body;
+        const userId = await UserService.createUser(email, password, referralCode);
         res.json({
             success: true,
             message: 'Registration successful',
@@ -100,7 +101,8 @@ app.post('/auth/api/login', async (req, res) => {
                 token,
                 user: {
                     id: user.id,
-                    email: user.email
+                    email: user.email,
+                    isAdmin: user.isAdmin
                 }
             });
         } else {
@@ -116,5 +118,183 @@ app.post('/auth/api/login', async (req, res) => {
             success: false,
             message: error.message
         });
+    }
+});
+
+// 中间件：验证JWT token
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'Authentication token required' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ message: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// 中间件：验证管理员权限
+const isAdmin = async (req, res, next) => {
+    try {
+        const user = await UserService.findById(req.user.userId);
+        if (!user || !user.isAdmin) {
+            return res.status(403).json({ message: 'Admin privileges required' });
+        }
+        next();
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// 用户管理路由
+app.get('/api/users', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const users = await UserService.getAllUsers();
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.get('/api/users/stats', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const stats = await UserService.getUserStats();
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.put('/api/users/:userId', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const user = await UserService.updateUser(req.params.userId, req.body);
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.delete('/api/users/:userId', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        await UserService.deleteUser(req.params.userId);
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// 任务管理路由
+app.get('/api/tasks', authenticateToken, async (req, res) => {
+    try {
+        const tasks = req.user.isAdmin ? 
+            await TaskService.getAllTasks() : 
+            await TaskService.getAvailableTasks();
+        res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.post('/api/tasks', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const taskId = await TaskService.createTask(req.body);
+        res.status(201).json({ id: taskId });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.put('/api/tasks/:taskId', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const success = await TaskService.updateTask(req.params.taskId, req.body);
+        if (success) {
+            res.json({ message: 'Task updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Task not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.delete('/api/tasks/:taskId', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        await TaskService.deleteTask(req.params.taskId);
+        res.json({ message: 'Task deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.get('/api/tasks/:taskId/stats', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const stats = await TaskService.getTaskStats(req.params.taskId);
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// 用户任务路由
+app.post('/api/tasks/:taskId/start', authenticateToken, async (req, res) => {
+    try {
+        await TaskService.startTask(req.user.userId, req.params.taskId);
+        res.json({ message: 'Task started successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.post('/api/tasks/:taskId/complete', authenticateToken, async (req, res) => {
+    try {
+        const { pointsEarned } = req.body;
+        await TaskService.completeTask(req.user.userId, req.params.taskId, pointsEarned);
+        res.json({ message: 'Task completed successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+app.get('/api/user/tasks', authenticateToken, async (req, res) => {
+    try {
+        const history = await TaskService.getUserTaskHistory(req.user.userId);
+        res.json(history);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// 推荐系统路由
+app.get('/api/user/referrals', authenticateToken, async (req, res) => {
+    try {
+        const referralInfo = await UserService.getUserReferrals(req.user.userId);
+        res.json(referralInfo);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// 获取当前用户信息
+app.get('/api/user', authenticateToken, async (req, res) => {
+    try {
+        const user = await UserService.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json({
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            points: user.points,
+            referralCode: user.referralCode
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
