@@ -14,7 +14,7 @@ const app = express();
 // 中间件
 app.use(express.json());
 app.use(cors({
-    origin: 'https://w3router.github.io',
+    origin: process.env.FRONTEND_URL || 'https://w3router.github.io/eonweb',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Origin']
@@ -32,7 +32,7 @@ app.get('/', (req, res) => {
 mongoose.connect(process.env.MONGODB_URI)
     .then(async () => {
         console.log('MongoDB connected');
-        console.log('MongoDB URI:', process.env.MONGODB_URI);
+        console.log('Frontend URL:', process.env.FRONTEND_URL);
         
         // 创建默认管理员账户
         try {

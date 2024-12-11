@@ -1,4 +1,3 @@
-const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const Settings = require('../models/Settings');
@@ -9,9 +8,14 @@ const UserTask = require('../models/UserTask');
 class UserService {
     // 创建用户
     static async createUser(email, password, referralCode = null, isAdmin = false) {
-        const connection = await db.getConnection();
         console.log('Creating user:', email, 'isAdmin:', isAdmin);
         
+        // 检查邮箱是否已存在
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            throw new Error('Email already exists');
+        }
+
         // 生成唯一的推荐码
         const userReferralCode = crypto.randomBytes(5).toString('hex');
         
@@ -32,138 +36,107 @@ class UserService {
             const referrer = await User.findOne({ referralCode });
             if (referrer) {
                 // 获取推荐奖励积分设置
-                const settings = await Settings.findOne({ key: 'referralPoints' });
-                const points = settings ? settings.value : 10; // 默认10点
-                
-                referrer.points += points;
+                const settings = await Settings.findOne({});
+                const referralPoints = settings?.referralPoints || 50;
+
+                // 更新推荐人积分
+                referrer.points += referralPoints;
                 await referrer.save();
-                
+
                 // 记录积分历史
-                await PointHistory.create({
+                const pointHistory = new PointHistory({
                     userId: referrer._id,
-                    points,
+                    points: referralPoints,
                     type: 'referral',
-                    description: `Referral reward for user ${email}`
+                    description: `Referral bonus for inviting ${email}`
                 });
+                await pointHistory.save();
             }
         }
         
-        return user.id;
+        return user._id;
     }
 
     // 验证用户
     static async verifyUser(email, password) {
         const user = await User.findOne({ email });
-        if (!user) return null;
-        
+        if (!user) {
+            return null;
+        }
+
         const isValid = await bcrypt.compare(password, user.password);
-        return isValid ? user : null;
+        if (!isValid) {
+            return null;
+        }
+
+        return {
+            id: user._id,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            points: user.points
+        };
     }
 
-    // 通过ID查找用户
-    static async findById(id) {
-        return User.findById(id);
-    }
-
-    // 通过邮箱查找用户
-    static async findUserByEmail(email) {
-        console.log('Finding user by email:', email);
-        const user = await User.findOne({ email });
-        console.log('Found user:', user);
-        return user;
-    }
-
-    // 获取所有用户（管理员用）
+    // 获取所有用户
     static async getAllUsers() {
-        return User.find().select('-password').sort('-createdAt');
+        const users = await User.find({});
+        return users.map(user => ({
+            id: user._id,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            points: user.points,
+            referralCode: user.referralCode,
+            referredBy: user.referredBy,
+            createdAt: user.createdAt
+        }));
+    }
+
+    // 获取用户信息
+    static async getUserById(userId) {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+        return {
+            id: user._id,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            points: user.points,
+            referralCode: user.referralCode,
+            referredBy: user.referredBy
+        };
     }
 
     // 更新用户信息
-    static async updateUser(userId, userData) {
-        const { email, status, isAdmin } = userData;
-        const updateData = {};
-        
-        if (email) updateData.email = email;
-        if (status) updateData.status = status;
-        if (typeof isAdmin !== 'undefined') updateData.isAdmin = isAdmin;
-        
-        return User.findByIdAndUpdate(userId, updateData, { new: true }).select('-password');
+    static async updateUser(userId, updates) {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // 只允许更新特定字段
+        const allowedUpdates = ['email', 'isAdmin', 'points'];
+        Object.keys(updates).forEach(key => {
+            if (allowedUpdates.includes(key)) {
+                user[key] = updates[key];
+            }
+        });
+
+        await user.save();
+        return user;
     }
 
     // 删除用户
     static async deleteUser(userId) {
-        // 删除用户相关的所有数据
-        await Promise.all([
-            PointHistory.deleteMany({ userId }),
-            UserTask.deleteMany({ userId }),
-            User.findByIdAndDelete(userId)
-        ]);
-        return true;
-    }
-
-    // 获取用户统计信息
-    static async getUserStats() {
-        const stats = await User.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    totalUsers: { $sum: 1 },
-                    activeUsers: { 
-                        $sum: { 
-                            $cond: [{ $eq: ['$status', 'active'] }, 1, 0] 
-                        }
-                    },
-                    totalPoints: { $sum: '$points' }
-                }
-            }
-        ]);
-        return stats[0];
-    }
-
-    // 获取用户的推荐历史
-    static async getUserReferrals(userId) {
         const user = await User.findById(userId);
-        if (!user) throw new Error('User not found');
+        if (!user) {
+            throw new Error('User not found');
+        }
 
-        const referrals = await User.find({ referredBy: user.referralCode })
-            .select('email createdAt points')
-            .sort('-createdAt');
-
-        return {
-            referralCode: user.referralCode,
-            totalReferrals: referrals.length,
-            referralHistory: referrals.map(ref => ({
-                email: ref.email,
-                date: ref.createdAt,
-                points: ref.points
-            }))
-        };
-    }
-
-    // 重置用户密码
-    static async resetPassword(userId, newPassword) {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await User.findByIdAndUpdate(userId, { password: hashedPassword });
-        return true;
-    }
-
-    // 更新用户积分
-    static async updateUserPoints(userId, points, type, description) {
-        const user = await User.findById(userId);
-        if (!user) throw new Error('User not found');
-
-        user.points += points;
-        await user.save();
-
-        // 记录积分历史
-        await PointHistory.create({
-            userId,
-            points,
-            type,
-            description
-        });
-
-        return user.points;
+        await User.deleteOne({ _id: userId });
+        // 清理相关数据
+        await PointHistory.deleteMany({ userId });
+        await UserTask.deleteMany({ userId });
     }
 }
 
