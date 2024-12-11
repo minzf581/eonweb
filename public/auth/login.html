@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/eonweb/css/style.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -109,18 +109,18 @@
                 <span id="passwordError" class="error-message"></span>
             </div>
             <button type="submit">Login</button>
-            <p>Don't have an account? <a href="/register.html" style="color: #4dabf7;">Register here</a></p>
+            <p>Don't have an account? <a href="/eonweb/register.html" style="color: #4dabf7;">Register here</a></p>
         </form>
     </div>
 
-    <script src="/js/utils/api.js"></script>
+    <script src="/eonweb/js/utils/api.js"></script>
     <script>
         async function login() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
             try {
-                const response = await fetch('/auth/api/login', {
+                const response = await fetch('/eonweb/auth/api/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -132,7 +132,7 @@
                 
                 if (data.success) {
                     localStorage.setItem('token', data.token);
-                    window.location.href = '/dashboard/index.html';
+                    window.location.href = '/eonweb/dashboard/index.html';
                 } else {
                     // 处理不同类型的错误
                     switch (data.errorCode) {
