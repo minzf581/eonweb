@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - EON Protocol</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="/css/style.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -118,11 +118,11 @@
                 <div class="referral-info">Get extra rewards by using a referral code</div>
             </div>
             <button type="submit">Register</button>
-            <p>Already have an account? <a href="login.html" style="color: #4dabf7;">Login here</a></p>
+            <p>Already have an account? <a href="/login.html" style="color: #4dabf7;">Login here</a></p>
         </form>
     </div>
 
-    <script src="../js/utils/api.js"></script>
+    <script src="/js/utils/api.js"></script>
     <script>
         function validateForm() {
             const email = document.getElementById('email').value;
@@ -187,7 +187,7 @@
                 const data = await response.json();
                 if (data.success) {
                     alert('Registration successful! Please login.');
-                    window.location.href = 'login.html';
+                    window.location.href = '/login.html';
                 } else {
                     showError('email', data.message);
                 }
