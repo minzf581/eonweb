@@ -20,6 +20,14 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'Origin']
 }));
 
+// 静态文件服务
+app.use(express.static(path.join(__dirname)));
+
+// 根路由
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // 数据库连接
 mongoose.connect(process.env.MONGODB_URI)
     .then(async () => {
