@@ -121,6 +121,9 @@
     </div>
 
     <script>
+        // API 配置
+        const API_BASE_URL = 'https://eonweb-production.up.railway.app';
+
         async function handleRegister(event) {
             event.preventDefault();
             const email = document.getElementById('email').value;
@@ -134,7 +137,7 @@
             }
 
             try {
-                const response = await fetch('/eonweb/public/auth/api/register', {
+                const response = await fetch(`${API_BASE_URL}/auth/api/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
