@@ -67,7 +67,8 @@ mongoose.connect(process.env.MONGODB_URI)
                     points: 100,
                     type: 'daily',
                     requirements: 'Stable internet connection',
-                    isActive: true
+                    isActive: true,
+                    status: 'coming_soon'
                 },
                 {
                     title: 'Data Validation',
@@ -75,7 +76,20 @@ mongoose.connect(process.env.MONGODB_URI)
                     points: 50,
                     type: 'daily',
                     requirements: 'Basic understanding of data quality',
-                    isActive: true
+                    isActive: true,
+                    status: 'coming_soon'
+                },
+                {
+                    title: 'Referral Program',
+                    description: 'Invite new users to join EON Protocol. Earn 100 points for each referral when they use your referral code (50 points without referral code). New users also receive 100 points. Daily limit: 10 referrals.',
+                    points: 100,
+                    type: 'ongoing',
+                    requirements: 'Complete email verification and pass reCAPTCHA verification',
+                    isActive: true,
+                    status: 'active',
+                    dailyLimit: 10,
+                    basePoints: 50,
+                    bonusPoints: 50
                 }
             ];
 
@@ -85,6 +99,14 @@ mongoose.connect(process.env.MONGODB_URI)
                     const task = new Task(taskData);
                     await task.save();
                     console.log(`Default task created: ${taskData.title}`);
+                } else {
+                    // 更新现有任务的状态和其他字段
+                    await Task.findOneAndUpdate(
+                        { title: taskData.title },
+                        { $set: taskData },
+                        { new: true }
+                    );
+                    console.log(`Default task updated: ${taskData.title}`);
                 }
             }
         } catch (error) {

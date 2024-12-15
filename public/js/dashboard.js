@@ -12,6 +12,9 @@ class Dashboard {
         }
         
         await this.loadUserInfo();
+        if (this.authService.isAdmin()) {
+            await this.loadUserList();
+        }
         this.setupEventListeners();
         this.showDashboard();
     }
@@ -44,6 +47,50 @@ class Dashboard {
         document.getElementById('userSearch')?.addEventListener('input', (e) => {
             this.filterUsers(e.target.value);
         });
+    }
+
+    async loadUserList() {
+        try {
+            const response = await fetch('/api/users', {
+                headers: {
+                    'Authorization': `Bearer ${this.authService.getToken()}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to load users');
+            }
+
+            const users = await response.json();
+            const userList = document.getElementById('userList');
+            if (!userList) return;
+
+            userList.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user._id}</td>
+                    <td>${user.email}</td>
+                    <td>${user.points || 0}</td>
+                    <td>${user.referralCode || 'N/A'}</td>
+                    <td>${user.status || 'Active'}</td>
+                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading user list:', error);
+        }
+    }
+
+    filterUsers(query) {
+        const userList = document.getElementById('userList');
+        if (!userList) return;
+
+        const rows = userList.getElementsByTagName('tr');
+        query = query.toLowerCase();
+
+        for (const row of rows) {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        }
     }
 
     filterUsers(query) {

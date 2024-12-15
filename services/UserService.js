@@ -122,14 +122,14 @@ class UserService {
 
     // 获取所有用户
     static async getAllUsers() {
-        const users = await User.find({});
+        const users = await User.find({}).sort({ createdAt: -1 });
         return users.map(user => ({
-            id: user._id,
+            _id: user._id,
             email: user.email,
             isAdmin: user.isAdmin,
-            points: user.points,
-            referralCode: user.referralCode,
-            referredBy: user.referredBy,
+            points: user.points || 0,
+            referralCode: user.referralCode || 'N/A',
+            status: user.status || 'Active',
             createdAt: user.createdAt
         }));
     }

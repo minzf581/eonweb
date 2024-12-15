@@ -102,6 +102,29 @@
             max-width: 200px;
             margin: 0 auto;
         }
+
+        /* 状态标签样式 */
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .status.inactive {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .status.coming-soon {
+            background-color: #2196F3;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -251,10 +274,34 @@
                                     <td>Bandwidth Sharing</td>
                                     <td>Share bandwidth to support AI data crawling</td>
                                     <td>0</td>
-                                    <td><span class="status active">Active</span></td>
+                                    <td><span class="status coming-soon">Coming Soon</span></td>
                                     <td>
                                         <button class="btn-icon" disabled title="Default task cannot be edited">✏️</button>
                                         <button class="btn-icon" onclick="toggleTaskStatus('001')">⏸️</button>
+                                        <button class="btn-icon" disabled title="Default task cannot be deleted">🗑️</button>
+                                    </td>
+                                </tr>
+                                <tr class="default-task">
+                                    <td>002</td>
+                                    <td>Data Validation</td>
+                                    <td>Help validate and improve AI training data quality</td>
+                                    <td>0</td>
+                                    <td><span class="status coming-soon">Coming Soon</span></td>
+                                    <td>
+                                        <button class="btn-icon" disabled title="Default task cannot be edited">✏️</button>
+                                        <button class="btn-icon" onclick="toggleTaskStatus('002')">⏸️</button>
+                                        <button class="btn-icon" disabled title="Default task cannot be deleted">🗑️</button>
+                                    </td>
+                                </tr>
+                                <tr class="default-task">
+                                    <td>003</td>
+                                    <td>Referral Program</td>
+                                    <td>Invite new users to join EON Protocol. Earn 100 points for each referral when they use your referral code (50 points without referral code). New users also receive 100 points. Daily limit: 10 referrals.</td>
+                                    <td>0</td>
+                                    <td><span class="status active">Active</span></td>
+                                    <td>
+                                        <button class="btn-icon" disabled title="Default task cannot be edited">✏️</button>
+                                        <button class="btn-icon" onclick="toggleTaskStatus('003')">⏸️</button>
                                         <button class="btn-icon" disabled title="Default task cannot be deleted">🗑️</button>
                                     </td>
                                 </tr>
