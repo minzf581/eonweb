@@ -57,9 +57,38 @@ mongoose.connect(process.env.MONGODB_URI)
             } else {
                 console.log('Admin account already exists:', existingAdmin);
             }
+
+            // 创建默认任务
+            const Task = require('./models/Task');
+            const defaultTasks = [
+                {
+                    title: 'Bandwidth Sharing',
+                    description: 'Share bandwidth to support AI data crawling',
+                    points: 100,
+                    type: 'daily',
+                    requirements: 'Stable internet connection',
+                    isActive: true
+                },
+                {
+                    title: 'Data Validation',
+                    description: 'Help validate and improve AI training data quality',
+                    points: 50,
+                    type: 'daily',
+                    requirements: 'Basic understanding of data quality',
+                    isActive: true
+                }
+            ];
+
+            for (const taskData of defaultTasks) {
+                const existingTask = await Task.findOne({ title: taskData.title });
+                if (!existingTask) {
+                    const task = new Task(taskData);
+                    await task.save();
+                    console.log(`Default task created: ${taskData.title}`);
+                }
+            }
         } catch (error) {
-            console.error('Error creating default admin (details):', error.stack);
-            console.error('Error creating default admin:', error);
+            console.error('Error during initialization:', error);
         }
         
         // 启动服务器
