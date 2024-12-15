@@ -8,6 +8,11 @@ class AuthService {
         this.basePath = '/eonweb';
     }
 
+    // 获取 token
+    getToken() {
+        return localStorage.getItem(this.tokenKey);
+    }
+
     // 保存认证信息
     setAuth(token, user) {
         localStorage.setItem(this.tokenKey, token);
@@ -16,7 +21,7 @@ class AuthService {
 
     // 获取认证信息
     getAuth() {
-        const token = localStorage.getItem(this.tokenKey);
+        const token = this.getToken();
         const userStr = localStorage.getItem(this.userKey);
         
         if (!token || !userStr) {
@@ -40,8 +45,7 @@ class AuthService {
 
     // 检查是否已登录
     isAuthenticated() {
-        const auth = this.getAuth();
-        return !!auth && !!auth.token;
+        return !!this.getToken();
     }
 
     // 检查是否为管理员
@@ -52,8 +56,7 @@ class AuthService {
 
     // 处理登录后的重定向
     handleAuthRedirect() {
-        const auth = this.getAuth();
-        if (auth && auth.token) {
+        if (this.isAuthenticated()) {
             // 已登录，根据角色重定向
             if (this.isAdmin()) {
                 window.location.href = `${this.basePath}/public/admin/`;
