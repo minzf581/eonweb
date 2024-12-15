@@ -61,19 +61,20 @@ class AuthService {
             if (this.isAdmin()) {
                 window.location.href = `${this.basePath}/public/admin/`;
             } else {
-                window.location.href = `${this.basePath}/public/dashboard/`;
+                // 普通用户重定向到主页
+                window.location.href = `${this.basePath}/`;
             }
             return;
         }
 
-        // 未登录，重定向到注册页面
-        window.location.href = `${this.basePath}/auth/register.html`;
+        // 未登录，重定向到登录页面
+        window.location.href = `${this.basePath}/auth/login.html`;
     }
 
     // 登出
     logout() {
         this.clearAuth();
-        window.location.href = `${this.basePath}/auth/register.html`;
+        window.location.href = `${this.basePath}/auth/login.html`;
     }
 }
 
