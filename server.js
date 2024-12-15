@@ -138,8 +138,8 @@ mongoose.connect(process.env.MONGODB_URI)
         process.exit(1);  // 如果数据库连接失败，退出进程
     });
 
-// API 路由
-app.post('/auth/api/register', async (req, res) => {
+// 认证 API 路由
+app.post('/eonweb/public/auth/api/register', async (req, res) => {
     try {
         const { email, password, referralCode } = req.body;
         const userId = await UserService.createUser(email, password, referralCode);
@@ -158,7 +158,7 @@ app.post('/auth/api/register', async (req, res) => {
 });
 
 // 登录路由
-app.post('/auth/api/login', async (req, res) => {
+app.post('/eonweb/public/auth/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         console.log('Login attempt:', { email, password });
