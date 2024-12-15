@@ -256,7 +256,19 @@ app.get('/api/tasks', authenticateToken, async (req, res) => {
             await TaskService.getAvailableTasks();
         res.json(tasks);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error getting tasks:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+app.post('/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const task = await TaskService.toggleTaskStatus(taskId);
+        res.json(task);
+    } catch (error) {
+        console.error('Error toggling task status:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 

@@ -14,6 +14,7 @@ class Dashboard {
         await this.loadUserInfo();
         if (this.authService.isAdmin()) {
             await this.loadUserList();
+            await this.loadTasks();
         }
         this.setupEventListeners();
         this.showDashboard();
@@ -43,7 +44,7 @@ class Dashboard {
     }
 
     setupEventListeners() {
-        // Task management
+        // 用户搜索
         document.getElementById('userSearch')?.addEventListener('input', (e) => {
             this.filterUsers(e.target.value);
         });
@@ -80,6 +81,42 @@ class Dashboard {
         }
     }
 
+    async loadTasks() {
+        try {
+            const response = await fetch('/api/tasks', {
+                headers: {
+                    'Authorization': `Bearer ${this.authService.getToken()}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to load tasks');
+            }
+
+            const tasks = await response.json();
+            const taskList = document.getElementById('taskList');
+            if (!taskList) return;
+
+            taskList.innerHTML = tasks.map(task => `
+                <tr>
+                    <td>${task.title}</td>
+                    <td>${task.description}</td>
+                    <td>${task.points}</td>
+                    <td>
+                        <span class="status ${task.status.toLowerCase()}">${task.status}</span>
+                    </td>
+                    <td>
+                        <button class="btn-icon" onclick="toggleTaskStatus('${task._id}')">
+                            ${task.status === 'Active' ? '⏸️' : '▶️'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+        }
+    }
+
     filterUsers(query) {
         const userList = document.getElementById('userList');
         if (!userList) return;
@@ -93,8 +130,24 @@ class Dashboard {
         }
     }
 
-    filterUsers(query) {
-        // 实现用户筛选逻辑
+    async toggleTaskStatus(taskId) {
+        try {
+            const response = await fetch(`/api/tasks/${taskId}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.authService.getToken()}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to toggle task status');
+            }
+
+            // 重新加载任务列表
+            await this.loadTasks();
+        } catch (error) {
+            console.error('Error toggling task status:', error);
+        }
     }
 }
 

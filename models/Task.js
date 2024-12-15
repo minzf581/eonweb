@@ -26,6 +26,11 @@ const taskSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    status: {
+        type: String,
+        enum: ['Active', 'Coming Soon'],
+        default: 'Coming Soon'
+    },
     startDate: {
         type: Date,
         default: Date.now
