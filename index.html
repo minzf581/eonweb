@@ -40,6 +40,8 @@
             height: 100vh;
             background-color: transparent;
             z-index: 1;
+            top: 0;
+            left: 0;
         }
 
         .main-nav {
@@ -897,6 +899,7 @@ footer p {
         }
     </style>
     <script src="/eonweb/public/js/authService.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -918,7 +921,6 @@ footer p {
 
     <!-- Hero Section with Particles -->
     <section id="home" class="hero">
-        <div id="particles-js"></div>
         <div class="hero-content">
             <h1>AI Meets Secure Distributed Power</h1>
             <p>Empower AI achieve secure and seamless data collaboration</p>
@@ -926,6 +928,7 @@ footer p {
         <div class="button-container">
           <a href="javascript:void(0)" onclick="window.authService.handleAuthRedirect()" class="cta-button">Get started and Earn</a>
         </div>
+        <div id="particles-js" style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh;"></div>
          
     </section>
 
@@ -1164,5 +1167,63 @@ footer p {
     </script>
     <!-- 添加Font Awesome图标 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 80,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                color: {
+                    value: '#4dabf7'
+                },
+                shape: {
+                    type: 'circle'
+                },
+                opacity: {
+                    value: 0.5,
+                    random: false
+                },
+                size: {
+                    value: 3,
+                    random: true
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#4dabf7',
+                    opacity: 0.4,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 6,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'grab'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                }
+            },
+            retina_detect: true
+        });
+    </script>
 </body>
 </html>
