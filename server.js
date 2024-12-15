@@ -23,6 +23,20 @@ app.use(cors({
 // 静态文件服务
 app.use(express.static(path.join(__dirname)));
 
+// 重定向旧的认证路径到新路径
+app.get('/auth/login.html', (req, res) => {
+    res.redirect('/public/auth/login.html');
+});
+
+app.get('/auth/register.html', (req, res) => {
+    res.redirect('/public/auth/register.html');
+});
+
+// 重定向旧的仪表板路径
+app.get('/dashboard/*', (req, res) => {
+    res.redirect('/');
+});
+
 // 根路由
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
