@@ -19,8 +19,13 @@ const taskSchema = new mongoose.Schema({
         enum: ['daily', 'weekly', 'one-time'],
         required: true
     },
-    requirements: {
+    requirements: [{
         type: String
+    }],
+    verificationMethod: {
+        type: String,
+        enum: ['automatic', 'manual'],
+        default: 'automatic'
     },
     isActive: {
         type: Boolean,

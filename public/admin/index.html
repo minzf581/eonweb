@@ -181,9 +181,6 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://w3router.github.io/eonweb';
-        const authService = new AuthService();
-
         // Check authentication
         if (!authService.isAuthenticated() || !authService.isAdmin()) {
             window.location.href = '/eonweb/public/auth/login.html';
@@ -198,7 +195,7 @@
         // Load users
         async function loadUsers() {
             try {
-                const response = await fetch('/api/users', {
+                const response = await fetch('/eonweb/api/users', {
                     headers: {
                         'Authorization': `Bearer ${authService.getToken()}`
                     }
@@ -229,7 +226,7 @@
         // Load tasks
         async function loadTasks() {
             try {
-                const response = await fetch('/api/tasks', {
+                const response = await fetch('/eonweb/api/tasks', {
                     headers: {
                         'Authorization': `Bearer ${authService.getToken()}`
                     }
@@ -265,7 +262,7 @@
         // Toggle task status
         async function toggleTaskStatus(taskId) {
             try {
-                const response = await fetch(`/api/tasks/${taskId}/toggle`, {
+                const response = await fetch(`/eonweb/api/tasks/${taskId}/toggle`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${authService.getToken()}`
