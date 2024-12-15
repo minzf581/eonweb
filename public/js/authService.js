@@ -68,13 +68,13 @@ class AuthService {
         }
 
         // 未登录，重定向到登录页面
-        window.location.href = `${this.basePath}/auth/login.html`;
+        window.location.href = `${this.basePath}/public/auth/login.html`;
     }
 
     // 登出
     logout() {
         this.clearAuth();
-        window.location.href = `${this.basePath}/auth/login.html`;
+        window.location.href = `${this.basePath}/public/auth/login.html`;
     }
 }
 

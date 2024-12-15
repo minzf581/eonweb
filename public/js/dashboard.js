@@ -7,7 +7,7 @@ class Dashboard {
     async init() {
         // 检查用户是否已登录
         if (!this.authService.isAuthenticated()) {
-            window.location.href = '/eonweb/public/auth/login.html';
+            this.authService.handleAuthRedirect();
             return;
         }
         

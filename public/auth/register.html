@@ -149,8 +149,10 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert('Registration successful! Please login.');
-                    window.location.href = '/eonweb/public/auth/login.html';
+                    // 保存认证信息
+                    window.authService.setAuth(data.token, data.user);
+                    // 使用 authService 的重定向方法
+                    window.authService.handleAuthRedirect();
                 } else {
                     throw new Error(data.message || 'Registration failed');
                 }
