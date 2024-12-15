@@ -16,6 +16,12 @@ class UserService {
             throw new Error('Email already exists');
         }
 
+        // 获取设置
+        const settings = await Settings.findOne({});
+        const referralPoints = settings?.referralPoints || 100;
+        const baseReferralPoints = settings?.baseReferralPoints || 50;
+        const dailyReferralLimit = settings?.dailyReferralLimit || 10;
+
         // 生成唯一的推荐码
         const userReferralCode = crypto.randomBytes(5).toString('hex');
         
@@ -25,34 +31,71 @@ class UserService {
             password: hashedPassword,
             isAdmin,
             referralCode: userReferralCode,
-            referredBy: referralCode
+            referredBy: null  // 先设为 null，后面再更新
         });
         
-        await user.save();
-        console.log('User created:', user);
-        
-        // 如果有推荐人，更新推荐人的积分
+        // 如果有推荐码，验证并处理推荐逻辑
         if (referralCode) {
             const referrer = await User.findOne({ referralCode });
             if (referrer) {
-                // 获取推荐奖励积分设置
-                const settings = await Settings.findOne({});
-                const referralPoints = settings?.referralPoints || 50;
-
-                // 更新推荐人积分
-                referrer.points += referralPoints;
-                await referrer.save();
-
-                // 记录积分历史
-                const pointHistory = new PointHistory({
+                // 检查推荐人今日推荐次数
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const referralCount = await PointHistory.countDocuments({
                     userId: referrer._id,
-                    points: referralPoints,
                     type: 'referral',
-                    description: `Referral bonus for inviting ${email}`
+                    createdAt: { $gte: today }
                 });
-                await pointHistory.save();
+
+                if (referralCount >= dailyReferralLimit) {
+                    // 如果超过限制，仍然可以注册，但推荐人不会获得积分
+                    console.log(`Referrer ${referrer.email} has reached daily limit`);
+                } else {
+                    // 更新用户的推荐人
+                    user.referredBy = referrer._id;
+
+                    // 更新推荐人积分
+                    referrer.points += referralPoints;
+                    await referrer.save();
+
+                    // 记录推荐人获得积分的历史
+                    const referrerPointHistory = new PointHistory({
+                        userId: referrer._id,
+                        points: referralPoints,
+                        type: 'referral',
+                        description: `Referral bonus for inviting ${email}`
+                    });
+                    await referrerPointHistory.save();
+
+                    // 给新用户添加被推荐奖励积分
+                    user.points = referralPoints;
+                    
+                    // 记录新用户获得积分的历史
+                    const userPointHistory = new PointHistory({
+                        userId: user._id,
+                        points: referralPoints,
+                        type: 'referral',
+                        description: `Welcome bonus from referral by ${referrer.email}`
+                    });
+                    await userPointHistory.save();
+                }
             }
+        } else {
+            // 无推荐码，给予基础积分
+            user.points = baseReferralPoints;
+            
+            // 记录基础积分历史
+            const pointHistory = new PointHistory({
+                userId: user._id,
+                points: baseReferralPoints,
+                type: 'bonus',
+                description: 'Welcome bonus for new user'
+            });
+            await pointHistory.save();
         }
+        
+        await user.save();
+        console.log('User created:', user);
         
         return user._id;
     }
