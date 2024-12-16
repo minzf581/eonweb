@@ -61,7 +61,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 数据库连接配置
+// 数据库连接
 const mongoUri = process.env.MONGODB_URI;
 console.log('Attempting to connect to MongoDB...');
 
@@ -408,28 +408,11 @@ app.get('/api/user', authenticateToken, async (req, res) => {
 // 获取用户推荐信息
 app.get('/api/users/referral-info', authenticateToken, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // 获取该用户推荐的用户数量
-        const totalReferrals = await User.countDocuments({ referredBy: user._id });
-
-        // 获取推荐相关的积分历史
-        const referralPoints = await PointHistory.aggregate([
-            {
-                $match: {
-                    userId: user._id,
-                    type: 'referral'
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: '$points' }
-                }
-            }
+        const user = await User.findById(req.user.id);
+        const totalReferrals = await User.countDocuments({ referredBy: user.referralCode });
+        const referralPoints = await User.aggregate([
+            { $match: { referredBy: user.referralCode } },
+            { $group: { _id: null, total: { $sum: '$points' } } }
         ]);
 
         res.json({
@@ -462,7 +445,6 @@ app.put('/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (req, res
             return res.status(404).json({ message: 'Task not found' });
         }
 
-        // 切换状态
         task.isActive = !task.isActive;
         await task.save();
 
