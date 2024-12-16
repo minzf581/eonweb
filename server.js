@@ -11,10 +11,12 @@ const app = express();
 
 // 在所有路由之前处理 OPTIONS 请求
 app.options('*', function (req, res) {
-    console.log('Handling OPTIONS request for:', req.url);
     const origin = req.headers.origin;
-    console.log('Request origin:', origin);
-    
+    console.log('\n=== OPTIONS Request ===');
+    console.log('URL:', req.url);
+    console.log('Origin:', origin);
+    console.log('Headers:', req.headers);
+
     // 允许特定的源
     const allowedOrigins = [
         'http://localhost:3000',
@@ -26,11 +28,12 @@ app.options('*', function (req, res) {
     if (allowedOrigins.includes(origin)) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         res.header('Access-Control-Allow-Credentials', 'true');
         res.header('Access-Control-Max-Age', '86400');
         res.sendStatus(204);
     } else {
+        console.log('Origin not allowed:', origin);
         res.sendStatus(403);
     }
 });
@@ -52,22 +55,18 @@ const corsOptions = {
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.log('Origin not allowed:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400
 };
 
 // 应用 CORS 中间件
 app.use(cors(corsOptions));
-
-// 基础中间件
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
 // 调试中间件：记录所有请求
 app.use((req, res, next) => {
@@ -79,6 +78,23 @@ app.use((req, res, next) => {
     console.log('Headers:', JSON.stringify(req.headers, null, 2));
     next();
 });
+
+// 确保所有响应都有正确的 CORS 头
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && corsOptions.origin(origin, (err, allowed) => allowed)) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.header('Access-Control-Allow-Credentials', 'true');
+    }
+    next();
+});
+
+// 基础中间件
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // 静态文件服务
 const staticOptions = {
