@@ -87,7 +87,8 @@ const corsOptions = {
         
         const allowedOrigins = [
             'http://localhost:3000',
-            'https://illustrious-perfection-production.up.railway.app'
+            'https://illustrious-perfection-production.up.railway.app',
+            'https://w3router.github.io'
         ];
         
         // 允许没有 origin 的请求（比如 Postman）

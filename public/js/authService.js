@@ -21,22 +21,23 @@ if (typeof window.AuthService === 'undefined') {
         
         addRequestInterceptor() {
             const originalFetch = window.fetch;
-            window.fetch = async (...args) => {
-                const [url, config] = args;
-                
-                console.log('[AuthService] Request:', {
-                    url,
-                    method: config?.method || 'GET',
-                    headers: config?.headers
-                });
-                
+            window.fetch = async (url, options = {}) => {
                 try {
-                    const response = await originalFetch(...args);
+                    const request = {
+                        url,
+                        method: options.method || 'GET',
+                        headers: options.headers || {}
+                    };
+                    console.log('[AuthService] Request:', request);
+
+                    const response = await originalFetch(url, options);
                     console.log('[AuthService] Response:', {
                         url,
                         status: response.status,
-                        ok: response.ok
+                        ok: response.ok,
+                        headers: Object.fromEntries(response.headers.entries())
                     });
+
                     return response;
                 } catch (error) {
                     console.error('[AuthService] Request failed:', {
@@ -57,27 +58,30 @@ if (typeof window.AuthService === 'undefined') {
             try {
                 console.log('[AuthService] Attempting login:', { email });
                 
-                const url = `${this.apiUrl}/api/auth/login`;
-                const response = await fetch(url, {
+                const response = await fetch(`${this.apiUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
                     credentials: 'include',
                     body: JSON.stringify({ email, password })
                 });
 
-                const data = await response.json();
-                
                 if (!response.ok) {
-                    console.error('[AuthService] Login failed:', data);
-                    throw new Error(data.message || 'Login failed');
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Login failed');
                 }
 
-                console.log('[AuthService] Login successful');
-                this.setAuth(data.token, data.user);
-                return data;
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 存储用户信息
+                    localStorage.setItem(this.userKey, JSON.stringify(data.user));
+                    this.setAuth(data.token, data.user);
+                    return data;
+                } else {
+                    throw new Error(data.message || 'Login failed');
+                }
             } catch (error) {
                 console.error('[AuthService] Login error:', error.message);
                 throw error;
@@ -91,27 +95,22 @@ if (typeof window.AuthService === 'undefined') {
                     throw new Error('No authentication token found');
                 }
 
-                const url = `${this.apiUrl}/api/user`;
-                const response = await fetch(url, {
+                const response = await fetch(`${this.apiUrl}/api/user`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
                     credentials: 'include'
                 });
 
-                const data = await response.json();
-                
                 if (!response.ok) {
-                    console.error('[AuthService] Failed to get user info:', data);
-                    throw new Error(data.message || 'Failed to get user info');
+                    throw new Error('Failed to get user info');
                 }
 
-                console.log('[AuthService] Got user info:', { ...data, token: '[REDACTED]' });
+                const data = await response.json();
                 return data;
             } catch (error) {
-                console.error('[AuthService] Error getting user info:', error.message);
+                console.error('[AuthService] Get user info error:', error.message);
                 throw error;
             }
         }
@@ -119,6 +118,7 @@ if (typeof window.AuthService === 'undefined') {
         setAuth(token, user) {
             localStorage.setItem(this.tokenKey, token);
             localStorage.setItem(this.userKey, JSON.stringify(user));
+            this.token = token;
             console.log('[AuthService] Auth data saved');
         }
 
@@ -143,7 +143,21 @@ if (typeof window.AuthService === 'undefined') {
         logout() {
             localStorage.removeItem(this.tokenKey);
             localStorage.removeItem(this.userKey);
-            console.log('[AuthService] Logged out');
+            this.token = null;
+            
+            // 调用登出 API
+            return fetch(`${this.apiUrl}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Logout failed');
+                }
+                return response.json();
+            }).catch(error => {
+                console.error('[AuthService] Logout error:', error.message);
+                throw error;
+            });
         }
 
         // API 请求基础配置
@@ -154,7 +168,6 @@ if (typeof window.AuthService === 'undefined') {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                     ...options.headers
                 }
@@ -170,13 +183,12 @@ if (typeof window.AuthService === 'undefined') {
 
                 if (!response.ok) {
                     const error = await response.json();
-                    console.error(`API error for ${endpoint}:`, error);
                     throw new Error(error.message || 'Request failed');
                 }
 
                 return response.json();
             } catch (error) {
-                console.error(`Error in fetchWithAuth for ${endpoint}:`, error);
+                console.error(`[AuthService] ${endpoint} error:`, error.message);
                 throw error;
             }
         }

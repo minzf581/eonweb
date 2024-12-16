@@ -6,8 +6,13 @@ async function testAuthService() {
     function log(message, data = null) {
         const line = document.createElement('div');
         line.style.marginBottom = '10px';
+        line.style.fontFamily = 'monospace';
         
         if (typeof message === 'string') {
+            if (message.startsWith('===')) {
+                line.style.fontWeight = 'bold';
+                line.style.color = '#0066cc';
+            }
             line.textContent = message;
         } else {
             line.textContent = JSON.stringify(message, null, 2);
@@ -17,14 +22,12 @@ async function testAuthService() {
             const dataDiv = document.createElement('div');
             dataDiv.style.marginLeft = '20px';
             dataDiv.style.marginTop = '5px';
-            dataDiv.style.fontFamily = 'monospace';
             dataDiv.style.whiteSpace = 'pre';
             dataDiv.textContent = JSON.stringify(data, null, 2);
             line.appendChild(dataDiv);
         }
         
         resultDiv.appendChild(line);
-        console.log(message, data || '');
     }
 
     async function makeRequest(url, options = {}) {
@@ -74,13 +77,16 @@ async function testAuthService() {
         });
         log('Logout response:', logoutData);
 
-        statusDiv.textContent = 'All tests completed successfully!';
+        // 测试成功
+        statusDiv.textContent = '✅ All tests completed successfully!';
         statusDiv.style.backgroundColor = '#d4edda';
         statusDiv.style.color = '#155724';
         statusDiv.style.padding = '10px';
         statusDiv.style.borderRadius = '4px';
+        statusDiv.style.fontWeight = 'bold';
     } catch (error) {
-        log(`Test failed: ${error.message}`);
+        // 测试失败
+        log('❌ Test failed: ' + error.message);
         
         if (error.stack) {
             const stackDiv = document.createElement('div');
@@ -92,11 +98,12 @@ async function testAuthService() {
             resultDiv.appendChild(stackDiv);
         }
         
-        statusDiv.textContent = 'Tests failed!';
+        statusDiv.textContent = '❌ Tests failed!';
         statusDiv.style.backgroundColor = '#f8d7da';
         statusDiv.style.color = '#721c24';
         statusDiv.style.padding = '10px';
         statusDiv.style.borderRadius = '4px';
+        statusDiv.style.fontWeight = 'bold';
     }
 }
 
