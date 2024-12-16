@@ -61,25 +61,18 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 数据库连接
-const username = 'mongo';
-const password = 'AFjGncOFYrhCTFtZIPwTtGllJQAmEBym';
-const host = 'junction.proxy.rlwy.net';
-const port = '19975';
-const dbName = 'eonweb';
-
-const fullMongoUri = `mongodb://${username}:${password}@${host}:${port}/${dbName}?authSource=admin`;
-
+// 数据库连接配置
+const mongoUri = process.env.MONGODB_URI;
 console.log('Attempting to connect to MongoDB...');
 
-mongoose.connect(fullMongoUri, {
-    serverSelectionTimeoutMS: 60000,
+mongoose.connect(mongoUri, {
+    serverSelectionTimeoutMS: 10000,
     socketTimeoutMS: 45000,
     retryWrites: true,
     w: 'majority'
 })
 .then(async () => {
-    console.log('MongoDB connected successfully to database:', dbName);
+    console.log('MongoDB connected successfully');
     
     // 创建默认管理员账户
     try {
