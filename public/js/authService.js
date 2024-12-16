@@ -54,34 +54,42 @@ if (typeof window.AuthService === 'undefined') {
             window.location.href = 'https://w3router.github.io/eonweb/public/auth/login.html';
         }
 
+        // API 请求基础配置
+        getRequestConfig(options = {}) {
+            const config = {
+                ...options,
+                credentials: 'include',
+                mode: 'cors',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...options.headers
+                }
+            };
+
+            if (this.token) {
+                config.headers['Authorization'] = `Bearer ${this.token}`;
+            }
+
+            return config;
+        }
+
         async login(email, password) {
+            console.log('[AuthService] Attempting login:', { email });
             try {
-                console.log('[AuthService] Attempting login:', { email });
-                
-                const response = await fetch(`${this.apiUrl}/api/auth/login`, {
+                const response = await fetch(`${this.apiUrl}/api/auth/login`, this.getRequestConfig({
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
                     body: JSON.stringify({ email, password })
-                });
+                }));
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Login failed');
+                    throw new Error(response.statusText);
                 }
 
                 const data = await response.json();
-                
-                if (data.success) {
-                    // 存储用户信息
-                    localStorage.setItem(this.userKey, JSON.stringify(data.user));
-                    this.setAuth(data.token, data.user);
-                    return data;
-                } else {
-                    throw new Error(data.message || 'Login failed');
-                }
+                this.setAuth(data.token, data.user);
+                return data;
             } catch (error) {
                 console.error('[AuthService] Login error:', error.message);
                 throw error;
@@ -90,27 +98,37 @@ if (typeof window.AuthService === 'undefined') {
 
         async getUserInfo() {
             try {
-                const token = this.getToken();
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
-
-                const response = await fetch(`${this.apiUrl}/api/user`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                });
-
+                const response = await fetch(`${this.apiUrl}/api/user`, this.getRequestConfig());
+                
                 if (!response.ok) {
-                    throw new Error('Failed to get user info');
+                    throw new Error(response.statusText);
                 }
 
                 const data = await response.json();
                 return data;
             } catch (error) {
-                console.error('[AuthService] Get user info error:', error.message);
+                console.error('[AuthService] Error getting user info:', error.message);
+                throw error;
+            }
+        }
+
+        async logout() {
+            try {
+                const response = await fetch(`${this.apiUrl}/api/auth/logout`, this.getRequestConfig({
+                    method: 'POST'
+                }));
+
+                if (!response.ok) {
+                    throw new Error(response.statusText);
+                }
+
+                localStorage.removeItem(this.tokenKey);
+                localStorage.removeItem(this.userKey);
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('[AuthService] Logout error:', error.message);
                 throw error;
             }
         }
@@ -140,40 +158,10 @@ if (typeof window.AuthService === 'undefined') {
             return !!this.getToken();
         }
 
-        logout() {
-            localStorage.removeItem(this.tokenKey);
-            localStorage.removeItem(this.userKey);
-            this.token = null;
-            
-            // 调用登出 API
-            return fetch(`${this.apiUrl}/api/auth/logout`, {
-                method: 'POST',
-                credentials: 'include'
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error('Logout failed');
-                }
-                return response.json();
-            }).catch(error => {
-                console.error('[AuthService] Logout error:', error.message);
-                throw error;
-            });
-        }
-
-        // API 请求基础配置
-        getRequestConfig(options = {}) {
-            const token = this.getToken();
-            const config = {
-                ...options,
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                    ...options.headers
-                }
-            };
-            console.log('Request config:', config);
-            return config;
+        // 处理登出
+        handleLogout() {
+            this.logout();
+            window.location.href = '/auth/login.html';
         }
 
         async fetchWithAuth(endpoint, options = {}) {
@@ -207,16 +195,10 @@ if (typeof window.AuthService === 'undefined') {
         async getUserTasks() {
             return this.fetchWithAuth('/api/tasks/user');
         }
-
-        // 处理登出
-        handleLogout() {
-            this.logout();
-            window.location.href = '/auth/login.html';
-        }
     }
 }
 
-// 创建全局实例 - 只在 window.authService 未定义时创建
+// 创建全局实例
 if (!window.authService) {
     window.authService = new window.AuthService();
 }
