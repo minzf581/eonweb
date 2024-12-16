@@ -28,17 +28,16 @@ const corsOptions = {
         console.log('Request Origin:', origin);
         console.log('Allowed Origins:', CORS_ALLOWED_ORIGINS);
         
-        // 在开发环境中允许没有 origin（比如 Postman）
+        // 在开发环境中允许没有 origin
         if (!origin && NODE_ENV === 'development') {
             return callback(null, true);
         }
         
-        // 检查 origin 是否在允许列表中
         if (CORS_ALLOWED_ORIGINS.includes(origin)) {
             callback(null, true);
         } else {
             console.log('Origin not allowed:', origin);
-            callback(new Error('Not allowed by CORS'));
+            callback(new Error(`CORS not allowed for origin: ${origin}`));
         }
     },
     credentials: true,
@@ -50,34 +49,17 @@ const corsOptions = {
     optionsSuccessStatus: 204
 };
 
-// 启用 CORS
-if (CORS_ENABLED) {
-    app.use(cors(corsOptions));
-    
-    // 处理所有 OPTIONS 请求
-    app.options('*', cors(corsOptions));
-}
+// 启用 CORS - 必须在任何路由之前
+app.use(cors(corsOptions));
 
-// 在所有路由之前处理 OPTIONS 请求
-app.options('*', function (req, res) {
-    const origin = req.headers.origin;
-    console.log('\n=== OPTIONS Request ===');
-    console.log('URL:', req.url);
-    console.log('Origin:', origin);
+// 记录所有请求
+app.use((req, res, next) => {
+    console.log('\n=== Incoming Request ===');
+    console.log('Method:', req.method);
+    console.log('Path:', req.path);
+    console.log('Origin:', req.headers.origin);
     console.log('Headers:', req.headers);
-
-    // 检查 origin 是否在允许列表中
-    if (CORS_ALLOWED_ORIGINS.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Max-Age', '86400');
-        res.sendStatus(204);
-    } else {
-        console.log('Origin not allowed:', origin);
-        res.sendStatus(403);
-    }
+    next();
 });
 
 // 确保所有响应都有正确的 CORS 头
@@ -85,8 +67,6 @@ app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (origin && CORS_ALLOWED_ORIGINS.includes(origin)) {
         res.header('Access-Control-Allow-Origin', origin);
-        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         res.header('Access-Control-Allow-Credentials', 'true');
     }
     next();
