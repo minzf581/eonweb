@@ -17,27 +17,34 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS 配置
-app.use(cors({
-    origin: ['https://w3router.github.io', 'http://localhost:3000', 'https://eon-protocol.github.io'],
+const corsOptions = {
+    origin: function (origin, callback) {
+        const allowedOrigins = ['https://w3router.github.io', 'http://localhost:3000', 'https://eon-protocol.github.io'];
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+};
+
+app.use(cors(corsOptions));
 
 // 预检请求处理
-app.options('*', cors({
-    origin: ['https://w3router.github.io', 'http://localhost:3000', 'https://eon-protocol.github.io'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.options('*', cors(corsOptions));
 
 // 添加安全头
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    const origin = req.headers.origin;
+    if (origin && ['https://w3router.github.io', 'http://localhost:3000', 'https://eon-protocol.github.io'].includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
@@ -54,7 +61,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 mongoose.connect(process.env.MONGO_URL, {
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
-    maxPoolSize: 10
+    maxPoolSize: 10,
+    family: 4
 })
 .then(() => {
     console.log('Connected to MongoDB');
@@ -159,15 +167,20 @@ async function initializeTasks() {
 }
 
 // 优雅关闭
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
     console.log('SIGTERM received. Shutting down gracefully...');
-    server.close(() => {
-        console.log('Server closed. Disconnecting from database...');
-        mongoose.connection.close(false, () => {
-            console.log('Database connection closed.');
-            process.exit(0);
+    try {
+        await new Promise((resolve) => {
+            server.close(resolve);
         });
-    });
+        console.log('Server closed. Disconnecting from database...');
+        await mongoose.connection.close();
+        console.log('Database connection closed.');
+        process.exit(0);
+    } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
+    }
 });
 
 // 认证 API 路由

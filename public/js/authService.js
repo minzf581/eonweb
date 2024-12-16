@@ -38,17 +38,20 @@ if (typeof window.AuthService === 'undefined') {
         // API 请求基础配置
         getRequestConfig(options = {}) {
             const token = this.getToken();
-            return {
+            const config = {
                 ...options,
                 mode: 'cors',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    'Origin': 'https://w3router.github.io',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                     ...options.headers
                 }
             };
+            console.log('Request config:', config);
+            return config;
         }
 
         async login(email, password) {
