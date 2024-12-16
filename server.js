@@ -85,28 +85,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // 静态文件托管配置
-const staticOptions = {
-    dotfiles: 'deny',
-    etag: true,
-    extensions: ['html', 'htm'],
-    index: 'index.html',
-    maxAge: '1d',
-    redirect: false,
-    setHeaders: function (res, path, stat) {
-        res.set('x-timestamp', Date.now());
-    }
-};
+app.use(express.static('public'));  // 直接使用 public 目录
+app.use('/public', express.static('public')); // 同时也支持 /public 前缀的访问
 
-// 托管静态文件
-app.use(express.static(path.join(__dirname, 'public'), staticOptions));
-
-// 所有未匹配的路由都返回 index.html（支持客户端路由）
+// 所有其他路由返回 index.html
 app.get('*', (req, res, next) => {
-    // 如果请求的是 API 路由，继续下一个处理器
+    // 如果是 API 请求，跳过
     if (req.path.startsWith('/api/')) {
         return next();
     }
-    // 否则返回 index.html
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
