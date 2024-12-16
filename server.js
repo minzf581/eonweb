@@ -18,14 +18,31 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS 配置
 app.use(cors({
-    origin: ['https://w3router.github.io', 'http://localhost:3000'],
+    origin: ['https://w3router.github.io', 'http://localhost:3000', 'https://eon-protocol.github.io'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // 预检请求处理
-app.options('*', cors());
+app.options('*', cors({
+    origin: ['https://w3router.github.io', 'http://localhost:3000', 'https://eon-protocol.github.io'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 添加安全头
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
@@ -35,8 +52,6 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 
 // 数据库连接
 mongoose.connect(process.env.MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
     maxPoolSize: 10

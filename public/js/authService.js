@@ -7,6 +7,11 @@ if (typeof window.AuthService === 'undefined') {
             this.userKey = 'user';
         }
 
+        // 处理认证重定向
+        handleAuthRedirect() {
+            window.location.href = 'https://w3router.github.io/eonweb/public/auth/login.html';
+        }
+
         // 获取 token
         getToken() {
             return localStorage.getItem(this.tokenKey);
@@ -35,9 +40,11 @@ if (typeof window.AuthService === 'undefined') {
             const token = this.getToken();
             return {
                 ...options,
+                mode: 'cors',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                     ...options.headers
                 }
