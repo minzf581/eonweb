@@ -181,16 +181,38 @@
     </div>
 
     <script>
-        // Check authentication
-        if (!authService.isAuthenticated() || !authService.isAdmin()) {
-            window.location.href = '../auth/login.html';
-        }
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check authentication
+            if (!authService.isAuthenticated() || !authService.isAdmin()) {
+                window.location.href = '../auth/login.html';
+                return;
+            }
 
-        // Load user info
-        const userInfo = authService.getAuth();
-        if (userInfo && userInfo.user) {
-            document.querySelector('.username').textContent = userInfo.user.email;
-        }
+            // Load user info
+            const userInfo = authService.getUserInfo();
+            if (userInfo && userInfo.user) {
+                document.querySelector('.username').textContent = userInfo.user.email;
+            }
+
+            // Add event listeners
+            const userSearchInput = document.getElementById('userSearch');
+            if (userSearchInput) {
+                userSearchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase();
+                    const rows = document.getElementById('userList').getElementsByTagName('tr');
+                    
+                    for (const row of rows) {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(query) ? '' : 'none';
+                    }
+                });
+            }
+
+            // Load initial data
+            loadUsers();
+            loadTasks();
+        });
 
         // Load users
         async function loadUsers() {
@@ -312,26 +334,11 @@
             }
         }
 
-        // Filter users
-        document.getElementById('userSearch').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const rows = document.getElementById('userList').getElementsByTagName('tr');
-            
-            for (const row of rows) {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            }
-        });
-
         // Logout function
         function logout() {
             authService.logout();
             window.location.href = '../auth/login.html';
         }
-
-        // Load initial data
-        loadUsers();
-        loadTasks();
     </script>
 </body>
 </html>

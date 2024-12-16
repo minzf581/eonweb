@@ -4,37 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
-    <script src="https://w3router.github.io/eonweb/public/js/authService.js"></script>
-    <script>
-        // 确保 handleLogin 在页面加载时就定义
-        async function handleLogin(event) {
-            event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            console.log('Attempting login with:', { email });
-
-            try {
-                // 使用 authService 的 login 方法
-                await window.authService.login(email, password);
-                console.log('Login successful, redirecting...');
-                window.authService.handleAuthRedirect();
-            } catch (error) {
-                console.error('Login error:', error);
-                document.getElementById('error-message').innerText = error.message || 'Login failed';
-                document.getElementById('error-message').style.display = 'block';
-            }
-        }
-
-        // 页面加载完成后检查是否已登录
-        window.addEventListener('load', function() {
-            console.log('Page loaded, checking auth status');
-            if (window.authService.isAuthenticated()) {
-                console.log('User is already authenticated, redirecting...');
-                window.authService.handleAuthRedirect();
-            }
-        });
-    </script>
+    <script src="../js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -111,6 +81,7 @@
 <body>
     <div class="login-container">
         <h2>Login to EON Protocol</h2>
+        <div id="error-message"></div>
         <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
                 <label for="email">Email</label>
@@ -122,10 +93,40 @@
             </div>
             <button type="submit">Login</button>
         </form>
-        <div id="error-message"></div>
         <div class="links">
-            <a href="https://w3router.github.io/eonweb/public/auth/register.html">Don't have an account? Register</a>
+            <a href="register.html">Don't have an account? Register</a>
         </div>
     </div>
+
+    <script>
+        // 确保 handleLogin 在页面加载时就定义
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            console.log('Attempting login with:', { email });
+
+            try {
+                // 使用 authService 的 login 方法
+                await window.authService.login(email, password);
+                console.log('Login successful, redirecting...');
+                window.authService.handleAuthRedirect();
+            } catch (error) {
+                console.error('Login error:', error);
+                document.getElementById('error-message').innerText = error.message || 'Login failed';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        }
+
+        // 页面加载完成后检查是否已登录
+        window.addEventListener('load', function() {
+            console.log('Page loaded, checking auth status');
+            if (window.authService.isAuthenticated()) {
+                console.log('User is already authenticated, redirecting...');
+                window.authService.handleAuthRedirect();
+            }
+        });
+    </script>
 </body>
 </html>
