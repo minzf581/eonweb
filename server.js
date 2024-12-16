@@ -38,12 +38,8 @@ mongoose.connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000,
-    heartbeatFrequencyMS: 2000,
     socketTimeoutMS: 45000,
-    maxPoolSize: 10,
-    minPoolSize: 5,
-    keepAlive: true,
-    keepAliveInitialDelay: 300000
+    maxPoolSize: 10
 })
 .then(() => {
     console.log('Connected to MongoDB');
