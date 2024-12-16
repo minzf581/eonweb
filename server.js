@@ -60,8 +60,19 @@ app.use(cors({
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
+const HOST = '0.0.0.0';  // 确保在所有网络接口上监听
+
+const server = app.listen(PORT, HOST, () => {
+    console.log(`Server is running on ${HOST}:${PORT}`);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Available routes:');
+    app._router.stack
+        .filter(r => r.route)
+        .forEach(r => {
+            Object.keys(r.route.methods).forEach(method => {
+                console.log(`${method.toUpperCase()}: ${r.route.path}`);
+            });
+        });
 });
 
 // 数据库连接配置
@@ -538,8 +549,8 @@ app.put('/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (req, res
 
 // 全局错误处理中间件
 app.use((err, req, res, next) => {
-    console.error('Global error handler:', err);
-    res.status(500).json({ 
+    console.error('Error:', err);
+    res.status(500).json({
         message: err.message || 'Internal server error',
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
