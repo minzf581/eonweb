@@ -13,7 +13,46 @@ const Task = require('./models/Task');
 
 const app = express();
 
-// 调试中间件 - 在所有其他中间件之前
+// CORS 配置 - 必须在其他中间件之前
+const corsOptions = {
+    origin: function(origin, callback) {
+        console.log('\n=== CORS Check ===');
+        console.log('Request Origin:', origin);
+        
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'https://illustrious-perfection-production.up.railway.app',
+            'https://w3router.github.io'
+        ];
+        
+        console.log('Allowed Origins:', allowedOrigins);
+        
+        // 允许没有 origin 的请求（比如 Postman）
+        if (!origin) {
+            console.log('No origin, allowing request');
+            return callback(null, true);
+        }
+        
+        if (allowedOrigins.includes(origin)) {
+            console.log('Origin allowed:', origin);
+            callback(null, true);
+        } else {
+            console.log('Origin rejected:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Set-Cookie'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+};
+
+// 应用 CORS 中间件
+app.use(cors(corsOptions));
+
+// 调试中间件
 app.use((req, res, next) => {
     console.log('\n=== Incoming Request ===');
     console.log('Time:', new Date().toISOString());
@@ -38,35 +77,29 @@ app.use((req, res, next) => {
     }
     
     // 记录 CORS 相关信息
-    console.log('\n=== CORS Info ===');
+    console.log('\n=== CORS Headers ===');
     console.log('Origin:', req.headers.origin);
     console.log('Access-Control-Request-Method:', req.headers['access-control-request-method']);
     console.log('Access-Control-Request-Headers:', req.headers['access-control-request-headers']);
     
     // 记录响应头
-    res.on('finish', () => {
-        console.log('\n=== Response Info ===');
+    const originalEnd = res.end;
+    res.end = function(...args) {
+        console.log('\n=== Response Headers ===');
         console.log('Status:', res.statusCode);
         console.log('Headers:', JSON.stringify(res.getHeaders(), null, 2));
-    });
+        originalEnd.apply(res, args);
+    };
     
     next();
 });
 
-// 基础配置
+// 基础中间件
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 设置正确的 MIME 类型
-app.use((req, res, next) => {
-    if (req.url.endsWith('.js')) {
-        res.type('application/javascript');
-    }
-    next();
-});
-
-// 静态文件服务配置
+// 静态文件服务
 const staticOptions = {
     setHeaders: (res, path) => {
         if (path.endsWith('.js')) {
@@ -79,40 +112,13 @@ console.log('Setting up static file serving from:', path.join(__dirname));
 app.use(express.static(path.join(__dirname), staticOptions));
 app.use('/public', express.static(path.join(__dirname, 'public'), staticOptions));
 
-// CORS 配置
-const corsOptions = {
-    origin: function(origin, callback) {
-        console.log('\n=== CORS Origin Check ===');
-        console.log('Request Origin:', origin);
-        
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'https://illustrious-perfection-production.up.railway.app',
-            'https://w3router.github.io'
-        ];
-        
-        // 允许没有 origin 的请求（比如 Postman）
-        if (!origin) {
-            console.log('No origin, allowing request');
-            return callback(null, true);
-        }
-        
-        if (allowedOrigins.includes(origin)) {
-            console.log('Origin allowed:', origin);
-            callback(null, true);
-        } else {
-            console.log('Origin rejected:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-};
-
-app.use(cors(corsOptions));
+// 设置正确的 MIME 类型
+app.use((req, res, next) => {
+    if (req.url.endsWith('.js')) {
+        res.type('application/javascript');
+    }
+    next();
+});
 
 // 测试路由
 app.get('/api/test', (req, res) => {
