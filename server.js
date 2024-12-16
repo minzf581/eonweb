@@ -12,7 +12,8 @@ const app = express();
 // 在所有路由之前处理 OPTIONS 请求
 app.options('*', function (req, res) {
     console.log('Handling OPTIONS request for:', req.url);
-    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    // 允许 null origin（file:// 协议）
+    res.header('Access-Control-Allow-Origin', req.headers.origin || 'null');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
     res.header('Access-Control-Allow-Credentials', 'true');
@@ -23,18 +24,11 @@ app.options('*', function (req, res) {
 // CORS 配置
 const corsOptions = {
     origin: function(origin, callback) {
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'http://localhost:8080',
-            'https://illustrious-perfection-production.up.railway.app',
-            'https://w3router.github.io'
-        ];
-        
         console.log('\n=== CORS Check ===');
         console.log('Request Origin:', origin);
-        console.log('Allowed Origins:', allowedOrigins);
         
-        if (!origin || allowedOrigins.includes(origin)) {
+        // 允许 null origin（file:// 协议）和本地开发
+        if (!origin || origin === 'null' || origin.startsWith('http://localhost')) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
