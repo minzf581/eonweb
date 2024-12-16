@@ -1,37 +1,102 @@
 // 测试认证服务
 async function testAuthService() {
-    const authService = new AuthService();
-    console.log('=== Starting Auth Service Tests ===');
+    const resultDiv = document.getElementById('results');
+    const statusDiv = document.getElementById('status');
     
+    function log(message, data = null) {
+        const line = document.createElement('div');
+        line.style.marginBottom = '10px';
+        
+        if (typeof message === 'string') {
+            line.textContent = message;
+        } else {
+            line.textContent = JSON.stringify(message, null, 2);
+        }
+        
+        if (data) {
+            const dataDiv = document.createElement('div');
+            dataDiv.style.marginLeft = '20px';
+            dataDiv.style.marginTop = '5px';
+            dataDiv.style.fontFamily = 'monospace';
+            dataDiv.style.whiteSpace = 'pre';
+            dataDiv.textContent = JSON.stringify(data, null, 2);
+            line.appendChild(dataDiv);
+        }
+        
+        resultDiv.appendChild(line);
+        console.log(message, data || '');
+    }
+
+    async function makeRequest(url, options = {}) {
+        const response = await fetch(url, {
+            ...options,
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+
+        const responseData = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(`Request failed: ${responseData.message || response.statusText}`);
+        }
+        
+        return responseData;
+    }
+
     try {
+        resultDiv.innerHTML = '';
+        statusDiv.textContent = 'Running tests...';
+        log('=== Starting Auth Service Tests ===\n');
+
         // 1. 测试登录
-        console.log('\n1. Testing Login...');
-        const loginResult = await authService.login('test@example.com', 'password123');
-        console.log('Login successful:', loginResult);
-        
-        // 2. 验证 token 存储
-        console.log('\n2. Checking Token Storage...');
-        const token = authService.getToken();
-        console.log('Token stored:', !!token);
-        
-        // 3. 获取用户信息
-        console.log('\n3. Getting User Info...');
-        const userInfo = await authService.getUserInfo();
-        console.log('User info retrieved:', userInfo);
-        
-        // 4. 验证认证状态
-        console.log('\n4. Checking Authentication Status...');
-        const isAuthenticated = authService.isAuthenticated();
-        console.log('Is authenticated:', isAuthenticated);
-        
-        // 5. 测试登出
-        console.log('\n5. Testing Logout...');
-        authService.logout();
-        console.log('Logged out, checking auth status:', authService.isAuthenticated());
-        
+        log('\n1. Testing Login...');
+        const loginData = await makeRequest('http://localhost:3000/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: 'test@example.com',
+                password: 'password123'
+            })
+        });
+        log('Login response:', loginData);
+
+        // 2. 获取用户信息
+        log('\n2. Getting User Info...');
+        const userData = await makeRequest('http://localhost:3000/api/user');
+        log('User info:', userData);
+
+        // 3. 测试登出
+        log('\n3. Testing Logout...');
+        const logoutData = await makeRequest('http://localhost:3000/api/auth/logout', {
+            method: 'POST'
+        });
+        log('Logout response:', logoutData);
+
+        statusDiv.textContent = 'All tests completed successfully!';
+        statusDiv.style.backgroundColor = '#d4edda';
+        statusDiv.style.color = '#155724';
+        statusDiv.style.padding = '10px';
+        statusDiv.style.borderRadius = '4px';
     } catch (error) {
-        console.error('Test failed:', error.message);
-        console.error('Full error:', error);
+        log(`Test failed: ${error.message}`);
+        
+        if (error.stack) {
+            const stackDiv = document.createElement('div');
+            stackDiv.style.marginTop = '10px';
+            stackDiv.style.color = '#721c24';
+            stackDiv.style.fontFamily = 'monospace';
+            stackDiv.style.whiteSpace = 'pre';
+            stackDiv.textContent = error.stack;
+            resultDiv.appendChild(stackDiv);
+        }
+        
+        statusDiv.textContent = 'Tests failed!';
+        statusDiv.style.backgroundColor = '#f8d7da';
+        statusDiv.style.color = '#721c24';
+        statusDiv.style.padding = '10px';
+        statusDiv.style.borderRadius = '4px';
     }
 }
 
@@ -41,6 +106,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!resultsDiv) {
         const div = document.createElement('div');
         div.id = 'results';
+        div.style.margin = '20px';
+        div.style.padding = '10px';
+        div.style.border = '1px solid #ccc';
+        document.body.appendChild(div);
+    }
+    const statusDiv = document.getElementById('status');
+    if (!statusDiv) {
+        const div = document.createElement('div');
+        div.id = 'status';
         div.style.margin = '20px';
         div.style.padding = '10px';
         div.style.border = '1px solid #ccc';

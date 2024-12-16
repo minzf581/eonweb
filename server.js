@@ -4,6 +4,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const UserService = require('./services/UserService');
 const User = require('./models/User');
@@ -19,7 +20,22 @@ app.use((req, res, next) => {
     console.log('Method:', req.method);
     console.log('URL:', req.url);
     console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('Body:', req.body);
+    
+    // 记录请求体
+    if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            try {
+                const jsonBody = JSON.parse(body);
+                console.log('Body:', JSON.stringify(jsonBody, null, 2));
+            } catch (e) {
+                console.log('Body:', body);
+            }
+        });
+    }
     
     // 记录 CORS 相关信息
     console.log('\n=== CORS Info ===');
@@ -40,6 +56,7 @@ app.use((req, res, next) => {
 // 基础配置
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // 设置正确的 MIME 类型
 app.use((req, res, next) => {
@@ -99,6 +116,93 @@ app.use(cors(corsOptions));
 // 测试路由
 app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working!' });
+});
+
+// 测试登录路由
+app.post('/api/auth/login', (req, res) => {
+    console.log('\n=== Login Request ===');
+    console.log('Body:', req.body);
+    
+    const { email, password } = req.body;
+    
+    // 验证测试用户
+    if (email === 'test@example.com' && password === 'password123') {
+        const token = 'test-token-123';  // 在实际应用中应该使用 JWT
+        
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax'
+        });
+        
+        res.json({
+            success: true,
+            message: 'Login successful',
+            user: {
+                email: email,
+                name: 'Test User'
+            }
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            message: 'Invalid credentials'
+        });
+    }
+});
+
+// 获取用户信息路由
+app.get('/api/user', (req, res) => {
+    try {
+        console.log('\n=== Get User Info Request ===');
+        console.log('Cookies:', req.cookies);
+        
+        const token = req.cookies.token;
+        console.log('Token from cookie:', token);
+        
+        if (!token) {
+            console.log('No token found in cookies');
+            return res.status(401).json({
+                success: false,
+                message: 'No authentication token found'
+            });
+        }
+        
+        if (token === 'test-token-123') {
+            console.log('Valid test token found');
+            return res.json({
+                success: true,
+                user: {
+                    email: 'test@example.com',
+                    name: 'Test User'
+                }
+            });
+        } else {
+            console.log('Invalid token:', token);
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid authentication token'
+            });
+        }
+    } catch (error) {
+        console.error('Error in /api/user route:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+});
+
+// 登出路由
+app.post('/api/auth/logout', (req, res) => {
+    console.log('\n=== Logout Request ===');
+    
+    res.clearCookie('token');
+    res.json({
+        success: true,
+        message: 'Logged out successfully'
+    });
 });
 
 // Railway environment configuration
