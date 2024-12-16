@@ -1,28 +1,34 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
-const UserService = require('./services/UserService');
-const User = require('./models/User');
-const TaskService = require('./services/TaskService');
-const Task = require('./models/Task');
 
 const app = express();
 
-// 1. 首先应用 CORS 中间件
-app.use(cors({
+// 在所有路由之前处理 OPTIONS 请求
+app.options('*', function (req, res) {
+    console.log('Handling OPTIONS request for:', req.url);
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+    res.header('Access-Control-Max-Age', '86400');
+    res.sendStatus(204);
+});
+
+// CORS 配置
+const corsOptions = {
     origin: function(origin, callback) {
         const allowedOrigins = [
             'http://localhost:3000',
             'http://localhost:8080',
             'https://illustrious-perfection-production.up.railway.app',
-            'https://w3router.github.io',
-            'https://w3router.github.io/eonweb',
-            'https://w3router.github.io/eonweb/'
+            'https://w3router.github.io'
         ];
         
         console.log('\n=== CORS Check ===');
@@ -40,43 +46,23 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
     exposedHeaders: ['Set-Cookie'],
     maxAge: 86400
-}));
+};
 
-// 2. 处理 OPTIONS 请求的中间件
-app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-        console.log('Handling OPTIONS request for:', req.url);
-        res.header('Access-Control-Allow-Origin', req.headers.origin);
-        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
-        res.header('Access-Control-Max-Age', '86400');
-        res.sendStatus(204);
-        return;
-    }
-    next();
-});
+// 应用 CORS 中间件
+app.use(cors(corsOptions));
 
-// 3. 基础中间件
+// 基础中间件
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 4. 调试中间件
+// 调试中间件
 app.use((req, res, next) => {
     console.log('\n=== Request Info ===');
     console.log('Time:', new Date().toISOString());
     console.log('Method:', req.method);
     console.log('URL:', req.url);
     console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    
-    // 记录 CORS 相关信息
-    console.log('\n=== CORS Headers ===');
-    console.log('Origin:', req.headers.origin);
-    console.log('Access-Control-Request-Method:', req.headers['access-control-request-method']);
-    console.log('Access-Control-Request-Headers:', req.headers['access-control-request-headers']);
-    
     next();
 });
 
@@ -711,6 +697,22 @@ app.use((err, req, res, next) => {
         message: err.message || 'Internal server error',
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
+});
+
+// 全局 OPTIONS 请求处理
+app.options('*', (req, res) => {
+    console.log('Handling OPTIONS request for:', req.url);
+    
+    // 设置 CORS 头
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+    res.header('Access-Control-Max-Age', '86400');
+    
+    // 发送成功响应
+    res.sendStatus(204);
 });
 
 // 调试中间件
