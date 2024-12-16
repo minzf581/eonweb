@@ -119,29 +119,53 @@
             }
         });
 
-        async function makeRequest(url, options = {}) {
-            try {
-                console.log('Making request to:', url);
-                const response = await fetch(url, {
-                    ...options,
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    mode: 'cors'
-                });
+        async function makeRequest(url, options = {}, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    console.log(`Attempt ${i + 1} - Making request to:`, url);
+                    
+                    // 先发送 OPTIONS 请求
+                    if (options.method === 'POST') {
+                        try {
+                            await fetch(url, {
+                                method: 'OPTIONS',
+                                headers: {
+                                    'Access-Control-Request-Method': 'POST',
+                                    'Access-Control-Request-Headers': 'content-type'
+                                },
+                                mode: 'cors'
+                            });
+                        } catch (error) {
+                            console.log('OPTIONS request failed, continuing with POST:', error);
+                        }
+                    }
 
-                console.log('Response status:', response.status);
-                const data = await response.json();
-                console.log('Response data:', data);
+                    // 发送实际请求
+                    const response = await fetch(url, {
+                        ...options,
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        mode: 'cors'
+                    });
 
-                if (!response.ok) {
-                    throw new Error(data.message || response.statusText);
+                    console.log('Response status:', response.status);
+                    const data = await response.json();
+                    console.log('Response data:', data);
+
+                    if (!response.ok) {
+                        throw new Error(data.message || response.statusText);
+                    }
+                    return data;
+                } catch (error) {
+                    console.error(`Attempt ${i + 1} failed:`, error);
+                    if (i === retries - 1) {
+                        throw error;
+                    }
+                    // 等待一段时间后重试
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
                 }
-                return data;
-            } catch (error) {
-                console.error('Request error:', error);
-                throw error;
             }
         }
 
