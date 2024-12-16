@@ -58,18 +58,20 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // 数据库连接
-const MONGODB_URI = `mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@${process.env.RAILWAY_PRIVATE_DOMAIN}:27017/eonweb?authSource=admin`;
+const MONGODB_URI = `mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@${process.env.RAILWAY_TCP_PROXY_DOMAIN}:${process.env.RAILWAY_TCP_PROXY_PORT}/eonweb?authSource=admin`;
 
 console.log('Attempting to connect to MongoDB with URI:', MONGODB_URI.replace(/mongo:([^@]+)@/, 'mongo:****@'));
 
 mongoose.connect(MONGODB_URI, {
-    serverSelectionTimeoutMS: 30000, // 增加超时时间到 30 秒
+    serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
     maxPoolSize: 10,
     retryWrites: true,
     w: 'majority',
     authSource: 'admin',
-    directConnection: true
+    directConnection: true,
+    family: 4,  // 强制使用 IPv4
+    useNewUrlParser: true
 })
 .then(() => {
     console.log('Connected to MongoDB');
@@ -80,8 +82,8 @@ mongoose.connect(MONGODB_URI, {
     // 输出更详细的错误信息
     if (err.name === 'MongoServerSelectionError') {
         console.error('Connection details:', {
-            host: process.env.RAILWAY_PRIVATE_DOMAIN,
-            port: 27017,
+            host: process.env.RAILWAY_TCP_PROXY_DOMAIN,
+            port: process.env.RAILWAY_TCP_PROXY_PORT,
             database: 'eonweb'
         });
     }
