@@ -1413,24 +1413,10 @@ footer p {
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="https://w3router.github.io/eonweb/public/js/authService.js"></script>
     <script>
         particlesJS.load('particles-js', 'https://w3router.github.io/eonweb/public/js/particles-config.json', function() {
             console.log('callback - particles.js config loaded');
         });
-
-        // 主题切换
-        const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
-
-        function switchTheme(e) {
-            if (e.target.checked) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        }
-
-        toggleSwitch.addEventListener('change', switchTheme, false);
 
         // 数字计数器动画
         const counters = document.querySelectorAll('.counter');
@@ -1448,7 +1434,7 @@ footer p {
                     counter.innerText = target;
                 }
             };
-
+            
             updateCounter();
         });
     </script>
