@@ -34,10 +34,16 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // 数据库连接
-mongoose.connect(process.env.MONGODB_URI, {
+mongoose.connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000
+    serverSelectionTimeoutMS: 5000,
+    heartbeatFrequencyMS: 2000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
+    minPoolSize: 5,
+    keepAlive: true,
+    keepAliveInitialDelay: 300000
 })
 .then(() => {
     console.log('Connected to MongoDB');
@@ -45,6 +51,18 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .catch(err => {
     console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected. Attempting to reconnect...');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('connected', () => {
+    console.log('MongoDB connected successfully');
 });
 
 // 初始化数据
