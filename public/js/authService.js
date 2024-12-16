@@ -2,7 +2,7 @@
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         constructor() {
-            this.apiBaseUrl = 'https://eonweb-production.up.railway.app:8080';
+            this.apiBaseUrl = 'https://eonweb-production.up.railway.app';
             this.tokenKey = 'token';
             this.userKey = 'user';
         }
@@ -60,20 +60,23 @@ if (typeof window.AuthService === 'undefined') {
 
         async login(email, password) {
             try {
-                console.log('Attempting login...');
-                const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+                const url = `${this.apiBaseUrl}/api/auth/login`;
+                console.log('Attempting login to URL:', url);
+                
+                const config = {
                     method: 'POST',
-                    mode: 'cors',
-                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({ email, password })
-                });
-
+                };
+                
+                console.log('Request config:', config);
+                
+                const response = await fetch(url, config);
                 console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
+                console.log('Response headers:', Array.from(response.headers.entries()));
 
                 if (!response.ok) {
                     const error = await response.json();
@@ -82,7 +85,7 @@ if (typeof window.AuthService === 'undefined') {
                 }
 
                 const data = await response.json();
-                console.log('Login successful:', data);
+                console.log('Login successful:', { ...data, token: '***' });
                 this.setAuth(data.token, data.user);
                 return data;
             } catch (error) {

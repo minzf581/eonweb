@@ -50,12 +50,23 @@ app.use(cors({
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0';  // 确保在所有网络接口上监听
+const HOST = '0.0.0.0';
+
+console.log('Starting server with configuration:');
+console.log('- PORT:', PORT);
+console.log('- HOST:', HOST);
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- Current working directory:', process.cwd());
+console.log('- Available environment variables:', Object.keys(process.env));
 
 const server = app.listen(PORT, HOST, () => {
     console.log(`Server is running on ${HOST}:${PORT}`);
     console.log('Environment:', process.env.NODE_ENV);
-    console.log('Available routes:');
+    console.log('Railway URL:', process.env.RAILWAY_STATIC_URL);
+    console.log('Public domain:', process.env.RAILWAY_PUBLIC_DOMAIN);
+    
+    // 打印所有注册的路由
+    console.log('\nRegistered routes:');
     app._router.stack
         .filter(r => r.route)
         .forEach(r => {
