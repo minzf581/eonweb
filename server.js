@@ -15,18 +15,28 @@ const app = express();
 app.use(express.json());
 
 // CORS 配置
+app.use(cors({
+    origin: ['https://w3router.github.io', 'http://localhost:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 预检请求处理
+app.options('*', cors({
+    origin: ['https://w3router.github.io', 'http://localhost:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 添加安全头
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://w3router.github.io');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
     res.header('Access-Control-Allow-Credentials', 'true');
-    
-    // 处理预检请求
-    if (req.method === 'OPTIONS') {
-        res.sendStatus(200);
-    } else {
-        next();
-    }
+    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    next();
 });
 
 // 静态文件服务
@@ -52,22 +62,24 @@ app.get('/', (req, res) => {
 });
 
 // 数据库连接
-const mongoUri = process.env.MONGODB_URI;
-// 确保连接字符串包含数据库名称
+const username = 'mongo';
+const password = 'AFjGncOFYrhCTFtZIPwTtGllJQAmEBym';
+const host = 'junction.proxy.rlwy.net';
+const port = '19975';
 const dbName = 'eonweb';
-const fullMongoUri = mongoUri.includes('/?') ? 
-    mongoUri.replace('/?', `/${dbName}?`) : 
-    mongoUri.includes('?') ? 
-        mongoUri.replace('?', `/${dbName}?`) : 
-        `${mongoUri}/${dbName}`;
+
+const fullMongoUri = `mongodb://${username}:${password}@${host}:${port}/${dbName}?authSource=admin`;
 
 mongoose.connect(fullMongoUri, {
-    serverSelectionTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 60000, // 增加到 60 秒
     socketTimeoutMS: 45000,
-    dbName: dbName // 显式指定数据库名称
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    retryWrites: true,
+    w: 'majority'
 })
 .then(async () => {
-    console.log('MongoDB connected to database:', dbName);
+    console.log('MongoDB connected successfully to database:', dbName);
     
     // 创建默认管理员账户
     try {

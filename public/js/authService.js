@@ -30,31 +30,38 @@ if (typeof window.AuthService === 'undefined') {
             localStorage.removeItem(this.userKey);
         }
 
+        // API 请求基础配置
+        getRequestConfig(options = {}) {
+            const token = this.getToken();
+            return {
+                ...options,
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...options.headers
+                }
+            };
+        }
+
         async login(email, password) {
             try {
-                console.log('Attempting login with:', { email });
-                const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+                console.log('Attempting login...');
+                const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, this.getRequestConfig({
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
                     body: JSON.stringify({ email, password })
-                });
+                }));
 
                 if (!response.ok) {
                     const error = await response.json();
-                    console.error('Login response not ok:', error);
+                    console.error('Login failed:', error);
                     throw new Error(error.message || 'Login failed');
                 }
 
                 const data = await response.json();
-                if (data.token) {
-                    this.setAuth(data.token, data.user);
-                    return data;
-                } else {
-                    throw new Error('Invalid response from server');
-                }
+                console.log('Login successful:', data);
+                this.setAuth(data.token, data.user);
+                return data;
             } catch (error) {
                 console.error('Login error:', error);
                 throw error;
@@ -64,19 +71,8 @@ if (typeof window.AuthService === 'undefined') {
         // 通用的 API 请求函数
         async fetchWithAuth(endpoint, options = {}) {
             try {
-                const token = this.getToken();
-                const headers = {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                    ...options.headers
-                };
-
                 console.log(`Fetching ${endpoint} with auth`);
-                const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
-                    ...options,
-                    headers,
-                    credentials: 'include'
-                });
+                const response = await fetch(`${this.apiBaseUrl}${endpoint}`, this.getRequestConfig(options));
 
                 if (!response.ok) {
                     const error = await response.json();
