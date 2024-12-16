@@ -13,7 +13,7 @@ const Task = require('./models/Task');
 
 const app = express();
 
-// CORS 配置 - 必须在其他中间件之前
+// CORS 配置
 const corsOptions = {
     origin: function(origin, callback) {
         console.log('\n=== CORS Check ===');
@@ -23,19 +23,15 @@ const corsOptions = {
             'http://localhost:3000',
             'http://localhost:8080',
             'https://illustrious-perfection-production.up.railway.app',
-            'https://w3router.github.io'
+            'https://w3router.github.io',
+            'https://w3router.github.io/eonweb',
+            'https://w3router.github.io/eonweb/'
         ];
         
         console.log('Allowed Origins:', allowedOrigins);
         
-        // 允许没有 origin 的请求（比如 Postman）
-        if (!origin) {
-            console.log('No origin, allowing request');
-            return callback(null, true);
-        }
-        
-        if (allowedOrigins.includes(origin)) {
-            console.log('Origin allowed:', origin);
+        if (!origin || allowedOrigins.includes(origin)) {
+            console.log('Origin allowed:', origin || 'No origin');
             callback(null, true);
         } else {
             console.log('Origin rejected:', origin);
@@ -46,15 +42,12 @@ const corsOptions = {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
     exposedHeaders: ['Set-Cookie'],
-    preflightContinue: false,
+    maxAge: 86400, // 预检请求缓存24小时
     optionsSuccessStatus: 204
 };
 
 // 应用 CORS 中间件
 app.use(cors(corsOptions));
-
-// 全局处理 OPTIONS 请求
-app.options('*', cors(corsOptions));
 
 // 调试中间件
 app.use((req, res, next) => {
@@ -64,36 +57,24 @@ app.use((req, res, next) => {
     console.log('URL:', req.url);
     console.log('Headers:', JSON.stringify(req.headers, null, 2));
     
-    // 记录请求体
-    if (req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-        req.on('end', () => {
-            try {
-                const jsonBody = JSON.parse(body);
-                console.log('Body:', JSON.stringify(jsonBody, null, 2));
-            } catch (e) {
-                console.log('Body:', body);
-            }
-        });
-    }
-    
     // 记录 CORS 相关信息
     console.log('\n=== CORS Headers ===');
     console.log('Origin:', req.headers.origin);
     console.log('Access-Control-Request-Method:', req.headers['access-control-request-method']);
     console.log('Access-Control-Request-Headers:', req.headers['access-control-request-headers']);
     
-    // 记录响应头
-    const originalEnd = res.end;
-    res.end = function(...args) {
-        console.log('\n=== Response Headers ===');
-        console.log('Status:', res.statusCode);
-        console.log('Headers:', JSON.stringify(res.getHeaders(), null, 2));
-        originalEnd.apply(res, args);
-    };
+    // 确保 CORS 头部被设置
+    if (req.method === 'OPTIONS') {
+        console.log('Handling OPTIONS request');
+        res.header('Access-Control-Allow-Origin', req.headers.origin);
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+        res.header('Access-Control-Max-Age', '86400');
+        res.status(204).end();
+        return;
+    }
     
     next();
 });
