@@ -6,6 +6,42 @@
     <title>Register - EON Protocol</title>
     <script src="../js/authService.js"></script>
     <script>
+        // 检查推荐任务是否启用
+        async function checkReferralTaskStatus() {
+            try {
+                const response = await fetch(`${window.authService.apiBaseUrl}/api/tasks/referral/status`);
+                const data = await response.json();
+                
+                const referralInput = document.getElementById('referralCode');
+                referralInput.disabled = !data.isActive;
+                
+                if (!data.isActive) {
+                    referralInput.placeholder = 'Referral program is currently paused';
+                }
+            } catch (error) {
+                console.error('Error checking referral task status:', error);
+            }
+        }
+
+        // 页面加载完成后检查是否已登录
+        window.addEventListener('load', function() {
+            console.log('Page loaded, checking auth status');
+            if (window.authService.isAuthenticated()) {
+                console.log('User is already authenticated, redirecting...');
+                window.authService.handleAuthRedirect();
+            }
+
+            // 检查推荐任务状态
+            checkReferralTaskStatus();
+
+            // 检查URL中是否有推荐码
+            const urlParams = new URLSearchParams(window.location.search);
+            const referralCode = urlParams.get('ref');
+            if (referralCode) {
+                document.getElementById('referralCode').value = referralCode;
+            }
+        });
+
         // 确保 handleRegister 在页面加载时就定义
         async function handleRegister(event) {
             event.preventDefault();
@@ -35,22 +71,6 @@
                 document.getElementById('error-message').style.display = 'block';
             }
         }
-
-        // 页面加载完成后检查是否已登录
-        window.addEventListener('load', function() {
-            console.log('Page loaded, checking auth status');
-            if (window.authService.isAuthenticated()) {
-                console.log('User is already authenticated, redirecting...');
-                window.authService.handleAuthRedirect();
-            }
-
-            // 检查URL中是否有推荐码
-            const urlParams = new URLSearchParams(window.location.search);
-            const referralCode = urlParams.get('ref');
-            if (referralCode) {
-                document.getElementById('referralCode').value = referralCode;
-            }
-        });
     </script>
     <style>
         body {
@@ -90,6 +110,11 @@
             border-radius: 4px;
             background-color: #333;
             color: white;
+        }
+
+        input:disabled {
+            background-color: #444;
+            cursor: not-allowed;
         }
 
         button {

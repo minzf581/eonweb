@@ -142,18 +142,31 @@ mongoose.connect(process.env.MONGODB_URI)
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, referralCode } = req.body;
+
+        // 如果有推荐码，检查推荐任务是否启用
+        if (referralCode) {
+            const referralTask = await Task.findOne({ title: 'Referral Program' });
+            if (!referralTask?.isActive) {
+                return res.status(400).json({ message: 'Referral program is currently paused' });
+            }
+        }
+
         const userId = await UserService.createUser(email, password, referralCode);
+        const user = await User.findById(userId);
+        const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+        
         res.json({
-            success: true,
             message: 'Registration successful',
-            userId
+            token,
+            user: {
+                email: user.email,
+                isAdmin: user.isAdmin,
+                points: user.points
+            }
         });
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        res.status(400).json({ message: error.message });
     }
 });
 
@@ -381,5 +394,73 @@ app.get('/api/user', authenticateToken, async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+});
+
+// 获取用户推荐信息
+app.get('/api/users/referral-info', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // 获取该用户推荐的用户数量
+        const totalReferrals = await User.countDocuments({ referredBy: user._id });
+
+        // 获取推荐相关的积分历史
+        const referralPoints = await PointHistory.aggregate([
+            {
+                $match: {
+                    userId: user._id,
+                    type: 'referral'
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: '$points' }
+                }
+            }
+        ]);
+
+        res.json({
+            referralCode: user.referralCode,
+            totalReferrals,
+            referralPoints: referralPoints[0]?.total || 0
+        });
+    } catch (error) {
+        console.error('Error getting referral info:', error);
+        res.status(500).json({ message: 'Error getting referral information' });
+    }
+});
+
+// 获取推荐任务状态
+app.get('/api/tasks/referral/status', async (req, res) => {
+    try {
+        const referralTask = await Task.findOne({ title: 'Referral Program' });
+        res.json({ isActive: referralTask ? referralTask.isActive : false });
+    } catch (error) {
+        console.error('Error getting referral task status:', error);
+        res.status(500).json({ message: 'Error getting referral task status' });
+    }
+});
+
+// 切换任务状态（需要管理员权限）
+app.put('/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const task = await Task.findById(req.params.taskId);
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        // 切换状态
+        task.isActive = !task.isActive;
+        await task.save();
+
+        res.json({ message: 'Task status updated', task });
+    } catch (error) {
+        console.error('Error toggling task status:', error);
+        res.status(500).json({ message: 'Error updating task status' });
     }
 });

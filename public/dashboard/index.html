@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - EON Protocol</title>
+    <script src="../js/authService.js"></script>
+    <style>
+        :root {
+            --primary-color: #4dabf7;
+            --secondary-color: #adb5bd;
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+            --header-height: 60px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .username {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 1.2em;
+            color: var(--primary-color);
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .status-pending {
+            background: #ffd700;
+            color: black;
+        }
+
+        .status-completed {
+            background: #00ff00;
+            color: black;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary-color);
+        }
+
+        .referral-info {
+            padding: 15px;
+        }
+
+        .referral-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .referral-code, .referral-link {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            flex: 1;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .copy-btn:hover {
+            background: #3b8ac4;
+        }
+
+        .referral-stats {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .referral-stats > div {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="user-info">
+                    <span>Welcome,</span>
+                    <span class="username">User</span>
+                </div>
+                <button class="logout-btn" onclick="authService.logout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main>
+            <h1>Your Dashboard</h1>
+            <div class="dashboard-grid">
+                <!-- Referral Card -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Your Referral Info</h2>
+                    </div>
+                    <div id="referralInfo" class="referral-info">
+                        <div class="referral-item">
+                            <span>Your Referral Code:</span>
+                            <span id="referralCode" class="referral-code">Loading...</span>
+                            <button onclick="copyToClipboard('referralCode')" class="copy-btn">Copy</button>
+                        </div>
+                        <div class="referral-item">
+                            <span>Referral Link:</span>
+                            <span id="referralLink" class="referral-link">Loading...</span>
+                            <button onclick="copyToClipboard('referralLink')" class="copy-btn">Copy</button>
+                        </div>
+                        <div class="referral-stats">
+                            <div>Total Referrals: <span id="totalReferrals">0</span></div>
+                            <div>Referral Points: <span id="referralPoints">0</span></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tasks Card -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Your Tasks</h2>
+                    </div>
+                    <div id="taskList">
+                        <!-- Tasks will be loaded here -->
+                        <div class="empty-state">Loading tasks...</div>
+                    </div>
+                </div>
+
+                <!-- Stats Card -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Statistics</h2>
+                    </div>
+                    <div id="stats">
+                        <div class="empty-state">Loading statistics...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check authentication
+            if (!authService.isAuthenticated()) {
+                window.location.href = '../auth/login.html';
+                return;
+            }
+
+            // Check if user is admin (redirect if true)
+            if (authService.isAdmin()) {
+                window.location.href = '../admin/index.html';
+                return;
+            }
+
+            // Load user info
+            const auth = authService.getAuth();
+            if (auth && auth.user) {
+                document.querySelector('.username').textContent = auth.user.email;
+            }
+
+            // Load user's tasks
+            loadTasks();
+            
+            // Load user's statistics
+            loadStats();
+            
+            // Load referral info
+            loadReferralInfo();
+        });
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${authService.apiBaseUrl}/api/tasks/user`, {
+                    headers: {
+                        'Authorization': `Bearer ${authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load tasks');
+                }
+
+                const tasks = await response.json();
+                const taskList = document.getElementById('taskList');
+
+                if (tasks.length === 0) {
+                    taskList.innerHTML = '<div class="empty-state">No tasks found</div>';
+                    return;
+                }
+
+                taskList.innerHTML = '<ul class="task-list">' + 
+                    tasks.map(task => `
+                        <li class="task-item">
+                            <span>${task.title}</span>
+                            <span class="task-status status-${task.status.toLowerCase()}">${task.status}</span>
+                        </li>
+                    `).join('') + 
+                    '</ul>';
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('taskList').innerHTML = 
+                    '<div class="empty-state">Error loading tasks</div>';
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${authService.apiBaseUrl}/api/users/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load statistics');
+                }
+
+                const stats = await response.json();
+                const statsContainer = document.getElementById('stats');
+
+                statsContainer.innerHTML = `
+                    <div class="task-list">
+                        <div class="task-item">
+                            <span>Completed Tasks</span>
+                            <span>${stats.completedTasks || 0}</span>
+                        </div>
+                        <div class="task-item">
+                            <span>Pending Tasks</span>
+                            <span>${stats.pendingTasks || 0}</span>
+                        </div>
+                        <div class="task-item">
+                            <span>Total Points</span>
+                            <span>${stats.totalPoints || 0}</span>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                document.getElementById('stats').innerHTML = 
+                    '<div class="empty-state">Error loading statistics</div>';
+            }
+        }
+
+        // 复制到剪贴板功能
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const button = element.nextElementSibling;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+
+        // 加载推荐信息
+        async function loadReferralInfo() {
+            try {
+                const response = await fetch(`${authService.apiBaseUrl}/api/users/referral-info`, {
+                    headers: {
+                        'Authorization': `Bearer ${authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load referral info');
+                }
+
+                const data = await response.json();
+                
+                // 更新推荐码
+                document.getElementById('referralCode').textContent = data.referralCode;
+                
+                // 生成并更新推荐链接
+                const referralLink = `${window.location.origin}${authService.basePath}/public/auth/register.html?ref=${data.referralCode}`;
+                document.getElementById('referralLink').textContent = referralLink;
+                
+                // 更新统计信息
+                document.getElementById('totalReferrals').textContent = data.totalReferrals || 0;
+                document.getElementById('referralPoints').textContent = data.referralPoints || 0;
+            } catch (error) {
+                console.error('Error loading referral info:', error);
+                document.getElementById('referralInfo').innerHTML = 
+                    '<div class="empty-state">Error loading referral information</div>';
+            }
+        }
+    </script>
+</body>
+</html>
