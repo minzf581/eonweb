@@ -39,98 +39,122 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// CORS 配置
+// Railway environment configuration
+const RAILWAY_PRIVATE_DOMAIN = process.env.RAILWAY_PRIVATE_DOMAIN || 'illustrious-perfection.railway.internal';
+const RAILWAY_SERVICE_NAME = process.env.RAILWAY_SERVICE_NAME || 'illustrious-perfection';
+const RAILWAY_ENVIRONMENT = process.env.RAILWAY_ENVIRONMENT_NAME || 'production';
+
+console.log('\n=== Railway Configuration ===');
+console.log('- Private Domain:', RAILWAY_PRIVATE_DOMAIN);
+console.log('- Service Name:', RAILWAY_SERVICE_NAME);
+console.log('- Environment:', RAILWAY_ENVIRONMENT);
+
+// MongoDB connection configuration
+const MONGOHOST = process.env.MONGOHOST || 'mongodb.railway.internal';
+const MONGOPORT = process.env.MONGOPORT || '27017';
+const MONGOUSER = process.env.MONGOUSER || 'mongo';
+const MONGOPASSWORD = process.env.MONGOPASSWORD || 'sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq';
+
+// Construct MongoDB URL using Railway private domain
+const MONGO_URL = `mongodb://${MONGOUSER}:${MONGOPASSWORD}@${MONGOHOST}:${MONGOPORT}`;
+
+console.log('\n=== MongoDB Configuration ===');
+console.log('- Host:', MONGOHOST);
+console.log('- Port:', MONGOPORT);
+console.log('- User:', MONGOUSER);
+console.log('- Connection URL:', MONGO_URL.replace(/mongodb:\/\/.*@/, 'mongodb://[credentials]@'));
+
+// CORS configuration
+const allowedOrigins = [
+    'https://w3router.github.io',
+    'https://illustrious-perfection-production.up.railway.app',
+    'https://illustrious-perfection.up.railway.app'
+];
+
 app.use(cors({
-    origin: true,  // 允许所有来自 w3router.github.io 的请求
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    origin: function(origin, callback) {
+        console.log('Incoming request from origin:', origin);
+        
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+            callback(null, true);
+        } else {
+            console.log('Origin not allowed:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
-    optionsSuccessStatus: 204
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
-console.log('Starting server with configuration:');
+console.log('\n=== Server Configuration ===');
 console.log('- PORT:', PORT);
 console.log('- HOST:', HOST);
 console.log('- NODE_ENV:', process.env.NODE_ENV);
-console.log('- Current working directory:', process.cwd());
-console.log('- Available environment variables:', Object.keys(process.env));
+console.log('- Working Directory:', process.cwd());
 
 const server = app.listen(PORT, HOST, () => {
-    console.log(`Server is running on ${HOST}:${PORT}`);
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('Railway URL:', process.env.RAILWAY_STATIC_URL);
-    console.log('Public domain:', process.env.RAILWAY_PUBLIC_DOMAIN);
+    console.log('\n=== Server Started ===');
+    console.log(`Server is running at http://${HOST}:${PORT}`);
     
     // 打印所有注册的路由
-    console.log('\nRegistered routes:');
-    app._router.stack
+    console.log('\n=== Registered Routes ===');
+    const routes = app._router.stack
         .filter(r => r.route)
+        .map(r => ({
+            path: r.route.path,
+            methods: Object.keys(r.route.methods)
+        }));
+    console.log(JSON.stringify(routes, null, 2));
+    
+    // 打印中间件信息
+    console.log('\n=== Middleware Stack ===');
+    app._router.stack
+        .filter(r => !r.route)
         .forEach(r => {
-            Object.keys(r.route.methods).forEach(method => {
-                console.log(`${method.toUpperCase()}: ${r.route.path}`);
-            });
+            console.log(`- ${r.name || 'anonymous'}`);
         });
 });
 
-// 数据库连接配置
-const DB_HOST = 'junction.proxy.rlwy.net';  // TCP 代理域名
-const DB_PORT = '15172';                    // TCP 代理端口
-const DB_USER = 'mongo';
-const DB_PASS = 'sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq';
-const DB_NAME = 'eonweb';
-
-// 构建连接字符串
-const MONGODB_URI = `mongodb://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?authSource=admin`;
-
-console.log('MongoDB connection config:', {
-    host: DB_HOST,
-    port: DB_PORT,
-    database: DB_NAME,
-    user: DB_USER,
-    uri: MONGODB_URI.replace(new RegExp(`${DB_PASS}`), '****')
-});
-
-// 连接选项
-const mongooseOptions = {
-    serverSelectionTimeoutMS: 30000,
+mongoose.connect(MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
-    maxPoolSize: 10,
-    retryWrites: true,
-    w: 'majority',
-    authSource: 'admin',
     directConnection: true,
-    family: 4
-};
-
-// 尝试连接
-mongoose.connect(MONGODB_URI, mongooseOptions)
-.then(() => {
-    console.log('Connected to MongoDB');
-    initializeData();
+    authSource: 'admin'
 })
-.catch(err => {
-    console.error('MongoDB connection error:', err);
-    console.error('Current configuration:', {
-        host: DB_HOST,
-        port: DB_PORT,
-        database: DB_NAME
+.then(() => {
+    console.log('Successfully connected to MongoDB');
+})
+.catch((err) => {
+    console.error('MongoDB connection error:', {
+        name: err.name,
+        message: err.message,
+        code: err.code,
+        host: MONGOHOST,
+        port: MONGOPORT
     });
 });
 
-mongoose.connection.on('disconnected', () => {
-    console.log('MongoDB disconnected. Attempting to reconnect...');
+// MongoDB connection event listeners
+mongoose.connection.on('connected', () => {
+    console.log('Mongoose connected to MongoDB');
 });
 
 mongoose.connection.on('error', (err) => {
-    console.error('MongoDB connection error:', err);
+    console.error('Mongoose connection error:', err);
 });
 
-mongoose.connection.on('connected', () => {
-    console.log('MongoDB connected successfully');
+mongoose.connection.on('disconnected', () => {
+    console.log('Mongoose disconnected from MongoDB');
 });
 
 // 初始化数据

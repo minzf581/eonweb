@@ -2,9 +2,50 @@
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         constructor() {
-            this.apiBaseUrl = 'https://eonweb-production.up.railway.app';
+            // API URL configuration using Railway service name
+            const apiBaseUrls = [
+                'https://illustrious-perfection-production.up.railway.app',  // Production URL
+                'https://illustrious-perfection.up.railway.app',             // Staging URL
+                window.location.origin                                       // Local development
+            ].filter(Boolean);
+            
+            this.apiBaseUrl = apiBaseUrls[0];
+            console.log('[AuthService] Initializing with API URL:', this.apiBaseUrl);
+            
             this.tokenKey = 'token';
             this.userKey = 'user';
+            
+            // Add request interceptor for debugging
+            this.addRequestInterceptor();
+        }
+        
+        addRequestInterceptor() {
+            const originalFetch = window.fetch;
+            window.fetch = async (...args) => {
+                const [url, config] = args;
+                
+                console.log('[AuthService] Request:', {
+                    url,
+                    method: config?.method || 'GET',
+                    headers: config?.headers
+                });
+                
+                try {
+                    const response = await originalFetch(...args);
+                    console.log('[AuthService] Response:', {
+                        url,
+                        status: response.status,
+                        ok: response.ok
+                    });
+                    return response;
+                } catch (error) {
+                    console.error('[AuthService] Request failed:', {
+                        url,
+                        error: error.message
+                    });
+                    throw error;
+                }
+            };
         }
 
         // 处理认证重定向
@@ -60,8 +101,13 @@ if (typeof window.AuthService === 'undefined') {
 
         async login(email, password) {
             try {
+                // 尝试所有可能的 URL
+                const errors = [];
+                
+                console.log('Attempting login with credentials:', { email, passwordLength: password.length });
+                
                 const url = `${this.apiBaseUrl}/api/auth/login`;
-                console.log('Attempting login to URL:', url);
+                console.log('Trying URL:', url);
                 
                 const config = {
                     method: 'POST',
@@ -72,11 +118,14 @@ if (typeof window.AuthService === 'undefined') {
                     body: JSON.stringify({ email, password })
                 };
                 
-                console.log('Request config:', config);
+                console.log('Request config:', { ...config, body: '***' });
                 
                 const response = await fetch(url, config);
-                console.log('Response status:', response.status);
-                console.log('Response headers:', Array.from(response.headers.entries()));
+                console.log('Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Array.from(response.headers.entries())
+                });
 
                 if (!response.ok) {
                     const error = await response.json();
