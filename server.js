@@ -23,23 +23,29 @@ console.log('NODE_ENV:', NODE_ENV);
 
 // CORS 配置
 const corsOptions = {
-    origin: function(origin, callback) {
-        console.log('\n=== CORS Check ===');
-        console.log('Request Origin:', origin);
-        console.log('Allowed Origins:', CORS_ALLOWED_ORIGINS);
+    origin: function (origin, callback) {
+        // 允许来自相同域名的请求（无 origin）
+        if (!origin) {
+            return callback(null, true);
+        }
         
-        // 允许没有 origin 的请求（开发环境）或在允许列表中的 origin
-        if (!origin || CORS_ALLOWED_ORIGINS.includes(origin)) {
+        // 获取允许的域名列表
+        const allowedOrigins = [
+            process.env.FRONTEND_URL, // 自定义域名
+            'https://eonweb-production.up.railway.app',
+            'http://localhost:3000',
+            'http://localhost:8080'
+        ].filter(Boolean); // 移除 undefined/null 值
+
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
-            console.log('Origin not allowed:', origin);
-            callback(new Error(`CORS not allowed for origin: ${origin}`));
+            callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 200
+    allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 // 启用 CORS

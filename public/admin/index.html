@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - EON Protocol</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <script src="../js/authService.js"></script>
+    <link rel="stylesheet" href="css/admin.css">
+    <script src="js/authService.js"></script>
     <style>
         .admin-section {
             padding: 2rem;
@@ -156,7 +156,7 @@
         <!-- Header -->
         <header class="dashboard-header">
             <div class="logo">
-                <img src="../images/enologo.jpg" alt="EON Protocol">
+                <img src="images/enologo.jpg" alt="EON Protocol">
             </div>
             <div class="user-info">
                 <span class="username"></span>
@@ -218,7 +218,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Check authentication
             if (!authService.isAuthenticated() || !authService.isAdmin()) {
-                window.location.href = '../auth/login.html';
+                window.location.href = 'login.html';
                 return;
             }
 
@@ -360,7 +360,7 @@
         // Logout function
         function logout() {
             authService.logout();
-            window.location.href = '../auth/login.html';
+            window.location.href = 'login.html';
         }
     </script>
 </body>
