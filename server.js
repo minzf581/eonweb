@@ -12,26 +12,28 @@ const Task = require('./models/Task');
 
 const app = express();
 
-// 请求调试日志 - 放在最前面
+// 调试中间件 - 在所有其他中间件之前
 app.use((req, res, next) => {
     console.log('\n=== Incoming Request ===');
     console.log('Time:', new Date().toISOString());
     console.log('Method:', req.method);
     console.log('URL:', req.url);
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Body:', req.body);
+    
+    // 记录 CORS 相关信息
+    console.log('\n=== CORS Info ===');
     console.log('Origin:', req.headers.origin);
-    console.log('Headers:', req.headers);
-    next();
-});
-
-// 响应调试日志
-app.use((req, res, next) => {
-    const originalSend = res.send;
-    res.send = function(...args) {
-        console.log('\n=== Outgoing Response ===');
+    console.log('Access-Control-Request-Method:', req.headers['access-control-request-method']);
+    console.log('Access-Control-Request-Headers:', req.headers['access-control-request-headers']);
+    
+    // 记录响应头
+    res.on('finish', () => {
+        console.log('\n=== Response Info ===');
         console.log('Status:', res.statusCode);
-        console.log('Headers:', res.getHeaders());
-        return originalSend.apply(res, args);
-    };
+        console.log('Headers:', JSON.stringify(res.getHeaders(), null, 2));
+    });
+    
     next();
 });
 
@@ -60,12 +62,43 @@ console.log('Setting up static file serving from:', path.join(__dirname));
 app.use(express.static(path.join(__dirname), staticOptions));
 app.use('/public', express.static(path.join(__dirname, 'public'), staticOptions));
 
-// 添加调试日志中间件
-app.use((req, res, next) => {
-    console.log(`\n=== Incoming Request ===`);
-    console.log(`${req.method} ${req.url}`);
-    console.log('Headers:', req.headers);
-    next();
+// CORS 配置
+const corsOptions = {
+    origin: function(origin, callback) {
+        console.log('\n=== CORS Origin Check ===');
+        console.log('Request Origin:', origin);
+        
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'https://illustrious-perfection-production.up.railway.app'
+        ];
+        
+        // 允许没有 origin 的请求（比如 Postman）
+        if (!origin) {
+            console.log('No origin, allowing request');
+            return callback(null, true);
+        }
+        
+        if (allowedOrigins.includes(origin)) {
+            console.log('Origin allowed:', origin);
+            callback(null, true);
+        } else {
+            console.log('Origin rejected:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
+
+// 测试路由
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'API is working!' });
 });
 
 // Railway environment configuration
@@ -92,16 +125,6 @@ console.log('- Host:', MONGOHOST);
 console.log('- Port:', MONGOPORT);
 console.log('- User:', MONGOUSER);
 console.log('- Connection URL:', MONGO_URL.replace(/mongodb:\/\/.*@/, 'mongodb://[credentials]@'));
-
-// CORS 配置
-const corsOptions = {
-    origin: ['http://localhost:3000', 'https://illustrious-perfection-production.up.railway.app'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-};
-
-app.use(cors(corsOptions));
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
