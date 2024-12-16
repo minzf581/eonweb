@@ -108,19 +108,29 @@
         });
 
         async function makeRequest(url, options = {}) {
-            const response = await fetch(url, {
-                ...options,
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+            try {
+                console.log('Making request to:', url);
+                const response = await fetch(url, {
+                    ...options,
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'  // 显式设置 CORS 模式
+                });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || response.statusText);
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.message || response.statusText);
+                }
+                return data;
+            } catch (error) {
+                console.error('Request error:', error);
+                throw error;
             }
-            return data;
         }
 
         async function handleLogin(event) {
