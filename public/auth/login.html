@@ -132,7 +132,7 @@
             
             try {
                 console.log('Attempting login with:', { email });
-                const loginData = await makeRequest('https://illustrious-perfection-production.up.railway.app/api/auth/login', {
+                const loginData = await makeRequest('http://localhost:8080/api/auth/login', {
                     method: 'POST',
                     body: JSON.stringify({ email, password })
                 });
