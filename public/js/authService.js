@@ -2,15 +2,9 @@
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         constructor() {
-            this.tokenKey = 'eon_auth_token';
-            this.userKey = 'eon_user';
-            // 根据当前环境选择正确的基础路径
-            this.basePath = window.location.hostname === 'w3router.github.io' 
-                ? 'https://w3router.github.io/eonweb'
-                : '';
-            // API 基础 URL
             this.apiBaseUrl = 'https://eonweb-production.up.railway.app';
-            this.baseUrl = 'https://eonweb-production.up.railway.app/api/auth';
+            this.tokenKey = 'token';
+            this.userKey = 'user';
         }
 
         // 获取 token
@@ -18,28 +12,16 @@ if (typeof window.AuthService === 'undefined') {
             return localStorage.getItem(this.tokenKey);
         }
 
-        // 保存认证信息
+        // 获取用户信息
+        getUser() {
+            const userStr = localStorage.getItem(this.userKey);
+            return userStr ? JSON.parse(userStr) : null;
+        }
+
+        // 设置认证信息
         setAuth(token, user) {
             localStorage.setItem(this.tokenKey, token);
             localStorage.setItem(this.userKey, JSON.stringify(user));
-        }
-
-        // 获取认证信息
-        getAuth() {
-            const token = this.getToken();
-            const userStr = localStorage.getItem(this.userKey);
-            
-            if (!token || !userStr) {
-                return null;
-            }
-
-            try {
-                const user = JSON.parse(userStr);
-                return { token, user };
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                return null;
-            }
         }
 
         // 清除认证信息
@@ -48,90 +30,91 @@ if (typeof window.AuthService === 'undefined') {
             localStorage.removeItem(this.userKey);
         }
 
-        // 检查是否已登录
-        isAuthenticated() {
-            return !!this.getToken();
-        }
-
-        // 检查是否为管理员
-        isAdmin() {
-            const auth = this.getAuth();
-            return auth?.user?.isAdmin || false;
-        }
-
-        // 处理登录后的重定向
-        handleAuthRedirect() {
-            if (this.isAuthenticated()) {
-                // 已登录，根据角色重定向
-                if (this.isAdmin()) {
-                    window.location.href = `${this.basePath}/public/admin/index.html`;
-                } else {
-                    // 普通用户重定向到用户仪表板
-                    window.location.href = `${this.basePath}/public/dashboard/index.html`;
-                }
-                return;
-            }
-
-            // 未登录，重定向到登录页面
-            window.location.href = `${this.basePath}/public/auth/login.html`;
-        }
-
-        // 登出
-        logout() {
-            this.clearAuth();
-            window.location.href = `${this.basePath}/public/auth/login.html`;
-        }
-
-        // 执行登录
         async login(email, password) {
             try {
-                const response = await fetch(`${this.baseUrl}/login`, {
+                console.log('Attempting login with:', { email });
+                const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
                     credentials: 'include',
                     body: JSON.stringify({ email, password })
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Login failed');
+                    const error = await response.json();
+                    console.error('Login response not ok:', error);
+                    throw new Error(error.message || 'Login failed');
                 }
 
                 const data = await response.json();
-                this.setAuth(data.token, data.user);
-                return data;
+                if (data.token) {
+                    this.setAuth(data.token, data.user);
+                    return data;
+                } else {
+                    throw new Error('Invalid response from server');
+                }
             } catch (error) {
                 console.error('Login error:', error);
                 throw error;
             }
         }
 
-        // 执行注册
-        async register(userData) {
+        // 通用的 API 请求函数
+        async fetchWithAuth(endpoint, options = {}) {
             try {
-                const response = await fetch(`${this.baseUrl}/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify(userData)
+                const token = this.getToken();
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    ...options.headers
+                };
+
+                console.log(`Fetching ${endpoint} with auth`);
+                const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
+                    ...options,
+                    headers,
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Registration failed');
+                    const error = await response.json();
+                    console.error(`API error for ${endpoint}:`, error);
+                    throw new Error(error.message || 'Request failed');
                 }
 
-                const data = await response.json();
-                this.setAuth(data.token, data.user);
-                return data;
+                return response.json();
             } catch (error) {
-                console.error('Registration error:', error);
+                console.error(`Error in fetchWithAuth for ${endpoint}:`, error);
                 throw error;
             }
+        }
+
+        // 获取用户统计信息
+        async getUserStats() {
+            return this.fetchWithAuth('/api/users/stats');
+        }
+
+        // 获取推荐信息
+        async getReferralInfo() {
+            return this.fetchWithAuth('/api/users/referral-info');
+        }
+
+        // 获取用户任务
+        async getUserTasks() {
+            return this.fetchWithAuth('/api/tasks/user');
+        }
+
+        // 检查是否已登录
+        isLoggedIn() {
+            return !!this.getToken();
+        }
+
+        // 处理登出
+        logout() {
+            this.clearAuth();
+            window.location.href = '/auth/login.html';
         }
     }
 }

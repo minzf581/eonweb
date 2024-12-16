@@ -15,18 +15,19 @@ const app = express();
 app.use(express.json());
 
 // CORS 配置
-app.use(cors({
-    origin: ['https://w3router.github.io', 'http://localhost:3000', 'http://localhost:5000', process.env.FRONTEND_URL].filter(Boolean),
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Origin'],
-    exposedHeaders: ['Content-Length', 'X-Requested-With'],
-    credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-}));
-
-// 预检请求处理
-app.options('*', cors());
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://w3router.github.io');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    // 处理预检请求
+    if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+    } else {
+        next();
+    }
+});
 
 // 静态文件服务
 app.use(express.static(path.join(__dirname)));
@@ -51,9 +52,22 @@ app.get('/', (req, res) => {
 });
 
 // 数据库连接
-mongoose.connect(process.env.MONGODB_URI)
+const mongoUri = process.env.MONGODB_URI;
+// 确保连接字符串包含数据库名称
+const dbName = 'eonweb';
+const fullMongoUri = mongoUri.includes('/?') ? 
+    mongoUri.replace('/?', `/${dbName}?`) : 
+    mongoUri.includes('?') ? 
+        mongoUri.replace('?', `/${dbName}?`) : 
+        `${mongoUri}/${dbName}`;
+
+mongoose.connect(fullMongoUri, {
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    dbName: dbName // 显式指定数据库名称
+})
 .then(async () => {
-    console.log('MongoDB connected');
+    console.log('MongoDB connected to database:', dbName);
     
     // 创建默认管理员账户
     try {
