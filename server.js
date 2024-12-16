@@ -57,12 +57,26 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-// 数据库连接
-const MONGODB_URI = `mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@${process.env.RAILWAY_TCP_PROXY_DOMAIN}:${process.env.RAILWAY_TCP_PROXY_PORT}/eonweb?authSource=admin`;
+// 数据库连接配置
+const DB_HOST = 'junction.proxy.rlwy.net';  // TCP 代理域名
+const DB_PORT = '15172';                    // TCP 代理端口
+const DB_USER = 'mongo';
+const DB_PASS = 'sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq';
+const DB_NAME = 'eonweb';
 
-console.log('Attempting to connect to MongoDB with URI:', MONGODB_URI.replace(/mongo:([^@]+)@/, 'mongo:****@'));
+// 构建连接字符串
+const MONGODB_URI = `mongodb://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?authSource=admin`;
 
-mongoose.connect(MONGODB_URI, {
+console.log('MongoDB connection config:', {
+    host: DB_HOST,
+    port: DB_PORT,
+    database: DB_NAME,
+    user: DB_USER,
+    uri: MONGODB_URI.replace(new RegExp(`${DB_PASS}`), '****')
+});
+
+// 连接选项
+const mongooseOptions = {
     serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
     maxPoolSize: 10,
@@ -70,23 +84,22 @@ mongoose.connect(MONGODB_URI, {
     w: 'majority',
     authSource: 'admin',
     directConnection: true,
-    family: 4,  // 强制使用 IPv4
-    useNewUrlParser: true
-})
+    family: 4
+};
+
+// 尝试连接
+mongoose.connect(MONGODB_URI, mongooseOptions)
 .then(() => {
     console.log('Connected to MongoDB');
     initializeData();
 })
 .catch(err => {
     console.error('MongoDB connection error:', err);
-    // 输出更详细的错误信息
-    if (err.name === 'MongoServerSelectionError') {
-        console.error('Connection details:', {
-            host: process.env.RAILWAY_TCP_PROXY_DOMAIN,
-            port: process.env.RAILWAY_TCP_PROXY_PORT,
-            database: 'eonweb'
-        });
-    }
+    console.error('Current configuration:', {
+        host: DB_HOST,
+        port: DB_PORT,
+        database: DB_NAME
+    });
 });
 
 mongoose.connection.on('disconnected', () => {
