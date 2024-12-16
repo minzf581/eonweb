@@ -10,7 +10,9 @@ require('dotenv').config();
 const app = express();
 
 // 环境变量配置
-const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080,https://w3router.github.io').split(',');
+const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080,https://w3router.github.io')
+    .split(',')
+    .map(origin => origin.trim().replace(';', '')); // Remove any semicolons and trim whitespace
 const CORS_ENABLED = process.env.CORS_ENABLED !== 'false';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -40,10 +42,21 @@ const corsOptions = {
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    maxAge: 86400
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+    maxAge: 86400,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 };
+
+// 启用 CORS
+if (CORS_ENABLED) {
+    app.use(cors(corsOptions));
+    
+    // 处理所有 OPTIONS 请求
+    app.options('*', cors(corsOptions));
+}
 
 // 在所有路由之前处理 OPTIONS 请求
 app.options('*', function (req, res) {
@@ -66,14 +79,6 @@ app.options('*', function (req, res) {
         res.sendStatus(403);
     }
 });
-
-// 应用 CORS 中间件（如果启用）
-if (CORS_ENABLED) {
-    app.use(cors(corsOptions));
-    console.log('CORS middleware enabled');
-} else {
-    console.log('CORS middleware disabled');
-}
 
 // 确保所有响应都有正确的 CORS 头
 app.use((req, res, next) => {
