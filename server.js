@@ -50,6 +50,10 @@ app.use(cors(corsOptions));
 // 预检请求处理
 app.options('*', cors(corsOptions));
 
+// 配置静态文件服务
+app.use(express.static('public'));
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
 // 记录所有请求
 app.use((req, res, next) => {
     console.log('\n=== Incoming Request ===');
