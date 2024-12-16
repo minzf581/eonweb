@@ -122,5 +122,7 @@ class AuthService {
     }
 }
 
-// 创建全局实例
-window.authService = new AuthService();
+// 创建全局实例 - 只在 window.authService 未定义时创建
+if (!window.authService) {
+    window.authService = new AuthService();
+}
