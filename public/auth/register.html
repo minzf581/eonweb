@@ -9,17 +9,21 @@
         // 检查推荐任务是否启用
         async function checkReferralTaskStatus() {
             try {
-                const response = await fetch(`${window.authService.apiBaseUrl}/api/tasks/referral/status`);
-                const data = await response.json();
+                const response = await fetch('https://eonweb-production.up.railway.app/api/tasks/referral/status', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
                 
-                const referralInput = document.getElementById('referralCode');
-                referralInput.disabled = !data.isActive;
-                
-                if (!data.isActive) {
-                    referralInput.placeholder = 'Referral program is currently paused';
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                
+                const data = await response.json();
+                return data.isActive;
             } catch (error) {
                 console.error('Error checking referral task status:', error);
+                // 如果出错，默认显示推荐码输入框
+                return true;
             }
         }
 
@@ -32,7 +36,14 @@
             }
 
             // 检查推荐任务状态
-            checkReferralTaskStatus();
+            checkReferralTaskStatus().then(isActive => {
+                const referralInput = document.getElementById('referralCode');
+                referralInput.disabled = !isActive;
+                
+                if (!isActive) {
+                    referralInput.placeholder = 'Referral program is currently paused';
+                }
+            });
 
             // 检查URL中是否有推荐码
             const urlParams = new URLSearchParams(window.location.search);
@@ -45,12 +56,11 @@
         // 确保 handleRegister 在页面加载时就定义
         async function handleRegister(event) {
             event.preventDefault();
+            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const referralCode = document.getElementById('referralCode').value;
-
-            console.log('Attempting registration with:', { email });
 
             if (password !== confirmPassword) {
                 const errorMessage = 'Passwords do not match';
@@ -61,14 +71,24 @@
             }
 
             try {
-                // 使用 authService 的 register 方法
-                await window.authService.register(email, password, referralCode);
-                console.log('Registration successful, redirecting...');
-                window.authService.handleAuthRedirect();
+                const authService = new AuthService();
+                const userData = {
+                    email,
+                    password,
+                    referralCode: referralCode || undefined
+                };
+                
+                console.log('Attempting registration with:', userData);
+                const response = await authService.register(userData);
+                
+                if (response.token) {
+                    window.location.href = '/dashboard';
+                } else {
+                    throw new Error('Registration failed - no token received');
+                }
             } catch (error) {
                 console.error('Registration error:', error);
-                document.getElementById('error-message').innerText = error.message || 'Registration failed';
-                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').textContent = error.message || 'Registration failed. Please try again.';
             }
         }
     </script>

@@ -10,6 +10,7 @@ if (typeof window.AuthService === 'undefined') {
                 : '';
             // API 基础 URL
             this.apiBaseUrl = 'https://eonweb-production.up.railway.app';
+            this.baseUrl = 'https://eonweb-production.up.railway.app/api/auth';
         }
 
         // 获取 token
@@ -84,33 +85,21 @@ if (typeof window.AuthService === 'undefined') {
         // 执行登录
         async login(email, password) {
             try {
-                const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+                const response = await fetch(`${this.baseUrl}/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, password }),
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
                 });
 
                 if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('Login service is not available. Please try again later.');
-                    }
-                    const errorText = await response.text();
-                    console.error('Login failed:', response.status, errorText);
-                    throw new Error('Login failed. Please check your credentials.');
-                }
-
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Invalid server response. Please try again later.');
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Login failed');
                 }
 
                 const data = await response.json();
-                if (!data.token) {
-                    throw new Error('Invalid response from server');
-                }
-
                 this.setAuth(data.token, data.user);
                 return data;
             } catch (error) {
@@ -120,27 +109,29 @@ if (typeof window.AuthService === 'undefined') {
         }
 
         // 执行注册
-        async register(email, password, referralCode) {
-            const response = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    email, 
-                    password,
-                    referralCode: referralCode || undefined
-                }),
-            });
+        async register(userData) {
+            try {
+                const response = await fetch(`${this.baseUrl}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(userData)
+                });
 
-            const data = await response.json();
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Registration failed');
+                }
 
-            if (!response.ok) {
-                throw new Error(data.message || 'Registration failed');
+                const data = await response.json();
+                this.setAuth(data.token, data.user);
+                return data;
+            } catch (error) {
+                console.error('Registration error:', error);
+                throw error;
             }
-
-            this.setAuth(data.token, data.user);
-            return data;
         }
     }
 }

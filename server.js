@@ -13,12 +13,20 @@ const app = express();
 
 // 中间件
 app.use(express.json());
+
+// CORS 配置
 app.use(cors({
-    origin: ['https://w3router.github.io', 'https://w3router.github.io/eonweb', process.env.FRONTEND_URL || '*'],
-    credentials: true,
+    origin: ['https://w3router.github.io', 'http://localhost:3000', 'http://localhost:5000', process.env.FRONTEND_URL].filter(Boolean),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Origin']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin'],
+    exposedHeaders: ['Content-Length', 'X-Requested-With'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
+
+// 预检请求处理
+app.options('*', cors());
 
 // 静态文件服务
 app.use(express.static(path.join(__dirname)));
@@ -458,4 +466,13 @@ app.put('/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (req, res
         console.error('Error toggling task status:', error);
         res.status(500).json({ message: 'Error updating task status' });
     }
+});
+
+// 全局错误处理中间件
+app.use((err, req, res, next) => {
+    console.error('Global error handler:', err);
+    res.status(500).json({ 
+        message: err.message || 'Internal server error',
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
 });
