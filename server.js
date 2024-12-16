@@ -14,7 +14,7 @@ app.options('*', function (req, res) {
     console.log('Handling OPTIONS request for:', req.url);
     res.header('Access-Control-Allow-Origin', req.headers.origin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Expose-Headers', 'Set-Cookie');
     res.header('Access-Control-Max-Age', '86400');
@@ -43,7 +43,7 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
     exposedHeaders: ['Set-Cookie'],
     maxAge: 86400
 };
@@ -706,7 +706,7 @@ app.options('*', (req, res) => {
     // 设置 CORS 头
     res.header('Access-Control-Allow-Origin', req.headers.origin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Expose-Headers', 'Set-Cookie');
     res.header('Access-Control-Max-Age', '86400');
