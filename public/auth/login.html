@@ -99,6 +99,13 @@
     </div>
 
     <script>
+        // 获取 API URL
+        const apiUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8080'
+            : 'https://illustrious-perfection-production.up.railway.app';
+            
+        console.log('Using API URL:', apiUrl);
+
         // 页面加载完成后检查是否已登录
         window.addEventListener('load', function() {
             console.log('Page loaded, checking auth status');
@@ -116,7 +123,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    mode: 'cors'  // 显式设置 CORS 模式
+                    mode: 'cors'
                 });
 
                 console.log('Response status:', response.status);
@@ -141,7 +148,7 @@
             
             try {
                 console.log('Attempting login with:', { email });
-                const loginData = await makeRequest('http://localhost:8080/api/auth/login', {
+                const loginData = await makeRequest(`${apiUrl}/api/auth/login`, {
                     method: 'POST',
                     body: JSON.stringify({ email, password })
                 });

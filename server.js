@@ -12,23 +12,44 @@ const app = express();
 // 在所有路由之前处理 OPTIONS 请求
 app.options('*', function (req, res) {
     console.log('Handling OPTIONS request for:', req.url);
-    // 允许 null origin（file:// 协议）
-    res.header('Access-Control-Allow-Origin', req.headers.origin || 'null');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Max-Age', '86400');
-    res.sendStatus(204);
+    const origin = req.headers.origin;
+    console.log('Request origin:', origin);
+    
+    // 允许特定的源
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:8080',
+        'https://w3router.github.io',
+        'https://illustrious-perfection-production.up.railway.app'
+    ];
+
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Max-Age', '86400');
+        res.sendStatus(204);
+    } else {
+        res.sendStatus(403);
+    }
 });
 
 // CORS 配置
 const corsOptions = {
     origin: function(origin, callback) {
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:8080',
+            'https://w3router.github.io',
+            'https://illustrious-perfection-production.up.railway.app'
+        ];
+        
         console.log('\n=== CORS Check ===');
         console.log('Request Origin:', origin);
+        console.log('Allowed Origins:', allowedOrigins);
         
-        // 允许 null origin（file:// 协议）和本地开发
-        if (!origin || origin === 'null' || origin.startsWith('http://localhost')) {
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
@@ -48,12 +69,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 调试中间件
+// 调试中间件：记录所有请求
 app.use((req, res, next) => {
     console.log('\n=== Request Info ===');
     console.log('Time:', new Date().toISOString());
     console.log('Method:', req.method);
     console.log('URL:', req.url);
+    console.log('Origin:', req.headers.origin);
     console.log('Headers:', JSON.stringify(req.headers, null, 2));
     next();
 });
