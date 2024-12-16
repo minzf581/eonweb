@@ -9,50 +9,30 @@ require('dotenv').config();
 
 const app = express();
 
-// 在所有路由之前处理 OPTIONS 请求
-app.options('*', function (req, res) {
-    const origin = req.headers.origin;
-    console.log('\n=== OPTIONS Request ===');
-    console.log('URL:', req.url);
-    console.log('Origin:', origin);
-    console.log('Headers:', req.headers);
+// 环境变量配置
+const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080,https://w3router.github.io').split(',');
+const CORS_ENABLED = process.env.CORS_ENABLED !== 'false';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-    // 允许特定的源
-    const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:8080',
-        'https://w3router.github.io',
-        'https://illustrious-perfection-production.up.railway.app'
-    ];
-
-    if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Max-Age', '86400');
-        res.sendStatus(204);
-    } else {
-        console.log('Origin not allowed:', origin);
-        res.sendStatus(403);
-    }
-});
+console.log('\n=== Environment Configuration ===');
+console.log('CORS_ALLOWED_ORIGINS:', CORS_ALLOWED_ORIGINS);
+console.log('CORS_ENABLED:', CORS_ENABLED);
+console.log('NODE_ENV:', NODE_ENV);
 
 // CORS 配置
 const corsOptions = {
     origin: function(origin, callback) {
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'http://localhost:8080',
-            'https://w3router.github.io',
-            'https://illustrious-perfection-production.up.railway.app'
-        ];
-        
         console.log('\n=== CORS Check ===');
         console.log('Request Origin:', origin);
-        console.log('Allowed Origins:', allowedOrigins);
+        console.log('Allowed Origins:', CORS_ALLOWED_ORIGINS);
         
-        if (!origin || allowedOrigins.includes(origin)) {
+        // 在开发环境中允许没有 origin（比如 Postman）
+        if (!origin && NODE_ENV === 'development') {
+            return callback(null, true);
+        }
+        
+        // 检查 origin 是否在允许列表中
+        if (CORS_ALLOWED_ORIGINS.includes(origin)) {
             callback(null, true);
         } else {
             console.log('Origin not allowed:', origin);
@@ -65,8 +45,47 @@ const corsOptions = {
     maxAge: 86400
 };
 
-// 应用 CORS 中间件
-app.use(cors(corsOptions));
+// 在所有路由之前处理 OPTIONS 请求
+app.options('*', function (req, res) {
+    const origin = req.headers.origin;
+    console.log('\n=== OPTIONS Request ===');
+    console.log('URL:', req.url);
+    console.log('Origin:', origin);
+    console.log('Headers:', req.headers);
+
+    // 检查 origin 是否在允许列表中
+    if (CORS_ALLOWED_ORIGINS.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Max-Age', '86400');
+        res.sendStatus(204);
+    } else {
+        console.log('Origin not allowed:', origin);
+        res.sendStatus(403);
+    }
+});
+
+// 应用 CORS 中间件（如果启用）
+if (CORS_ENABLED) {
+    app.use(cors(corsOptions));
+    console.log('CORS middleware enabled');
+} else {
+    console.log('CORS middleware disabled');
+}
+
+// 确保所有响应都有正确的 CORS 头
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && CORS_ALLOWED_ORIGINS.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.header('Access-Control-Allow-Credentials', 'true');
+    }
+    next();
+});
 
 // 调试中间件：记录所有请求
 app.use((req, res, next) => {
@@ -76,18 +95,6 @@ app.use((req, res, next) => {
     console.log('URL:', req.url);
     console.log('Origin:', req.headers.origin);
     console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    next();
-});
-
-// 确保所有响应都有正确的 CORS 头
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && corsOptions.origin(origin, (err, allowed) => allowed)) {
-        res.header('Access-Control-Allow-Origin', origin);
-        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        res.header('Access-Control-Allow-Credentials', 'true');
-    }
     next();
 });
 
