@@ -51,107 +51,65 @@ app.get('/', (req, res) => {
 });
 
 // 数据库连接
-const connectWithRetry = () => {
-    console.log('MongoDB connection with retry');
-    return mongoose.connect(process.env.MONGODB_URI, {
-        serverSelectionTimeoutMS: 30000,
-        socketTimeoutMS: 75000,
-        connectTimeoutMS: 30000,
-        heartbeatFrequencyMS: 10000,
-        family: 4
-    });
-};
-
-// 启动服务器
-const startServer = async () => {
+mongoose.connect(process.env.MONGODB_URI)
+.then(async () => {
+    console.log('MongoDB connected');
+    
+    // 创建默认管理员账户
     try {
-        // 先尝试连接数据库
-        await connectWithRetry();
-        console.log('MongoDB connected successfully');
+        const adminEmail = 'info@eon-protocol.com';
+        const adminPassword = 'vijTo9-kehmet-cessis';
+        console.log('Checking for admin account:', adminEmail);
+        const existingAdmin = await User.findOne({ email: adminEmail });
         
-        // 数据库连接成功后再启动服务器
-        const PORT = process.env.PORT || 3000;
-        const server = app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server is running on port ${PORT}`);
-        }).on('error', (err) => {
-            if (err.code === 'EADDRINUSE') {
-                console.log(`Port ${PORT} is busy, trying ${PORT + 1}`);
-                server.listen(PORT + 1, '0.0.0.0');
-            } else {
-                console.error('Server error:', err);
-            }
-        });
-
-        // 初始化管理员账户和任务
-        try {
-            const adminEmail = 'info@eon-protocol.com';
-            const adminPassword = 'vijTo9-kehmet-cessis';
-            console.log('Checking for admin account:', adminEmail);
-            
-            const existingAdmin = await User.findOne({ email: adminEmail });
-            if (!existingAdmin) {
-                console.log('Creating admin account...');
-                const hashedPassword = await bcrypt.hash(adminPassword, 10);
-                const admin = new User({
-                    email: adminEmail,
-                    password: hashedPassword,
-                    isAdmin: true
-                });
-                await admin.save();
-                console.log('Default admin account created');
-            }
-
-            // 初始化任务
-            await initializeTasks();
-            
-        } catch (error) {
-            console.error('Error during initialization:', error);
+        if (!existingAdmin) {
+            console.log('Creating admin account...');
+            const hashedPassword = await bcrypt.hash(adminPassword, 10);
+            const admin = new User({
+                email: adminEmail,
+                password: hashedPassword,
+                isAdmin: true
+            });
+            await admin.save();
+            console.log('Default admin account created');
         }
-    } catch (err) {
-        console.error('Failed to connect to MongoDB:', err);
-        // 5秒后重试
-        setTimeout(startServer, 5000);
-    }
-};
 
-// 初始化任务函数
-async function initializeTasks() {
-    const Task = require('./models/Task');
-    const defaultTasks = [
-        {
-            title: 'Bandwidth Sharing',
-            description: 'Share bandwidth to support AI data crawling',
-            points: 100,
-            type: 'daily',
-            requirements: 'Stable internet connection',
-            isActive: true,
-            status: 'Coming Soon'
-        },
-        {
-            title: 'Data Validation',
-            description: 'Help validate and improve AI training data quality',
-            points: 50,
-            type: 'daily',
-            requirements: 'Basic understanding of data quality',
-            isActive: true,
-            status: 'Coming Soon'
-        },
-        {
-            title: 'Referral Program',
-            description: 'Invite new users to join EON Protocol. Earn 100 points for each referral when they use your referral code (50 points without referral code). New users also receive 100 points. Daily limit: 10 referrals.',
-            points: 100,
-            type: 'daily',
-            requirements: 'Complete email verification and pass reCAPTCHA verification',
-            isActive: true,
-            status: 'Active',
-            dailyLimit: 10,
-            basePoints: 50,
-            bonusPoints: 50
-        }
-    ];
+        // 创建默认任务
+        const Task = require('./models/Task');
+        const defaultTasks = [
+            {
+                title: 'Bandwidth Sharing',
+                description: 'Share bandwidth to support AI data crawling',
+                points: 100,
+                type: 'daily',
+                requirements: 'Stable internet connection',
+                isActive: true,
+                status: 'Coming Soon'
+            },
+            {
+                title: 'Data Validation',
+                description: 'Help validate and improve AI training data quality',
+                points: 50,
+                type: 'daily',
+                requirements: 'Basic understanding of data quality',
+                isActive: true,
+                status: 'Coming Soon'
+            },
+            {
+                title: 'Referral Program',
+                description: 'Invite new users to join EON Protocol. Earn 100 points for each referral when they use your referral code (50 points without referral code). New users also receive 100 points. Daily limit: 10 referrals.',
+                points: 100,
+                type: 'daily',
+                requirements: 'Complete email verification and pass reCAPTCHA verification',
+                isActive: true,
+                status: 'Active',
+                dailyLimit: 10,
+                basePoints: 50,
+                bonusPoints: 50
+            }
+        ];
 
-    for (const taskData of defaultTasks) {
-        try {
+        for (const taskData of defaultTasks) {
             const existingTask = await Task.findOne({ title: taskData.title });
             if (!existingTask) {
                 const task = new Task(taskData);
@@ -165,20 +123,19 @@ async function initializeTasks() {
                 );
                 console.log(`Default task updated: ${taskData.title}`);
             }
-        } catch (error) {
-            console.error(`Error processing task ${taskData.title}:`, error);
         }
+    } catch (error) {
+        console.error('Error during initialization:', error);
     }
-}
-
-// 监听数据库连接事件
-mongoose.connection.on('error', (err) => {
+    
+    // 启动服务器
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+})
+.catch(err => {
     console.error('MongoDB connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-    console.log('MongoDB disconnected! Attempting to reconnect...');
-    setTimeout(startServer, 5000);
 });
 
 // 认证 API 路由
@@ -505,6 +462,3 @@ app.use((err, req, res, next) => {
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
-
-// 启动应用
-startServer();
