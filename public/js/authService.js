@@ -19,9 +19,6 @@ if (typeof window.AuthService === 'undefined') {
             
             // 从 localStorage 获取 token
             this.token = localStorage.getItem(this.tokenKey);
-            
-            // Add request interceptor for debugging
-            this.addRequestInterceptor();
         }
         
         addRequestInterceptor() {
@@ -64,35 +61,25 @@ if (typeof window.AuthService === 'undefined') {
             const config = {
                 ...options,
                 credentials: 'include',
-                mode: 'cors',
                 headers: {
-                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
                     ...options.headers
                 }
             };
-
-            if (this.token) {
-                config.headers['Authorization'] = `Bearer ${this.token}`;
-            }
-
+            
+            console.log('[AuthService] Request config:', config);
             return config;
         }
 
         async login(email, password) {
             console.log('[AuthService] Attempting login:', { email });
             try {
-                const response = await fetch(`${this.apiUrl}/api/auth/login`, {
+                const response = await fetch(`${this.apiUrl}/api/auth/login`, this.getRequestConfig({
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
                     body: JSON.stringify({ email, password })
-                });
+                }));
 
-                console.log('Response:', {
+                console.log('[AuthService] Login response:', {
                     status: response.status,
                     statusText: response.statusText,
                     headers: Object.fromEntries(response.headers.entries())
@@ -100,7 +87,7 @@ if (typeof window.AuthService === 'undefined') {
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('Login failed:', {
+                    console.error('[AuthService] Login failed:', {
                         status: response.status,
                         statusText: response.statusText,
                         error: errorText
@@ -109,7 +96,7 @@ if (typeof window.AuthService === 'undefined') {
                 }
 
                 const data = await response.json();
-                console.log('Login successful:', data);
+                console.log('[AuthService] Login successful:', data);
                 this.setAuth(data.token, data.user);
                 return data;
             } catch (error) {

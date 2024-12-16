@@ -107,10 +107,6 @@
             origin: window.location.origin
         });
 
-        // 直接使用生产环境 URL
-        const apiUrl = 'https://illustrious-perfection-production.up.railway.app';
-        console.log('Using API URL:', apiUrl);
-
         // 页面加载完成后检查是否已登录
         window.addEventListener('load', function() {
             console.log('Page loaded, checking auth status');
@@ -118,48 +114,6 @@
                 window.location.href = '/dashboard.html';
             }
         });
-
-        async function makeRequest(url, options = {}, retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    console.log(`Attempt ${i + 1} - Making request to:`, url, options);
-
-                    const response = await fetch(url, {
-                        ...options,
-                        credentials: 'include',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    console.log('Response:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        headers: Object.fromEntries(response.headers.entries())
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('Request failed:', {
-                            status: response.status,
-                            statusText: response.statusText,
-                            error: errorText
-                        });
-                        throw new Error(errorText || response.statusText);
-                    }
-
-                    const data = await response.json();
-                    console.log('Response data:', data);
-                    return data;
-                } catch (error) {
-                    console.error(`Attempt ${i + 1} failed:`, error);
-                    if (i === retries - 1) {
-                        throw error;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-                }
-            }
-        }
 
         async function handleLogin(event) {
             event.preventDefault();
@@ -169,14 +123,9 @@
             
             try {
                 console.log('Attempting login with:', { email });
-                const loginData = await makeRequest(`${apiUrl}/api/auth/login`, {
-                    method: 'POST',
-                    body: JSON.stringify({ email, password })
-                });
+                const loginData = await window.authService.login(email, password);
 
                 if (loginData.token) {
-                    localStorage.setItem('token', loginData.token);
-                    localStorage.setItem('user', JSON.stringify(loginData.user));
                     window.location.href = '/dashboard.html';
                 } else {
                     throw new Error('Login failed: No token received');
@@ -184,7 +133,7 @@
             } catch (error) {
                 console.error('Login error:', error);
                 errorDiv.style.display = 'block';
-                errorDiv.textContent = 'Login error: ' + error.message;
+                errorDiv.textContent = 'Login failed: ' + error.message;
             }
         }
     </script>
