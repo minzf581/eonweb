@@ -120,23 +120,16 @@
         });
 
         async function makeRequest(url, options = {}, retries = 3) {
-            const headers = {
-                'Content-Type': 'application/json',
-                'Origin': window.location.origin
-            };
-
             for (let i = 0; i < retries; i++) {
                 try {
-                    console.log(`Attempt ${i + 1} - Making request to:`, url, {
-                        ...options,
-                        headers
-                    });
+                    console.log(`Attempt ${i + 1} - Making request to:`, url, options);
 
                     const response = await fetch(url, {
                         ...options,
                         credentials: 'include',
-                        headers,
-                        mode: 'cors'
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
                     });
 
                     console.log('Response:', {

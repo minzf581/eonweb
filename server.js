@@ -28,7 +28,7 @@ const corsOptions = {
         console.log('Request Origin:', origin);
         console.log('Allowed Origins:', CORS_ALLOWED_ORIGINS);
         
-        // 在开发环境中允许没有 origin
+        // 允许没有 origin 的请求（开发环境）或在允许列表中的 origin
         if (!origin || CORS_ALLOWED_ORIGINS.includes(origin)) {
             callback(null, true);
         } else {
@@ -36,11 +36,17 @@ const corsOptions = {
             callback(new Error(`CORS not allowed for origin: ${origin}`));
         }
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200
 };
 
 // 启用 CORS
 app.use(cors(corsOptions));
+
+// 处理预检请求
+app.options('*', cors(corsOptions));
 
 // 记录所有请求
 app.use((req, res, next) => {
