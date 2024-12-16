@@ -10,8 +10,8 @@ if (typeof window.AuthService === 'undefined') {
                 origin: window.location.origin
             });
 
-            // 直接使用生产环境 URL
-            this.apiUrl = 'https://illustrious-perfection-production.up.railway.app';
+            // 使用相对路径，这样前端和API在同一域名下
+            this.apiUrl = '/api';
             console.log('[AuthService] Initializing with API URL:', this.apiUrl);
             
             this.tokenKey = 'token';
@@ -74,15 +74,18 @@ if (typeof window.AuthService === 'undefined') {
         async login(email, password) {
             console.log('[AuthService] Attempting login:', { email });
             try {
-                const response = await fetch(`${this.apiUrl}/api/auth/login`, this.getRequestConfig({
+                const response = await fetch(`${this.apiUrl}/auth/login`, {
                     method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
                     body: JSON.stringify({ email, password })
-                }));
+                });
 
                 console.log('[AuthService] Login response:', {
                     status: response.status,
-                    statusText: response.statusText,
-                    headers: Object.fromEntries(response.headers.entries())
+                    statusText: response.statusText
                 });
 
                 if (!response.ok) {
@@ -107,7 +110,7 @@ if (typeof window.AuthService === 'undefined') {
 
         async getUserInfo() {
             try {
-                const response = await fetch(`${this.apiUrl}/api/user`, this.getRequestConfig());
+                const response = await fetch(`${this.apiUrl}/user`, this.getRequestConfig());
                 
                 if (!response.ok) {
                     throw new Error(response.statusText);
@@ -123,7 +126,7 @@ if (typeof window.AuthService === 'undefined') {
 
         async logout() {
             try {
-                const response = await fetch(`${this.apiUrl}/api/auth/logout`, this.getRequestConfig({
+                const response = await fetch(`${this.apiUrl}/auth/logout`, this.getRequestConfig({
                     method: 'POST'
                 }));
 
@@ -192,17 +195,17 @@ if (typeof window.AuthService === 'undefined') {
 
         // 获取用户统计信息
         async getUserStats() {
-            return this.fetchWithAuth('/api/users/stats');
+            return this.fetchWithAuth('/users/stats');
         }
 
         // 获取推荐信息
         async getReferralInfo() {
-            return this.fetchWithAuth('/api/users/referral-info');
+            return this.fetchWithAuth('/users/referral-info');
         }
 
         // 获取用户任务
         async getUserTasks() {
-            return this.fetchWithAuth('/api/tasks/user');
+            return this.fetchWithAuth('/tasks/user');
         }
     }
 }

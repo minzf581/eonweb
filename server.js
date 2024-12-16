@@ -84,25 +84,38 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 静态文件服务
+// 静态文件托管配置
 const staticOptions = {
-    setHeaders: (res, path) => {
-        if (path.endsWith('.js')) {
-            res.set('Content-Type', 'application/javascript');
-        }
+    dotfiles: 'deny',
+    etag: true,
+    extensions: ['html', 'htm'],
+    index: 'index.html',
+    maxAge: '1d',
+    redirect: false,
+    setHeaders: function (res, path, stat) {
+        res.set('x-timestamp', Date.now());
     }
 };
 
-console.log('Setting up static file serving from:', path.join(__dirname));
-app.use(express.static(path.join(__dirname), staticOptions));
-app.use('/public', express.static(path.join(__dirname, 'public'), staticOptions));
+// 托管静态文件
+app.use(express.static(path.join(__dirname, 'public'), staticOptions));
 
-// 设置正确的 MIME 类型
-app.use((req, res, next) => {
-    if (req.url.endsWith('.js')) {
-        res.type('application/javascript');
+// 所有未匹配的路由都返回 index.html（支持客户端路由）
+app.get('*', (req, res, next) => {
+    // 如果请求的是 API 路由，继续下一个处理器
+    if (req.path.startsWith('/api/')) {
+        return next();
     }
-    next();
+    // 否则返回 index.html
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// API 路由错误处理
+app.use('/api', (err, req, res, next) => {
+    console.error('API Error:', err);
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal server error'
+    });
 });
 
 // 测试路由
@@ -738,4 +751,31 @@ app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
     console.log('Headers:', req.headers);
     next();
+});
+
+// 添加代理路由来处理认证请求
+app.post('/proxy/auth/login', async (req, res) => {
+    try {
+        console.log('Proxying login request:', req.body);
+        
+        const response = await fetch('https://illustrious-perfection-production.up.railway.app/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(req.body)
+        });
+
+        const data = await response.json();
+        console.log('Proxy response:', data);
+
+        // 设置相同的状态码
+        res.status(response.status);
+        
+        // 转发响应
+        res.json(data);
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
