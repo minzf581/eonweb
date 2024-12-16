@@ -35,17 +35,21 @@ if (typeof window.AuthService === 'undefined') {
             localStorage.removeItem(this.userKey);
         }
 
+        // 检查是否已登录
+        isAuthenticated() {
+            const token = this.getToken();
+            return !!token;
+        }
+
         // API 请求基础配置
         getRequestConfig(options = {}) {
             const token = this.getToken();
             const config = {
                 ...options,
-                mode: 'cors',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Origin': 'https://w3router.github.io',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                     ...options.headers
                 }
@@ -59,11 +63,9 @@ if (typeof window.AuthService === 'undefined') {
                 console.log('Attempting login...');
                 const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
                     method: 'POST',
-                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        ...(this.getToken() ? { 'Authorization': `Bearer ${this.getToken()}` } : {})
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ email, password })
                 });
@@ -116,11 +118,6 @@ if (typeof window.AuthService === 'undefined') {
         // 获取用户任务
         async getUserTasks() {
             return this.fetchWithAuth('/api/tasks/user');
-        }
-
-        // 检查是否已登录
-        isLoggedIn() {
-            return !!this.getToken();
         }
 
         // 处理登出

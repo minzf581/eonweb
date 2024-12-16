@@ -17,18 +17,17 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS 配置
-const corsOptions = {
-    origin: 'https://w3router.github.io',  // Be specific about the origin
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-
-// 预检请求处理
-app.options('*', cors(corsOptions));
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://w3router.github.io');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
