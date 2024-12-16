@@ -12,13 +12,26 @@ const Task = require('./models/Task');
 
 const app = express();
 
-// 调试中间件 - 放在所有中间件之前
+// 请求调试日志 - 放在最前面
 app.use((req, res, next) => {
-    console.log('=== Request Debug ===');
+    console.log('\n=== Incoming Request ===');
+    console.log('Time:', new Date().toISOString());
     console.log('Method:', req.method);
     console.log('URL:', req.url);
     console.log('Origin:', req.headers.origin);
-    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Headers:', req.headers);
+    next();
+});
+
+// 响应调试日志
+app.use((req, res, next) => {
+    const originalSend = res.send;
+    res.send = function(...args) {
+        console.log('\n=== Outgoing Response ===');
+        console.log('Status:', res.statusCode);
+        console.log('Headers:', res.getHeaders());
+        return originalSend.apply(res, args);
+    };
     next();
 });
 
