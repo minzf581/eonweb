@@ -139,7 +139,7 @@ mongoose.connect(process.env.MONGODB_URI)
     });
 
 // 认证 API 路由
-app.post('/eonweb/public/auth/api/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, referralCode } = req.body;
         const userId = await UserService.createUser(email, password, referralCode);
@@ -158,7 +158,7 @@ app.post('/eonweb/public/auth/api/register', async (req, res) => {
 });
 
 // 登录路由
-app.post('/eonweb/public/auth/api/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         console.log('Login attempt:', { email, password });
@@ -226,7 +226,7 @@ const isAdmin = async (req, res, next) => {
 };
 
 // 用户管理路由
-app.get('/eonweb/api/users', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/users', authenticateToken, isAdmin, async (req, res) => {
     try {
         const users = await UserService.getAllUsers();
         res.json(users);
@@ -235,7 +235,7 @@ app.get('/eonweb/api/users', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-app.get('/eonweb/api/users/stats', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/users/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
         const stats = await UserService.getUserStats();
         res.json(stats);
@@ -244,7 +244,7 @@ app.get('/eonweb/api/users/stats', authenticateToken, isAdmin, async (req, res) 
     }
 });
 
-app.put('/eonweb/api/users/:userId', authenticateToken, isAdmin, async (req, res) => {
+app.put('/api/users/:userId', authenticateToken, isAdmin, async (req, res) => {
     try {
         const user = await UserService.updateUser(req.params.userId, req.body);
         res.json(user);
@@ -253,7 +253,7 @@ app.put('/eonweb/api/users/:userId', authenticateToken, isAdmin, async (req, res
     }
 });
 
-app.delete('/eonweb/api/users/:userId', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/users/:userId', authenticateToken, isAdmin, async (req, res) => {
     try {
         await UserService.deleteUser(req.params.userId);
         res.json({ message: 'User deleted successfully' });
@@ -263,7 +263,7 @@ app.delete('/eonweb/api/users/:userId', authenticateToken, isAdmin, async (req, 
 });
 
 // 任务管理路由
-app.get('/eonweb/api/tasks', authenticateToken, async (req, res) => {
+app.get('/api/tasks', authenticateToken, async (req, res) => {
     try {
         const tasks = req.user.isAdmin ? 
             await TaskService.getAllTasks() : 
@@ -275,7 +275,7 @@ app.get('/eonweb/api/tasks', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/eonweb/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { taskId } = req.params;
         const task = await TaskService.toggleTaskStatus(taskId);
@@ -286,7 +286,7 @@ app.post('/eonweb/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (
     }
 });
 
-app.post('/eonweb/api/tasks', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/tasks', authenticateToken, isAdmin, async (req, res) => {
     try {
         const taskId = await TaskService.createTask(req.body);
         res.status(201).json({ id: taskId });
@@ -295,7 +295,7 @@ app.post('/eonweb/api/tasks', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-app.put('/eonweb/api/tasks/:taskId', authenticateToken, isAdmin, async (req, res) => {
+app.put('/api/tasks/:taskId', authenticateToken, isAdmin, async (req, res) => {
     try {
         const success = await TaskService.updateTask(req.params.taskId, req.body);
         if (success) {
@@ -308,7 +308,7 @@ app.put('/eonweb/api/tasks/:taskId', authenticateToken, isAdmin, async (req, res
     }
 });
 
-app.delete('/eonweb/api/tasks/:taskId', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/tasks/:taskId', authenticateToken, isAdmin, async (req, res) => {
     try {
         await TaskService.deleteTask(req.params.taskId);
         res.json({ message: 'Task deleted successfully' });
@@ -317,7 +317,7 @@ app.delete('/eonweb/api/tasks/:taskId', authenticateToken, isAdmin, async (req, 
     }
 });
 
-app.get('/eonweb/api/tasks/:taskId/stats', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/tasks/:taskId/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
         const stats = await TaskService.getTaskStats(req.params.taskId);
         res.json(stats);
@@ -327,7 +327,7 @@ app.get('/eonweb/api/tasks/:taskId/stats', authenticateToken, isAdmin, async (re
 });
 
 // 用户任务路由
-app.post('/eonweb/api/tasks/:taskId/start', authenticateToken, async (req, res) => {
+app.post('/api/tasks/:taskId/start', authenticateToken, async (req, res) => {
     try {
         await TaskService.startTask(req.user.userId, req.params.taskId);
         res.json({ message: 'Task started successfully' });
@@ -336,7 +336,7 @@ app.post('/eonweb/api/tasks/:taskId/start', authenticateToken, async (req, res) 
     }
 });
 
-app.post('/eonweb/api/tasks/:taskId/complete', authenticateToken, async (req, res) => {
+app.post('/api/tasks/:taskId/complete', authenticateToken, async (req, res) => {
     try {
         const { pointsEarned } = req.body;
         await TaskService.completeTask(req.user.userId, req.params.taskId, pointsEarned);
@@ -346,7 +346,7 @@ app.post('/eonweb/api/tasks/:taskId/complete', authenticateToken, async (req, re
     }
 });
 
-app.get('/eonweb/api/user/tasks', authenticateToken, async (req, res) => {
+app.get('/api/user/tasks', authenticateToken, async (req, res) => {
     try {
         const history = await TaskService.getUserTaskHistory(req.user.userId);
         res.json(history);
@@ -356,7 +356,7 @@ app.get('/eonweb/api/user/tasks', authenticateToken, async (req, res) => {
 });
 
 // 推荐系统路由
-app.get('/eonweb/api/user/referrals', authenticateToken, async (req, res) => {
+app.get('/api/user/referrals', authenticateToken, async (req, res) => {
     try {
         const referralInfo = await UserService.getUserReferrals(req.user.userId);
         res.json(referralInfo);
@@ -366,7 +366,7 @@ app.get('/eonweb/api/user/referrals', authenticateToken, async (req, res) => {
 });
 
 // 获取当前用户信息
-app.get('/eonweb/api/user', authenticateToken, async (req, res) => {
+app.get('/api/user', authenticateToken, async (req, res) => {
     try {
         const user = await UserService.findById(req.user.userId);
         if (!user) {

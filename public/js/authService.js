@@ -117,7 +117,7 @@ class AuthService {
 
     // 执行注册
     async register(email, password, referralCode) {
-        const response = await fetch(`${this.apiBaseUrl}/auth/api/register`, {
+        const response = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
