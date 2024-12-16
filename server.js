@@ -70,11 +70,11 @@ const dbName = 'eonweb';
 
 const fullMongoUri = `mongodb://${username}:${password}@${host}:${port}/${dbName}?authSource=admin`;
 
+console.log('Attempting to connect to MongoDB...');
+
 mongoose.connect(fullMongoUri, {
-    serverSelectionTimeoutMS: 60000, // 增加到 60 秒
+    serverSelectionTimeoutMS: 60000,
     socketTimeoutMS: 45000,
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     retryWrites: true,
     w: 'majority'
 })
