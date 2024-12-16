@@ -4,7 +4,7 @@ if (typeof window.AuthService === 'undefined') {
         constructor() {
             // 根据当前环境选择 API URL
             this.apiUrl = window.location.hostname === 'localhost' 
-                ? 'http://localhost:3000'
+                ? 'http://localhost:8080'
                 : 'https://illustrious-perfection-production.up.railway.app';
                 
             console.log('[AuthService] Initializing with API URL:', this.apiUrl);
