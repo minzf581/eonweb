@@ -111,12 +111,30 @@
         }
 
         .hero h1 {
-            font-size: 3.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
             margin-bottom: 1.5rem;
-            color: var(--text-color);
-            white-space: nowrap;
+        }
+
+        .hero .title-line {
+            display: block;
             text-align: center;
-            overflow: visible;
+            white-space: nowrap;
+        }
+
+        @media (min-width: 768px) {
+            .hero h1 {
+                flex-direction: row;
+                gap: 0.5rem;
+                justify-content: center;
+            }
+            
+            .hero .title-line:after {
+                content: " ";
+                white-space: pre;
+            }
         }
 
         .hero p {
@@ -1021,16 +1039,85 @@ footer p {
             margin: 0;
         }
 
-        .strengths-image {
+        .strengths-visual {
             flex: 1;
             position: relative;
         }
 
-        .strengths-image img {
+        .geometric-animation {
+            position: relative;
             width: 100%;
-            max-width: 500px;
+            height: 400px;
+            overflow: hidden;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+        }
+
+        .geometric-shape {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.3), rgba(0, 102, 255, 0.1));
+            border: 2px solid rgba(0, 102, 255, 0.5);
+            backdrop-filter: blur(5px);
+            transition: all 0.5s ease;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        .shape1 {
+            top: 20%;
+            left: 20%;
+            transform: rotate(45deg);
+            animation-delay: 0s;
+        }
+
+        .shape2 {
+            top: 40%;
+            left: 50%;
+            transform: rotate(90deg);
+            animation-delay: 2s;
+        }
+
+        .shape3 {
+            top: 60%;
+            left: 30%;
+            transform: rotate(135deg);
+            animation-delay: 4s;
+        }
+
+        .geometric-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 102, 255, 0.2) 0%, transparent 70%);
+            pointer-events: none;
+            animation: pulse 4s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .geometric-shape:hover {
+            transform: scale(1.1) rotate(90deg);
+            border-color: rgba(0, 102, 255, 0.8);
+            box-shadow: 0 0 30px rgba(0, 102, 255, 0.3);
         }
 
         @media (max-width: 968px) {
@@ -1080,7 +1167,10 @@ footer p {
     <!-- Hero Section with Particles -->
     <section id="home" class="hero">
         <div class="hero-content">
-            <h1>AI Meets Secure Distributed Power</h1>
+            <h1>
+                <span class="title-line">AI Meets Secure</span>
+                <span class="title-line">Distributed Power</span>
+            </h1>
             <p>Empower AI achieve secure and seamless data collaboration</p>
         </div>
         <div class="button-container">
@@ -1145,8 +1235,13 @@ footer p {
                     </li>
                 </ul>
             </div>
-            <div class="strengths-image">
-                <img src="https://w3router.github.io/eonweb/public/images/solution-modern.jpg" alt="EON Protocol Solution Visualization" loading="lazy">
+            <div class="strengths-visual">
+                <div class="geometric-animation">
+                    <div class="geometric-shape shape1"></div>
+                    <div class="geometric-shape shape2"></div>
+                    <div class="geometric-shape shape3"></div>
+                    <div class="geometric-glow"></div>
+                </div>
             </div>
         </div>
     </section>
