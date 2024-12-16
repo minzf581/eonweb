@@ -79,22 +79,40 @@ class AuthService {
 
     // 执行登录
     async login(email, password) {
-        const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-        });
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
 
-        const data = await response.json();
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Login service is not available. Please try again later.');
+                }
+                const errorText = await response.text();
+                console.error('Login failed:', response.status, errorText);
+                throw new Error('Login failed. Please check your credentials.');
+            }
 
-        if (!response.ok) {
-            throw new Error(data.message || 'Login failed');
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Invalid server response. Please try again later.');
+            }
+
+            const data = await response.json();
+            if (!data.token) {
+                throw new Error('Invalid response from server');
+            }
+
+            this.setAuth(data.token, data.user);
+            return data;
+        } catch (error) {
+            console.error('Login error:', error);
+            throw error;
         }
-
-        this.setAuth(data.token, data.user);
-        return data;
     }
 
     // 执行注册

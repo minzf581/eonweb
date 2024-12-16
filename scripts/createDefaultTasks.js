@@ -9,7 +9,7 @@ const defaultTasks = [
         description: '成功推荐一个新用户注册并完成任务',
         points: 100,
         type: 'one-time',
-        status: 'Active',
+        isActive: true,
         requirements: ['Valid referral registration'],
         verificationMethod: 'automatic'
     },
@@ -18,7 +18,7 @@ const defaultTasks = [
         description: '共享您的网络带宽资源',
         points: 50,
         type: 'daily',
-        status: 'Active',
+        isActive: true,
         requirements: ['Active network connection'],
         verificationMethod: 'automatic'
     }
