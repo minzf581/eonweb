@@ -56,7 +56,7 @@ async function testAuthService() {
 
         // 1. 测试登录
         log('\n1. Testing Login...');
-        const loginData = await makeRequest('http://localhost:3000/api/auth/login', {
+        const loginData = await makeRequest('http://localhost:8080/api/auth/login', {
             method: 'POST',
             body: JSON.stringify({
                 email: 'test@example.com',
@@ -67,12 +67,12 @@ async function testAuthService() {
 
         // 2. 获取用户信息
         log('\n2. Getting User Info...');
-        const userData = await makeRequest('http://localhost:3000/api/user');
+        const userData = await makeRequest('http://localhost:8080/api/user');
         log('User info:', userData);
 
         // 3. 测试登出
         log('\n3. Testing Logout...');
-        const logoutData = await makeRequest('http://localhost:3000/api/auth/logout', {
+        const logoutData = await makeRequest('http://localhost:8080/api/auth/logout', {
             method: 'POST'
         });
         log('Logout response:', logoutData);
