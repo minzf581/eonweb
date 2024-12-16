@@ -53,33 +53,97 @@ if (typeof window.AuthService === 'undefined') {
             window.location.href = 'https://w3router.github.io/eonweb/public/auth/login.html';
         }
 
-        // 获取 token
+        async login(email, password) {
+            try {
+                console.log('[AuthService] Attempting login:', { email });
+                
+                const url = `${this.apiBaseUrl}/api/auth/login`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    console.error('[AuthService] Login failed:', data);
+                    throw new Error(data.message || 'Login failed');
+                }
+
+                console.log('[AuthService] Login successful');
+                this.setAuth(data.token, data.user);
+                return data;
+            } catch (error) {
+                console.error('[AuthService] Login error:', error.message);
+                throw error;
+            }
+        }
+
+        async getUserInfo() {
+            try {
+                const token = this.getToken();
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const url = `${this.apiBaseUrl}/api/user`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    console.error('[AuthService] Failed to get user info:', data);
+                    throw new Error(data.message || 'Failed to get user info');
+                }
+
+                console.log('[AuthService] Got user info:', { ...data, token: '[REDACTED]' });
+                return data;
+            } catch (error) {
+                console.error('[AuthService] Error getting user info:', error.message);
+                throw error;
+            }
+        }
+
+        setAuth(token, user) {
+            localStorage.setItem(this.tokenKey, token);
+            localStorage.setItem(this.userKey, JSON.stringify(user));
+            console.log('[AuthService] Auth data saved');
+        }
+
         getToken() {
             return localStorage.getItem(this.tokenKey);
         }
 
-        // 获取用户信息
         getUser() {
             const userStr = localStorage.getItem(this.userKey);
-            return userStr ? JSON.parse(userStr) : null;
+            try {
+                return userStr ? JSON.parse(userStr) : null;
+            } catch (error) {
+                console.error('[AuthService] Error parsing user data:', error);
+                return null;
+            }
         }
 
-        // 设置认证信息
-        setAuth(token, user) {
-            localStorage.setItem(this.tokenKey, token);
-            localStorage.setItem(this.userKey, JSON.stringify(user));
+        isAuthenticated() {
+            return !!this.getToken();
         }
 
-        // 清除认证信息
-        clearAuth() {
+        logout() {
             localStorage.removeItem(this.tokenKey);
             localStorage.removeItem(this.userKey);
-        }
-
-        // 检查是否已登录
-        isAuthenticated() {
-            const token = this.getToken();
-            return !!token;
+            console.log('[AuthService] Logged out');
         }
 
         // API 请求基础配置
@@ -99,51 +163,6 @@ if (typeof window.AuthService === 'undefined') {
             return config;
         }
 
-        async login(email, password) {
-            try {
-                // 尝试所有可能的 URL
-                const errors = [];
-                
-                console.log('Attempting login with credentials:', { email, passwordLength: password.length });
-                
-                const url = `${this.apiBaseUrl}/api/auth/login`;
-                console.log('Trying URL:', url);
-                
-                const config = {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                };
-                
-                console.log('Request config:', { ...config, body: '***' });
-                
-                const response = await fetch(url, config);
-                console.log('Response:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: Array.from(response.headers.entries())
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    console.error('Login failed:', error);
-                    throw new Error(error.message || 'Login failed');
-                }
-
-                const data = await response.json();
-                console.log('Login successful:', { ...data, token: '***' });
-                this.setAuth(data.token, data.user);
-                return data;
-            } catch (error) {
-                console.error('Login error:', error);
-                throw error;
-            }
-        }
-
-        // 通用的 API 请求函数
         async fetchWithAuth(endpoint, options = {}) {
             try {
                 console.log(`Fetching ${endpoint} with auth`);
@@ -178,8 +197,8 @@ if (typeof window.AuthService === 'undefined') {
         }
 
         // 处理登出
-        logout() {
-            this.clearAuth();
+        handleLogout() {
+            this.logout();
             window.location.href = '/auth/login.html';
         }
     }

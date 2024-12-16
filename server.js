@@ -35,9 +35,22 @@ app.use((req, res, next) => {
     next();
 });
 
-// 中间件配置
+// 基础配置
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
+
+// 静态文件服务配置
+console.log('Setting up static file serving from:', path.join(__dirname));
+app.use('/', express.static(path.join(__dirname)));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+// 添加调试日志中间件
+app.use((req, res, next) => {
+    console.log(`\n=== Incoming Request ===`);
+    console.log(`${req.method} ${req.url}`);
+    console.log('Headers:', req.headers);
+    next();
+});
 
 // Railway environment configuration
 const RAILWAY_PRIVATE_DOMAIN = process.env.RAILWAY_PRIVATE_DOMAIN || 'illustrious-perfection.railway.internal';
@@ -239,6 +252,72 @@ async function initializeTasks() {
     }
 }
 
+// 测试用户设置
+const TEST_USER = {
+    email: 'test@example.com',
+    password: 'password123',
+    name: 'Test User'
+};
+
+// 认证 API 路由
+app.post('/api/auth/login', async (req, res) => {
+    console.log('\n=== Login Request ===');
+    console.log('Body:', req.body);
+    console.log('Headers:', req.headers);
+    
+    try {
+        const { email, password } = req.body;
+        
+        // 为测试用户提供模拟认证
+        if (email === TEST_USER.email && password === TEST_USER.password) {
+            const token = 'test-token-' + Date.now();
+            console.log('Login successful for test user');
+            
+            res.json({
+                token,
+                user: {
+                    email: TEST_USER.email,
+                    name: TEST_USER.name
+                }
+            });
+        } else {
+            console.log('Login failed: Invalid credentials');
+            res.status(401).json({ message: 'Invalid credentials' });
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+app.get('/api/user', async (req, res) => {
+    console.log('\n=== Get User Info Request ===');
+    console.log('Headers:', req.headers);
+    
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('Unauthorized: No token provided');
+        return res.status(401).json({ message: 'No token provided' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    console.log('Token received:', token);
+    
+    // 为测试用户提供模拟数据
+    if (token.startsWith('test-token-')) {
+        console.log('Returning test user info');
+        res.json({
+            email: TEST_USER.email,
+            name: TEST_USER.name,
+            tasks: [],
+            referrals: []
+        });
+    } else {
+        console.log('Invalid token');
+        res.status(401).json({ message: 'Invalid token' });
+    }
+});
+
 // 优雅关闭
 process.on('SIGTERM', async () => {
     console.log('SIGTERM received. Shutting down gracefully...');
@@ -253,68 +332,6 @@ process.on('SIGTERM', async () => {
     } catch (error) {
         console.error('Error during shutdown:', error);
         process.exit(1);
-    }
-});
-
-// 认证 API 路由
-app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { email, password, referralCode } = req.body;
-
-        // 如果有推荐码，检查推荐任务是否启用
-        if (referralCode) {
-            const referralTask = await Task.findOne({ title: 'Referral Program' });
-            if (!referralTask?.isActive) {
-                return res.status(400).json({ message: 'Referral program is currently paused' });
-            }
-        }
-
-        const userId = await UserService.createUser(email, password, referralCode);
-        const user = await User.findById(userId);
-        const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
-        
-        res.json({
-            message: 'Registration successful',
-            token,
-            user: {
-                email: user.email,
-                isAdmin: user.isAdmin,
-                points: user.points
-            }
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(400).json({ message: error.message });
-    }
-});
-
-// 登录路由
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        console.log('Login attempt:', { email });
-        
-        const user = await UserService.verifyUser(email, password);
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        const token = jwt.sign(
-            { userId: user.id, isAdmin: user.isAdmin },
-            process.env.JWT_SECRET
-        );
-
-        res.json({
-            token,
-            user: {
-                email: user.email,
-                isAdmin: user.isAdmin,
-                points: user.points
-            }
-        });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: error.message });
     }
 });
 
