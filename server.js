@@ -58,11 +58,18 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // 数据库连接
-mongoose.connect(process.env.MONGO_URL, {
-    serverSelectionTimeoutMS: 5000,
+const MONGODB_URI = `mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@${process.env.RAILWAY_PRIVATE_DOMAIN}:27017/eonweb?authSource=admin`;
+
+console.log('Attempting to connect to MongoDB with URI:', MONGODB_URI.replace(/mongo:([^@]+)@/, 'mongo:****@'));
+
+mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 30000, // 增加超时时间到 30 秒
     socketTimeoutMS: 45000,
     maxPoolSize: 10,
-    family: 4
+    retryWrites: true,
+    w: 'majority',
+    authSource: 'admin',
+    directConnection: true
 })
 .then(() => {
     console.log('Connected to MongoDB');
@@ -70,6 +77,14 @@ mongoose.connect(process.env.MONGO_URL, {
 })
 .catch(err => {
     console.error('MongoDB connection error:', err);
+    // 输出更详细的错误信息
+    if (err.name === 'MongoServerSelectionError') {
+        console.error('Connection details:', {
+            host: process.env.RAILWAY_PRIVATE_DOMAIN,
+            port: 27017,
+            database: 'eonweb'
+        });
+    }
 });
 
 mongoose.connection.on('disconnected', () => {
