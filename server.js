@@ -21,6 +21,7 @@ const corsOptions = {
         
         const allowedOrigins = [
             'http://localhost:3000',
+            'http://localhost:8080',
             'https://illustrious-perfection-production.up.railway.app',
             'https://w3router.github.io'
         ];
@@ -43,7 +44,7 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
     exposedHeaders: ['Set-Cookie'],
     preflightContinue: false,
     optionsSuccessStatus: 204
@@ -51,6 +52,9 @@ const corsOptions = {
 
 // 应用 CORS 中间件
 app.use(cors(corsOptions));
+
+// 全局处理 OPTIONS 请求
+app.options('*', cors(corsOptions));
 
 // 调试中间件
 app.use((req, res, next) => {
@@ -238,8 +242,8 @@ console.log('- User:', MONGOUSER);
 console.log('- Connection URL:', MONGO_URL.replace(/mongodb:\/\/.*@/, 'mongodb://[credentials]@'));
 
 // 启动服务器
-const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0';
+const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || '0.0.0.0';
 
 console.log('\n=== Server Configuration ===');
 console.log('- PORT:', PORT);
@@ -689,7 +693,7 @@ app.get('/api/users/referral-info', authenticateToken, async (req, res) => {
         });
     } catch (error) {
         console.error('Error getting referral info:', error);
-        res.status(500).json({ message: 'Error getting referral information' });
+        res.status(500).json({ message: error.message });
     }
 });
 
@@ -700,7 +704,7 @@ app.get('/api/tasks/referral/status', async (req, res) => {
         res.json({ isActive: referralTask ? referralTask.isActive : false });
     } catch (error) {
         console.error('Error getting referral task status:', error);
-        res.status(500).json({ message: 'Error getting referral task status' });
+        res.status(500).json({ message: error.message });
     }
 });
 
