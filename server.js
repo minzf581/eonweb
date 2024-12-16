@@ -1,18 +1,20 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const path = require('path');
 require('dotenv').config();
-const jwt = require('jsonwebtoken');
 const UserService = require('./services/UserService');
 const User = require('./models/User');
-const bcrypt = require('bcryptjs');
 const TaskService = require('./services/TaskService');
+const Task = require('./models/Task');
 
 const app = express();
 
-// 中间件
+// 中间件配置
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS 配置
 app.use(cors({
@@ -23,73 +25,37 @@ app.use(cors({
 }));
 
 // 预检请求处理
-app.options('*', cors({
-    origin: ['https://w3router.github.io', 'http://localhost:3000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// 添加安全头
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', req.headers.origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-});
-
-// 静态文件服务
-app.use(express.static(path.join(__dirname)));
-
-// 重定向旧的认证路径到新路径
-app.get('/auth/login.html', (req, res) => {
-    res.redirect('/public/auth/login.html');
-});
-
-app.get('/auth/register.html', (req, res) => {
-    res.redirect('/public/auth/register.html');
-});
-
-// 重定向旧的仪表板路径
-app.get('/dashboard/*', (req, res) => {
-    res.redirect('/');
-});
-
-// 根路由
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// 数据库连接
-const mongoUri = process.env.MONGODB_URI;
-console.log('Attempting to connect to MongoDB...');
+app.options('*', cors());
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-// 连接数据库
-mongoose.connect(mongoUri, {
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 45000,
-    retryWrites: true,
-    w: 'majority'
+// 数据库连接
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000
 })
-.then(async () => {
-    console.log('MongoDB connected successfully');
-    
-    // 创建默认管理员账户
+.then(() => {
+    console.log('Connected to MongoDB');
+    initializeData();
+})
+.catch(err => {
+    console.error('MongoDB connection error:', err);
+});
+
+// 初始化数据
+async function initializeData() {
     try {
+        // 检查并创建管理员账户
         const adminEmail = 'info@eon-protocol.com';
         const adminPassword = 'vijTo9-kehmet-cessis';
-        console.log('Checking for admin account:', adminEmail);
-        const existingAdmin = await User.findOne({ email: adminEmail });
         
+        const existingAdmin = await User.findOne({ email: adminEmail });
         if (!existingAdmin) {
-            console.log('Creating admin account...');
             const hashedPassword = await bcrypt.hash(adminPassword, 10);
             const admin = new User({
                 email: adminEmail,
@@ -100,8 +66,16 @@ mongoose.connect(mongoUri, {
             console.log('Default admin account created');
         }
 
-        // 创建默认任务
-        const Task = require('./models/Task');
+        // 初始化默认任务
+        await initializeTasks();
+    } catch (error) {
+        console.error('Error initializing data:', error);
+    }
+}
+
+// 初始化默认任务
+async function initializeTasks() {
+    try {
         const defaultTasks = [
             {
                 title: 'Bandwidth Sharing',
@@ -151,11 +125,20 @@ mongoose.connect(mongoUri, {
             }
         }
     } catch (error) {
-        console.error('Error during initialization:', error);
+        console.error('Error initializing tasks:', error);
     }
-})
-.catch(err => {
-    console.error('MongoDB connection error:', err);
+}
+
+// 优雅关闭
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received. Shutting down gracefully...');
+    server.close(() => {
+        console.log('Server closed. Disconnecting from database...');
+        mongoose.connection.close(false, () => {
+            console.log('Database connection closed.');
+            process.exit(0);
+        });
+    });
 });
 
 // 认证 API 路由
