@@ -61,8 +61,8 @@ class AuthService {
             if (this.isAdmin()) {
                 window.location.href = `${this.basePath}/public/admin/index.html`;
             } else {
-                // 普通用户重定向到主页
-                window.location.href = `${this.basePath}/index.html`;
+                // 普通用户重定向到用户仪表板
+                window.location.href = `${this.basePath}/public/dashboard/index.html`;
             }
             return;
         }
