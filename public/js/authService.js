@@ -1,11 +1,11 @@
-const API_BASE_URL = '/eonweb';
-
 class AuthService {
     constructor() {
         this.tokenKey = 'eon_auth_token';
         this.userKey = 'eon_user';
-        // 基础路径，如果需要可以从环境变量获取
-        this.basePath = '/eonweb';
+        // 使用完整的 GitHub Pages URL
+        this.basePath = 'https://w3router.github.io/eonweb';
+        // API 基础 URL
+        this.apiBaseUrl = 'https://eonweb-production.up.railway.app';
     }
 
     // 获取 token
@@ -59,10 +59,10 @@ class AuthService {
         if (this.isAuthenticated()) {
             // 已登录，根据角色重定向
             if (this.isAdmin()) {
-                window.location.href = `${this.basePath}/public/admin/`;
+                window.location.href = `${this.basePath}/public/admin/index.html`;
             } else {
                 // 普通用户重定向到主页
-                window.location.href = `${this.basePath}/`;
+                window.location.href = `${this.basePath}/index.html`;
             }
             return;
         }
@@ -75,6 +75,50 @@ class AuthService {
     logout() {
         this.clearAuth();
         window.location.href = `${this.basePath}/public/auth/login.html`;
+    }
+
+    // 执行登录
+    async login(email, password) {
+        const response = await fetch(`${this.apiBaseUrl}/auth/api/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Login failed');
+        }
+
+        this.setAuth(data.token, data.user);
+        return data;
+    }
+
+    // 执行注册
+    async register(email, password, referralCode) {
+        const response = await fetch(`${this.apiBaseUrl}/auth/api/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                email, 
+                password,
+                referralCode: referralCode || undefined
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Registration failed');
+        }
+
+        this.setAuth(data.token, data.user);
+        return data;
     }
 }
 
