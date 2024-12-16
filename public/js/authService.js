@@ -63,12 +63,17 @@ if (typeof window.AuthService === 'undefined') {
                 console.log('Attempting login...');
                 const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
                     method: 'POST',
+                    mode: 'cors',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({ email, password })
                 });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
 
                 if (!response.ok) {
                     const error = await response.json();

@@ -12,22 +12,38 @@ const Task = require('./models/Task');
 
 const app = express();
 
+// 调试中间件 - 放在所有中间件之前
+app.use((req, res, next) => {
+    console.log('=== Request Debug ===');
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    console.log('Origin:', req.headers.origin);
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    next();
+});
+
 // 中间件配置
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS 配置
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://w3router.github.io');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
+const allowedOrigins = ['https://w3router.github.io'];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // 检查请求源是否在允许列表中
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('CORS not allowed'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+}));
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
@@ -514,4 +530,11 @@ app.use((err, req, res, next) => {
         message: err.message || 'Internal server error',
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
+});
+
+// 调试中间件
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    console.log('Headers:', req.headers);
+    next();
 });
