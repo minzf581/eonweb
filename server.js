@@ -24,34 +24,30 @@ console.log('NODE_ENV:', NODE_ENV);
 // CORS 配置
 const corsOptions = {
     origin: function (origin, callback) {
-        // 允许来自相同域名的请求（无 origin）
-        if (!origin) {
-            return callback(null, true);
-        }
-        
-        // 获取允许的域名列表
+        // 允许的域名列表
         const allowedOrigins = [
-            process.env.FRONTEND_URL, // 自定义域名
             'https://eonweb-production.up.railway.app',
             'http://localhost:3000',
             'http://localhost:8080'
-        ].filter(Boolean); // 移除 undefined/null 值
+        ];
 
-        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.log('Origin not allowed:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200 // 一些浏览器需要这个值为200
 };
 
 // 启用 CORS
 app.use(cors(corsOptions));
 
-// 处理预检请求
+// 预检请求处理
 app.options('*', cors(corsOptions));
 
 // 记录所有请求
@@ -717,10 +713,16 @@ app.put('/api/tasks/:taskId/toggle', authenticateToken, isAdmin, async (req, res
 // 全局错误处理中间件
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    res.status(500).json({
-        message: err.message || 'Internal server error',
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
+    if (err.message === 'Not allowed by CORS') {
+        res.status(403).json({
+            error: 'CORS not allowed',
+            origin: req.headers.origin
+        });
+    } else {
+        res.status(500).json({
+            error: 'Internal Server Error'
+        });
+    }
 });
 
 // 全局 OPTIONS 请求处理

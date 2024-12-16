@@ -694,14 +694,13 @@ footer p {
     <!-- Navigation with Company Logo -->
     <nav class="main-nav" style="background-color: black;">
         <div class="nav-brand">
-            <img src="images/enologo.jpg" alt="Company Logo" style="height: 80px; margin-top: 1.5rem;" >
+            <img src="./images/enologo.jpg" alt="Company Logo" style="height: 80px; margin-top: 1.5rem;" >
             <a href="#home"></a>
         </div>
         <div class="nav-links">
-            <a href="#home" class="nav-link">Home</a>
-            <a href="#features" class="nav-link">Features</a>
-            <a href="#about" class="nav-link">About</a>
-            <a href="#contact" class="nav-link">Contact</a>
+            <a href="#features">Features</a>
+            <a href="#about">About</a>
+            <a href="#contact">Contact</a>
             <a href="auth/login.html" class="cta-button">Get Started</a>
         </div>
     </nav>
@@ -743,7 +742,7 @@ footer p {
 <section id="feature" class="section solution-section">
     <div class="solution-container">
         <div class="solution-image">
-            <img src="images/solution.jpg" alt="Solution Image">
+            <img src="./images/solution.jpg" alt="Solution Image">
         </div>
         <div class="solution-content">
             <h2>Data Processing Procedure</h2>
@@ -771,7 +770,7 @@ footer p {
             </ul>
         </div>
         <div class="solution-image">
-          <img src="images/eonsolution.jpg" alt="Solution Image">
+          <img src="./images/eonsolution.jpg" alt="Solution Image">
       </div>
     </div>
 </section>
@@ -806,29 +805,29 @@ footer p {
   <div class="partners-container">
     <div class="partners-scroll">
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="images/antler.jpg" alt="Partner 1">
+        <img src="./images/antler.jpg" alt="Partner 1">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="images/cogitent.jpg" alt="Partner 2">
+        <img src="./images/cogitent.jpg" alt="Partner 2">
       </a>
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="images/omo.jpg" alt="Partner 3">
+        <img src="./images/omo.jpg" alt="Partner 3">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="images/cogitent.jpg" alt="Partner 4">
+        <img src="./images/cogitent.jpg" alt="Partner 4">
       </a>
       <!-- 复制一组用于无缝滚动 -->
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="images/antler.jpg" alt="Partner 1">
+        <img src="./images/antler.jpg" alt="Partner 1">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="images/cogitent.jpg" alt="Partner 2">
+        <img src="./images/cogitent.jpg" alt="Partner 2">
       </a>
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="images/antler.jpg" alt="Partner 3">
+        <img src="./images/antler.jpg" alt="Partner 3">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="images/omo.jpg" alt="Partner 4">
+        <img src="./images/omo.jpg" alt="Partner 4">
       </a>
     </div>
   </div>
@@ -873,66 +872,14 @@ footer p {
 </footer>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="js/particles.min.js"></script>
     <script>
-        // 初始化 Particles.js
-        particlesJS("particles-js", {
-            "particles": {
-                "number": {
-                    "value": 80,
-                    "density": {
-                        "enable": true,
-                        "value_area": 800
-                    }
-                },
-                "color": {
-                    "value": "#ffffff"
-                },
-                "shape": {
-                    "type": "circle"
-                },
-                "opacity": {
-                    "value": 0.5,
-                    "random": false
-                },
-                "size": {
-                    "value": 3,
-                    "random": true
-                },
-                "line_linked": {
-                    "enable": true,
-                    "distance": 150,
-                    "color": "#ffffff",
-                    "opacity": 0.4,
-                    "width": 1
-                },
-                "move": {
-                    "enable": true,
-                    "speed": 6,
-                    "direction": "none",
-                    "random": false,
-                    "straight": false,
-                    "out_mode": "out",
-                    "bounce": false
-                }
-            },
-            "interactivity": {
-                "detect_on": "canvas",
-                "events": {
-                    "onhover": {
-                        "enable": true,
-                        "mode": "repulse"
-                    },
-                    "onclick": {
-                        "enable": true,
-                        "mode": "push"
-                    },
-                    "resize": true
-                }
-            },
-            "retina_detect": true
+        // 初始化 particles.js
+        particlesJS.load('particles-js', 'js/particles-config.json', function() {
+            console.log('callback - particles.js config loaded');
         });
-
+    </script>
+    <script>
         // 主题切换
         const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
         

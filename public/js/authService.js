@@ -10,8 +10,8 @@ if (typeof window.AuthService === 'undefined') {
                 origin: window.location.origin
             });
 
-            // 使用相对路径，这样前端和API在同一域名下
-            this.apiUrl = '/api';
+            // 根据环境设置 API URL
+            this.apiUrl = 'https://illustrious-perfection-production.up.railway.app/api';
             console.log('[AuthService] Initializing with API URL:', this.apiUrl);
             
             this.tokenKey = 'token';
@@ -56,17 +56,21 @@ if (typeof window.AuthService === 'undefined') {
             window.location.href = 'https://w3router.github.io/eonweb/public/auth/login.html';
         }
 
-        // API 请求基础配置
-        getRequestConfig(options = {}) {
+        // 获取请求配置
+        getRequestConfig(customConfig = {}) {
             const config = {
-                ...options,
-                credentials: 'include',
+                ...customConfig,
                 headers: {
                     'Content-Type': 'application/json',
-                    ...options.headers
-                }
+                    ...customConfig.headers
+                },
+                credentials: 'include'
             };
-            
+
+            if (this.token) {
+                config.headers['Authorization'] = `Bearer ${this.token}`;
+            }
+
             console.log('[AuthService] Request config:', config);
             return config;
         }
