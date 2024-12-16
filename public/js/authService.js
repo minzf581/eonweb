@@ -2,7 +2,7 @@
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         constructor() {
-            this.apiBaseUrl = 'https://eonweb-production.up.railway.app';
+            this.apiBaseUrl = 'https://eonweb-production.up.railway.app:8080';
             this.tokenKey = 'token';
             this.userKey = 'user';
         }

@@ -40,21 +40,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS 配置
-const allowedOrigins = ['https://w3router.github.io'];
-
 app.use(cors({
-    origin: function (origin, callback) {
-        // 检查请求源是否在允许列表中
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('CORS not allowed'));
-        }
-    },
+    origin: true,  // 允许所有来自 w3router.github.io 的请求
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
-    preflightContinue: false,
     optionsSuccessStatus: 204
 }));
 
