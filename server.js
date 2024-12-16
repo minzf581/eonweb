@@ -43,100 +43,106 @@ app.get('/', (req, res) => {
 });
 
 // 数据库连接
-mongoose.connect(process.env.MONGODB_URI)
-    .then(async () => {
-        console.log('MongoDB connected');
-        console.log('Frontend URL:', process.env.FRONTEND_URL);
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // 5 秒超时
+    socketTimeoutMS: 45000, // 45 秒超时
+    family: 4 // 强制使用 IPv4
+})
+.then(async () => {
+    console.log('MongoDB connected');
+    console.log('Frontend URL:', process.env.FRONTEND_URL);
+    
+    // 创建默认管理员账户
+    try {
+        const adminEmail = 'info@eon-protocol.com';
+        const adminPassword = 'vijTo9-kehmet-cessis';
+        console.log('Checking for admin account:', adminEmail);
+        const existingAdmin = await User.findOne({ email: adminEmail });
+        console.log('Existing admin check result:', existingAdmin);
         
-        // 创建默认管理员账户
-        try {
-            const adminEmail = 'info@eon-protocol.com';
-            const adminPassword = 'vijTo9-kehmet-cessis';
-            console.log('Checking for admin account:', adminEmail);
-            const existingAdmin = await User.findOne({ email: adminEmail });
-            console.log('Existing admin check result:', existingAdmin);
-            
-            if (!existingAdmin) {
-                console.log('Creating admin account...');
-                const hashedPassword = await bcrypt.hash(adminPassword, 10);
-                console.log('Password hashed');
-                const admin = new User({
-                    email: adminEmail,
-                    password: hashedPassword,
-                    isAdmin: true
-                });
-                console.log('Admin user object created:', admin);
-                await admin.save();
-                console.log('Default admin account created:', admin);
-            } else {
-                console.log('Admin account already exists:', existingAdmin);
-            }
-
-            // 创建默认任务
-            const Task = require('./models/Task');
-            const defaultTasks = [
-                {
-                    title: 'Bandwidth Sharing',
-                    description: 'Share bandwidth to support AI data crawling',
-                    points: 100,
-                    type: 'daily',
-                    requirements: 'Stable internet connection',
-                    isActive: true,
-                    status: 'Coming Soon'
-                },
-                {
-                    title: 'Data Validation',
-                    description: 'Help validate and improve AI training data quality',
-                    points: 50,
-                    type: 'daily',
-                    requirements: 'Basic understanding of data quality',
-                    isActive: true,
-                    status: 'Coming Soon'
-                },
-                {
-                    title: 'Referral Program',
-                    description: 'Invite new users to join EON Protocol. Earn 100 points for each referral when they use your referral code (50 points without referral code). New users also receive 100 points. Daily limit: 10 referrals.',
-                    points: 100,
-                    type: 'daily',
-                    requirements: 'Complete email verification and pass reCAPTCHA verification',
-                    isActive: true,
-                    status: 'Active',
-                    dailyLimit: 10,
-                    basePoints: 50,
-                    bonusPoints: 50
-                }
-            ];
-
-            for (const taskData of defaultTasks) {
-                const existingTask = await Task.findOne({ title: taskData.title });
-                if (!existingTask) {
-                    const task = new Task(taskData);
-                    await task.save();
-                    console.log(`Default task created: ${taskData.title}`);
-                } else {
-                    // 更新现有任务的状态和其他字段
-                    await Task.findOneAndUpdate(
-                        { title: taskData.title },
-                        { $set: taskData },
-                        { new: true }
-                    );
-                    console.log(`Default task updated: ${taskData.title}`);
-                }
-            }
-        } catch (error) {
-            console.error('Error during initialization:', error);
+        if (!existingAdmin) {
+            console.log('Creating admin account...');
+            const hashedPassword = await bcrypt.hash(adminPassword, 10);
+            console.log('Password hashed');
+            const admin = new User({
+                email: adminEmail,
+                password: hashedPassword,
+                isAdmin: true
+            });
+            console.log('Admin user object created:', admin);
+            await admin.save();
+            console.log('Default admin account created:', admin);
+        } else {
+            console.log('Admin account already exists:', existingAdmin);
         }
-        
-        // 启动服务器
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server is running on port ${PORT}`);
-        });
-    })
-    .catch(err => {
-        console.error('MongoDB connection error:', err);
-        process.exit(1);  // 如果数据库连接失败，退出进程
+
+        // 创建默认任务
+        const Task = require('./models/Task');
+        const defaultTasks = [
+            {
+                title: 'Bandwidth Sharing',
+                description: 'Share bandwidth to support AI data crawling',
+                points: 100,
+                type: 'daily',
+                requirements: 'Stable internet connection',
+                isActive: true,
+                status: 'Coming Soon'
+            },
+            {
+                title: 'Data Validation',
+                description: 'Help validate and improve AI training data quality',
+                points: 50,
+                type: 'daily',
+                requirements: 'Basic understanding of data quality',
+                isActive: true,
+                status: 'Coming Soon'
+            },
+            {
+                title: 'Referral Program',
+                description: 'Invite new users to join EON Protocol. Earn 100 points for each referral when they use your referral code (50 points without referral code). New users also receive 100 points. Daily limit: 10 referrals.',
+                points: 100,
+                type: 'daily',
+                requirements: 'Complete email verification and pass reCAPTCHA verification',
+                isActive: true,
+                status: 'Active',
+                dailyLimit: 10,
+                basePoints: 50,
+                bonusPoints: 50
+            }
+        ];
+
+        for (const taskData of defaultTasks) {
+            const existingTask = await Task.findOne({ title: taskData.title });
+            if (!existingTask) {
+                const task = new Task(taskData);
+                await task.save();
+                console.log(`Default task created: ${taskData.title}`);
+            } else {
+                // 更新现有任务的状态和其他字段
+                await Task.findOneAndUpdate(
+                    { title: taskData.title },
+                    { $set: taskData },
+                    { new: true }
+                );
+                console.log(`Default task updated: ${taskData.title}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
+    
+    // 启动服务器
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server is running on port ${PORT}`);
     });
+})
+.catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);  // 如果数据库连接失败，退出进程
+});
 
 // 认证 API 路由
 app.post('/api/auth/register', async (req, res) => {
@@ -174,36 +180,29 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log('Login attempt:', { email, password });
+        console.log('Login attempt:', { email });
         
         const user = await UserService.verifyUser(email, password);
-        console.log('User found:', user);
-        
-        if (user) {
-            const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
-            res.json({
-                success: true,
-                message: 'Login successful',
-                token,
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    isAdmin: user.isAdmin
-                }
-            });
-        } else {
-            console.log('Authentication failed - no user found or password mismatch');
-            res.status(401).json({
-                success: false,
-                message: 'Invalid email or password'
-            });
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
-    } catch (error) {
-        console.error('Login error details:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message
+
+        const token = jwt.sign(
+            { userId: user.id, isAdmin: user.isAdmin },
+            process.env.JWT_SECRET
+        );
+
+        res.json({
+            token,
+            user: {
+                email: user.email,
+                isAdmin: user.isAdmin,
+                points: user.points
+            }
         });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: error.message });
     }
 });
 
@@ -244,6 +243,7 @@ app.get('/api/users', authenticateToken, isAdmin, async (req, res) => {
         const users = await UserService.getAllUsers();
         res.json(users);
     } catch (error) {
+        console.error('Error getting users:', error);
         res.status(500).json({ message: error.message });
     }
 });
@@ -381,18 +381,13 @@ app.get('/api/user/referrals', authenticateToken, async (req, res) => {
 // 获取当前用户信息
 app.get('/api/user', authenticateToken, async (req, res) => {
     try {
-        const user = await UserService.findById(req.user.userId);
+        const user = await UserService.getUserById(req.user.userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.json({
-            id: user.id,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            points: user.points,
-            referralCode: user.referralCode
-        });
+        res.json(user);
     } catch (error) {
+        console.error('Error getting user:', error);
         res.status(500).json({ message: error.message });
     }
 });
