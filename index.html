@@ -941,6 +941,120 @@ footer p {
                 width: 100%;
             }
         }
+
+        /* Core Strengths Section */
+        .core-strengths {
+            padding: 6rem 0;
+            background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+        }
+
+        .strengths-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .strengths-content {
+            flex: 1;
+        }
+
+        .strengths-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+            position: relative;
+        }
+
+        .strengths-content h2:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--primary-color);
+        }
+
+        .strengths-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .strength-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .strength-item:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .strength-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-right: 1rem;
+            min-width: 40px;
+        }
+
+        .strength-content {
+            flex: 1;
+        }
+
+        .strength-content h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .strength-content p {
+            color: var(--secondary-color);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .strengths-image {
+            flex: 1;
+            position: relative;
+        }
+
+        .strengths-image img {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 968px) {
+            .strengths-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+            }
+
+            .strengths-content h2:after {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            .strength-item {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .strength-icon {
+                margin: 0 0 1rem 0;
+            }
+        }
     </style>
     <script src="https://w3router.github.io/eonweb/public/js/authService.js"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
@@ -996,22 +1110,46 @@ footer p {
         </div>
     </section>
 
-<section id="solution" class="section solution-section">
-    <div class="solution-container">
-        <div class="solution-content">
-            <h2>Our Core Strengths</h2>
-            <ul class="solution-list">
-                <li>Advanced Privacy Computing with FHE Technology, Powered by Distributed Architecture</li>
-                <li>Industry-Leading Compliance Framework for Secure Data Operations</li>
-                <li>Robust Community-Driven Development and Support Ecosystem</li>
-            </ul>
+    <!-- Core Strengths Section -->
+    <section id="solution" class="core-strengths">
+        <div class="strengths-container">
+            <div class="strengths-content">
+                <h2>Our Core Strengths</h2>
+                <ul class="strengths-list">
+                    <li class="strength-item">
+                        <div class="strength-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="strength-content">
+                            <h3>Advanced Privacy Computing</h3>
+                            <p>Leveraging FHE Technology and Distributed Architecture to ensure maximum data security and privacy in all operations.</p>
+                        </div>
+                    </li>
+                    <li class="strength-item">
+                        <div class="strength-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="strength-content">
+                            <h3>Industry-Leading Compliance</h3>
+                            <p>Comprehensive framework ensuring secure data operations that meet and exceed industry standards.</p>
+                        </div>
+                    </li>
+                    <li class="strength-item">
+                        <div class="strength-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="strength-content">
+                            <h3>Community-Driven Development</h3>
+                            <p>Strong ecosystem supported by active community engagement and continuous collaborative improvement.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="strengths-image">
+                <img src="https://w3router.github.io/eonweb/public/images/solution-modern.jpg" alt="EON Protocol Solution Visualization" loading="lazy">
+            </div>
         </div>
-        <div class="solution-image">
-          <img src="/eonweb/public/images/solution-modern.jpg" alt="EON Protocol Solution Visualization" loading="lazy">
-      </div>
-    </div>
-</section>
-
+    </section>
 
     <!-- About Section -->
     <section id="about" class="section">

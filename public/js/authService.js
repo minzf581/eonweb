@@ -79,7 +79,7 @@ class AuthService {
 
     // 执行登录
     async login(email, password) {
-        const response = await fetch(`${this.apiBaseUrl}/auth/api/login`, {
+        const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
