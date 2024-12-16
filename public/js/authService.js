@@ -83,38 +83,24 @@ if (typeof window.AuthService === 'undefined') {
         async login(email, password) {
             console.log('[AuthService] Attempting login:', { email });
             try {
-                // First, send a preflight OPTIONS request
-                const preflightResponse = await fetch(`${this.apiUrl}/api/auth/login`, {
-                    method: 'OPTIONS',
-                    headers: {
-                        'Origin': window.location.origin,
-                        'Access-Control-Request-Method': 'POST',
-                        'Access-Control-Request-Headers': 'Content-Type,Authorization'
-                    },
-                    mode: 'cors',
-                    credentials: 'include'
-                });
-                
-                console.log('[AuthService] Preflight response:', {
-                    status: preflightResponse.status,
-                    headers: Object.fromEntries(preflightResponse.headers.entries())
-                });
-
-                // Then send the actual login request
                 const response = await fetch(`${this.apiUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Origin': window.location.origin
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password }),
-                    mode: 'cors',
-                    credentials: 'include'
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+
+                console.log('Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries())
                 });
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('[AuthService] Login failed:', {
+                    console.error('Login failed:', {
                         status: response.status,
                         statusText: response.statusText,
                         error: errorText
@@ -123,6 +109,7 @@ if (typeof window.AuthService === 'undefined') {
                 }
 
                 const data = await response.json();
+                console.log('Login successful:', data);
                 this.setAuth(data.token, data.user);
                 return data;
             } catch (error) {

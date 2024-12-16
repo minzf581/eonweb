@@ -29,27 +29,17 @@ const corsOptions = {
         console.log('Allowed Origins:', CORS_ALLOWED_ORIGINS);
         
         // 在开发环境中允许没有 origin
-        if (!origin && NODE_ENV === 'development') {
-            return callback(null, true);
-        }
-        
-        if (CORS_ALLOWED_ORIGINS.includes(origin)) {
+        if (!origin || CORS_ALLOWED_ORIGINS.includes(origin)) {
             callback(null, true);
         } else {
             console.log('Origin not allowed:', origin);
             callback(new Error(`CORS not allowed for origin: ${origin}`));
         }
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
-    maxAge: 86400,
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+    credentials: true
 };
 
-// 启用 CORS - 必须在任何路由之前
+// 启用 CORS
 app.use(cors(corsOptions));
 
 // 记录所有请求
