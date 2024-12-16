@@ -57,10 +57,16 @@ if (typeof window.AuthService === 'undefined') {
         async login(email, password) {
             try {
                 console.log('Attempting login...');
-                const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, this.getRequestConfig({
+                const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
                     method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        ...(this.getToken() ? { 'Authorization': `Bearer ${this.getToken()}` } : {})
+                    },
                     body: JSON.stringify({ email, password })
-                }));
+                });
 
                 if (!response.ok) {
                     const error = await response.json();

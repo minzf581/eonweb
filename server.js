@@ -18,38 +18,17 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS 配置
 const corsOptions = {
-    origin: function (origin, callback) {
-        const allowedOrigins = ['https://w3router.github.io', 'http://localhost:3000', 'https://eon-protocol.github.io'];
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: 'https://w3router.github.io',  // Be specific about the origin
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
 
 // 预检请求处理
 app.options('*', cors(corsOptions));
-
-// 添加安全头
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && ['https://w3router.github.io', 'http://localhost:3000', 'https://eon-protocol.github.io'].includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-    }
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;
