@@ -2,11 +2,16 @@
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         constructor() {
-            // 根据当前环境选择 API URL
-            this.apiUrl = window.location.hostname === 'localhost' 
-                ? 'http://localhost:8080'
-                : 'https://illustrious-perfection-production.up.railway.app';
-                
+            // 调试信息
+            console.log('Current location:', {
+                href: window.location.href,
+                hostname: window.location.hostname,
+                protocol: window.location.protocol,
+                origin: window.location.origin
+            });
+
+            // 直接使用生产环境 URL
+            this.apiUrl = 'https://illustrious-perfection-production.up.railway.app';
             console.log('[AuthService] Initializing with API URL:', this.apiUrl);
             
             this.tokenKey = 'token';
