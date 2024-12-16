@@ -39,10 +39,26 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 设置正确的 MIME 类型
+app.use((req, res, next) => {
+    if (req.url.endsWith('.js')) {
+        res.type('application/javascript');
+    }
+    next();
+});
+
 // 静态文件服务配置
+const staticOptions = {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.js')) {
+            res.set('Content-Type', 'application/javascript');
+        }
+    }
+};
+
 console.log('Setting up static file serving from:', path.join(__dirname));
-app.use('/', express.static(path.join(__dirname)));
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname), staticOptions));
+app.use('/public', express.static(path.join(__dirname, 'public'), staticOptions));
 
 // 添加调试日志中间件
 app.use((req, res, next) => {
@@ -77,31 +93,15 @@ console.log('- Port:', MONGOPORT);
 console.log('- User:', MONGOUSER);
 console.log('- Connection URL:', MONGO_URL.replace(/mongodb:\/\/.*@/, 'mongodb://[credentials]@'));
 
-// CORS configuration
-const allowedOrigins = [
-    'https://w3router.github.io',
-    'https://illustrious-perfection-production.up.railway.app',
-    'https://illustrious-perfection.up.railway.app'
-];
-
-app.use(cors({
-    origin: function(origin, callback) {
-        console.log('Incoming request from origin:', origin);
-        
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-            callback(null, true);
-        } else {
-            console.log('Origin not allowed:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
+// CORS 配置
+const corsOptions = {
+    origin: ['http://localhost:3000', 'https://illustrious-perfection-production.up.railway.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
 
 // 启动服务器
 const PORT = process.env.PORT || 3000;

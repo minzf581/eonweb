@@ -2,18 +2,18 @@
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         constructor() {
-            // API URL configuration using Railway service name
-            const apiBaseUrls = [
-                'https://illustrious-perfection-production.up.railway.app',  // Production URL
-                'https://illustrious-perfection.up.railway.app',             // Staging URL
-                window.location.origin                                       // Local development
-            ].filter(Boolean);
-            
-            this.apiBaseUrl = apiBaseUrls[0];
-            console.log('[AuthService] Initializing with API URL:', this.apiBaseUrl);
+            // 根据当前环境选择 API URL
+            this.apiUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000'
+                : 'https://illustrious-perfection-production.up.railway.app';
+                
+            console.log('[AuthService] Initializing with API URL:', this.apiUrl);
             
             this.tokenKey = 'token';
             this.userKey = 'user';
+            
+            // 从 localStorage 获取 token
+            this.token = localStorage.getItem(this.tokenKey);
             
             // Add request interceptor for debugging
             this.addRequestInterceptor();
@@ -57,7 +57,7 @@ if (typeof window.AuthService === 'undefined') {
             try {
                 console.log('[AuthService] Attempting login:', { email });
                 
-                const url = `${this.apiBaseUrl}/api/auth/login`;
+                const url = `${this.apiUrl}/api/auth/login`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
@@ -91,7 +91,7 @@ if (typeof window.AuthService === 'undefined') {
                     throw new Error('No authentication token found');
                 }
 
-                const url = `${this.apiBaseUrl}/api/user`;
+                const url = `${this.apiUrl}/api/user`;
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
@@ -166,7 +166,7 @@ if (typeof window.AuthService === 'undefined') {
         async fetchWithAuth(endpoint, options = {}) {
             try {
                 console.log(`Fetching ${endpoint} with auth`);
-                const response = await fetch(`${this.apiBaseUrl}${endpoint}`, this.getRequestConfig(options));
+                const response = await fetch(`${this.apiUrl}${endpoint}`, this.getRequestConfig(options));
 
                 if (!response.ok) {
                     const error = await response.json();
