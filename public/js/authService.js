@@ -219,19 +219,37 @@ if (typeof window.AuthService === 'undefined') {
             }
         }
 
+        // 获取用户任务
+        async getUserTasks() {
+            try {
+                const response = await this.fetchWithAuth('/api/tasks/user');
+                return response.tasks || [];
+            } catch (error) {
+                console.error('Error getting user tasks:', error);
+                return [];
+            }
+        }
+
         // 获取用户统计信息
         async getUserStats() {
-            return this.fetchWithAuth('/users/stats');
+            try {
+                const response = await this.fetchWithAuth('/api/users/stats');
+                return response;
+            } catch (error) {
+                console.error('Error getting user stats:', error);
+                return null;
+            }
         }
 
         // 获取推荐信息
         async getReferralInfo() {
-            return this.fetchWithAuth('/users/referral-info');
-        }
-
-        // 获取用户任务
-        async getUserTasks() {
-            return this.fetchWithAuth('/tasks/user');
+            try {
+                const response = await this.fetchWithAuth('/api/users/referral-info');
+                return response;
+            } catch (error) {
+                console.error('Error getting referral info:', error);
+                return null;
+            }
         }
 
         // 获取用户角色

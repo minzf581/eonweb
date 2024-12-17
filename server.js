@@ -270,19 +270,26 @@ const isAdmin = (req, res, next) => {
 app.post('/proxy/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log('Login attempt:', { email });
-
-        // 在这里添加登录逻辑
+        
+        // 查找用户
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: 'Invalid email or password' });
         }
 
+        // 验证密码
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: 'Invalid email or password' });
         }
 
+        // 设置管理员权限
+        if (email === 'info@eon-protocol.com') {
+            user.isAdmin = true;
+            await user.save();
+        }
+
+        // 生成 token
         const token = jwt.sign(
             { userId: user._id, email: user.email, isAdmin: user.isAdmin },
             config.jwt.secret,
@@ -292,7 +299,6 @@ app.post('/proxy/auth/login', async (req, res) => {
         res.json({
             token,
             user: {
-                id: user._id,
                 email: user.email,
                 isAdmin: user.isAdmin
             }
