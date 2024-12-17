@@ -4,7 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - EON Protocol</title>
-    <script src="/public/js/authService.js"></script>
+    <script src="https://eonweb-production.up.railway.app/public/js/authService.js"></script>
+    <script>
+        // 初始化 AuthService
+        function initializeAuthService() {
+            try {
+                if (!window.authService && window.AuthService) {
+                    console.log('Creating new AuthService instance...');
+                    window.authService = new AuthService();
+                    return true;
+                } else if (window.authService) {
+                    console.log('AuthService already initialized');
+                    return true;
+                }
+                console.error('AuthService class not found');
+                return false;
+            } catch (error) {
+                console.error('Error initializing AuthService:', error);
+                return false;
+            }
+        }
+
+        // 立即尝试初始化
+        initializeAuthService();
+        
+        // 如果初始化失败，在 DOMContentLoaded 时再次尝试
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.authService) {
+                console.log('Retrying AuthService initialization...');
+                initializeAuthService();
+            }
+        });
+    </script>
     <style>
         :root {
             --primary-color: #4dabf7;
@@ -198,7 +229,9 @@
                 <div class="user-info">
                     <span id="welcomeMessage">Welcome, <span id="userEmail">Loading...</span></span>
                 </div>
-                <button onclick="handleLogout()" class="logout-btn">Logout</button>
+                <div class="user-actions">
+                    <button class="logout-btn">Logout</button>
+                </div>
             </div>
         </header>
 
@@ -253,15 +286,57 @@
     </div>
 
     <script>
+        // 处理退出登录
+        async function handleLogout() {
+            console.log('Handling logout...');
+            try {
+                // 如果 authService 未初始化，尝试初始化
+                if (!window.authService) {
+                    console.log('AuthService not initialized, attempting to initialize...');
+                    if (!initializeAuthService()) {
+                        throw new Error('Failed to initialize AuthService');
+                    }
+                }
+
+                // 再次检查 authService 是否可用
+                if (!window.authService) {
+                    throw new Error('AuthService is still not available');
+                }
+
+                console.log('Calling logout...');
+                await window.authService.logout();
+                console.log('Logout successful');
+
+                // 清除本地存储
+                console.log('Clearing local storage...');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+
+                // 重定向到登录页面
+                console.log('Redirecting to login page...');
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                // 即使出错也清除本地存储并重定向
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+            }
+        }
+
         // 获取用户信息并显示
         async function loadUserInfo() {
+            console.log('Loading user info...');
             try {
                 if (!window.authService) {
                     throw new Error('AuthService not initialized');
                 }
                 const user = window.authService.getUser();
-                if (user) {
+                console.log('User info:', user);
+                if (user && user.email) {
                     document.getElementById('userEmail').textContent = user.email;
+                } else {
+                    throw new Error('User info not available');
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
@@ -271,16 +346,20 @@
 
         // 加载推荐信息
         async function loadReferralInfo() {
+            console.log('Loading referral info...');
             try {
                 if (!window.authService) {
                     throw new Error('AuthService not initialized');
                 }
                 const response = await window.authService.getReferralInfo();
+                console.log('Referral info:', response);
                 if (response) {
                     document.getElementById('referralCode').textContent = response.referralCode || 'N/A';
                     document.getElementById('referralLink').textContent = `${window.location.origin}/register?ref=${response.referralCode}`;
                     document.getElementById('totalReferrals').textContent = response.referralCount || 0;
                     document.getElementById('referralPoints').textContent = response.totalPoints || 0;
+                } else {
+                    throw new Error('No referral info received');
                 }
             } catch (error) {
                 console.error('Error loading referral info:', error);
@@ -293,11 +372,13 @@
 
         // 加载任务信息
         async function loadTasks() {
+            console.log('Loading tasks...');
             try {
                 if (!window.authService) {
                     throw new Error('AuthService not initialized');
                 }
                 const tasks = await window.authService.getUserTasks();
+                console.log('Tasks:', tasks);
                 const taskList = document.getElementById('taskList');
                 taskList.innerHTML = '';
 
@@ -325,15 +406,19 @@
 
         // 加载统计信息
         async function loadStats() {
+            console.log('Loading stats...');
             try {
                 if (!window.authService) {
                     throw new Error('AuthService not initialized');
                 }
                 const stats = await window.authService.getUserStats();
+                console.log('Stats:', stats);
                 if (stats) {
                     document.getElementById('totalTasks').textContent = stats.totalTasks || 0;
                     document.getElementById('completedTasks').textContent = stats.completedTasks || 0;
                     document.getElementById('earnedPoints').textContent = stats.earnedPoints || 0;
+                } else {
+                    throw new Error('No stats received');
                 }
             } catch (error) {
                 console.error('Error loading stats:', error);
@@ -343,45 +428,38 @@
             }
         }
 
-        // 处理退出登录
-        async function handleLogout() {
-            try {
-                if (!window.authService) {
-                    throw new Error('AuthService not initialized');
-                }
-                await window.authService.logout();
-                // 清除本地存储
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                // 重定向到登录页面
-                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                // 即使失败也重定向到登录页面，确保用户可以重新登录
-                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
-            }
-        }
+        // 在 DOM 加载完成后设置事件监听器
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化 AuthService
+            initializeAuthService();
 
-        // 页面加载时初始化
-        window.addEventListener('load', async () => {
-            // 确保 authService 已经初始化
-            if (!window.authService) {
-                window.authService = new AuthService();
+            // 为 logout 按钮添加事件监听器
+            const logoutBtn = document.querySelector('.logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    handleLogout().catch(error => {
+                        console.error('Error in logout handler:', error);
+                    });
+                });
             }
-            
+
             // 检查是否已认证
-            if (!window.authService.isAuthenticated()) {
+            if (!window.authService || !window.authService.isAuthenticated()) {
+                console.log('User not authenticated, redirecting to login...');
                 window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
                 return;
             }
 
+            console.log('Loading dashboard data...');
             try {
-                await loadUserInfo();
-                await loadReferralInfo();
-                await loadTasks();
-                await loadStats();
+                loadUserInfo();
+                loadReferralInfo();
+                loadTasks();
+                loadStats();
+                console.log('Dashboard data loaded successfully');
             } catch (error) {
-                console.error('Error initializing dashboard:', error);
+                console.error('Error loading dashboard data:', error);
             }
         });
     </script>
