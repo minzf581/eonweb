@@ -7,6 +7,13 @@
     <script src="/public/js/authService.js"></script>
     <script>
         let isCheckingAuth = false;
+        let authService;
+
+        // 初始化 AuthService
+        window.addEventListener('load', () => {
+            authService = new AuthService();
+            checkAuthStatus();
+        });
 
         // 检查认证状态
         async function checkAuthStatus() {
@@ -14,29 +21,16 @@
             isCheckingAuth = true;
 
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    console.log('No token found');
-                    return;
-                }
-
-                const response = await fetch('https://eonweb-production.up.railway.app/api/user/info', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Invalid token');
-                }
-
-                const userData = await response.json();
+                console.log('Page loaded, checking auth status');
+                const isAuthenticated = await authService.isAuthenticated();
                 
-                // 如果用户已登录，重定向到相应页面
-                if (userData.isAdmin) {
-                    window.location.href = '/public/admin/dashboard.html';
-                } else {
-                    window.location.href = '/public/dashboard/index.html';
+                if (isAuthenticated) {
+                    const user = authService.getUser();
+                    if (user && user.isAdmin) {
+                        window.location.href = '/public/admin/dashboard.html';
+                    } else {
+                        window.location.href = '/public/dashboard/index.html';
+                    }
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
@@ -108,9 +102,6 @@
                 document.getElementById('error-message').textContent = error.message || 'Registration failed. Please try again.';
             }
         }
-
-        // 页面加载完成后检查一次认证状态
-        window.addEventListener('load', checkAuthStatus);
 
         // 检查推荐任务是否启用
         async function checkReferralTaskStatus() {
