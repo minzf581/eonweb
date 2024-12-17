@@ -20,7 +20,12 @@ const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 
 // MongoDB 配置
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@junction.proxy.rlwy.net:15172/?retryWrites=true&w=majority';
+const RAILWAY_PRIVATE_DOMAIN = process.env.RAILWAY_PRIVATE_DOMAIN || 'illustrious-perfection.railway.internal';
+const MONGOHOST = process.env.MONGOHOST || 'mongodb.railway.internal';
+const MONGOPORT = process.env.MONGOPORT || '27017';
+const MONGOUSER = process.env.MONGOUSER || 'mongo';
+const MONGOPASSWORD = process.env.MONGOPASSWORD || 'sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq';
+const MONGODB_URI = `mongodb://${MONGOUSER}:${MONGOPASSWORD}@${MONGOHOST}:${MONGOPORT}`;
 
 // 验证必要的环境变量
 if (!JWT_SECRET) {
@@ -44,7 +49,9 @@ const mongooseOptions = {
     maxPoolSize: 10,
     minPoolSize: 2,
     maxIdleTimeMS: 10000,
-    connectTimeoutMS: 10000
+    connectTimeoutMS: 10000,
+    retryWrites: true,
+    w: 'majority'
 };
 
 // MongoDB 连接
@@ -328,22 +335,11 @@ console.log('- Service Name:', RAILWAY_SERVICE_NAME);
 console.log('- Environment:', RAILWAY_ENVIRONMENT);
 
 // MongoDB connection configuration
-const MONGOHOST = process.env.MONGOHOST || 'mongodb.railway.internal';
-const MONGOPORT = process.env.MONGOPORT || '27017';
-const MONGOUSER = process.env.MONGOUSER || 'mongo';
-const MONGOPASSWORD = process.env.MONGOPASSWORD || 'sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq';
-
-// Construct MongoDB URL using Railway private domain
-const MONGO_URL = `mongodb://${MONGOUSER}:${MONGOPASSWORD}@${MONGOHOST}:${MONGOPORT}`;
-
 console.log('\n=== MongoDB Configuration ===');
 console.log('- Host:', MONGOHOST);
 console.log('- Port:', MONGOPORT);
 console.log('- User:', MONGOUSER);
-console.log('- Connection URL:', MONGO_URL.replace(/mongodb:\/\/.*@/, 'mongodb://[credentials]@'));
-
-// 启动服务器
-const HOST = process.env.HOST || '0.0.0.0';
+console.log('- Connection URL:', MONGODB_URI.replace(/mongodb:\/\/.*@/, 'mongodb://[credentials]@'));
 
 console.log('\n=== Server Configuration ===');
 console.log('- PORT:', PORT);
