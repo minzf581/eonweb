@@ -174,8 +174,26 @@ if (typeof window.AuthService === 'undefined') {
             }
         }
 
-        isAuthenticated() {
-            return !!this.getToken();
+        async isAuthenticated() {
+            const token = this.getToken();
+            if (!token) {
+                return false;
+            }
+
+            try {
+                // 验证 token 是否有效
+                const response = await fetch(`${this.apiUrl}/auth/verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                return response.ok;
+            } catch (error) {
+                console.error('[AuthService] Token verification failed:', error);
+                return false;
+            }
         }
 
         // 处理登出

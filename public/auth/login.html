@@ -103,10 +103,19 @@
 
     <script>
         // 页面加载时检查认证状态
-        window.addEventListener('load', function() {
+        window.addEventListener('load', async function() {
             console.log('Page loaded, checking auth status');
-            if (window.authService.isAuthenticated()) {
-                handleAuthRedirect();
+            // 如果是从其他页面重定向过来的，清除旧的 token
+            const referrer = document.referrer;
+            if (referrer && referrer.includes('/auth/register.html')) {
+                window.authService.logout();
+                return;
+            }
+            
+            // 检查认证状态
+            const isAuth = await window.authService.isAuthenticated();
+            if (isAuth) {
+                await handleAuthRedirect();
             }
         });
 

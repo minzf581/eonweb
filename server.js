@@ -158,9 +158,16 @@ app.use('/public', express.static(path.join(__dirname, 'public'), {
     lastModified: true
 }));
 
+// 处理 /public 路径下的 404
+app.use('/public/*', (req, res) => {
+    res.status(404).sendFile(path.join(__dirname, '404.html'));
+});
+
 // 所有其他路由都返回 index.html
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    if (!req.path.startsWith('/public/')) {
+        res.sendFile(path.join(__dirname, 'index.html'));
+    }
 });
 
 // 请求日志中间件
