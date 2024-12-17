@@ -258,13 +258,13 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Check authentication
             if (!authService.isAuthenticated()) {
-                window.location.href = './auth/login.html';
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
                 return;
             }
 
             // Check if user is admin (redirect if true)
             if (authService.isAdmin()) {
-                window.location.href = './admin/index.html';
+                window.location.href = 'https://eonweb-production.up.railway.app/public/admin/index.html';
                 return;
             }
 
@@ -286,7 +286,7 @@
 
         async function loadTasks() {
             try {
-                const response = await fetch(`${authService.apiBaseUrl}/api/tasks/user`, {
+                const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/tasks/user', {
                     headers: {
                         'Authorization': `Bearer ${authService.getToken()}`
                     }
@@ -321,7 +321,7 @@
 
         async function loadStats() {
             try {
-                const response = await fetch(`${authService.apiBaseUrl}/api/users/stats`, {
+                const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/users/stats', {
                     headers: {
                         'Authorization': `Bearer ${authService.getToken()}`
                     }
@@ -376,7 +376,7 @@
         // 加载推荐信息
         async function loadReferralInfo() {
             try {
-                const response = await fetch(`${authService.apiBaseUrl}/api/users/referral-info`, {
+                const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/users/referral-info', {
                     headers: {
                         'Authorization': `Bearer ${authService.getToken()}`
                     }
@@ -392,7 +392,7 @@
                 document.getElementById('referralCode').textContent = data.referralCode;
                 
                 // 生成并更新推荐链接
-                const referralLink = `${window.location.origin}${authService.basePath}/public/auth/register.html?ref=${data.referralCode}`;
+                const referralLink = `https://eonweb-production.up.railway.app/public/auth/register.html?ref=${data.referralCode}`;
                 document.getElementById('referralLink').textContent = referralLink;
                 
                 // 更新统计信息

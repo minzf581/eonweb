@@ -217,64 +217,43 @@
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', () => {
             // Check authentication
-            if (!authService.isAuthenticated() || !authService.isAdmin()) {
-                window.location.href = 'login.html';
+            if (!authService.isAuthenticated()) {
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
                 return;
-            }
-
-            // Load user info
-            const auth = authService.getAuth();
-            if (auth && auth.user) {
-                document.querySelector('.username').textContent = auth.user.email;
-            }
-
-            // Add event listeners
-            const userSearchInput = document.getElementById('userSearch');
-            if (userSearchInput) {
-                userSearchInput.addEventListener('input', (e) => {
-                    const query = e.target.value.toLowerCase();
-                    const rows = document.getElementById('userList').getElementsByTagName('tr');
-                    
-                    for (const row of rows) {
-                        const text = row.textContent.toLowerCase();
-                        row.style.display = text.includes(query) ? '' : 'none';
-                    }
-                });
             }
 
             // Load initial data
             loadUsers();
             loadTasks();
+
+            // Set up user info
+            const user = authService.getUser();
+            if (user) {
+                document.querySelector('.username').textContent = user.email;
+            }
         });
 
         // Load users
         async function loadUsers() {
             try {
-                console.log('Loading users with token:', authService.getToken());
-                const response = await fetch(`${authService.apiBaseUrl}/api/users`, {
+                const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/admin/users', {
                     headers: {
-                        'Authorization': `Bearer ${authService.getToken()}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${authService.getToken()}`
                     }
                 });
-                
-                console.log('Users API response status:', response.status);
-                const responseText = await response.text();
-                console.log('Users API response:', responseText);
 
                 if (!response.ok) {
-                    throw new Error(`Failed to load users: ${response.status} ${responseText}`);
+                    throw new Error('Failed to load users');
                 }
 
-                const users = JSON.parse(responseText);
-                console.log('Parsed users:', users);
-                
+                const users = await response.json();
                 const userList = document.getElementById('userList');
-                if (!userList) {
-                    console.error('userList element not found');
+
+                if (users.length === 0) {
+                    userList.innerHTML = '<div class="empty-state">No users found</div>';
                     return;
                 }
-                
+
                 userList.innerHTML = users.map(user => `
                     <tr>
                         <td>${user._id || ''}</td>
@@ -287,18 +266,15 @@
                 `).join('');
             } catch (error) {
                 console.error('Error loading users:', error);
-                const userList = document.getElementById('userList');
-                if (userList) {
-                    userList.innerHTML = `<tr><td colspan="6">Error loading users: ${error.message}</td></tr>`;
-                }
+                document.getElementById('userList').innerHTML = 
+                    '<div class="empty-state">Error loading users</div>';
             }
         }
 
         // Load tasks
         async function loadTasks() {
             try {
-                console.log('Loading tasks with token:', authService.getToken());
-                const response = await fetch(`${authService.apiBaseUrl}/api/tasks`, {
+                const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/admin/tasks', {
                     headers: {
                         'Authorization': `Bearer ${authService.getToken()}`
                     }
@@ -339,8 +315,8 @@
         // Toggle task status
         async function toggleTaskStatus(taskId) {
             try {
-                const response = await fetch(`${authService.apiBaseUrl}/api/tasks/${taskId}/toggle`, {
-                    method: 'PUT',
+                const response = await fetch(`https://eonweb-production.up.railway.app/proxy/api/admin/tasks/${taskId}/toggle`, {
+                    method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${authService.getToken()}`
                     }
@@ -350,17 +326,18 @@
                     throw new Error('Failed to toggle task status');
                 }
 
-                // Reload tasks
+                // Reload tasks to show updated status
                 loadTasks();
             } catch (error) {
                 console.error('Error toggling task status:', error);
+                alert('Failed to update task status');
             }
         }
 
         // Logout function
         function logout() {
             authService.logout();
-            window.location.href = 'login.html';
+            window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
         }
     </script>
 </body>
