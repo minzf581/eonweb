@@ -208,19 +208,15 @@ app.use((err, req, res, next) => {
 
 // MongoDB 连接选项
 const mongooseOptions = {
-    serverSelectionTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
     family: 4,
     maxPoolSize: 10,
     minPoolSize: 2,
-    maxIdleTimeMS: 30000,
     connectTimeoutMS: 10000,
     retryWrites: true,
     retryReads: true,
-    serverSelectionTimeoutMS: 30000,
-    heartbeatFrequencyMS: 10000,
-    keepAlive: true,
-    keepAliveInitialDelay: 300000
+    heartbeatFrequencyMS: 10000
 };
 
 // MongoDB 连接
