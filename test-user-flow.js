@@ -1,6 +1,6 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-const API_URL = 'https://eonweb-production.up.railway.app/proxy';
+const API_URL = 'http://localhost:3000';
 let userToken = null;
 let referralCode = null;
 

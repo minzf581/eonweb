@@ -28,14 +28,28 @@ const config = {
         host: process.env.HOST || '0.0.0.0'
     },
     jwt: {
-        secret: process.env.NODE_ENV === 'production' 
-            ? process.env.JWT_SECRET 
-            : 'default-development-secret-key-do-not-use-in-production'
+        secret: process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' 
+            ? 'default-development-secret-key-do-not-use-in-production'
+            : null)
     },
     mongodb: {
-        uri: process.env.MONGODB_URI || 'mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@junction.proxy.rlwy.net:15172/?retryWrites=true&w=majority'
+        uri: process.env.MONGODB_URI || (process.env.NODE_ENV !== 'production'
+            ? 'mongodb://localhost:27017/eon-protocol'
+            : null)
     }
 };
+
+// 验证生产环境配置
+if (config.server.env === 'production') {
+    const missingVars = [];
+    if (!config.mongodb.uri) missingVars.push('MONGODB_URI');
+    if (!config.jwt.secret) missingVars.push('JWT_SECRET');
+    
+    if (missingVars.length > 0) {
+        console.error(`Fatal: Missing required environment variables: ${missingVars.join(', ')}`);
+        process.exit(1);
+    }
+}
 
 // 进程错误处理
 process.on('uncaughtException', (error) => {
@@ -75,18 +89,6 @@ function gracefulShutdown(signal) {
 ['SIGTERM', 'SIGINT', 'SIGUSR2'].forEach(signal => {
     process.on(signal, () => gracefulShutdown(signal));
 });
-
-// 验证生产环境配置
-if (config.server.env === 'production') {
-    const missingVars = [];
-    if (!process.env.JWT_SECRET) missingVars.push('JWT_SECRET');
-    if (!process.env.MONGODB_URI) missingVars.push('MONGODB_URI');
-    
-    if (missingVars.length > 0) {
-        console.warn(`Warning: Missing recommended environment variables for production: ${missingVars.join(', ')}`);
-        console.warn('Using default values for development. This is NOT recommended for production!');
-    }
-}
 
 // 打印配置信息（隐藏敏感信息）
 console.log('\n=== Server Configuration ===');
