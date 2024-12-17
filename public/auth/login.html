@@ -84,30 +84,22 @@
         <div id="error-message"></div>
         <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
-                <label for="email">Email</label>
+                <label for="email">Email:</label>
                 <input type="email" id="email" name="email" required>
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
             </div>
             <button type="submit">Login</button>
         </form>
         <div class="links">
-            <a href="https://illustrious-perfection-production.up.railway.app/public/register.html">Don't have an account? Register</a>
+            <a href="https://illustrious-perfection-production.up.railway.app/public/auth/register.html">Don't have an account? Register</a>
         </div>
     </div>
 
     <script>
-        // 调试信息
-        console.log('Current location:', {
-            href: window.location.href,
-            hostname: window.location.hostname,
-            protocol: window.location.protocol,
-            origin: window.location.origin
-        });
-
-        // 页面加载完成后检查是否已登录
+        // 页面加载时检查认证状态
         window.addEventListener('load', function() {
             console.log('Page loaded, checking auth status');
             if (window.authService.isAuthenticated()) {
@@ -117,12 +109,11 @@
 
         async function handleLogin(event) {
             event.preventDefault();
+            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('error-message');
             
             try {
-                console.log('Attempting login with:', { email });
                 const loginData = await window.authService.login(email, password);
 
                 if (loginData.token) {
@@ -132,8 +123,7 @@
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                errorDiv.style.display = 'block';
-                errorDiv.textContent = 'Login failed: ' + error.message;
+                alert('Login failed: ' + error.message);
             }
         }
     </script>
