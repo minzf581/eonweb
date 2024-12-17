@@ -4,17 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
-    <script src="../js/authService.js"></script>
+    <script src="/public/js/authService.js"></script>
     <script>
         let isCheckingAuth = false;
         let authService;
 
         // 初始化 AuthService 并检查认证状态
         async function initAuth() {
-            if (!authService) {
-                authService = new AuthService();
+            try {
+                if (!authService) {
+                    authService = new AuthService();
+                }
+                await checkAuthStatus();
+            } catch (error) {
+                console.error('Init auth error:', error);
+                document.getElementById('login-container').style.display = 'block';
             }
-            await checkAuthStatus();
         }
 
         // 处理登录
@@ -52,20 +57,28 @@
 
         // 检查认证状态
         async function checkAuthStatus() {
-            if (isCheckingAuth) return;
-            isCheckingAuth = true;
-
+            if (isCheckingAuth) {
+                console.log('Auth check already in progress, skipping...');
+                return;
+            }
+            
             try {
+                isCheckingAuth = true;
                 console.log('Checking auth status...');
+                
+                // 先隐藏登录容器，避免闪烁
+                document.getElementById('login-container').style.display = 'none';
+                
                 const isAuthenticated = await authService.isAuthenticated();
+                console.log('Auth status:', isAuthenticated);
                 
                 if (isAuthenticated) {
                     const user = authService.getUser();
                     // 如果已认证，直接重定向到相应页面
                     if (user && user.isAdmin) {
-                        window.location.replace('/public/admin/dashboard.html');
+                        window.location.href = '/public/admin/dashboard.html';
                     } else {
-                        window.location.replace('/public/dashboard/index.html');
+                        window.location.href = '/public/dashboard/index.html';
                     }
                 } else {
                     // 未认证时显示登录表单
@@ -73,10 +86,8 @@
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
-                // 发生错误时显示登录表单
+                // 发生错误时显示登录表单，但不自动登出
                 document.getElementById('login-container').style.display = 'block';
-                // 清除认证信息
-                await authService.logout();
             } finally {
                 isCheckingAuth = false;
             }
