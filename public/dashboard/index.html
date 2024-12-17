@@ -420,40 +420,61 @@
         async function initializeDashboard() {
             console.log('Initializing dashboard...');
             
-            // 检查认证状态
-            if (!window.authService) {
-                console.log('Creating new AuthService instance...');
-                window.authService = new AuthService();
-            }
-
-            if (!window.authService.isAuthenticated()) {
-                console.log('Not authenticated, redirecting to login...');
-                window.authService.handleAuthError();
-                return;
-            }
-
             try {
-                // 并行加载数据
-                console.log('Loading dashboard data...');
-                await Promise.allSettled([
-                    loadUserInfo(),
-                    loadReferralInfo(),
-                    loadTasks(),
-                    loadStats()
-                ]);
-
-                console.log('Dashboard data loaded');
-
-                // 设置登出按钮事件监听器
-                const logoutBtn = document.querySelector('.logout-btn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', () => {
-                        window.authService.handleLogout();
-                    });
+                // 初始化 AuthService
+                if (!window.authService) {
+                    console.log('Creating new AuthService instance...');
+                    window.authService = new AuthService();
                 }
+
+                // 首先检查token是否存在
+                if (!window.authService.isAuthenticated()) {
+                    console.log('No token found, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return;
+                }
+
+                // 验证token有效性
+                console.log('Validating token...');
+                const isValid = await window.authService.validateToken();
+                if (!isValid) {
+                    console.log('Token validation failed');
+                    window.authService.handleAuthError();
+                    return;
+                }
+
+                // 加载数据
+                console.log('Token valid, loading dashboard data...');
+                const loadPromises = [
+                    loadUserInfo().catch(error => {
+                        console.error('Failed to load user info:', error);
+                        return null;
+                    }),
+                    loadReferralInfo().catch(error => {
+                        console.error('Failed to load referral info:', error);
+                        return null;
+                    }),
+                    loadTasks().catch(error => {
+                        console.error('Failed to load tasks:', error);
+                        return null;
+                    }),
+                    loadStats().catch(error => {
+                        console.error('Failed to load stats:', error);
+                        return null;
+                    })
+                ];
+
+                // 等待所有数据加载完成
+                await Promise.all(loadPromises);
+                console.log('All data loaded');
+
             } catch (error) {
                 console.error('Dashboard initialization error:', error);
-                // 不要触发认证错误处理，避免重定向循环
+                // 显示错误信息但不重定向
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
+                errorDiv.textContent = 'Failed to load dashboard data. Please refresh the page.';
+                document.body.appendChild(errorDiv);
             }
         }
 

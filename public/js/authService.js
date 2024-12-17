@@ -8,7 +8,6 @@ if (typeof window.AuthService === 'undefined') {
             console.log('[AuthService] Initializing...');
             
             // 使用相对于网站根目录的路径
-            this.BASE_URL = '';  // 空字符串表示使用相对路径
             this.AUTH_BASE = '/api/auth';  // 后端 API 路径
             this.API_BASE = '/api';
             console.log('[AuthService] Using API paths:', {
@@ -27,7 +26,7 @@ if (typeof window.AuthService === 'undefined') {
             
             // 添加重定向状态重置
             window.addEventListener('pageshow', () => {
-                this.hasRedirected = false;
+                AuthService.resetRedirectState();
             });
         }
         
@@ -174,46 +173,47 @@ if (typeof window.AuthService === 'undefined') {
             }
         }
 
+        // 简单检查token是否存在
         isAuthenticated() {
             const token = this.getToken();
-            if (!token) {
-                console.log('[AuthService] No token found');
-                return false;
-            }
+            return !!token;
+        }
+
+        // 验证token有效性
+        async validateToken() {
+            const token = this.getToken();
+            if (!token) return false;
 
             try {
-                // 解析token并检查是否过期
-                const tokenData = JSON.parse(atob(token.split('.')[1]));
-                const expirationTime = tokenData.exp * 1000;
-                const isValid = Date.now() < expirationTime;
-                
-                if (!isValid) {
-                    console.log('[AuthService] Token expired');
-                    this.clearAuth();
-                }
-                
-                return isValid;
+                const response = await fetch(`${this.AUTH_BASE}/validate`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                return response.ok;
             } catch (error) {
-                console.error('[AuthService] Token validation error:', error);
-                this.clearAuth();
+                console.error('[AuthService] Token validation failed:', error);
                 return false;
             }
         }
 
         clearAuth() {
-            console.log('[AuthService] Clearing auth data');
             localStorage.removeItem(this.tokenKey);
             localStorage.removeItem(this.userKey);
             this.token = null;
         }
 
+        // 静态变量控制重定向状态
+        static hasRedirected = false;
+
         handleAuthError() {
-            if (this.hasRedirected) {
+            if (AuthService.hasRedirected) {
                 console.log('[AuthService] Redirect already in progress');
                 return;
             }
 
-            this.hasRedirected = true;
+            AuthService.hasRedirected = true;
             console.log('[AuthService] Handling auth error');
             
             // 清理认证数据
@@ -231,15 +231,9 @@ if (typeof window.AuthService === 'undefined') {
             }, 2000);
         }
 
-        async handleLogout() {
-            try {
-                await this.logout();
-                window.location.href = '/public/auth/login.html';
-            } catch (error) {
-                console.error('[AuthService] Logout failed:', error);
-                // Still redirect even if logout fails to ensure user is logged out of frontend
-                window.location.href = '/public/auth/login.html';
-            }
+        // 重置重定向状态
+        static resetRedirectState() {
+            AuthService.hasRedirected = false;
         }
 
         async fetchWithAuth(endpoint, options = {}) {

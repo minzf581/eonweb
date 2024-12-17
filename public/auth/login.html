@@ -11,17 +11,26 @@
             window.authService = new AuthService();
         }
 
-        // 检查是否已经登录
-        function checkAuthAndRedirect() {
+        // 检查认证状态并验证token
+        async function checkAuthAndRedirect() {
             console.log('Checking authentication status...');
-            if (window.authService.isAuthenticated()) {
-                console.log('User is already authenticated, redirecting to dashboard...');
+            
+            if (!window.authService.isAuthenticated()) {
+                console.log('No token found, staying on login page');
+                return;
+            }
+
+            // 验证token有效性
+            console.log('Validating existing token...');
+            const isValid = await window.authService.validateToken();
+            if (isValid) {
+                console.log('Token is valid, redirecting to dashboard...');
                 window.location.href = '/public/dashboard/index.html';
+            } else {
+                console.log('Token is invalid, clearing auth data...');
+                window.authService.clearAuth();
             }
         }
-
-        // 页面加载时检查认证状态
-        document.addEventListener('DOMContentLoaded', checkAuthAndRedirect);
 
         // 处理登录表单提交
         async function handleLogin(event) {
@@ -32,12 +41,19 @@
             const errorElement = document.getElementById('error-message');
             
             try {
-                const response = await window.authService.login(email, password);
+                const response = await fetch(`${window.authService.AUTH_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.message || 'Login failed');
                 }
-                
+
                 const data = await response.json();
                 window.authService.setAuth(data.token, data.user);
                 
@@ -49,6 +65,9 @@
                 errorElement.style.display = 'block';
             }
         }
+
+        // 页面加载时检查认证状态
+        document.addEventListener('DOMContentLoaded', checkAuthAndRedirect);
 
         // 添加表单提交事件监听器
         document.getElementById('loginForm').addEventListener('submit', handleLogin);
