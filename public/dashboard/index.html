@@ -256,8 +256,7 @@
 
     <script>
         let dashboardInitialized = false;
-        let retryCount = 0;
-        const MAX_RETRIES = 3;
+        let hasRedirected = false;
 
         async function initializeDashboard() {
             try {
@@ -265,10 +264,17 @@
                     window.authService = new AuthService();
                 }
 
-                // 验证token有效性
+                // 验证 token 有效性
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.log('No token found, redirecting to login...');
+                    handleAuthError();
+                    return;
+                }
+
                 const isValid = await window.authService.validateToken();
                 if (!isValid) {
-                    window.location.href = '/public/auth/login.html';
+                    handleAuthError();
                     return;
                 }
 
@@ -280,19 +286,19 @@
                 // 加载仪表盘数据
                 await loadDashboardData();
                 dashboardInitialized = true;
-                retryCount = 0;
             } catch (error) {
                 console.error('Dashboard initialization error:', error);
-                
-                if (retryCount < MAX_RETRIES) {
-                    retryCount++;
-                    console.log(`Retrying initialization (${retryCount}/${MAX_RETRIES})...`);
-                    setTimeout(initializeDashboard, 1000 * retryCount);
-                } else {
-                    window.authService.clearAuth();
-                    window.location.href = '/public/auth/login.html';
-                }
+                handleAuthError();
             }
+        }
+
+        function handleAuthError() {
+            if (hasRedirected) return; // 避免重复重定向
+            hasRedirected = true;
+
+            console.log('Handling auth error...');
+            localStorage.removeItem('token');
+            window.location.href = '/public/auth/login.html';
         }
 
         // 加载仪表盘数据的具体实现

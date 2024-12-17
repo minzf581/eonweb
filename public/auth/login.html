@@ -18,9 +18,16 @@
                     return;
                 }
 
-                // 验证token有效性
+                // 检查 Token 是否存在且有效
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.log('No token found, user not logged in.');
+                    return; // 没有 token，停留在登录页面
+                }
+
                 const isValid = await window.authService.validateToken();
                 if (isValid) {
+                    console.log('Token valid, redirecting to dashboard...');
                     window.location.href = '/public/dashboard/index.html';
                 }
             } catch (error) {
@@ -43,6 +50,8 @@
                 }
 
                 await window.authService.login(email, password);
+                
+                // 登录成功后直接跳转，不需要再次验证token
                 window.location.href = '/public/dashboard/index.html';
             } catch (error) {
                 console.error('Login error:', error);
