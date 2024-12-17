@@ -4,19 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
-    <script src="/public/js/authService.js"></script>
+    <script src="../js/authService.js"></script>
     <script>
         let isCheckingAuth = false;
         let authService;
 
-        // 初始化 AuthService
-        window.addEventListener('load', () => {
-            authService = new AuthService();
-            // 仅在非登录页面检查认证状态
-            if (!window.location.pathname.includes('/auth/')) {
-                checkAuthStatus();
+        // 初始化 AuthService 并检查认证状态
+        async function initAuth() {
+            if (!authService) {
+                authService = new AuthService();
             }
-        });
+            await checkAuthStatus();
+        }
 
         // 处理登录
         async function handleLogin(event) {
@@ -60,23 +59,31 @@
                 console.log('Checking auth status...');
                 const isAuthenticated = await authService.isAuthenticated();
                 
-                // 如果已经在登录页面，且用户已认证，则重定向到相应页面
-                if (isAuthenticated && window.location.pathname.includes('/auth/')) {
+                if (isAuthenticated) {
                     const user = authService.getUser();
+                    // 如果已认证，直接重定向到相应页面
                     if (user && user.isAdmin) {
-                        window.location.href = '/public/admin/dashboard.html';
+                        window.location.replace('/public/admin/dashboard.html');
                     } else {
-                        window.location.href = '/public/dashboard/index.html';
+                        window.location.replace('/public/dashboard/index.html');
                     }
+                } else {
+                    // 未认证时显示登录表单
+                    document.getElementById('login-container').style.display = 'block';
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
+                // 发生错误时显示登录表单
+                document.getElementById('login-container').style.display = 'block';
                 // 清除认证信息
                 await authService.logout();
             } finally {
                 isCheckingAuth = false;
             }
         }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', initAuth);
     </script>
     <style>
         body {
@@ -91,13 +98,15 @@
             min-height: 100vh;
         }
 
-        .login-container {
+        #login-container {
+            display: none;  /* 初始隐藏登录表单 */
             background-color: #2a2a2a;
             padding: 2rem;
             border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
+            margin: 1rem;
         }
 
         .form-group {
@@ -107,30 +116,38 @@
         label {
             display: block;
             margin-bottom: 0.5rem;
+            color: #e0e0e0;
         }
 
         input {
             width: 100%;
             padding: 0.5rem;
-            border: 1px solid #444;
+            border: 1px solid #404040;
             border-radius: 4px;
             background-color: #333;
             color: white;
+            margin-bottom: 1rem;
         }
 
         button {
             width: 100%;
             padding: 0.75rem;
-            background-color: #007bff;
+            background-color: #4dabf7;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            margin-top: 1rem;
+            font-size: 1rem;
         }
 
         button:hover {
-            background-color: #0056b3;
+            background-color: #339af0;
+        }
+
+        #error-message {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+            text-align: center;
         }
 
         .links {
@@ -139,33 +156,36 @@
         }
 
         .links a {
-            color: #007bff;
+            color: #4dabf7;
             text-decoration: none;
         }
 
-        #error-message {
-            color: #ff4444;
-            margin-top: 1rem;
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        h1 {
+            color: #4dabf7;
             text-align: center;
-            display: none;
+            margin-bottom: 2rem;
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2>Login to EON Protocol</h2>
-        <form id="loginForm" onsubmit="handleLogin(event)">
+    <div id="login-container">
+        <h1>EON Protocol</h1>
+        <div id="error-message"></div>
+        <form onsubmit="handleLogin(event)">
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
             </div>
             <button type="submit">Login</button>
         </form>
-        <div id="error-message"></div>
         <div class="links">
             <a href="register.html">Don't have an account? Register</a>
         </div>
