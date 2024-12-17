@@ -70,43 +70,65 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // 优雅关闭函数
-function gracefulShutdown(signal) {
+async function gracefulShutdown(signal) {
     console.log(`\n${signal} received. Starting graceful shutdown...`);
-    
-    if (server) {
-        server.close(() => {
-            console.log('HTTP server closed');
-            
-            // 设置一个更长的超时时间来等待现有连接完成
-            const closeTimeout = setTimeout(() => {
-                console.error('Could not close MongoDB connection in time, forcefully shutting down');
-                process.exit(1);
-            }, 10000);
+    let exitCode = 0;
 
-            mongoose.connection.close(false)
-                .then(() => {
-                    console.log('MongoDB connection closed gracefully');
-                    clearTimeout(closeTimeout);
-                    process.exit(0);
-                })
-                .catch(err => {
-                    console.error('Error closing MongoDB connection:', err);
-                    clearTimeout(closeTimeout);
-                    process.exit(1);
+    try {
+        // 设置关闭超时
+        const shutdownTimeout = setTimeout(() => {
+            console.error('Graceful shutdown timed out, forcing exit');
+            process.exit(1);
+        }, 15000); // 15 秒超时
+
+        if (server) {
+            // 停止接受新的连接
+            console.log('Closing HTTP server...');
+            await new Promise((resolve, reject) => {
+                server.close((err) => {
+                    if (err) {
+                        console.error('Error closing HTTP server:', err);
+                        reject(err);
+                    } else {
+                        console.log('HTTP server closed successfully');
+                        resolve();
+                    }
                 });
-        });
+            });
+        }
 
-        // 停止接受新的请求
-        server.unref();
-    } else {
-        console.log('No server instance found, exiting...');
-        process.exit(0);
+        if (mongoose.connection.readyState !== 0) {
+            // 关闭数据库连接
+            console.log('Closing MongoDB connection...');
+            await mongoose.connection.close(false);
+            console.log('MongoDB connection closed successfully');
+        }
+
+        // 清除超时
+        clearTimeout(shutdownTimeout);
+    } catch (error) {
+        console.error('Error during graceful shutdown:', error);
+        exitCode = 1;
+    } finally {
+        console.log(`Graceful shutdown completed with exit code: ${exitCode}`);
+        process.exit(exitCode);
     }
 }
 
 // 信号处理
-['SIGTERM', 'SIGINT', 'SIGUSR2'].forEach(signal => {
-    process.on(signal, () => gracefulShutdown(signal));
+const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
+let shuttingDown = false;
+
+signals.forEach(signal => {
+    process.on(signal, async () => {
+        // 防止多次触发关闭
+        if (shuttingDown) {
+            console.log('Shutdown already in progress...');
+            return;
+        }
+        shuttingDown = true;
+        await gracefulShutdown(signal);
+    });
 });
 
 // 打印配置信息（隐藏敏感信息）
@@ -218,6 +240,17 @@ const mongooseOptions = {
     retryReads: true,
     heartbeatFrequencyMS: 10000
 };
+
+// 处理未捕获的异常和拒绝
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown('UNHANDLED_REJECTION');
+});
 
 // MongoDB 连接
 mongoose.connect(config.mongodb.uri, mongooseOptions)
