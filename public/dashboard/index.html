@@ -255,184 +255,58 @@
     </div>
 
     <script>
-        // 处理退出登录
-        async function handleLogout() {
-            console.log('Handling logout...');
-            try {
-                // 如果 authService 未初始化，尝试初始化
-                if (!window.authService) {
-                    console.log('AuthService not initialized, attempting to initialize...');
-                    if (!initializeAuthService()) {
-                        throw new Error('Failed to initialize AuthService');
-                    }
-                }
+        let dashboardInitialized = false;
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
 
-                // 再次检查 authService 是否可用
-                if (!window.authService) {
-                    throw new Error('AuthService is still not available');
-                }
-
-                console.log('Calling logout...');
-                await window.authService.logout();
-                console.log('Logout successful');
-
-                // 清除本地存储
-                console.log('Clearing local storage...');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-
-                // 重定向到登录页面
-                console.log('Redirecting to login page...');
-                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                // 即使出错也清除本地存储并重定向
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
-            }
-        }
-
-        // 统一的数据加载错误处理
-        function handleLoadError(error, context) {
-            console.error(`Error loading ${context}:`, error);
-            const element = document.getElementById(`${context}Error`);
-            if (element) {
-                element.textContent = 'Failed to load data';
-            }
-        }
-
-        // 使用 authService 的安全请求包装器加载数据
-        async function loadUserInfo() {
-            try {
-                const userInfoElement = document.querySelector('.username');
-                if (!userInfoElement) return;
-
-                const response = await window.authService.fetchWithAuth('/user');
-                if (!response) return;
-
-                const data = await response.json();
-                userInfoElement.textContent = data.email || 'User';
-            } catch (error) {
-                handleLoadError(error, 'userInfo');
-            }
-        }
-
-        async function loadReferralInfo() {
-            try {
-                const referralCodeElement = document.getElementById('referralCode');
-                const referralLinkElement = document.getElementById('referralLink');
-                
-                if (!referralCodeElement || !referralLinkElement) return;
-
-                const response = await window.authService.fetchWithAuth('/users/referral-info');
-                if (!response) return;
-
-                const data = await response.json();
-                referralCodeElement.textContent = data.referralCode || 'N/A';
-                referralLinkElement.textContent = data.referralLink || 'N/A';
-            } catch (error) {
-                handleLoadError(error, 'referral');
-            }
-        }
-
-        async function loadTasks() {
-            try {
-                const response = await window.authService.fetchWithAuth('/tasks/user');
-                if (!response) return;
-
-                const data = await response.json();
-                const tasksList = document.getElementById('taskList');
-                if (!tasksList) return;
-
-                tasksList.innerHTML = data.tasks.map(task => `
-                    <div class="task-item">
-                        <span class="task-name">${task.name}</span>
-                        <span class="task-status">${task.completed ? 'Completed' : 'Pending'}</span>
-                    </div>
-                `).join('');
-            } catch (error) {
-                handleLoadError(error, 'tasks');
-            }
-        }
-
-        async function loadStats() {
-            try {
-                const response = await window.authService.fetchWithAuth('/users/stats');
-                if (!response) return;
-
-                const data = await response.json();
-                // 更新统计信息显示
-                Object.entries(data).forEach(([key, value]) => {
-                    const element = document.getElementById(key);
-                    if (element) {
-                        element.textContent = value;
-                    }
-                });
-            } catch (error) {
-                handleLoadError(error, 'stats');
-            }
-        }
-
-        // 初始化仪表板
         async function initializeDashboard() {
-            console.log('Initializing dashboard...');
-            
             try {
-                // 初始化 AuthService
                 if (!window.authService) {
-                    console.log('Creating new AuthService instance...');
                     window.authService = new AuthService();
                 }
 
-                // 检查是否已经登录
-                if (!window.authService.isAuthenticated()) {
-                    console.log('No token found, redirecting to login...');
+                // 验证token有效性
+                const isValid = await window.authService.validateToken();
+                if (!isValid) {
                     window.location.href = '/public/auth/login.html';
                     return;
                 }
 
-                // 验证token有效性
-                console.log('Validating token...');
-                const isValid = await window.authService.validateToken();
-                if (!isValid) {
-                    console.log('Token validation failed');
-                    // 只在没有 token 时重定向
-                    if (!window.authService.getToken()) {
-                        console.log('No valid token, redirecting to login...');
-                        window.location.href = '/public/auth/login.html';
-                        return;
-                    }
-                    // 如果有 token 但验证失败，显示错误消息
-                    const errorDiv = document.createElement('div');
-                    errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
-                    errorDiv.textContent = 'Authentication error. Please try refreshing the page.';
-                    document.body.appendChild(errorDiv);
+                // 防止重复初始化
+                if (dashboardInitialized) {
                     return;
                 }
 
-                // 加载数据
-                console.log('Loading dashboard data...');
-                await Promise.all([
-                    loadUserInfo(),
-                    loadReferralInfo(),
-                    loadTasks(),
-                    loadStats()
-                ]);
-
-                console.log('Dashboard data loaded successfully');
+                // 加载仪表盘数据
+                await loadDashboardData();
+                dashboardInitialized = true;
+                retryCount = 0;
             } catch (error) {
                 console.error('Dashboard initialization error:', error);
-                // 显示错误消息
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
-                errorDiv.textContent = 'Failed to load dashboard data. Please refresh the page.';
-                document.body.appendChild(errorDiv);
+                
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    console.log(`Retrying initialization (${retryCount}/${MAX_RETRIES})...`);
+                    setTimeout(initializeDashboard, 1000 * retryCount);
+                } else {
+                    window.authService.clearAuth();
+                    window.location.href = '/public/auth/login.html';
+                }
             }
         }
 
-        // 在 DOM 加载完成后初始化
-        document.addEventListener('DOMContentLoaded', initializeDashboard);
+        // 加载仪表盘数据的具体实现
+        async function loadDashboardData() {
+            // 这里实现加载具体数据的逻辑
+            // ...
+        }
+
+        // 页面加载完成后初始化仪表盘
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDashboard);
+        } else {
+            initializeDashboard();
+        }
     </script>
 </body>
 </html>

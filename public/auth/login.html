@@ -13,8 +13,8 @@
                     window.authService = new AuthService();
                 }
 
-                // 如果没有token，直接返回
-                if (!window.authService.isAuthenticated()) {
+                // 如果已经在登录页面，不需要重定向
+                if (window.location.pathname.includes('/auth/login')) {
                     return;
                 }
 
@@ -25,8 +25,7 @@
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
-                // Token无效时清除
-                window.authService.logout();
+                window.authService.clearAuth();
             }
         }
 
@@ -43,24 +42,7 @@
                     window.authService = new AuthService();
                 }
 
-                const response = await fetch(`${window.authService.API_BASE}/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.message || 'Login failed');
-                }
-
-                // 保存token
-                window.authService.setToken(data.token);
-                
-                // 重定向到仪表板
+                await window.authService.login(email, password);
                 window.location.href = '/public/dashboard/index.html';
             } catch (error) {
                 console.error('Login error:', error);
@@ -70,7 +52,11 @@
         }
 
         // 页面加载时检查认证状态
-        document.addEventListener('DOMContentLoaded', checkAuthStatus);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkAuthStatus);
+        } else {
+            checkAuthStatus();
+        }
         
         // 添加表单提交事件监听器
         const loginForm = document.getElementById('loginForm');

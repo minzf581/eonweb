@@ -2,32 +2,21 @@
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         #redirecting = false;
-        _validating = false;
+        #validationCache = null;
+        #lastValidation = 0;
+        #validationTimeout = 5000; // 5秒缓存
 
         constructor() {
-            // 调试信息
             console.log('[AuthService] Initializing...');
-            
-            // 使用相对于网站根目录的路径
-            this.AUTH_BASE = '/api/auth';  // 后端 API 路径
+            this.AUTH_BASE = '/api/auth';
             this.API_BASE = '/api';
-            console.log('[AuthService] Using API paths:', {
-                auth: this.AUTH_BASE,
-                api: this.API_BASE
-            });
-            
             this.tokenKey = 'token';
             this.userKey = 'user';
-            
-            // 从 localStorage 获取 token
             this.token = localStorage.getItem(this.tokenKey);
             
             // 重置重定向状态
-            this.hasRedirected = false;
-            
-            // 添加重定向状态重置
             window.addEventListener('pageshow', () => {
-                AuthService.resetRedirectState();
+                this.#redirecting = false;
             });
         }
         
@@ -61,69 +50,133 @@ if (typeof window.AuthService === 'undefined') {
             };
         }
 
-        // 处理认证重定向
-        handleAuthRedirect() {
+        // 基本的token存在检查
+        isAuthenticated() {
+            const token = this.getToken();
+            return !!token;
+        }
+
+        // 与后端验证token有效性
+        async validateToken() {
+            const token = this.getToken();
+            if (!token) {
+                console.log('[AuthService] No token found');
+                return false;
+            }
+
+            // 检查缓存
+            const now = Date.now();
+            if (this.#validationCache !== null && 
+                (now - this.#lastValidation) < this.#validationTimeout) {
+                console.log('[AuthService] Using cached validation result');
+                return this.#validationCache;
+            }
+
+            try {
+                console.log('[AuthService] Validating token...');
+                const response = await fetch(`${this.AUTH_BASE}/verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                this.#validationCache = response.ok;
+                this.#lastValidation = now;
+
+                if (!response.ok) {
+                    console.log('[AuthService] Token validation failed:', response.status);
+                    if (response.status === 401 || response.status === 403) {
+                        this.clearAuth();
+                    }
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error('[AuthService] Token validation error:', error);
+                this.#validationCache = false;
+                return false;
+            }
+        }
+
+        // 处理认证错误
+        handleAuthError() {
+            if (this.#redirecting) {
+                console.log('[AuthService] Redirect already in progress');
+                return;
+            }
+
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/auth/login')) {
+                console.log('[AuthService] Already on login page');
+                return;
+            }
+
+            console.log('[AuthService] Handling auth error...');
+            this.#redirecting = true;
+            this.clearAuth();
             window.location.href = '/public/auth/login.html';
         }
 
-        // 获取请求配置
-        getRequestConfig(customConfig = {}) {
-            const config = {
-                ...customConfig,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...customConfig.headers
-                },
-                credentials: 'include'
-            };
+        clearAuth() {
+            localStorage.removeItem(this.tokenKey);
+            localStorage.removeItem(this.userKey);
+            this.token = null;
+            this.#validationCache = null;
+        }
 
-            if (this.token) {
-                config.headers['Authorization'] = `Bearer ${this.token}`;
-            }
+        setAuth(token, user) {
+            localStorage.setItem(this.tokenKey, token);
+            localStorage.setItem(this.userKey, JSON.stringify(user));
+            this.token = token;
+            this.#validationCache = true;
+            this.#lastValidation = Date.now();
+        }
 
-            console.log('[AuthService] Request config:', config);
-            return config;
+        getToken() {
+            return this.token;
+        }
+
+        getUser() {
+            const userStr = localStorage.getItem(this.userKey);
+            return userStr ? JSON.parse(userStr) : null;
         }
 
         async login(email, password) {
             try {
-                console.log('[AuthService] Attempting login with:', { email });
-                
+                console.log('[AuthService] Attempting login...');
                 const response = await fetch(`${this.AUTH_BASE}/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password })
-                });
-
-                console.log('[AuthService] Login response:', {
-                    status: response.status,
-                    ok: response.ok
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
-                    let errorMessage = 'Login failed';
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.message || errorMessage;
-                    } catch (e) {
-                        // 如果响应不是 JSON 格式，使用默认错误消息
-                        console.warn('[AuthService] Failed to parse error response:', e);
-                    }
-                    throw new Error(errorMessage);
+                    const error = await response.json();
+                    throw new Error(error.message || 'Login failed');
                 }
 
                 const data = await response.json();
-                if (data.token) {
-                    this.setAuth(data.token, data.user);
-                    return data;
-                } else {
-                    throw new Error('No token received');
-                }
+                this.setAuth(data.token, data.user);
+                return true;
             } catch (error) {
                 console.error('[AuthService] Login error:', error);
+                this.clearAuth();
                 throw error;
+            }
+        }
+
+        logout() {
+            this.clearAuth();
+            if (!this.#redirecting) {
+                this.#redirecting = true;
+                window.location.href = '/public/auth/login.html';
             }
         }
 
@@ -143,162 +196,6 @@ if (typeof window.AuthService === 'undefined') {
             } catch (error) {
                 console.error('[AuthService] Get user info error:', error);
                 throw error;
-            }
-        }
-
-        async logout() {
-            // 清除本地存储
-            localStorage.removeItem(this.tokenKey);
-            localStorage.removeItem(this.userKey);
-            console.log('[AuthService] Logged out successfully');
-        }
-
-        setAuth(token, user) {
-            localStorage.setItem(this.tokenKey, token);
-            localStorage.setItem(this.userKey, JSON.stringify(user));
-            this.token = token;
-            console.log('[AuthService] Auth data saved');
-        }
-
-        getToken() {
-            return localStorage.getItem(this.tokenKey);
-        }
-
-        getUser() {
-            const userStr = localStorage.getItem(this.userKey);
-            try {
-                return userStr ? JSON.parse(userStr) : null;
-            } catch (error) {
-                console.error('[AuthService] Error parsing user data:', error);
-                return null;
-            }
-        }
-
-        // 基本的token存在检查
-        isAuthenticated() {
-            const token = this.getToken();
-            return !!token;
-        }
-
-        // 与后端验证token有效性
-        async validateToken() {
-            const token = this.getToken();
-            if (!token) {
-                console.log('[AuthService] No token found');
-                return false;
-            }
-
-            // 如果已经在验证中，返回 true 防止重复验证
-            if (this._validating) {
-                console.log('[AuthService] Token validation already in progress');
-                return true;
-            }
-
-            try {
-                this._validating = true;
-                console.log('[AuthService] Validating token...');
-                
-                const response = await fetch(`${this.AUTH_BASE}/verify`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    console.log('[AuthService] Token validation failed:', response.status);
-                    // 只有在明确的认证错误时才清除认证
-                    if (response.status === 401 || response.status === 403) {
-                        this.clearAuth();
-                    }
-                    return false;
-                }
-
-                const data = await response.json();
-                return data.valid === true;
-            } catch (error) {
-                console.error('[AuthService] Token validation error:', error);
-                // 网络错误不清除认证
-                return false;
-            } finally {
-                this._validating = false;
-            }
-        }
-
-        clearAuth() {
-            localStorage.removeItem(this.tokenKey);
-            localStorage.removeItem(this.userKey);
-            this.token = null;
-        }
-
-        // 全局重定向标志
-        static hasRedirected = false;
-
-        handleAuthError() {
-            // 检查是否已经在重定向
-            if (this.#redirecting) {
-                console.log('[AuthService] Already redirecting, skipping...');
-                return;
-            }
-
-            // 检查当前页面是否已经是登录页面
-            if (window.location.pathname.includes('/auth/login.html')) {
-                console.log('[AuthService] Already on login page, skipping redirect...');
-                return;
-            }
-
-            this.#redirecting = true;
-            console.log('[AuthService] Handling auth error, redirecting to login...');
-            
-            // 清除认证信息
-            this.clearAuth();
-            
-            // 重定向到登录页面
-            window.location.href = '/public/auth/login.html';
-        }
-
-        // 重置重定向状态
-        static resetRedirectState() {
-            AuthService.hasRedirected = false;
-        }
-
-        // 统一的API请求错误处理
-        handleApiError(response) {
-            if (response.status === 401) {
-                this.handleAuthError();
-                return true;
-            }
-            return false;
-        }
-
-        // 安全的API请求包装器
-        async fetchWithAuth(endpoint, options = {}) {
-            if (!this.isAuthenticated()) {
-                this.handleAuthError();
-                return null;
-            }
-
-            try {
-                const response = await fetch(`${this.API_BASE}${endpoint}`, {
-                    ...options,
-                    headers: {
-                        ...options.headers,
-                        'Authorization': `Bearer ${this.token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    if (this.handleApiError(response)) {
-                        return null;
-                    }
-                    throw new Error(`API request failed: ${response.status}`);
-                }
-
-                return response;
-            } catch (error) {
-                console.error(`[AuthService] API error (${endpoint}):`, error);
-                return null;
             }
         }
 
@@ -367,6 +264,36 @@ if (typeof window.AuthService === 'undefined') {
             } catch (error) {
                 console.error('Error getting user role:', error);
                 throw error;
+            }
+        }
+
+        async fetchWithAuth(endpoint, options = {}) {
+            if (!this.isAuthenticated()) {
+                this.handleAuthError();
+                return null;
+            }
+
+            try {
+                const response = await fetch(`${this.API_BASE}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Authorization': `Bearer ${this.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        this.handleAuthError();
+                        return null;
+                    }
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+
+                return response;
+            } catch (error) {
+                console.error(`[AuthService] API error (${endpoint}):`, error);
+                return null;
             }
         }
     }
