@@ -106,7 +106,7 @@
         window.addEventListener('load', function() {
             console.log('Page loaded, checking auth status');
             if (window.authService.isAuthenticated()) {
-                window.location.href = 'https://eonweb-production.up.railway.app/public/dashboard.html';
+                window.location.href = '/';
             }
         });
 
@@ -121,7 +121,7 @@
                 const loginData = await window.authService.login(email, password);
 
                 if (loginData.token) {
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/dashboard.html';
+                    window.location.href = '/';
                 } else {
                     throw new Error('Login failed: No token received');
                 }
