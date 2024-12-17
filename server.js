@@ -76,18 +76,30 @@ function gracefulShutdown(signal) {
     if (server) {
         server.close(() => {
             console.log('HTTP server closed');
-            mongoose.connection.close(false, () => {
-                console.log('MongoDB connection closed');
-                process.exit(0);
-            });
+            
+            // 设置一个更长的超时时间来等待现有连接完成
+            const closeTimeout = setTimeout(() => {
+                console.error('Could not close MongoDB connection in time, forcefully shutting down');
+                process.exit(1);
+            }, 10000);
+
+            mongoose.connection.close(false)
+                .then(() => {
+                    console.log('MongoDB connection closed gracefully');
+                    clearTimeout(closeTimeout);
+                    process.exit(0);
+                })
+                .catch(err => {
+                    console.error('Error closing MongoDB connection:', err);
+                    clearTimeout(closeTimeout);
+                    process.exit(1);
+                });
         });
 
-        // 如果 5 秒内没有完成关闭，强制退出
-        setTimeout(() => {
-            console.error('Could not close connections in time, forcefully shutting down');
-            process.exit(1);
-        }, 5000);
+        // 停止接受新的请求
+        server.unref();
     } else {
+        console.log('No server instance found, exiting...');
         process.exit(0);
     }
 }
@@ -196,13 +208,19 @@ app.use((err, req, res, next) => {
 
 // MongoDB 连接选项
 const mongooseOptions = {
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 10000,
     socketTimeoutMS: 45000,
     family: 4,
     maxPoolSize: 10,
     minPoolSize: 2,
-    maxIdleTimeMS: 10000,
-    connectTimeoutMS: 10000
+    maxIdleTimeMS: 30000,
+    connectTimeoutMS: 10000,
+    retryWrites: true,
+    retryReads: true,
+    serverSelectionTimeoutMS: 30000,
+    heartbeatFrequencyMS: 10000,
+    keepAlive: true,
+    keepAliveInitialDelay: 300000
 };
 
 // MongoDB 连接
@@ -225,15 +243,26 @@ mongoose.connect(config.mongodb.uri, mongooseOptions)
         // 处理 MongoDB 连接错误
         mongoose.connection.on('error', (error) => {
             console.error('MongoDB connection error:', error);
-            gracefulShutdown('MONGODB_ERROR');
+            if (!server.listening) {
+                gracefulShutdown('MONGODB_ERROR');
+            }
         });
 
         mongoose.connection.on('disconnected', () => {
             console.log('MongoDB disconnected. Attempting to reconnect...');
-            mongoose.connect(config.mongodb.uri, mongooseOptions).catch(err => {
-                console.error('MongoDB reconnection failed:', err);
-                gracefulShutdown('MONGODB_RECONNECT_FAILED');
-            });
+            if (!server.listening) {
+                return gracefulShutdown('MONGODB_DISCONNECT');
+            }
+            
+            // 尝试重新连接
+            setTimeout(() => {
+                mongoose.connect(config.mongodb.uri, mongooseOptions).catch(err => {
+                    console.error('MongoDB reconnection failed:', err);
+                    if (!server.listening) {
+                        gracefulShutdown('MONGODB_RECONNECT_FAILED');
+                    }
+                });
+            }, 5000);
         });
     })
     .catch((error) => {
