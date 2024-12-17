@@ -15,11 +15,19 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localh
     .map(origin => origin.trim().replace(';', '')); // Remove any semicolons and trim whitespace
 const CORS_ENABLED = process.env.CORS_ENABLED !== 'false';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// 验证必要的环境变量
+if (!JWT_SECRET) {
+    console.error('JWT_SECRET environment variable is required');
+    process.exit(1);
+}
 
 console.log('\n=== Environment Configuration ===');
 console.log('CORS_ALLOWED_ORIGINS:', CORS_ALLOWED_ORIGINS);
 console.log('CORS_ENABLED:', CORS_ENABLED);
 console.log('NODE_ENV:', NODE_ENV);
+console.log('JWT_SECRET:', JWT_SECRET ? 'configured' : 'missing');
 
 // CORS 配置
 const corsOptions = {
@@ -27,10 +35,12 @@ const corsOptions = {
         // 允许的域名列表
         const allowedOrigins = [
             'https://eonweb-production.up.railway.app',
+            'https://illustrious-perfection-production.up.railway.app',
             'http://localhost:3000',
             'http://localhost:8080'
         ];
 
+        // 在开发环境中允许没有 origin（比如 Postman 请求）
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -41,7 +51,8 @@ const corsOptions = {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 200 // 一些浏览器需要这个值为200
+    exposedHeaders: ['Set-Cookie'],
+    optionsSuccessStatus: 200
 };
 
 // 启用 CORS
@@ -116,36 +127,48 @@ app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working!' });
 });
 
-// 测试登录路由
-app.post('/api/auth/login', (req, res) => {
-    console.log('\n=== Login Request ===');
-    console.log('Body:', req.body);
-    
-    const { email, password } = req.body;
-    
-    // 验证测试用户
-    if (email === 'test@example.com' && password === 'password123') {
-        const token = 'test-token-123';  // 在实际应用中应该使用 JWT
-        
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax'
-        });
-        
+// 登录路由
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        console.log('Login attempt:', { email });
+
+        // 查找用户
+        const user = await UserService.findByEmail(email);
+        if (!user) {
+            console.log('User not found:', email);
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // 验证密码
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            console.log('Invalid password for user:', email);
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // 生成 JWT token
+        const token = jwt.sign(
+            { userId: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        console.log('Login successful:', { email, userId: user._id });
+
+        // 发送响应
         res.json({
-            success: true,
-            message: 'Login successful',
+            token,
             user: {
-                email: email,
-                name: 'Test User'
+                id: user._id,
+                email: user.email,
+                name: user.name,
+                isAdmin: user.isAdmin
             }
         });
-    } else {
-        res.status(401).json({
-            success: false,
-            message: 'Invalid credentials'
-        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 

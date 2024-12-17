@@ -76,34 +76,38 @@ if (typeof window.AuthService === 'undefined') {
         }
 
         async login(email, password) {
-            console.log('[AuthService] Attempting login:', { email });
             try {
+                console.log('[AuthService] Attempting login with:', { email });
+                
                 const response = await fetch(`${this.apiUrl}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    body: JSON.stringify({ email, password }),
                     credentials: 'include',
-                    body: JSON.stringify({ email, password })
+                    mode: 'cors'
                 });
 
                 console.log('[AuthService] Login response:', {
                     status: response.status,
-                    statusText: response.statusText
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
                 });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('[AuthService] Login failed:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        error: errorText
-                    });
-                    throw new Error(errorText || response.statusText);
+                    const errorData = await response.json();
+                    console.error('[AuthService] Login failed:', errorData);
+                    throw new Error(errorData.message || 'Login failed');
                 }
 
                 const data = await response.json();
-                console.log('[AuthService] Login successful:', data);
+                console.log('[AuthService] Login successful:', { 
+                    token: data.token ? 'present' : 'missing',
+                    user: data.user ? 'present' : 'missing'
+                });
+
+                // 保存认证信息
                 this.setAuth(data.token, data.user);
                 return data;
             } catch (error) {
