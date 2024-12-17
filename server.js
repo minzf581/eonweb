@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 require('dotenv').config();
 
 const app = express();
@@ -39,10 +40,22 @@ console.log('Server Configuration:', {
     MONGODB_URI: MONGODB_URI.replace(/mongodb:\/\/[^:]+:[^@]+@/, 'mongodb://****:****@')
 });
 
+// 健康检查路由 - 必须在其他中间件之前
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
 // 健康检查路由
 app.get('/', (req, res) => {
     res.status(200).send('OK');
 });
+
+// 启用压缩
+app.use(compression());
 
 // CORS 配置
 const corsOptions = {
@@ -80,6 +93,18 @@ app.use((req, res, next) => {
     console.log('Origin:', req.headers.origin);
     console.log('Headers:', req.headers);
     next();
+});
+
+// 错误处理中间件
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    if (err.name === 'UnauthorizedError') {
+        res.status(401).json({ message: 'Invalid token' });
+    } else if (err.message === 'Not allowed by CORS') {
+        res.status(403).json({ message: 'CORS not allowed' });
+    } else {
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
 // MongoDB 连接选项
@@ -139,18 +164,6 @@ mongoose.connection.on('disconnected', () => {
 
 mongoose.connection.on('reconnected', () => {
     console.log('MongoDB reconnected');
-});
-
-// 错误处理中间件
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    if (err.name === 'UnauthorizedError') {
-        res.status(401).json({ message: 'Invalid token' });
-    } else if (err.message === 'Not allowed by CORS') {
-        res.status(403).json({ message: 'CORS not allowed' });
-    } else {
-        res.status(500).json({ message: 'Internal server error' });
-    }
 });
 
 // 身份验证中间件
