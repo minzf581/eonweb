@@ -173,13 +173,13 @@ if (typeof window.AuthService === 'undefined') {
             }
         }
 
-        // 简单检查token是否存在
+        // 基本的token存在检查
         isAuthenticated() {
             const token = this.getToken();
             return !!token;
         }
 
-        // 验证token有效性
+        // 与后端验证token有效性
         async validateToken() {
             const token = this.getToken();
             if (!token) return false;
@@ -191,9 +191,17 @@ if (typeof window.AuthService === 'undefined') {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                return response.ok;
+
+                if (!response.ok) {
+                    console.log('[AuthService] Token validation failed:', response.status);
+                    this.clearAuth();
+                    return false;
+                }
+
+                return true;
             } catch (error) {
-                console.error('[AuthService] Token validation failed:', error);
+                console.error('[AuthService] Token validation error:', error);
+                this.clearAuth();
                 return false;
             }
         }
@@ -204,28 +212,30 @@ if (typeof window.AuthService === 'undefined') {
             this.token = null;
         }
 
-        // 静态变量控制重定向状态
+        // 全局重定向标志
         static hasRedirected = false;
 
         handleAuthError() {
+            // 检查是否已经在重定向
             if (AuthService.hasRedirected) {
                 console.log('[AuthService] Redirect already in progress');
                 return;
             }
 
+            // 设置重定向标志
             AuthService.hasRedirected = true;
             console.log('[AuthService] Handling auth error');
-            
+
             // 清理认证数据
             this.clearAuth();
-            
+
             // 显示错误消息
             const errorDiv = document.createElement('div');
             errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
             errorDiv.textContent = 'Session expired. Please login again.';
             document.body.appendChild(errorDiv);
 
-            // 延迟重定向
+            // 延迟重定向，给用户时间看到消息
             setTimeout(() => {
                 window.location.href = '/public/auth/login.html';
             }, 2000);
@@ -236,24 +246,45 @@ if (typeof window.AuthService === 'undefined') {
             AuthService.hasRedirected = false;
         }
 
+        // 统一的API请求错误处理
+        handleApiError(response) {
+            if (response.status === 401) {
+                this.handleAuthError();
+                return true;
+            }
+            return false;
+        }
+
+        // 安全的API请求包装器
         async fetchWithAuth(endpoint, options = {}) {
+            if (!this.isAuthenticated()) {
+                this.handleAuthError();
+                return null;
+            }
+
             try {
-                console.log(`Fetching ${endpoint} with auth`);
-                const response = await fetch(`${this.API_BASE}${endpoint}`, this.getRequestConfig(options));
+                const response = await fetch(`${this.API_BASE}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Authorization': `Bearer ${this.token}`
+                    }
+                });
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Request failed');
+                    if (this.handleApiError(response)) {
+                        return null;
+                    }
+                    throw new Error(`API request failed: ${response.status}`);
                 }
 
-                return response.json();
+                return response;
             } catch (error) {
-                console.error(`[AuthService] ${endpoint} error:`, error.message);
-                throw error;
+                console.error(`[AuthService] API error (${endpoint}):`, error);
+                return null;
             }
         }
 
-        // 获取用户任务
         async getUserTasks() {
             try {
                 const response = await this.fetchWithAuth('/tasks/user');
@@ -268,7 +299,6 @@ if (typeof window.AuthService === 'undefined') {
             }
         }
 
-        // 获取用户统计信息
         async getUserStats() {
             try {
                 const response = await this.fetchWithAuth('/users/stats');
@@ -283,7 +313,6 @@ if (typeof window.AuthService === 'undefined') {
             }
         }
 
-        // 获取推荐信息
         async getReferralInfo() {
             try {
                 const response = await this.fetchWithAuth('/users/referral-info');
@@ -298,7 +327,6 @@ if (typeof window.AuthService === 'undefined') {
             }
         }
 
-        // 获取用户角色
         async getUserRole() {
             const token = this.getToken();
             if (!token) {

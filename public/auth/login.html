@@ -6,29 +6,27 @@
     <title>Login - EON Protocol</title>
     <script src="/public/js/authService.js"></script>
     <script>
-        // 初始化 AuthService
-        if (!window.authService) {
-            window.authService = new AuthService();
-        }
+        // 检查用户是否已经登录
+        async function checkAuthStatus() {
+            try {
+                if (!window.authService) {
+                    window.authService = new AuthService();
+                }
 
-        // 检查认证状态并验证token
-        async function checkAuthAndRedirect() {
-            console.log('Checking authentication status...');
-            
-            if (!window.authService.isAuthenticated()) {
-                console.log('No token found, staying on login page');
-                return;
-            }
+                // 如果没有token，直接返回
+                if (!window.authService.isAuthenticated()) {
+                    return;
+                }
 
-            // 验证token有效性
-            console.log('Validating existing token...');
-            const isValid = await window.authService.validateToken();
-            if (isValid) {
-                console.log('Token is valid, redirecting to dashboard...');
-                window.location.href = '/public/dashboard/index.html';
-            } else {
-                console.log('Token is invalid, clearing auth data...');
-                window.authService.clearAuth();
+                // 验证token有效性
+                const isValid = await window.authService.validateToken();
+                if (isValid) {
+                    window.location.href = '/public/dashboard/index.html';
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                // Token无效时清除
+                window.authService.logout();
             }
         }
 
@@ -38,39 +36,47 @@
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorElement = document.getElementById('error-message');
+            const errorElement = document.getElementById('loginError');
             
             try {
-                const response = await fetch(`${window.authService.AUTH_BASE}/login`, {
+                if (!window.authService) {
+                    window.authService = new AuthService();
+                }
+
+                const response = await fetch(`${window.authService.API_BASE}/auth/login`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ email, password })
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Login failed');
+                    throw new Error(data.message || 'Login failed');
                 }
 
-                const data = await response.json();
-                window.authService.setAuth(data.token, data.user);
+                // 保存token
+                window.authService.setToken(data.token);
                 
-                // 登录成功后重定向到仪表板
+                // 重定向到仪表板
                 window.location.href = '/public/dashboard/index.html';
             } catch (error) {
                 console.error('Login error:', error);
-                errorElement.textContent = error.message || 'Login failed. Please try again.';
+                errorElement.textContent = error.message || 'An error occurred during login';
                 errorElement.style.display = 'block';
             }
         }
 
         // 页面加载时检查认证状态
-        document.addEventListener('DOMContentLoaded', checkAuthAndRedirect);
-
+        document.addEventListener('DOMContentLoaded', checkAuthStatus);
+        
         // 添加表单提交事件监听器
-        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', handleLogin);
+        }
     </script>
     <style>
         body {
@@ -131,7 +137,7 @@
             background-color: #339af0;
         }
 
-        #error-message {
+        #loginError {
             color: #ff6b6b;
             margin-bottom: 1rem;
             text-align: center;
@@ -162,7 +168,7 @@
 <body>
     <div id="login-container">
         <h1>EON Protocol</h1>
-        <div id="error-message"></div>
+        <div id="loginError"></div>
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email:</label>
