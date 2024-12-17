@@ -668,26 +668,71 @@ app.use((req, res, next) => {
 // 添加代理路由来处理认证请求
 app.post('/proxy/auth/login', async (req, res) => {
     try {
-        console.log('Proxying login request:', req.body);
-        
-        const response = await fetch('https://illustrious-perfection-production.up.railway.app/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(req.body)
+        const { email, password } = req.body;
+        console.log('Login attempt:', { email });
+
+        // 查找用户
+        const user = await UserService.findByEmail(email);
+        if (!user) {
+            console.log('User not found:', email);
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // 验证密码
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            console.log('Invalid password for user:', email);
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // 生成 JWT token
+        const token = jwt.sign(
+            { userId: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        console.log('Login successful:', { email, userId: user._id });
+
+        // 发送响应
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                name: user.name,
+                isAdmin: user.isAdmin
+            }
         });
-
-        const data = await response.json();
-        console.log('Proxy response:', data);
-
-        // 设置相同的状态码
-        res.status(response.status);
-        
-        // 转发响应
-        res.json(data);
     } catch (error) {
-        console.error('Proxy error:', error);
+        console.error('Login error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
+});
+
+// 用户信息路由
+app.get('/proxy/user', authenticateToken, async (req, res) => {
+    try {
+        const user = await UserService.getUserById(req.user.userId);
+        res.json(user);
+    } catch (error) {
+        console.error('Error getting user info:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 用户管理路由
+app.get('/proxy/users', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const users = await UserService.getAllUsers();
+        res.json(users);
+    } catch (error) {
+        console.error('Error getting users:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// API 测试路由
+app.get('/proxy/test', (req, res) => {
+    res.json({ message: 'API is working!' });
 });

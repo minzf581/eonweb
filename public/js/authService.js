@@ -11,7 +11,7 @@ if (typeof window.AuthService === 'undefined') {
             });
 
             // 根据环境设置 API URL
-            this.apiUrl = 'https://illustrious-perfection-production.up.railway.app/api';
+            this.apiUrl = 'https://illustrious-perfection-production.up.railway.app/proxy';
             console.log('[AuthService] Initializing with API URL:', this.apiUrl);
             
             this.tokenKey = 'token';
