@@ -323,6 +323,15 @@
                 }
 
                 const data = await response.json();
+                console.log('User info:', data);
+
+                // 如果是管理员，重定向到管理员后台
+                if (data.isAdmin) {
+                    console.log('Admin user detected, redirecting to admin dashboard...');
+                    window.location.href = 'https://eonweb-production.up.railway.app/public/admin/dashboard.html';
+                    return;
+                }
+
                 const userEmailElement = document.getElementById('userEmail');
                 if (userEmailElement) {
                     userEmailElement.textContent = data.email || 'Unknown User';

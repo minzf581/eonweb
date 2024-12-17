@@ -137,23 +137,64 @@
 
         async function handleLogin(event) {
             event.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('error-message');
-            
-            try {
-                const loginData = await window.authService.login(email, password);
+            console.log('Handling login...');
 
-                if (loginData.token) {
-                    await handleAuthRedirect();
+            const showError = (message) => {
+                const errorElement = document.getElementById('error-message');
+                if (errorElement) {
+                    errorElement.textContent = message;
+                    errorElement.style.display = 'block';
+                }
+            };
+
+            try {
+                if (!window.authService) {
+                    if (!initializeAuthService()) {
+                        throw new Error('Authentication service is not available');
+                    }
+                }
+
+                const email = document.getElementById('email')?.value;
+                const password = document.getElementById('password')?.value;
+
+                if (!email || !password) {
+                    throw new Error('Please fill in all fields');
+                }
+
+                console.log('Attempting login...');
+                const response = await window.authService.login({ email, password });
+                
+                if (response.token) {
+                    console.log('Login successful, checking user role...');
+                    
+                    // 获取用户信息以检查是否是管理员
+                    const userResponse = await fetch('https://eonweb-production.up.railway.app/api/user/info', {
+                        headers: {
+                            'Authorization': `Bearer ${response.token}`
+                        }
+                    });
+
+                    if (!userResponse.ok) {
+                        throw new Error('Failed to get user info');
+                    }
+
+                    const userData = await userResponse.json();
+                    console.log('User data:', userData);
+
+                    // 根据用户角色重定向到相应的后台
+                    if (userData.isAdmin) {
+                        console.log('Admin user detected, redirecting to admin dashboard...');
+                        window.location.href = 'https://eonweb-production.up.railway.app/public/admin/dashboard.html';
+                    } else {
+                        console.log('Regular user detected, redirecting to user dashboard...');
+                        window.location.href = 'https://eonweb-production.up.railway.app/public/dashboard/index.html';
+                    }
                 } else {
-                    throw new Error('Login failed: No token received');
+                    throw new Error('Login failed - no token received');
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                errorDiv.style.display = 'block';
-                errorDiv.textContent = 'Login failed: ' + error.message;
+                showError(error.message || 'Login failed. Please try again.');
             }
         }
     </script>
