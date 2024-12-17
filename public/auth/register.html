@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - EON Protocol</title>
-    <script src="https://eonweb-production.up.railway.app/public/js/authService.js"></script>
+    <script src="/public/js/authService.js"></script>
     <script>
         // 初始化 AuthService
         function initializeAuthService() {
@@ -27,17 +27,11 @@
 
         // 检查用户是否已登录并重定向
         async function checkAuthAndRedirect() {
+            console.log('Checking auth status...');
             try {
-                // 如果没有 token，不需要检查
                 const token = localStorage.getItem('token');
                 if (!token) {
                     console.log('No token found, staying on register page');
-                    return;
-                }
-
-                // 初始化 AuthService
-                if (!initializeAuthService()) {
-                    console.error('Failed to initialize AuthService');
                     return;
                 }
 
@@ -49,12 +43,6 @@
                 });
 
                 if (!response.ok) {
-                    if (response.status === 401) {
-                        console.log('Token invalid, clearing storage');
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                        return;
-                    }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
@@ -63,15 +51,12 @@
 
                 // 根据用户角色重定向
                 if (userData.isAdmin) {
-                    console.log('Admin user detected, redirecting to admin dashboard...');
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/admin/dashboard.html';
+                    window.location.href = '/public/admin/dashboard.html';
                 } else {
-                    console.log('Regular user detected, redirecting to user dashboard...');
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/dashboard/index.html';
+                    window.location.href = '/public/dashboard/index.html';
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
-                // 出错时清除 token
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
             }
@@ -194,7 +179,7 @@
                     // 存储 token
                     localStorage.setItem('token', data.token);
                     // 重定向到登录页面
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                    window.location.href = '/public/auth/login.html';
                 } else {
                     throw new Error('Registration failed - no token received');
                 }
