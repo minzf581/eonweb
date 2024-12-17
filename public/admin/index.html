@@ -217,7 +217,7 @@
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', () => {
             // Check authentication
-            if (!authService.isAuthenticated()) {
+            if (!window.authService.isAuthenticated()) {
                 window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
                 return;
             }
@@ -227,7 +227,7 @@
             loadTasks();
 
             // Set up user info
-            const user = authService.getUser();
+            const user = window.authService.getUser();
             if (user) {
                 document.querySelector('.username').textContent = user.email;
             }
@@ -238,7 +238,7 @@
             try {
                 const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/admin/users', {
                     headers: {
-                        'Authorization': `Bearer ${authService.getToken()}`
+                        'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
 
@@ -276,7 +276,7 @@
             try {
                 const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/admin/tasks', {
                     headers: {
-                        'Authorization': `Bearer ${authService.getToken()}`
+                        'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
 
@@ -318,7 +318,7 @@
                 const response = await fetch(`https://eonweb-production.up.railway.app/proxy/api/admin/tasks/${taskId}/toggle`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${authService.getToken()}`
+                        'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
 
@@ -335,9 +335,15 @@
         }
 
         // Logout function
-        function logout() {
-            authService.logout();
-            window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+        async function logout() {
+            try {
+                await window.authService.logout();
+                window.location.href = '/auth/login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                // Still redirect on error
+                window.location.href = '/auth/login.html';
+            }
         }
     </script>
 </body>

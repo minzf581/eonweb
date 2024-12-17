@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - EON Protocol</title>
-    <script src="./js/authService.js"></script>
+    <script src="/public/js/authService.js"></script>
     <style>
         :root {
             --primary-color: #4dabf7;
@@ -256,18 +256,25 @@
         // 获取用户信息并显示
         async function loadUserInfo() {
             try {
+                if (!window.authService) {
+                    throw new Error('AuthService not initialized');
+                }
                 const user = window.authService.getUser();
-                if (user && user.email) {
+                if (user) {
                     document.getElementById('userEmail').textContent = user.email;
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
+                document.getElementById('userEmail').textContent = 'Error loading user info';
             }
         }
 
         // 加载推荐信息
         async function loadReferralInfo() {
             try {
+                if (!window.authService) {
+                    throw new Error('AuthService not initialized');
+                }
                 const response = await window.authService.getReferralInfo();
                 if (response) {
                     document.getElementById('referralCode').textContent = response.referralCode || 'N/A';
@@ -277,35 +284,51 @@
                 }
             } catch (error) {
                 console.error('Error loading referral info:', error);
+                document.getElementById('referralCode').textContent = 'Error loading info';
+                document.getElementById('referralLink').textContent = 'Error loading info';
+                document.getElementById('totalReferrals').textContent = 'Error';
+                document.getElementById('referralPoints').textContent = 'Error';
             }
         }
 
         // 加载任务信息
         async function loadTasks() {
             try {
+                if (!window.authService) {
+                    throw new Error('AuthService not initialized');
+                }
                 const tasks = await window.authService.getUserTasks();
                 const taskList = document.getElementById('taskList');
                 taskList.innerHTML = '';
 
-                tasks.forEach(task => {
-                    const taskElement = document.createElement('div');
-                    taskElement.className = 'task-item';
-                    taskElement.innerHTML = `
-                        <h3>${task.name}</h3>
-                        <p>${task.description}</p>
-                        <p>Points: ${task.points}</p>
-                        <p>Status: ${task.completed ? 'Completed' : 'Pending'}</p>
-                    `;
-                    taskList.appendChild(taskElement);
-                });
+                if (tasks && tasks.length > 0) {
+                    tasks.forEach(task => {
+                        const taskElement = document.createElement('div');
+                        taskElement.className = 'task-item';
+                        taskElement.innerHTML = `
+                            <h3>${task.name}</h3>
+                            <p>${task.description}</p>
+                            <p>Points: ${task.points}</p>
+                            <p>Status: ${task.completed ? 'Completed' : 'Pending'}</p>
+                        `;
+                        taskList.appendChild(taskElement);
+                    });
+                } else {
+                    taskList.innerHTML = '<p>No tasks available</p>';
+                }
             } catch (error) {
                 console.error('Error loading tasks:', error);
+                const taskList = document.getElementById('taskList');
+                taskList.innerHTML = '<p>Error loading tasks</p>';
             }
         }
 
         // 加载统计信息
         async function loadStats() {
             try {
+                if (!window.authService) {
+                    throw new Error('AuthService not initialized');
+                }
                 const stats = await window.authService.getUserStats();
                 if (stats) {
                     document.getElementById('totalTasks').textContent = stats.totalTasks || 0;
@@ -314,20 +337,52 @@
                 }
             } catch (error) {
                 console.error('Error loading stats:', error);
+                document.getElementById('totalTasks').textContent = 'Error';
+                document.getElementById('completedTasks').textContent = 'Error';
+                document.getElementById('earnedPoints').textContent = 'Error';
             }
         }
 
         // 处理退出登录
-        function handleLogout() {
-            window.authService.logout();
+        async function handleLogout() {
+            try {
+                if (!window.authService) {
+                    throw new Error('AuthService not initialized');
+                }
+                await window.authService.logout();
+                // 清除本地存储
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                // 重定向到登录页面
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                // 即使失败也重定向到登录页面，确保用户可以重新登录
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+            }
         }
 
         // 页面加载时初始化
         window.addEventListener('load', async () => {
-            await loadUserInfo();
-            await loadReferralInfo();
-            await loadTasks();
-            await loadStats();
+            // 确保 authService 已经初始化
+            if (!window.authService) {
+                window.authService = new AuthService();
+            }
+            
+            // 检查是否已认证
+            if (!window.authService.isAuthenticated()) {
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                return;
+            }
+
+            try {
+                await loadUserInfo();
+                await loadReferralInfo();
+                await loadTasks();
+                await loadStats();
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+            }
         });
     </script>
 </body>
