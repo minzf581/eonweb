@@ -9,15 +9,17 @@ const compression = require('compression');
 require('dotenv').config();
 
 const app = express();
+let server = null;
 
 // 环境变量配置
 const config = {
     cors: {
         enabled: process.env.CORS_ENABLED !== 'false',
-        allowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080')
-            .split(',')
-            .map(origin => origin.trim())
-            .filter(origin => origin.length > 0)
+        allowedOrigins: [
+            'http://localhost:3000',
+            'http://localhost:8080',
+            'https://eonweb-production.up.railway.app'
+        ]
     },
     server: {
         env: process.env.NODE_ENV || 'development',
@@ -25,7 +27,6 @@ const config = {
         host: process.env.HOST || '0.0.0.0'
     },
     jwt: {
-        // 在开发环境使用默认密钥，生产环境需要设置环境变量
         secret: process.env.NODE_ENV === 'production' 
             ? process.env.JWT_SECRET 
             : 'default-development-secret-key-do-not-use-in-production'
@@ -34,6 +35,45 @@ const config = {
         uri: process.env.MONGODB_URI || 'mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@junction.proxy.rlwy.net:15172/?retryWrites=true&w=majority'
     }
 };
+
+// 进程错误处理
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown('UNHANDLED_REJECTION');
+});
+
+// 优雅关闭函数
+function gracefulShutdown(signal) {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
+    
+    if (server) {
+        server.close(() => {
+            console.log('HTTP server closed');
+            mongoose.connection.close(false, () => {
+                console.log('MongoDB connection closed');
+                process.exit(0);
+            });
+        });
+
+        // 如果 5 秒内没有完成关闭，强制退出
+        setTimeout(() => {
+            console.error('Could not close connections in time, forcefully shutting down');
+            process.exit(1);
+        }, 5000);
+    } else {
+        process.exit(0);
+    }
+}
+
+// 信号处理
+['SIGTERM', 'SIGINT', 'SIGUSR2'].forEach(signal => {
+    process.on(signal, () => gracefulShutdown(signal));
+});
 
 // 验证生产环境配置
 if (config.server.env === 'production') {
@@ -83,7 +123,15 @@ const corsOptions = {
             callback(null, true);
             return;
         }
-        if (!origin || config.cors.allowedOrigins.includes(origin)) {
+        
+        // 允许没有 origin 的请求（比如同源请求）
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+
+        // 检查 origin 是否在允许列表中
+        if (config.cors.allowedOrigins.some(allowed => origin.startsWith(allowed))) {
             callback(null, true);
         } else {
             console.log('Origin not allowed:', origin);
@@ -94,8 +142,7 @@ const corsOptions = {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['Set-Cookie'],
-    maxAge: 86400,
-    optionsSuccessStatus: 200
+    maxAge: 86400
 };
 
 // 中间件配置
@@ -156,47 +203,35 @@ mongoose.connect(config.mongodb.uri, mongooseOptions)
         console.log('Successfully connected to MongoDB');
         
         // 启动服务器
-        const server = app.listen(config.server.port, config.server.host, () => {
+        server = app.listen(config.server.port, config.server.host, () => {
             console.log(`Server is running on http://${config.server.host}:${config.server.port}`);
-            
-            // 记录服务器已经准备好接受请求
             console.log('Server is ready to accept requests');
         });
 
         // 处理服务器错误
         server.on('error', (error) => {
             console.error('Server error:', error);
+            gracefulShutdown('SERVER_ERROR');
         });
 
-        // 优雅关闭
-        process.on('SIGTERM', () => {
-            console.log('SIGTERM signal received: closing HTTP server');
-            server.close(() => {
-                console.log('HTTP server closed');
-                mongoose.connection.close(false, () => {
-                    console.log('MongoDB connection closed');
-                    process.exit(0);
-                });
+        // 处理 MongoDB 连接错误
+        mongoose.connection.on('error', (error) => {
+            console.error('MongoDB connection error:', error);
+            gracefulShutdown('MONGODB_ERROR');
+        });
+
+        mongoose.connection.on('disconnected', () => {
+            console.log('MongoDB disconnected. Attempting to reconnect...');
+            mongoose.connect(config.mongodb.uri, mongooseOptions).catch(err => {
+                console.error('MongoDB reconnection failed:', err);
+                gracefulShutdown('MONGODB_RECONNECT_FAILED');
             });
         });
     })
     .catch((error) => {
-        console.error('MongoDB connection error:', error);
+        console.error('MongoDB initial connection error:', error);
         process.exit(1);
     });
-
-// MongoDB 连接事件监听
-mongoose.connection.on('error', (error) => {
-    console.error('MongoDB connection error:', error);
-});
-
-mongoose.connection.on('disconnected', () => {
-    console.log('MongoDB disconnected');
-});
-
-mongoose.connection.on('reconnected', () => {
-    console.log('MongoDB reconnected');
-});
 
 // 身份验证中间件
 const authenticateToken = (req, res, next) => {

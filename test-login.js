@@ -9,7 +9,7 @@ async function testLogin() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Origin': 'https://w3router.github.io'
+                'Origin': 'https://eonweb-production.up.railway.app'
             },
             body: JSON.stringify({
                 email: 'test@example.com',

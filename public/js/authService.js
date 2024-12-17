@@ -53,7 +53,7 @@ if (typeof window.AuthService === 'undefined') {
 
         // 处理认证重定向
         handleAuthRedirect() {
-            window.location.href = 'https://w3router.github.io/eonweb/public/auth/login.html';
+            window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
         }
 
         // 获取请求配置
