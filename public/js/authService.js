@@ -197,9 +197,15 @@ if (typeof window.AuthService === 'undefined') {
         }
 
         // 处理登出
-        handleLogout() {
-            this.logout();
-            window.location.href = '/auth/login.html';
+        async handleLogout() {
+            try {
+                await this.logout();
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+            } catch (error) {
+                console.error('[AuthService] Logout failed:', error);
+                // Still redirect even if logout fails to ensure user is logged out of frontend
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+            }
         }
 
         async fetchWithAuth(endpoint, options = {}) {
@@ -222,8 +228,12 @@ if (typeof window.AuthService === 'undefined') {
         // 获取用户任务
         async getUserTasks() {
             try {
-                const response = await this.fetchWithAuth('/api/tasks/user');
-                return response.tasks || [];
+                const response = await this.fetchWithAuth(`${this.apiUrl}/api/tasks/user`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user tasks');
+                }
+                const data = await response.json();
+                return data.tasks || [];
             } catch (error) {
                 console.error('Error getting user tasks:', error);
                 return [];
@@ -233,8 +243,12 @@ if (typeof window.AuthService === 'undefined') {
         // 获取用户统计信息
         async getUserStats() {
             try {
-                const response = await this.fetchWithAuth('/api/users/stats');
-                return response;
+                const response = await this.fetchWithAuth(`${this.apiUrl}/api/users/stats`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user stats');
+                }
+                const data = await response.json();
+                return data;
             } catch (error) {
                 console.error('Error getting user stats:', error);
                 return null;
@@ -244,8 +258,12 @@ if (typeof window.AuthService === 'undefined') {
         // 获取推荐信息
         async getReferralInfo() {
             try {
-                const response = await this.fetchWithAuth('/api/users/referral-info');
-                return response;
+                const response = await this.fetchWithAuth(`${this.apiUrl}/api/users/referral-info`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch referral info');
+                }
+                const data = await response.json();
+                return data;
             } catch (error) {
                 console.error('Error getting referral info:', error);
                 return null;
