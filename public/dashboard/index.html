@@ -295,194 +295,137 @@
 
         // 获取用户信息并显示
         async function loadUserInfo() {
-            console.log('Loading user info...');
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('No token found');
-                }
-
-                const response = await fetch('https://eonweb-production.up.railway.app/api/user/info', {
+                const response = await fetch('https://eonweb-production.up.railway.app/api/user', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        console.log('Token expired or invalid, redirecting to login...');
-                        window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
-                        return;
+                        throw new Error('auth_error');
                     }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("Received non-JSON response");
+                    throw new Error('Failed to load user info');
                 }
 
                 const data = await response.json();
-                console.log('User info:', data);
-
-                // 如果是管理员，重定向到管理员后台
-                if (data.isAdmin) {
-                    console.log('Admin user detected, redirecting to admin dashboard...');
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/admin/dashboard.html';
-                    return;
-                }
-
-                const userEmailElement = document.getElementById('userEmail');
-                if (userEmailElement) {
-                    userEmailElement.textContent = data.email || 'Unknown User';
-                }
+                document.querySelector('.username').textContent = data.email || 'User';
             } catch (error) {
                 console.error('Error loading user info:', error);
-                if (error.message.includes('token') || error.message.includes('JSON')) {
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                if (error.message === 'auth_error') {
+                    handleAuthError();
                 }
             }
         }
 
+        // 统一处理认证错误
+        function handleAuthError() {
+            console.log('Handling auth error...');
+            // 清除认证信息
+            window.authService.logout();
+            // 显示错误消息
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
+            errorDiv.textContent = 'Session expired. Please login again.';
+            document.body.appendChild(errorDiv);
+            // 3秒后重定向
+            setTimeout(() => {
+                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+            }, 3000);
+        }
+
         // 获取推荐信息
         async function loadReferralInfo() {
-            console.log('Loading referral info...');
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('No token found');
-                }
-
-                const response = await fetch('https://eonweb-production.up.railway.app/api/user/referral', {
+                const response = await fetch('https://eonweb-production.up.railway.app/api/users/referral-info', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        console.log('Token expired or invalid, redirecting to login...');
-                        window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
-                        return;
+                        throw new Error('auth_error');
                     }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("Received non-JSON response");
+                    throw new Error('Failed to load referral info');
                 }
 
                 const data = await response.json();
-                const referralCodeElement = document.getElementById('referralCode');
-                const referralLinkElement = document.getElementById('referralLink');
-                if (referralCodeElement && data.referralCode) {
-                    referralCodeElement.textContent = data.referralCode;
-                }
-                if (referralLinkElement && data.referralLink) {
-                    referralLinkElement.textContent = data.referralLink;
-                    referralLinkElement.href = data.referralLink;
-                }
+                updateElement('referralCode', data.referralCode || 'N/A');
+                updateElement('referralCount', data.referralCount || '0');
+                updateElement('totalPoints', data.totalPoints || '0');
             } catch (error) {
                 console.error('Error loading referral info:', error);
-                if (error.message.includes('token') || error.message.includes('JSON')) {
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                if (error.message === 'auth_error') {
+                    handleAuthError();
                 }
             }
         }
 
         // 获取任务信息
         async function loadTasks() {
-            console.log('Loading tasks...');
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('No token found');
-                }
-
-                const response = await fetch('https://eonweb-production.up.railway.app/api/user/tasks', {
+                const response = await fetch('https://eonweb-production.up.railway.app/api/tasks/user', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        console.log('Token expired or invalid, redirecting to login...');
-                        window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
-                        return;
+                        throw new Error('auth_error');
                     }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("Received non-JSON response");
+                    throw new Error('Failed to load tasks');
                 }
 
                 const data = await response.json();
-                const taskListElement = document.getElementById('taskList');
-                if (taskListElement && Array.isArray(data.tasks)) {
-                    taskListElement.innerHTML = data.tasks.map(task => `
-                        <div class="task-item ${task.completed ? 'completed' : ''}">
+                const tasksList = document.getElementById('tasksList');
+                tasksList.innerHTML = '';
+
+                if (data.tasks && data.tasks.length > 0) {
+                    data.tasks.forEach(task => {
+                        const taskElement = document.createElement('div');
+                        taskElement.className = 'task-item';
+                        taskElement.innerHTML = `
                             <span class="task-name">${task.name}</span>
-                            <span class="task-status">${task.completed ? 'Completed' : 'Pending'}</span>
-                        </div>
-                    `).join('');
+                            <span class="task-status ${task.completed ? 'completed' : ''}">${task.completed ? 'Completed' : 'Pending'}</span>
+                        `;
+                        tasksList.appendChild(taskElement);
+                    });
+                } else {
+                    tasksList.innerHTML = '<div class="no-tasks">No tasks available</div>';
                 }
             } catch (error) {
                 console.error('Error loading tasks:', error);
-                if (error.message.includes('token') || error.message.includes('JSON')) {
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                if (error.message === 'auth_error') {
+                    handleAuthError();
                 }
             }
         }
 
         // 获取统计信息
         async function loadStats() {
-            console.log('Loading stats...');
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('No token found');
-                }
-
-                const response = await fetch('https://eonweb-production.up.railway.app/api/user/stats', {
+                const response = await fetch('https://eonweb-production.up.railway.app/api/users/stats', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        console.log('Token expired or invalid, redirecting to login...');
-                        window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
-                        return;
+                        throw new Error('auth_error');
                     }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("Received non-JSON response");
+                    throw new Error('Failed to load stats');
                 }
 
                 const data = await response.json();
-                // 安全地更新 DOM
-                const updateElement = (id, value) => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        element.textContent = value;
-                    }
-                };
-
-                updateElement('totalPoints', data.totalPoints || '0');
-                updateElement('referralCount', data.referralCount || '0');
                 updateElement('taskCount', data.completedTasks || '0');
             } catch (error) {
                 console.error('Error loading stats:', error);
-                if (error.message.includes('token') || error.message.includes('JSON')) {
-                    window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                if (error.message === 'auth_error') {
+                    handleAuthError();
                 }
             }
         }
@@ -492,39 +435,35 @@
             console.log('DOM loaded, initializing...');
             try {
                 // 初始化 AuthService
-                if (!initializeAuthService()) {
-                    throw new Error('Failed to initialize AuthService');
+                if (!window.authService) {
+                    window.authService = new AuthService();
                 }
 
                 // 检查认证状态
-                const token = localStorage.getItem('token');
-                if (!token || !window.authService || !window.authService.isAuthenticated()) {
-                    throw new Error('Not authenticated');
+                const isAuthenticated = await window.authService.isAuthenticated();
+                if (!isAuthenticated) {
+                    throw new Error('auth_error');
                 }
 
                 // 加载所有数据
                 console.log('Loading dashboard data...');
-                await Promise.all([
-                    loadUserInfo(),
-                    loadReferralInfo(),
-                    loadTasks(),
-                    loadStats()
-                ]);
+                // 串行加载数据，避免并发请求可能导致的问题
+                await loadUserInfo();
+                await loadReferralInfo();
+                await loadTasks();
+                await loadStats();
                 console.log('Dashboard data loaded successfully');
 
                 // 设置登出按钮事件监听器
                 const logoutBtn = document.querySelector('.logout-btn');
                 if (logoutBtn) {
-                    logoutBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        handleLogout().catch(error => {
-                            console.error('Error in logout handler:', error);
-                        });
-                    });
+                    logoutBtn.addEventListener('click', handleLogout);
                 }
             } catch (error) {
                 console.error('Initialization error:', error);
-                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                if (error.message === 'auth_error') {
+                    handleAuthError();
+                }
             }
         });
     </script>
