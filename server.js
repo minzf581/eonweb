@@ -16,7 +16,8 @@ const config = {
         enabled: process.env.CORS_ENABLED !== 'false',
         allowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080')
             .split(',')
-            .map(origin => origin.trim().replace(';', ''))
+            .map(origin => origin.trim())
+            .filter(origin => origin.length > 0)
     },
     server: {
         env: process.env.NODE_ENV || 'development',
@@ -69,7 +70,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.status(200).send('OK');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // 启用压缩
@@ -105,12 +106,6 @@ app.use(cookieParser());
 
 // 静态文件服务
 app.use('/public', express.static(path.join(__dirname, 'public'), {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true
-}));
-
-app.use(express.static(path.join(__dirname), {
     maxAge: '1d',
     etag: true,
     lastModified: true
