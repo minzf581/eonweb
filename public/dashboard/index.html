@@ -385,12 +385,20 @@
                     window.authService = new AuthService();
                 }
 
+                // 检查是否已经登录
+                if (!window.authService.isAuthenticated()) {
+                    console.log('No token found, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return;
+                }
+
                 // 验证token有效性
                 console.log('Validating token...');
                 const isValid = await window.authService.validateToken();
                 if (!isValid) {
-                    console.log('Token validation failed');
-                    return; // handleAuthError 已经在 validateToken 中处理
+                    console.log('Token validation failed, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return;
                 }
 
                 // 加载数据
@@ -402,10 +410,10 @@
                     loadStats()
                 ]);
 
-                console.log('Dashboard data loaded');
+                console.log('Dashboard data loaded successfully');
             } catch (error) {
                 console.error('Dashboard initialization error:', error);
-                // 显示错误消息但不重定向
+                // 显示错误消息
                 const errorDiv = document.createElement('div');
                 errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
                 errorDiv.textContent = 'Failed to load dashboard data. Please refresh the page.';

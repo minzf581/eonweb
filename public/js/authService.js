@@ -219,28 +219,25 @@ if (typeof window.AuthService === 'undefined') {
 
         handleAuthError() {
             // 检查是否已经在重定向
-            if (AuthService.hasRedirected) {
-                console.log('[AuthService] Redirect already in progress');
+            if (this.#redirecting) {
+                console.log('[AuthService] Already redirecting, skipping...');
                 return;
             }
 
-            // 设置重定向标志
-            AuthService.hasRedirected = true;
-            console.log('[AuthService] Handling auth error');
+            // 检查当前页面是否已经是登录页面
+            if (window.location.pathname.includes('/auth/login.html')) {
+                console.log('[AuthService] Already on login page, skipping redirect...');
+                return;
+            }
 
-            // 清理认证数据
+            this.#redirecting = true;
+            console.log('[AuthService] Handling auth error, redirecting to login...');
+            
+            // 清除认证信息
             this.clearAuth();
-
-            // 显示错误消息
-            const errorDiv = document.createElement('div');
-            errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
-            errorDiv.textContent = 'Session expired. Please login again.';
-            document.body.appendChild(errorDiv);
-
-            // 延迟重定向，给用户时间看到消息
-            setTimeout(() => {
-                window.location.href = '/public/auth/login.html';
-            }, 2000);
+            
+            // 重定向到登录页面
+            window.location.href = '/public/auth/login.html';
         }
 
         // 重置重定向状态
