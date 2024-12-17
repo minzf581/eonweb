@@ -10,9 +10,11 @@ if (typeof window.AuthService === 'undefined') {
                 origin: window.location.origin
             });
 
-            // 根据环境设置 API URL
-            this.apiUrl = 'https://eonweb-production.up.railway.app/proxy';
-            console.log('[AuthService] Initializing with API URL:', this.apiUrl);
+            // 使用相对路径，因为前端和后端在同一域名下
+            this.BASE_URL = '';  // 空字符串表示使用相对路径
+            this.AUTH_BASE = '/auth';
+            this.API_BASE = '/api';
+            console.log('[AuthService] Using relative paths for API calls');
             
             this.tokenKey = 'token';
             this.userKey = 'user';
@@ -53,7 +55,7 @@ if (typeof window.AuthService === 'undefined') {
 
         // 处理认证重定向
         handleAuthRedirect() {
-            window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+            window.location.href = '/public/auth/login.html';
         }
 
         // 获取请求配置
@@ -79,20 +81,17 @@ if (typeof window.AuthService === 'undefined') {
             try {
                 console.log('[AuthService] Attempting login with:', { email });
                 
-                const response = await fetch(`${this.apiUrl}/auth/login`, {
+                const response = await fetch(`${this.AUTH_BASE}/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password }),
-                    credentials: 'include',
-                    mode: 'cors'
+                    body: JSON.stringify({ email, password })
                 });
 
                 console.log('[AuthService] Login response:', {
                     status: response.status,
-                    ok: response.ok,
-                    headers: Object.fromEntries(response.headers.entries())
+                    ok: response.ok
                 });
 
                 if (!response.ok) {
@@ -102,14 +101,12 @@ if (typeof window.AuthService === 'undefined') {
                 }
 
                 const data = await response.json();
-                console.log('[AuthService] Login successful:', { 
-                    token: data.token ? 'present' : 'missing',
-                    user: data.user ? 'present' : 'missing'
-                });
-
-                // 保存认证信息
-                this.setAuth(data.token, data.user);
-                return data;
+                if (data.token) {
+                    this.setAuth(data.token, data.user);
+                    return data;
+                } else {
+                    throw new Error('No token received');
+                }
             } catch (error) {
                 console.error('[AuthService] Login error:', error);
                 throw error;
@@ -118,39 +115,28 @@ if (typeof window.AuthService === 'undefined') {
 
         async getUserInfo() {
             try {
-                const response = await fetch(`${this.apiUrl}/user`, this.getRequestConfig());
+                const response = await fetch(`${this.API_BASE}/user/info`, {
+                    headers: {
+                        'Authorization': `Bearer ${this.getToken()}`
+                    }
+                });
                 
                 if (!response.ok) {
                     throw new Error(response.statusText);
                 }
 
-                const data = await response.json();
-                return data;
+                return await response.json();
             } catch (error) {
-                console.error('[AuthService] Error getting user info:', error.message);
+                console.error('[AuthService] Get user info error:', error);
                 throw error;
             }
         }
 
         async logout() {
-            try {
-                const response = await fetch(`${this.apiUrl}/auth/logout`, this.getRequestConfig({
-                    method: 'POST'
-                }));
-
-                if (!response.ok) {
-                    throw new Error(response.statusText);
-                }
-
-                localStorage.removeItem(this.tokenKey);
-                localStorage.removeItem(this.userKey);
-                
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('[AuthService] Logout error:', error.message);
-                throw error;
-            }
+            // 清除本地存储
+            localStorage.removeItem(this.tokenKey);
+            localStorage.removeItem(this.userKey);
+            console.log('[AuthService] Logged out successfully');
         }
 
         setAuth(token, user) {
@@ -182,7 +168,7 @@ if (typeof window.AuthService === 'undefined') {
 
             try {
                 // 验证 token 是否有效
-                const response = await fetch(`${this.apiUrl}/auth/verify`, {
+                const response = await fetch(`${this.API_BASE}/verify`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -200,18 +186,18 @@ if (typeof window.AuthService === 'undefined') {
         async handleLogout() {
             try {
                 await this.logout();
-                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                window.location.href = '/public/auth/login.html';
             } catch (error) {
                 console.error('[AuthService] Logout failed:', error);
                 // Still redirect even if logout fails to ensure user is logged out of frontend
-                window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
+                window.location.href = '/public/auth/login.html';
             }
         }
 
         async fetchWithAuth(endpoint, options = {}) {
             try {
                 console.log(`Fetching ${endpoint} with auth`);
-                const response = await fetch(`${this.apiUrl}${endpoint}`, this.getRequestConfig(options));
+                const response = await fetch(`${this.API_BASE}${endpoint}`, this.getRequestConfig(options));
 
                 if (!response.ok) {
                     const error = await response.json();
@@ -228,7 +214,7 @@ if (typeof window.AuthService === 'undefined') {
         // 获取用户任务
         async getUserTasks() {
             try {
-                const response = await this.fetchWithAuth(`${this.apiUrl}/api/tasks/user`);
+                const response = await this.fetchWithAuth('/tasks/user');
                 if (!response.ok) {
                     throw new Error('Failed to fetch user tasks');
                 }
@@ -243,7 +229,7 @@ if (typeof window.AuthService === 'undefined') {
         // 获取用户统计信息
         async getUserStats() {
             try {
-                const response = await this.fetchWithAuth(`${this.apiUrl}/api/users/stats`);
+                const response = await this.fetchWithAuth('/users/stats');
                 if (!response.ok) {
                     throw new Error('Failed to fetch user stats');
                 }
@@ -258,7 +244,7 @@ if (typeof window.AuthService === 'undefined') {
         // 获取推荐信息
         async getReferralInfo() {
             try {
-                const response = await this.fetchWithAuth(`${this.apiUrl}/api/users/referral-info`);
+                const response = await this.fetchWithAuth('/users/referral-info');
                 if (!response.ok) {
                     throw new Error('Failed to fetch referral info');
                 }
@@ -278,7 +264,7 @@ if (typeof window.AuthService === 'undefined') {
             }
 
             try {
-                const response = await fetch(`${this.apiUrl}/api/user/role`, {
+                const response = await fetch(`${this.API_BASE}/user/role`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
