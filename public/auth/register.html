@@ -82,7 +82,8 @@
                 const response = await authService.register(userData);
                 
                 if (response.token) {
-                    window.location.href = '/';
+                    // 注册成功后重定向到登录页面
+                    window.location.href = '/public/auth/login.html';
                 } else {
                     throw new Error('Registration failed - no token received');
                 }

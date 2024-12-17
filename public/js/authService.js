@@ -215,6 +215,33 @@ if (typeof window.AuthService === 'undefined') {
         async getUserTasks() {
             return this.fetchWithAuth('/tasks/user');
         }
+
+        // 获取用户角色
+        async getUserRole() {
+            const token = this.getToken();
+            if (!token) {
+                throw new Error('No token found');
+            }
+
+            try {
+                const response = await fetch(`${this.apiUrl}/api/user/role`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get user role');
+                }
+
+                const data = await response.json();
+                return data.role;
+            } catch (error) {
+                console.error('Error getting user role:', error);
+                throw error;
+            }
+        }
     }
 }
 

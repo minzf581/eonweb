@@ -106,9 +106,25 @@
         window.addEventListener('load', function() {
             console.log('Page loaded, checking auth status');
             if (window.authService.isAuthenticated()) {
-                window.location.href = '/';
+                handleAuthRedirect();
             }
         });
+
+        // 根据用户角色处理重定向
+        async function handleAuthRedirect() {
+            try {
+                const userRole = await window.authService.getUserRole();
+                if (userRole === 'admin') {
+                    window.location.href = '/public/admin/dashboard/index.html';
+                } else {
+                    window.location.href = '/public/dashboard/index.html';
+                }
+            } catch (error) {
+                console.error('Error getting user role:', error);
+                // 如果获取角色失败，默认重定向到普通用户页面
+                window.location.href = '/public/dashboard/index.html';
+            }
+        }
 
         async function handleLogin(event) {
             event.preventDefault();
@@ -121,7 +137,7 @@
                 const loginData = await window.authService.login(email, password);
 
                 if (loginData.token) {
-                    window.location.href = '/';
+                    await handleAuthRedirect();
                 } else {
                     throw new Error('Login failed: No token received');
                 }
