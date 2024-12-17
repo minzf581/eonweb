@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
-    <script src="https://illustrious-perfection-production.up.railway.app/public/js/authService.js"></script>
+    <script src="https://eonweb-production.up.railway.app/public/js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -53,7 +53,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            margin-top: 1rem;
+            font-size: 1rem;
         }
 
         button:hover {
@@ -70,10 +70,13 @@
             text-decoration: none;
         }
 
+        .links a:hover {
+            text-decoration: underline;
+        }
+
         #error-message {
-            color: #ff4444;
-            margin-top: 1rem;
-            text-align: center;
+            color: #dc3545;
+            margin-bottom: 1rem;
             display: none;
         }
     </style>
@@ -94,7 +97,7 @@
             <button type="submit">Login</button>
         </form>
         <div class="links">
-            <a href="https://illustrious-perfection-production.up.railway.app/public/auth/register.html">Don't have an account? Register</a>
+            <a href="https://eonweb-production.up.railway.app/public/auth/register.html">Don't have an account? Register</a>
         </div>
     </div>
 
@@ -103,7 +106,7 @@
         window.addEventListener('load', function() {
             console.log('Page loaded, checking auth status');
             if (window.authService.isAuthenticated()) {
-                window.location.href = 'https://illustrious-perfection-production.up.railway.app/public/dashboard.html';
+                window.location.href = 'https://eonweb-production.up.railway.app/public/dashboard.html';
             }
         });
 
@@ -112,18 +115,20 @@
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-message');
             
             try {
                 const loginData = await window.authService.login(email, password);
 
                 if (loginData.token) {
-                    window.location.href = 'https://illustrious-perfection-production.up.railway.app/public/dashboard.html';
+                    window.location.href = 'https://eonweb-production.up.railway.app/public/dashboard.html';
                 } else {
                     throw new Error('Login failed: No token received');
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                alert('Login failed: ' + error.message);
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Login failed: ' + error.message;
             }
         }
     </script>
