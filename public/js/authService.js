@@ -172,21 +172,33 @@ if (typeof window.AuthService === 'undefined') {
         async isAuthenticated() {
             const token = this.getToken();
             if (!token) {
+                console.log('[AuthService] No token found');
                 return false;
             }
 
             try {
-                // 验证 token 是否有效
-                const response = await fetch(`${this.API_BASE}/verify`, {
+                console.log('[AuthService] Verifying token...');
+                // Fix: Use correct verify endpoint
+                const response = await fetch(`${this.AUTH_BASE}/verify`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                return response.ok;
+                if (!response.ok) {
+                    console.log('[AuthService] Token verification failed:', response.status);
+                    // Clear invalid token
+                    localStorage.removeItem(this.tokenKey);
+                    return false;
+                }
+
+                console.log('[AuthService] Token verified successfully');
+                return true;
             } catch (error) {
                 console.error('[AuthService] Token verification failed:', error);
+                // Clear token on error
+                localStorage.removeItem(this.tokenKey);
                 return false;
             }
         }
