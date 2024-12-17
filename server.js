@@ -104,13 +104,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // 静态文件服务
+app.use('/public', express.static(path.join(__dirname, 'public'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+}));
+
 app.use(express.static(path.join(__dirname), {
     maxAge: '1d',
     etag: true,
     lastModified: true
 }));
 
-// 所有路由都返回 index.html
+// 所有其他路由都返回 index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
