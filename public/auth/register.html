@@ -25,6 +25,58 @@
             }
         }
 
+        // 检查用户是否已登录并重定向
+        async function checkAuthAndRedirect() {
+            try {
+                // 如果没有 token，不需要检查
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.log('No token found, staying on register page');
+                    return;
+                }
+
+                // 初始化 AuthService
+                if (!initializeAuthService()) {
+                    console.error('Failed to initialize AuthService');
+                    return;
+                }
+
+                // 检查用户信息
+                const response = await fetch('https://eonweb-production.up.railway.app/api/user/info', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        console.log('Token invalid, clearing storage');
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const userData = await response.json();
+                console.log('User data:', userData);
+
+                // 根据用户角色重定向
+                if (userData.isAdmin) {
+                    console.log('Admin user detected, redirecting to admin dashboard...');
+                    window.location.href = 'https://eonweb-production.up.railway.app/public/admin/dashboard.html';
+                } else {
+                    console.log('Regular user detected, redirecting to user dashboard...');
+                    window.location.href = 'https://eonweb-production.up.railway.app/public/dashboard/index.html';
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                // 出错时清除 token
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
+        }
+
         // 检查推荐任务是否启用
         async function checkReferralTaskStatus() {
             try {
@@ -46,21 +98,14 @@
             }
         }
 
-        // 页面加载完成后检查是否已登录
+        // 页面加载完成后检查认证状态
         window.addEventListener('load', function() {
-            console.log('Page loaded, checking auth status');
+            console.log('Register page loaded');
             
-            // 初始化 AuthService
-            if (!initializeAuthService()) {
-                console.error('Failed to initialize AuthService');
-                return;
-            }
-
             // 检查认证状态
-            if (window.authService && window.authService.isAuthenticated()) {
-                console.log('User is already authenticated, redirecting...');
-                window.authService.handleAuthRedirect();
-            }
+            checkAuthAndRedirect().catch(error => {
+                console.error('Error during auth check:', error);
+            });
 
             // 检查推荐任务状态
             checkReferralTaskStatus().then(isActive => {
@@ -129,10 +174,26 @@
                 };
                 
                 console.log('Attempting registration...');
-                const response = await window.authService.register(userData);
+                const response = await fetch('https://eonweb-production.up.railway.app/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Registration failed');
+                }
+
+                const data = await response.json();
                 
-                if (response.token) {
+                if (data.token) {
                     console.log('Registration successful, redirecting to login...');
+                    // 存储 token
+                    localStorage.setItem('token', data.token);
+                    // 重定向到登录页面
                     window.location.href = 'https://eonweb-production.up.railway.app/public/auth/login.html';
                 } else {
                     throw new Error('Registration failed - no token received');
