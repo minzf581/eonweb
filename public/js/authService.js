@@ -98,9 +98,15 @@ if (typeof window.AuthService === 'undefined') {
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('[AuthService] Login failed:', errorData);
-                    throw new Error(errorData.message || 'Login failed');
+                    let errorMessage = 'Login failed';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        // 如果响应不是 JSON 格式，使用默认错误消息
+                        console.warn('[AuthService] Failed to parse error response:', e);
+                    }
+                    throw new Error(errorMessage);
                 }
 
                 const data = await response.json();

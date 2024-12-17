@@ -303,7 +303,7 @@ const userTaskSchema = new mongoose.Schema({
 const UserTask = mongoose.model('UserTask', userTaskSchema);
 
 // API 路由
-app.post('/proxy/auth/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         
@@ -345,7 +345,7 @@ app.post('/proxy/auth/login', async (req, res) => {
     }
 });
 
-app.get('/proxy/user', authenticateToken, async (req, res) => {
+app.get('/api/user', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');
         if (!user) {
@@ -359,7 +359,7 @@ app.get('/proxy/user', authenticateToken, async (req, res) => {
 });
 
 // 获取用户任务
-app.get('/proxy/api/tasks/user', authenticateToken, async (req, res) => {
+app.get('/api/tasks/user', authenticateToken, async (req, res) => {
     try {
         const userTasks = await UserTask.find({ userId: req.user.userId })
             .populate('taskId')
@@ -382,7 +382,7 @@ app.get('/proxy/api/tasks/user', authenticateToken, async (req, res) => {
 });
 
 // 获取用户统计信息
-app.get('/proxy/api/users/stats', authenticateToken, async (req, res) => {
+app.get('/api/users/stats', authenticateToken, async (req, res) => {
     try {
         const userTasks = await UserTask.find({ userId: req.user.userId });
         const completedTasks = userTasks.filter(t => t.completed).length;
@@ -400,7 +400,7 @@ app.get('/proxy/api/users/stats', authenticateToken, async (req, res) => {
 });
 
 // 获取推荐信息
-app.get('/proxy/api/users/referral-info', authenticateToken, async (req, res) => {
+app.get('/api/users/referral-info', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
         const referrals = await User.countDocuments({ referredBy: user._id });
@@ -417,11 +417,11 @@ app.get('/proxy/api/users/referral-info', authenticateToken, async (req, res) =>
 });
 
 // 验证 token
-app.get('/proxy/auth/verify', authenticateToken, (req, res) => {
+app.get('/api/auth/verify', authenticateToken, (req, res) => {
     res.json({ valid: true });
 });
 
-app.post('/proxy/auth/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, referralCode } = req.body;
 

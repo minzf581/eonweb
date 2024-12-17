@@ -236,7 +236,7 @@
         // Load users
         async function loadUsers() {
             try {
-                const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/admin/users', {
+                const response = await fetch('https://eonweb-production.up.railway.app/api/admin/users', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
@@ -274,7 +274,7 @@
         // Load tasks
         async function loadTasks() {
             try {
-                const response = await fetch('https://eonweb-production.up.railway.app/proxy/api/admin/tasks', {
+                const response = await fetch('https://eonweb-production.up.railway.app/api/admin/tasks', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
@@ -315,7 +315,7 @@
         // Toggle task status
         async function toggleTaskStatus(taskId) {
             try {
-                const response = await fetch(`https://eonweb-production.up.railway.app/proxy/api/admin/tasks/${taskId}/toggle`, {
+                const response = await fetch(`https://eonweb-production.up.railway.app/api/admin/tasks/${taskId}/toggle`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
