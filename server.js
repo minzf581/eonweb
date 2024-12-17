@@ -30,13 +30,19 @@ if (!JWT_SECRET) {
 
 // 打印配置信息
 console.log('\n=== Environment Configuration ===');
-console.log('CORS_ALLOWED_ORIGINS:', CORS_ALLOWED_ORIGINS);
-console.log('CORS_ENABLED:', CORS_ENABLED);
-console.log('NODE_ENV:', NODE_ENV);
-console.log('JWT_SECRET:', JWT_SECRET ? 'configured' : 'missing');
-console.log('MONGODB_URI:', MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//[credentials]@'));
-console.log('PORT:', PORT);
-console.log('HOST:', HOST);
+console.log('Server Configuration:', {
+    NODE_ENV,
+    CORS_ENABLED,
+    CORS_ALLOWED_ORIGINS,
+    PORT,
+    HOST,
+    MONGODB_URI: MONGODB_URI.replace(/mongodb:\/\/[^:]+:[^@]+@/, 'mongodb://****:****@')
+});
+
+// 健康检查路由
+app.get('/', (req, res) => {
+    res.status(200).send('OK');
+});
 
 // CORS 配置
 const corsOptions = {
@@ -94,25 +100,27 @@ mongoose.connect(MONGODB_URI, mongooseOptions)
         
         // 启动服务器
         const server = app.listen(PORT, HOST, () => {
-            console.log(`Server is running at http://${HOST}:${PORT}`);
-            console.log('Environment:', NODE_ENV);
+            console.log(`Server is running on http://${HOST}:${PORT}`);
+            
+            // 记录服务器已经准备好接受请求
+            console.log('Server is ready to accept requests');
+        });
+
+        // 处理服务器错误
+        server.on('error', (error) => {
+            console.error('Server error:', error);
         });
 
         // 优雅关闭
-        process.on('SIGTERM', async () => {
-            console.log('SIGTERM received. Shutting down gracefully...');
-            try {
-                await new Promise((resolve) => {
-                    server.close(resolve);
+        process.on('SIGTERM', () => {
+            console.log('SIGTERM signal received: closing HTTP server');
+            server.close(() => {
+                console.log('HTTP server closed');
+                mongoose.connection.close(false, () => {
+                    console.log('MongoDB connection closed');
+                    process.exit(0);
                 });
-                console.log('Server closed. Disconnecting from database...');
-                await mongoose.connection.close();
-                console.log('Database connection closed.');
-                process.exit(0);
-            } catch (error) {
-                console.error('Error during shutdown:', error);
-                process.exit(1);
-            }
+            });
         });
     })
     .catch((error) => {
