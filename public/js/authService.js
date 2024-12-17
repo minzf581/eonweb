@@ -185,10 +185,11 @@ if (typeof window.AuthService === 'undefined') {
             if (!token) return false;
 
             try {
-                const response = await fetch(`${this.AUTH_BASE}/validate`, {
+                const response = await fetch(`${this.AUTH_BASE}/verify`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
 
@@ -198,7 +199,8 @@ if (typeof window.AuthService === 'undefined') {
                     return false;
                 }
 
-                return true;
+                const data = await response.json();
+                return data.valid === true;
             } catch (error) {
                 console.error('[AuthService] Token validation error:', error);
                 this.clearAuth();
