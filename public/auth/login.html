@@ -6,95 +6,52 @@
     <title>Login - EON Protocol</title>
     <script src="/public/js/authService.js"></script>
     <script>
-        let isCheckingAuth = false;
-        let authService;
+        // 初始化 AuthService
+        if (!window.authService) {
+            window.authService = new AuthService();
+        }
 
-        // 初始化 AuthService 并检查认证状态
-        async function initAuth() {
-            try {
-                if (!authService) {
-                    authService = new AuthService();
-                }
-                await checkAuthStatus();
-            } catch (error) {
-                console.error('Init auth error:', error);
-                document.getElementById('login-container').style.display = 'block';
+        // 检查是否已经登录
+        function checkAuthAndRedirect() {
+            console.log('Checking authentication status...');
+            if (window.authService.isAuthenticated()) {
+                console.log('User is already authenticated, redirecting to dashboard...');
+                window.location.href = '/public/dashboard/index.html';
             }
         }
 
-        // 处理登录
+        // 页面加载时检查认证状态
+        document.addEventListener('DOMContentLoaded', checkAuthAndRedirect);
+
+        // 处理登录表单提交
         async function handleLogin(event) {
             event.preventDefault();
             
-            // 清除错误消息
-            document.getElementById('error-message').textContent = '';
-
-            try {
-                // 获取表单数据
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-
-                if (!email || !password) {
-                    throw new Error('Please fill in all fields');
-                }
-
-                console.log('Attempting login...');
-                const data = await authService.login(email, password);
-                console.log('Login successful');
-
-                // 根据用户角色重定向
-                const user = authService.getUser();
-                if (user && user.isAdmin) {
-                    window.location.href = '/public/admin/dashboard.html';
-                } else {
-                    window.location.href = '/public/dashboard/index.html';
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                document.getElementById('error-message').textContent = error.message || 'Login failed';
-            }
-        }
-
-        // 检查认证状态
-        async function checkAuthStatus() {
-            if (isCheckingAuth) {
-                console.log('Auth check already in progress, skipping...');
-                return;
-            }
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('error-message');
             
             try {
-                isCheckingAuth = true;
-                console.log('Checking auth status...');
-                
-                // 先隐藏登录容器，避免闪烁
-                document.getElementById('login-container').style.display = 'none';
-                
-                const isAuthenticated = await authService.isAuthenticated();
-                console.log('Auth status:', isAuthenticated);
-                
-                if (isAuthenticated) {
-                    const user = authService.getUser();
-                    // 如果已认证，直接重定向到相应页面
-                    if (user && user.isAdmin) {
-                        window.location.href = '/public/admin/dashboard.html';
-                    } else {
-                        window.location.href = '/public/dashboard/index.html';
-                    }
-                } else {
-                    // 未认证时显示登录表单
-                    document.getElementById('login-container').style.display = 'block';
+                const response = await window.authService.login(email, password);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Login failed');
                 }
+                
+                const data = await response.json();
+                window.authService.setAuth(data.token, data.user);
+                
+                // 登录成功后重定向到仪表板
+                window.location.href = '/public/dashboard/index.html';
             } catch (error) {
-                console.error('Auth check error:', error);
-                // 发生错误时显示登录表单，但不自动登出
-                document.getElementById('login-container').style.display = 'block';
-            } finally {
-                isCheckingAuth = false;
+                console.error('Login error:', error);
+                errorElement.textContent = error.message || 'Login failed. Please try again.';
+                errorElement.style.display = 'block';
             }
         }
 
-        // 页面加载完成后初始化
-        window.addEventListener('load', initAuth);
+        // 添加表单提交事件监听器
+        document.getElementById('loginForm').addEventListener('submit', handleLogin);
     </script>
     <style>
         body {
@@ -110,7 +67,7 @@
         }
 
         #login-container {
-            display: none;  /* 初始隐藏登录表单 */
+            display: block;  
             background-color: #2a2a2a;
             padding: 2rem;
             border-radius: 8px;
@@ -159,6 +116,7 @@
             color: #ff6b6b;
             margin-bottom: 1rem;
             text-align: center;
+            display: none;
         }
 
         .links {
@@ -186,7 +144,7 @@
     <div id="login-container">
         <h1>EON Protocol</h1>
         <div id="error-message"></div>
-        <form onsubmit="handleLogin(event)">
+        <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email:</label>
                 <input type="email" id="email" required>
