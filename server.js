@@ -25,11 +25,9 @@ let server = null;
 const config = {
     cors: {
         enabled: process.env.CORS_ENABLED !== 'false',
-        allowedOrigins: [
-            'http://localhost:3000',
-            'http://localhost:8080',
-            'https://eonweb-production.up.railway.app'
-        ]
+        allowedOrigins: process.env.NODE_ENV === 'production' 
+            ? ['https://eonweb-production.up.railway.app']
+            : ['http://localhost:3000', 'http://localhost:8080']
     },
     server: {
         env: process.env.NODE_ENV || 'development',
@@ -128,25 +126,18 @@ app.get('/', (req, res) => {
 // 启用压缩
 app.use(compression());
 
-// CORS 配置
-const corsOptions = {
-    origin: function (origin, callback) {
-        if (!config.cors.enabled) {
-            callback(null, true);
-            return;
+// 中间件配置
+app.use(cors({
+    origin: function(origin, callback) {
+        // 允许同源请求（没有 origin）
+        if (!origin) {
+            return callback(null, true);
         }
         
-        // 允许没有 origin 的请求（比如同源请求）
-        if (!origin) {
-            callback(null, true);
-            return;
-        }
-
-        // 检查 origin 是否在允许列表中
-        if (config.cors.allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+        // 检查是否在允许列表中
+        if (config.cors.enabled && config.cors.allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            console.log('Origin not allowed:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -155,10 +146,8 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['Set-Cookie'],
     maxAge: 86400
-};
+}));
 
-// 中间件配置
-app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
