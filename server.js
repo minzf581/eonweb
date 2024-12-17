@@ -11,45 +11,63 @@ require('dotenv').config();
 const app = express();
 
 // 环境变量配置
-const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080')
-    .split(',')
-    .map(origin => origin.trim().replace(';', '')); // Remove any semicolons and trim whitespace
-const CORS_ENABLED = process.env.CORS_ENABLED !== 'false';
-const NODE_ENV = process.env.NODE_ENV || 'development';
-const JWT_SECRET = process.env.JWT_SECRET;
-const PORT = process.env.PORT || 8080;
-const HOST = process.env.HOST || '0.0.0.0';
+const config = {
+    cors: {
+        enabled: process.env.CORS_ENABLED !== 'false',
+        allowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080')
+            .split(',')
+            .map(origin => origin.trim().replace(';', ''))
+    },
+    server: {
+        env: process.env.NODE_ENV || 'development',
+        port: process.env.PORT || 8080,
+        host: process.env.HOST || '0.0.0.0'
+    },
+    jwt: {
+        // 在开发环境使用默认密钥，生产环境需要设置环境变量
+        secret: process.env.NODE_ENV === 'production' 
+            ? process.env.JWT_SECRET 
+            : 'default-development-secret-key-do-not-use-in-production'
+    },
+    mongodb: {
+        uri: process.env.MONGODB_URI || 'mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@junction.proxy.rlwy.net:15172/?retryWrites=true&w=majority'
+    }
+};
 
-// MongoDB 配置
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@junction.proxy.rlwy.net:15172/?retryWrites=true&w=majority';
-
-// 验证必要的环境变量
-if (!JWT_SECRET) {
-    console.error('JWT_SECRET environment variable is required');
-    process.exit(1);
+// 验证生产环境配置
+if (config.server.env === 'production') {
+    const missingVars = [];
+    if (!process.env.JWT_SECRET) missingVars.push('JWT_SECRET');
+    if (!process.env.MONGODB_URI) missingVars.push('MONGODB_URI');
+    
+    if (missingVars.length > 0) {
+        console.warn(`Warning: Missing recommended environment variables for production: ${missingVars.join(', ')}`);
+        console.warn('Using default values for development. This is NOT recommended for production!');
+    }
 }
 
-// 打印配置信息
-console.log('\n=== Environment Configuration ===');
-console.log('Server Configuration:', {
-    NODE_ENV,
-    CORS_ENABLED,
-    CORS_ALLOWED_ORIGINS,
-    PORT,
-    HOST,
-    MONGODB_URI: MONGODB_URI.replace(/mongodb:\/\/[^:]+:[^@]+@/, 'mongodb://****:****@')
+// 打印配置信息（隐藏敏感信息）
+console.log('\n=== Server Configuration ===');
+console.log('Environment:', config.server.env);
+console.log('Server URL:', `http://${config.server.host}:${config.server.port}`);
+console.log('CORS:', {
+    enabled: config.cors.enabled,
+    allowedOrigins: config.cors.allowedOrigins
 });
+console.log('MongoDB:', 'Connected');
+console.log('JWT:', 'Configured');
+console.log('===========================\n');
 
 // 健康检查路由 - 必须在其他中间件之前
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        environment: config.server.env
     });
 });
 
-// 健康检查路由
 app.get('/', (req, res) => {
     res.status(200).send('OK');
 });
@@ -60,8 +78,11 @@ app.use(compression());
 // CORS 配置
 const corsOptions = {
     origin: function (origin, callback) {
-        console.log('Request origin:', origin);
-        if (!origin || CORS_ALLOWED_ORIGINS.includes(origin)) {
+        if (!config.cors.enabled) {
+            callback(null, true);
+            return;
+        }
+        if (!origin || config.cors.allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             console.log('Origin not allowed:', origin);
@@ -81,8 +102,18 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static('public'));
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
+// 静态文件服务
+app.use(express.static(path.join(__dirname), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+}));
+
+// 所有路由都返回 index.html
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // 请求日志中间件
 app.use((req, res, next) => {
@@ -119,13 +150,13 @@ const mongooseOptions = {
 };
 
 // MongoDB 连接
-mongoose.connect(MONGODB_URI, mongooseOptions)
+mongoose.connect(config.mongodb.uri, mongooseOptions)
     .then(() => {
         console.log('Successfully connected to MongoDB');
         
         // 启动服务器
-        const server = app.listen(PORT, HOST, () => {
-            console.log(`Server is running on http://${HOST}:${PORT}`);
+        const server = app.listen(config.server.port, config.server.host, () => {
+            console.log(`Server is running on http://${config.server.host}:${config.server.port}`);
             
             // 记录服务器已经准备好接受请求
             console.log('Server is ready to accept requests');
@@ -175,7 +206,7 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ message: 'No token provided' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, config.jwt.secret, (err, user) => {
         if (err) {
             return res.status(403).json({ message: 'Invalid token' });
         }
@@ -211,7 +242,7 @@ app.post('/proxy/auth/login', async (req, res) => {
 
         const token = jwt.sign(
             { userId: user._id, email: user.email, isAdmin: user.isAdmin },
-            JWT_SECRET,
+            config.jwt.secret,
             { expiresIn: '24h' }
         );
 
