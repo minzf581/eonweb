@@ -7,6 +7,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
 require('dotenv').config();
+const crypto = require('crypto');
 
 const app = express();
 let server = null;
@@ -266,6 +267,41 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
+// 用户模型
+const userSchema = new mongoose.Schema({
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    isAdmin: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now },
+    referralCode: { type: String, unique: true },
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    points: { type: Number, default: 0 }
+});
+
+const User = mongoose.model('User', userSchema);
+
+// 任务模型
+const taskSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    description: { type: String },
+    points: { type: Number, required: true },
+    type: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Task = mongoose.model('Task', taskSchema);
+
+// 用户任务模型
+const userTaskSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true },
+    completed: { type: Boolean, default: false },
+    completedAt: { type: Date },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const UserTask = mongoose.model('UserTask', userTaskSchema);
+
 // API 路由
 app.post('/proxy/auth/login', async (req, res) => {
     try {
@@ -322,12 +358,120 @@ app.get('/proxy/user', authenticateToken, async (req, res) => {
     }
 });
 
-// 用户模型
-const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    isAdmin: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now }
+// 获取用户任务
+app.get('/proxy/api/tasks/user', authenticateToken, async (req, res) => {
+    try {
+        const userTasks = await UserTask.find({ userId: req.user.userId })
+            .populate('taskId')
+            .exec();
+
+        const tasks = userTasks.map(ut => ({
+            id: ut.taskId._id,
+            name: ut.taskId.name,
+            description: ut.taskId.description,
+            points: ut.taskId.points,
+            completed: ut.completed,
+            completedAt: ut.completedAt
+        }));
+
+        res.json({ tasks });
+    } catch (error) {
+        console.error('Error getting user tasks:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
-const User = mongoose.model('User', userSchema);
+// 获取用户统计信息
+app.get('/proxy/api/users/stats', authenticateToken, async (req, res) => {
+    try {
+        const userTasks = await UserTask.find({ userId: req.user.userId });
+        const completedTasks = userTasks.filter(t => t.completed).length;
+        const user = await User.findById(req.user.userId);
+
+        res.json({
+            totalTasks: userTasks.length,
+            completedTasks,
+            earnedPoints: user.points || 0
+        });
+    } catch (error) {
+        console.error('Error getting user stats:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 获取推荐信息
+app.get('/proxy/api/users/referral-info', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId);
+        const referrals = await User.countDocuments({ referredBy: user._id });
+
+        res.json({
+            referralCode: user.referralCode,
+            referralCount: referrals,
+            totalPoints: user.points
+        });
+    } catch (error) {
+        console.error('Error getting referral info:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 验证 token
+app.get('/proxy/auth/verify', authenticateToken, (req, res) => {
+    res.json({ valid: true });
+});
+
+app.post('/proxy/auth/register', async (req, res) => {
+    try {
+        const { email, password, referralCode } = req.body;
+
+        // 检查邮箱是否已存在
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
+
+        // 生成唯一的推荐码
+        const newReferralCode = crypto.randomBytes(4).toString('hex');
+
+        // 创建新用户
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({
+            email,
+            password: hashedPassword,
+            referralCode: newReferralCode
+        });
+
+        // 如果提供了推荐码，查找推荐人
+        if (referralCode) {
+            const referrer = await User.findOne({ referralCode });
+            if (referrer) {
+                user.referredBy = referrer._id;
+                // 给推荐人加积分
+                referrer.points += 100;
+                await referrer.save();
+            }
+        }
+
+        await user.save();
+
+        // 生成 token
+        const token = jwt.sign(
+            { userId: user._id, email: user.email, isAdmin: user.isAdmin },
+            config.jwt.secret,
+            { expiresIn: '24h' }
+        );
+
+        res.status(201).json({
+            token,
+            user: {
+                email: user.email,
+                isAdmin: user.isAdmin,
+                referralCode: user.referralCode
+            }
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
