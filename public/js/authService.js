@@ -10,11 +10,14 @@ if (typeof window.AuthService === 'undefined') {
                 origin: window.location.origin
             });
 
-            // 使用相对路径，因为前端和后端在同一域名下
+            // 使用相对于网站根目录的路径
             this.BASE_URL = '';  // 空字符串表示使用相对路径
-            this.AUTH_BASE = '/auth';
+            this.AUTH_BASE = '/api/auth';  // 后端 API 路径
             this.API_BASE = '/api';
-            console.log('[AuthService] Using relative paths for API calls');
+            console.log('[AuthService] Using API paths:', {
+                auth: this.AUTH_BASE,
+                api: this.API_BASE
+            });
             
             this.tokenKey = 'token';
             this.userKey = 'user';
