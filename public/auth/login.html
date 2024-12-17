@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
-    <script src="../js/authService.js"></script>
+    <script src="https://illustrious-perfection-production.up.railway.app/public/js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -94,7 +94,7 @@
             <button type="submit">Login</button>
         </form>
         <div class="links">
-            <a href="register.html">Don't have an account? Register</a>
+            <a href="https://illustrious-perfection-production.up.railway.app/public/register.html">Don't have an account? Register</a>
         </div>
     </div>
 
@@ -111,7 +111,7 @@
         window.addEventListener('load', function() {
             console.log('Page loaded, checking auth status');
             if (window.authService.isAuthenticated()) {
-                window.location.href = './dashboard.html';
+                window.location.href = 'https://illustrious-perfection-production.up.railway.app/public/dashboard.html';
             }
         });
 
@@ -126,7 +126,7 @@
                 const loginData = await window.authService.login(email, password);
 
                 if (loginData.token) {
-                    window.location.href = './dashboard.html';
+                    window.location.href = 'https://illustrious-perfection-production.up.railway.app/public/dashboard.html';
                 } else {
                     throw new Error('Login failed: No token received');
                 }

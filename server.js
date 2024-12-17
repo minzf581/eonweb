@@ -10,23 +10,21 @@ require('dotenv').config();
 const app = express();
 
 // 环境变量配置
-const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080,https://w3router.github.io')
+const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8080')
     .split(',')
     .map(origin => origin.trim().replace(';', '')); // Remove any semicolons and trim whitespace
 const CORS_ENABLED = process.env.CORS_ENABLED !== 'false';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const JWT_SECRET = process.env.JWT_SECRET;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongodb.railway.internal:27017';
 const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || '0.0.0.0';
+
+// MongoDB 配置
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:sUgcrMBkbeKekzBDqEQnqfOOCHjDNAbq@junction.proxy.rlwy.net:15172/?retryWrites=true&w=majority';
 
 // 验证必要的环境变量
 if (!JWT_SECRET) {
     console.error('JWT_SECRET environment variable is required');
-    process.exit(1);
-}
-
-if (!MONGODB_URI) {
-    console.error('MONGODB_URI environment variable is required');
     process.exit(1);
 }
 
@@ -46,9 +44,7 @@ const mongooseOptions = {
     maxPoolSize: 10,
     minPoolSize: 2,
     maxIdleTimeMS: 10000,
-    connectTimeoutMS: 10000,
-    retryWrites: true,
-    retryReads: true
+    connectTimeoutMS: 10000
 };
 
 // MongoDB 连接
@@ -57,7 +53,6 @@ mongoose.connect(MONGODB_URI, mongooseOptions)
         console.log('Successfully connected to MongoDB');
         
         // 启动服务器
-        const HOST = process.env.HOST || '0.0.0.0';
         const server = app.listen(PORT, HOST, () => {
             console.log(`Server is running at http://${HOST}:${PORT}`);
             console.log('Environment:', NODE_ENV);
