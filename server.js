@@ -16,10 +16,17 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localh
 const CORS_ENABLED = process.env.CORS_ENABLED !== 'false';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const JWT_SECRET = process.env.JWT_SECRET;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongodb.railway.internal:27017';
+const PORT = process.env.PORT || 8080;
 
 // 验证必要的环境变量
 if (!JWT_SECRET) {
     console.error('JWT_SECRET environment variable is required');
+    process.exit(1);
+}
+
+if (!MONGODB_URI) {
+    console.error('MONGODB_URI environment variable is required');
     process.exit(1);
 }
 
@@ -28,10 +35,73 @@ console.log('CORS_ALLOWED_ORIGINS:', CORS_ALLOWED_ORIGINS);
 console.log('CORS_ENABLED:', CORS_ENABLED);
 console.log('NODE_ENV:', NODE_ENV);
 console.log('JWT_SECRET:', JWT_SECRET ? 'configured' : 'missing');
+console.log('MONGODB_URI:', MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//[credentials]@'));
+console.log('PORT:', PORT);
+
+// MongoDB 连接选项
+const mongooseOptions = {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    family: 4,
+    maxPoolSize: 10,
+    minPoolSize: 2,
+    maxIdleTimeMS: 10000,
+    connectTimeoutMS: 10000,
+    retryWrites: true,
+    retryReads: true
+};
+
+// MongoDB 连接
+mongoose.connect(MONGODB_URI, mongooseOptions)
+    .then(() => {
+        console.log('Successfully connected to MongoDB');
+        
+        // 启动服务器
+        const HOST = process.env.HOST || '0.0.0.0';
+        const server = app.listen(PORT, HOST, () => {
+            console.log(`Server is running at http://${HOST}:${PORT}`);
+            console.log('Environment:', NODE_ENV);
+        });
+
+        // 优雅关闭
+        process.on('SIGTERM', async () => {
+            console.log('SIGTERM received. Shutting down gracefully...');
+            try {
+                await new Promise((resolve) => {
+                    server.close(resolve);
+                });
+                console.log('Server closed. Disconnecting from database...');
+                await mongoose.connection.close();
+                console.log('Database connection closed.');
+                process.exit(0);
+            } catch (error) {
+                console.error('Error during shutdown:', error);
+                process.exit(1);
+            }
+        });
+    })
+    .catch((error) => {
+        console.error('MongoDB connection error:', error);
+        process.exit(1);
+    });
+
+// 监听 MongoDB 连接事件
+mongoose.connection.on('error', (error) => {
+    console.error('MongoDB connection error:', error);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected');
+});
+
+mongoose.connection.on('reconnected', () => {
+    console.log('MongoDB reconnected');
+});
 
 // CORS 配置
 const corsOptions = {
     origin: function (origin, callback) {
+        console.log('Request origin:', origin);
         // 允许的域名列表
         const allowedOrigins = [
             'https://eonweb-production.up.railway.app',
@@ -50,8 +120,9 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['Set-Cookie'],
+    maxAge: 86400, // 预检请求缓存24小时
     optionsSuccessStatus: 200
 };
 
@@ -60,6 +131,31 @@ app.use(cors(corsOptions));
 
 // 预检请求处理
 app.options('*', cors(corsOptions));
+
+// 确保所有响应都有正确的 CORS 头
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    // 处理 OPTIONS 请求
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
+
+// 错误处理中间件
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    if (err.name === 'UnauthorizedError') {
+        res.status(401).json({ message: 'Invalid token' });
+    } else if (err.message === 'Not allowed by CORS') {
+        res.status(403).json({ message: 'CORS not allowed' });
+    } else {
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 // 配置静态文件服务
 app.use(express.static('public'));
@@ -252,7 +348,6 @@ console.log('- User:', MONGOUSER);
 console.log('- Connection URL:', MONGO_URL.replace(/mongodb:\/\/.*@/, 'mongodb://[credentials]@'));
 
 // 启动服务器
-const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 
 console.log('\n=== Server Configuration ===');
@@ -260,211 +355,6 @@ console.log('- PORT:', PORT);
 console.log('- HOST:', HOST);
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- Working Directory:', process.cwd());
-
-const server = app.listen(PORT, HOST, () => {
-    console.log('\n=== Server Started ===');
-    console.log(`Server is running at http://${HOST}:${PORT}`);
-    
-    // 打印所有注册的路由
-    console.log('\n=== Registered Routes ===');
-    const routes = app._router.stack
-        .filter(r => r.route)
-        .map(r => ({
-            path: r.route.path,
-            methods: Object.keys(r.route.methods)
-        }));
-    console.log(JSON.stringify(routes, null, 2));
-    
-    // 打印中间件信息
-    console.log('\n=== Middleware Stack ===');
-    app._router.stack
-        .filter(r => !r.route)
-        .forEach(r => {
-            console.log(`- ${r.name || 'anonymous'}`);
-        });
-});
-
-mongoose.connect(MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    directConnection: true,
-    authSource: 'admin'
-})
-.then(() => {
-    console.log('Successfully connected to MongoDB');
-})
-.catch((err) => {
-    console.error('MongoDB connection error:', {
-        name: err.name,
-        message: err.message,
-        code: err.code,
-        host: MONGOHOST,
-        port: MONGOPORT
-    });
-});
-
-// MongoDB connection event listeners
-mongoose.connection.on('connected', () => {
-    console.log('Mongoose connected to MongoDB');
-});
-
-mongoose.connection.on('error', (err) => {
-    console.error('Mongoose connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-    console.log('Mongoose disconnected from MongoDB');
-});
-
-// 初始化数据
-async function initializeData() {
-    try {
-        // 检查并创建管理员账户
-        const adminEmail = 'info@eon-protocol.com';
-        const adminPassword = 'vijTo9-kehmet-cessis';
-        
-        const existingAdmin = await User.findOne({ email: adminEmail });
-        if (!existingAdmin) {
-            const hashedPassword = await bcrypt.hash(adminPassword, 10);
-            const admin = new User({
-                email: adminEmail,
-                password: hashedPassword,
-                isAdmin: true
-            });
-            await admin.save();
-            console.log('Default admin account created');
-        }
-
-        // 初始化默认任务
-        await initializeTasks();
-    } catch (error) {
-        console.error('Error initializing data:', error);
-    }
-}
-
-// 初始化默认任务
-async function initializeTasks() {
-    try {
-        const defaultTasks = [
-            {
-                title: 'Bandwidth Sharing',
-                description: 'Share bandwidth to support AI data crawling',
-                points: 100,
-                type: 'daily',
-                requirements: 'Stable internet connection',
-                isActive: true,
-                status: 'Coming Soon'
-            },
-            {
-                title: 'Data Validation',
-                description: 'Help validate and improve AI training data quality',
-                points: 50,
-                type: 'daily',
-                requirements: 'Basic understanding of data quality',
-                isActive: true,
-                status: 'Coming Soon'
-            },
-            {
-                title: 'Referral Program',
-                description: 'Invite new users to join EON Protocol. Earn 100 points for each referral when they use your referral code (50 points without referral code). New users also receive 100 points. Daily limit: 10 referrals.',
-                points: 100,
-                type: 'daily',
-                requirements: 'Complete email verification and pass reCAPTCHA verification',
-                isActive: true,
-                status: 'Active',
-                dailyLimit: 10,
-                basePoints: 50,
-                bonusPoints: 50
-            }
-        ];
-
-        for (const taskData of defaultTasks) {
-            const existingTask = await Task.findOne({ title: taskData.title });
-            if (!existingTask) {
-                const task = new Task(taskData);
-                await task.save();
-                console.log(`Default task created: ${taskData.title}`);
-            } else {
-                await Task.findOneAndUpdate(
-                    { title: taskData.title },
-                    { $set: taskData },
-                    { new: true }
-                );
-                console.log(`Default task updated: ${taskData.title}`);
-            }
-        }
-    } catch (error) {
-        console.error('Error initializing tasks:', error);
-    }
-}
-
-// 测试用户设置
-const TEST_USER = {
-    email: 'test@example.com',
-    password: 'password123',
-    name: 'Test User'
-};
-
-// 认证 API 路由
-app.post('/api/auth/login', async (req, res) => {
-    console.log('\n=== Login Request ===');
-    console.log('Body:', req.body);
-    console.log('Headers:', req.headers);
-    
-    try {
-        const { email, password } = req.body;
-        
-        // 为测试用户提供模拟认证
-        if (email === TEST_USER.email && password === TEST_USER.password) {
-            const token = 'test-token-' + Date.now();
-            console.log('Login successful for test user');
-            
-            res.json({
-                token,
-                user: {
-                    email: TEST_USER.email,
-                    name: TEST_USER.name
-                }
-            });
-        } else {
-            console.log('Login failed: Invalid credentials');
-            res.status(401).json({ message: 'Invalid credentials' });
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-app.get('/api/user', async (req, res) => {
-    console.log('\n=== Get User Info Request ===');
-    console.log('Headers:', req.headers);
-    
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.log('Unauthorized: No token provided');
-        return res.status(401).json({ message: 'No token provided' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    console.log('Token received:', token);
-    
-    // 为测试用户提供模拟数据
-    if (token.startsWith('test-token-')) {
-        console.log('Returning test user info');
-        res.json({
-            email: TEST_USER.email,
-            name: TEST_USER.name,
-            tasks: [],
-            referrals: []
-        });
-    } else {
-        console.log('Invalid token');
-        res.status(401).json({ message: 'Invalid token' });
-    }
-});
 
 // 优雅关闭
 process.on('SIGTERM', async () => {
