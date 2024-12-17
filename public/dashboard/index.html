@@ -293,6 +293,15 @@
             }
         }
 
+        // 统一的数据加载错误处理
+        function handleLoadError(error, context) {
+            console.error(`Error loading ${context}:`, error);
+            const element = document.getElementById(`${context}Error`);
+            if (element) {
+                element.textContent = 'Failed to load data. Please try again later.';
+            }
+        }
+
         async function loadUserInfo() {
             try {
                 const userInfoElement = document.querySelector('.username');
@@ -300,19 +309,14 @@
 
                 const response = await window.authService.getUserInfo();
                 if (!response.ok) {
-                    if (response.status === 401) {
-                        throw new Error('auth_error');
-                    }
-                    throw new Error('Failed to load user info');
+                    handleLoadError(response.statusText, 'userInfo');
+                    return;
                 }
 
                 const data = await response.json();
                 userInfoElement.textContent = data.email || 'User';
             } catch (error) {
-                console.error('Error loading user info:', error);
-                if (error.message === 'auth_error') {
-                    handleAuthError();
-                }
+                handleLoadError(error, 'userInfo');
             }
         }
 
@@ -325,39 +329,16 @@
 
                 const response = await window.authService.getReferralInfo();
                 if (!response.ok) {
-                    if (response.status === 401) {
-                        throw new Error('auth_error');
-                    }
-                    throw new Error('Failed to load referral info');
+                    handleLoadError(response.statusText, 'referral');
+                    return;
                 }
 
                 const data = await response.json();
                 referralCodeElement.textContent = data.referralCode || 'N/A';
                 referralLinkElement.textContent = data.referralLink || 'N/A';
             } catch (error) {
-                console.error('Error loading referral info:', error);
-                if (error.message === 'auth_error') {
-                    handleAuthError();
-                }
+                handleLoadError(error, 'referral');
             }
-        }
-
-        function handleAuthError() {
-            console.log('Handling auth error...');
-            // Clear auth data
-            window.authService.logout();
-            
-            // Show error message
-            const errorElement = document.createElement('div');
-            errorElement.className = 'error-message';
-            errorElement.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
-            errorElement.textContent = 'Session expired. Redirecting to login...';
-            document.body.appendChild(errorElement);
-
-            // Delay redirect to show message
-            setTimeout(() => {
-                window.location.href = '/public/auth/login.html';
-            }, 3000);
         }
 
         async function loadTasks() {
@@ -425,49 +406,69 @@
             }
         }
 
-        // 在 DOM 加载完成后初始化
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('DOM loaded, initializing...');
+        // 初始化仪表板
+        async function initializeDashboard() {
+            console.log('Initializing dashboard...');
             
             try {
-                // 初始化 AuthService
+                // 检查认证状态
                 if (!window.authService) {
                     console.log('Creating new AuthService instance...');
                     window.authService = new AuthService();
                 }
 
-                // 检查认证状态
-                console.log('Checking auth status...');
                 const isAuthenticated = await window.authService.isAuthenticated();
                 if (!isAuthenticated) {
-                    console.log('Not authenticated, redirecting...');
-                    throw new Error('auth_error');
+                    console.log('Not authenticated');
+                    window.authService.handleAuthError();
+                    return;
                 }
 
-                // 加载所有数据
-                console.log('Loading dashboard data...');
-                // 串行加载数据，避免并发请求可能导致的问题
-                await Promise.all([
-                    loadUserInfo().catch(error => console.error('User info load failed:', error)),
-                    loadReferralInfo().catch(error => console.error('Referral info load failed:', error)),
-                    loadTasks().catch(error => console.error('Tasks load failed:', error)),
-                    loadStats().catch(error => console.error('Stats load failed:', error))
-                ]);
+                // 并行加载数据
+                const loadPromises = [
+                    loadUserInfo(),
+                    loadReferralInfo(),
+                    loadTasks(),
+                    loadStats()
+                ];
 
-                console.log('Dashboard data loaded successfully');
+                // 使用 Promise.allSettled 确保所有请求都完成
+                const results = await Promise.allSettled(loadPromises);
+                
+                // 检查加载结果
+                results.forEach((result, index) => {
+                    if (result.status === 'rejected') {
+                        console.warn(`Load operation ${index} failed:`, result.reason);
+                    }
+                });
 
-                // 设置登出按钮事件监听器
-                const logoutBtn = document.querySelector('.logout-btn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', handleLogout);
-                }
+                console.log('Dashboard initialization complete');
             } catch (error) {
-                console.error('Initialization error:', error);
-                if (error.message === 'auth_error') {
-                    handleAuthError();
-                }
+                console.error('Dashboard initialization failed:', error);
+                // 不要在这里调用 handleAuthError，避免重复重定向
             }
-        });
+        }
+
+        function handleAuthError() {
+            console.log('Handling auth error...');
+            // Clear auth data
+            window.authService.logout();
+            
+            // Show error message
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
+            errorElement.textContent = 'Session expired. Redirecting to login...';
+            document.body.appendChild(errorElement);
+
+            // Delay redirect to show message
+            setTimeout(() => {
+                window.location.href = '/public/auth/login.html';
+            }, 3000);
+        }
+
+        // 在 DOM 加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initializeDashboard);
     </script>
 </body>
 </html>

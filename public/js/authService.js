@@ -1,6 +1,8 @@
 // 只在 window.AuthService 未定义时声明类
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
+        #redirecting = false;
+
         constructor() {
             // 调试信息
             console.log('Current location:', {
@@ -24,6 +26,11 @@ if (typeof window.AuthService === 'undefined') {
             
             // 从 localStorage 获取 token
             this.token = localStorage.getItem(this.tokenKey);
+            
+            // 添加重定向状态重置
+            window.addEventListener('pageshow', () => {
+                this.#redirecting = false;
+            });
         }
         
         addRequestInterceptor() {
@@ -176,34 +183,84 @@ if (typeof window.AuthService === 'undefined') {
                 return false;
             }
 
+            // 首先检查本地存储的token
             try {
-                console.log('[AuthService] Verifying token...');
-                // Fix: Use correct verify endpoint
-                const response = await fetch(`${this.AUTH_BASE}/verify`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    console.log('[AuthService] Token verification failed:', response.status);
-                    // Clear invalid token
-                    localStorage.removeItem(this.tokenKey);
+                const tokenData = JSON.parse(atob(token.split('.')[1]));
+                const expirationTime = tokenData.exp * 1000; // 转换为毫秒
+                
+                if (Date.now() >= expirationTime) {
+                    console.log('[AuthService] Token expired');
+                    this.clearAuth();
                     return false;
                 }
-
-                console.log('[AuthService] Token verified successfully');
-                return true;
+                
+                // 只有在token未过期的情况下才验证
+                return await this.validateTokenWithServer();
             } catch (error) {
-                console.error('[AuthService] Token verification failed:', error);
-                // Clear token on error
-                localStorage.removeItem(this.tokenKey);
+                console.error('[AuthService] Token validation error:', error);
+                this.clearAuth();
                 return false;
             }
         }
 
-        // 处理登出
+        async validateTokenWithServer() {
+            try {
+                if (this.#redirecting) {
+                    console.log('[AuthService] Redirect in progress, skipping validation');
+                    return false;
+                }
+
+                const response = await fetch(`${this.AUTH_BASE}/verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    console.log('[AuthService] Server validation failed:', response.status);
+                    this.clearAuth();
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                console.error('[AuthService] Server validation error:', error);
+                this.clearAuth();
+                return false;
+            }
+        }
+
+        clearAuth() {
+            localStorage.removeItem(this.tokenKey);
+            localStorage.removeItem(this.userKey);
+            this.token = null;
+        }
+
+        handleAuthError() {
+            if (this.#redirecting) {
+                console.log('[AuthService] Redirect already in progress');
+                return;
+            }
+            
+            this.#redirecting = true;
+            console.log('[AuthService] Handling auth error, redirecting to login...');
+            
+            // 显示错误消息
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
+            errorDiv.textContent = 'Session expired. Please login again.';
+            document.body.appendChild(errorDiv);
+            
+            // 清除认证信息
+            this.clearAuth();
+            
+            // 延迟重定向
+            setTimeout(() => {
+                window.location.href = '/public/auth/login.html';
+            }, 2000);
+        }
+
         async handleLogout() {
             try {
                 await this.logout();
