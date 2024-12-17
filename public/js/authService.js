@@ -2,6 +2,7 @@
 if (typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         #redirecting = false;
+        _validating = false;
 
         constructor() {
             // 调试信息
@@ -182,9 +183,21 @@ if (typeof window.AuthService === 'undefined') {
         // 与后端验证token有效性
         async validateToken() {
             const token = this.getToken();
-            if (!token) return false;
+            if (!token) {
+                console.log('[AuthService] No token found');
+                return false;
+            }
+
+            // 如果已经在验证中，返回 true 防止重复验证
+            if (this._validating) {
+                console.log('[AuthService] Token validation already in progress');
+                return true;
+            }
 
             try {
+                this._validating = true;
+                console.log('[AuthService] Validating token...');
+                
                 const response = await fetch(`${this.AUTH_BASE}/verify`, {
                     method: 'GET',
                     headers: {
@@ -195,7 +208,10 @@ if (typeof window.AuthService === 'undefined') {
 
                 if (!response.ok) {
                     console.log('[AuthService] Token validation failed:', response.status);
-                    this.clearAuth();
+                    // 只有在明确的认证错误时才清除认证
+                    if (response.status === 401 || response.status === 403) {
+                        this.clearAuth();
+                    }
                     return false;
                 }
 
@@ -203,8 +219,10 @@ if (typeof window.AuthService === 'undefined') {
                 return data.valid === true;
             } catch (error) {
                 console.error('[AuthService] Token validation error:', error);
-                this.clearAuth();
+                // 网络错误不清除认证
                 return false;
+            } finally {
+                this._validating = false;
             }
         }
 

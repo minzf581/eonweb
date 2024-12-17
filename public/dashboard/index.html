@@ -396,8 +396,18 @@
                 console.log('Validating token...');
                 const isValid = await window.authService.validateToken();
                 if (!isValid) {
-                    console.log('Token validation failed, redirecting to login...');
-                    window.location.href = '/public/auth/login.html';
+                    console.log('Token validation failed');
+                    // 只在没有 token 时重定向
+                    if (!window.authService.getToken()) {
+                        console.log('No valid token, redirecting to login...');
+                        window.location.href = '/public/auth/login.html';
+                        return;
+                    }
+                    // 如果有 token 但验证失败，显示错误消息
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 10px; border-radius: 4px; z-index: 1000;';
+                    errorDiv.textContent = 'Authentication error. Please try refreshing the page.';
+                    document.body.appendChild(errorDiv);
                     return;
                 }
 
