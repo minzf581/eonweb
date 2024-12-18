@@ -1,42 +1,51 @@
 // AuthService class definition
 class AuthService {
-    #initialized = false;
-    #redirecting = false;
-
     constructor() {
-        console.log('[AuthService] Starting initialization...');
-        try {
-            this.AUTH_BASE = '/api/auth';
-            this.API_BASE = '/api';
-            this.tokenKey = 'token';
-            this.userKey = 'user';
-            this.token = localStorage.getItem(this.tokenKey);
-            
-            // Reset redirect state on page show
-            window.addEventListener('pageshow', () => {
-                this.#redirecting = false;
-            });
+        // Log current location for debugging
+        console.log('Current location:', {
+            href: window.location.href,
+            hostname: window.location.hostname,
+            protocol: window.location.protocol,
+            origin: window.location.origin
+        });
 
-            this.#initialized = true;
-            console.log('[AuthService] Initialization completed successfully');
-        } catch (error) {
-            console.error('[AuthService] Initialization failed:', error);
-            throw error;
-        }
+        // Initialize API paths
+        this.AUTH_BASE = '/api/auth';
+        this.API_BASE = '/api';
+        console.log('[AuthService] Using API paths:', { auth: this.AUTH_BASE, api: this.API_BASE });
+
+        // Initialize storage keys
+        this.TOKEN_KEY = 'token';
+        this.USER_KEY = 'user';
+        
+        // Load initial token
+        this._token = localStorage.getItem(this.TOKEN_KEY);
+        this._initialized = true;
+        
+        // Bind methods to instance
+        this.isInitialized = this.isInitialized.bind(this);
+        this.isAuthenticated = this.isAuthenticated.bind(this);
+        this.validateToken = this.validateToken.bind(this);
+        this.clearAuth = this.clearAuth.bind(this);
+        this.setAuth = this.setAuth.bind(this);
+        this.getToken = this.getToken.bind(this);
+        this.getUser = this.getUser.bind(this);
+        this.login = this.login.bind(this);
+        this.logout = this.logout.bind(this);
     }
 
     isInitialized() {
-        return this.#initialized;
+        return this._initialized === true;
     }
 
     isAuthenticated() {
-        const token = this.getToken();
-        return !!token;
+        return !!this.getToken();
     }
 
     async validateToken() {
         try {
-            if (!this.token) {
+            const token = this.getToken();
+            if (!token) {
                 console.log('[AuthService] No token found');
                 return false;
             }
@@ -44,7 +53,7 @@ class AuthService {
             const response = await fetch(`${this.AUTH_BASE}/validate`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${this.token}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -64,25 +73,30 @@ class AuthService {
 
     clearAuth() {
         console.log('[AuthService] Clearing auth data...');
-        localStorage.removeItem(this.tokenKey);
-        localStorage.removeItem(this.userKey);
-        this.token = null;
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.USER_KEY);
+        this._token = null;
     }
 
     setAuth(token, user) {
         console.log('[AuthService] Setting auth data...');
-        localStorage.setItem(this.tokenKey, token);
-        localStorage.setItem(this.userKey, JSON.stringify(user));
-        this.token = token;
+        localStorage.setItem(this.TOKEN_KEY, token);
+        localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+        this._token = token;
     }
 
     getToken() {
-        return this.token;
+        return this._token;
     }
 
     getUser() {
-        const userStr = localStorage.getItem(this.userKey);
-        return userStr ? JSON.parse(userStr) : null;
+        try {
+            const userStr = localStorage.getItem(this.USER_KEY);
+            return userStr ? JSON.parse(userStr) : null;
+        } catch (error) {
+            console.error('[AuthService] Error getting user:', error);
+            return null;
+        }
     }
 
     async login(email, password) {
@@ -111,33 +125,25 @@ class AuthService {
 
     async logout() {
         console.log('[AuthService] Logging out...');
-        if (this.#redirecting) return;
-        this.#redirecting = true;
         this.clearAuth();
         window.location.href = '/public/auth/login.html';
     }
 }
 
-// Global initialization function
-function initializeAuthService() {
+// Create and expose the auth service instance
+const initializeAuthService = () => {
     console.log('[AuthService] Initializing auth service...');
     if (!window.authService) {
-        try {
-            window.authService = new AuthService();
-            console.log('[AuthService] Auth service initialized successfully');
-            return window.authService;
-        } catch (error) {
-            console.error('[AuthService] Failed to initialize auth service:', error);
-            throw error;
-        }
+        window.authService = new AuthService();
     }
     return window.authService;
-}
+};
 
-// Make initializeAuthService globally available
+// Expose initializeAuthService globally
 window.initializeAuthService = initializeAuthService;
 
-// Initialize auth service when the script loads
+// Initialize when the script loads
 if (typeof window !== 'undefined') {
+    console.log('[AuthService] Script loaded, initializing...');
     initializeAuthService();
 }
