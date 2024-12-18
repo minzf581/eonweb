@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
-    <script src="/public/js/authService.js"></script>
+    <script src="/public/js/authService.js" defer></script>
     <script>
         // 处理登录表单提交
         async function handleLogin(event) {
@@ -22,7 +22,7 @@
                 console.log('Attempting login...');
                 await window.authService.login(email, password);
                 console.log('Login successful, redirecting to dashboard...');
-                window.location.href = '/public/dashboard/index.html'; // 只在登录成功后跳转
+                window.location.href = '/public/dashboard/index.html'; 
             } catch (error) {
                 console.error('Login error:', error);
                 errorElement.textContent = error.message || 'An error occurred during login';
@@ -33,7 +33,7 @@
             }
         }
 
-        // 添加表单提交事件监听器
+        // 页面加载完成后添加事件监听器
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Login page initialized');
             const loginForm = document.getElementById('loginForm');
