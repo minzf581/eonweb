@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <!-- Load AuthService first -->
-    <script src="/js/authService.js"></script>
+    <script src="/public/js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -303,10 +303,14 @@
                 await window.authService.login(email, password);
                 showInfo('Login successful, redirecting...');
                 
+                // Check for stored redirect or go to dashboard
+                const redirectUrl = sessionStorage.getItem('auth_redirect') || '/public/dashboard/index.html';
+                sessionStorage.removeItem('auth_redirect'); // Clear stored redirect
+                
                 // Small delay to show success message
                 setTimeout(() => {
-                    window.location.href = '/dashboard/index.html';
-                }, 500);
+                    window.location.href = redirectUrl;
+                }, 1000);
             } catch (error) {
                 console.error('[Login] Login failed:', error);
                 showError(error.message || 'Login failed. Please try again.');
@@ -325,9 +329,14 @@
                 if (form) form.style.display = 'none';
 
                 // Wait for auth service with timeout
-                const isReady = await waitForAuthServiceWithTimeout();
+                const isReady = await waitForAuthServiceWithTimeout(10000); // Increased timeout to 10s
                 if (!isReady) {
-                    throw new Error('Auth service not available');
+                    throw new Error('Auth service not available. Please refresh the page.');
+                }
+
+                // Initialize auth service if needed
+                if (typeof window.authService !== 'undefined' && !window.authService.isInitialized()) {
+                    await window.authService.initialize();
                 }
 
                 // Check if already authenticated
@@ -336,9 +345,11 @@
 
                 if (isAuthenticated) {
                     showInfo('Already authenticated, redirecting...');
+                    const redirectUrl = sessionStorage.getItem('auth_redirect') || '/public/dashboard/index.html';
+                    sessionStorage.removeItem('auth_redirect');
                     setTimeout(() => {
-                        window.location.href = '/dashboard/index.html';
-                    }, 500);
+                        window.location.href = redirectUrl;
+                    }, 1000);
                     return;
                 }
 
@@ -351,16 +362,16 @@
                 console.log('[Login] Initialization complete');
             } catch (error) {
                 console.error('[Login] Initialization failed:', error);
-                showError('Failed to initialize login page. Please refresh and try again.');
+                showError('Failed to initialize login page: ' + (error.message || 'Unknown error') + '. Please refresh and try again.');
             } finally {
                 setLoading(false);
             }
         }
 
-        // Initialize on page load
+        // Initialize on page load with longer delay
         window.addEventListener('load', () => {
-            // Give authService.js a moment to load and initialize
-            setTimeout(initializeLoginPage, 100);
+            // Give authService.js more time to load and initialize
+            setTimeout(initializeLoginPage, 500);
         });
     </script>
 </body>
