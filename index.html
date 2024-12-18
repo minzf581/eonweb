@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="/public/js/authService.js" defer></script>
+    <script src="/public/js/authService.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eon Protocol</title>
@@ -1144,7 +1144,6 @@ footer p {
             }
         }
     </style>
-    <script src="/public/js/authService.js" defer></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -1410,42 +1409,6 @@ footer p {
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize particles.js
-            particlesJS.load('particles-js', '/public/js/particles-config.json', function() {
-                console.log('callback - particles.js config loaded');
-            });
-
-            // Counter animation
-            const counters = document.querySelectorAll('.counter');
-            if (counters) {
-                counters.forEach(counter => {
-                    const target = +counter.getAttribute('data-target');
-                    const increment = target / 200;
-                    
-                    const updateCounter = () => {
-                        const count = +counter.innerText;
-                        if (count < target) {
-                            counter.innerText = Math.ceil(count + increment);
-                            setTimeout(updateCounter, 10);
-                        } else {
-                            counter.innerText = target;
-                        }
-                    };
-                    
-                    updateCounter();
-                });
-            }
-        });
-
-        // Global error handling
-        window.onerror = function(msg, url, line) {
-            console.error('[Index] Error:', msg, '\nURL:', url, '\nLine:', line);
-            showError('An unexpected error occurred. Please try again later.');
-        };
-    </script>
-
-    <script>
         // Error message display
         function showError(message, duration = 5000) {
             const errorContainer = document.getElementById('error-container') || (() => {
@@ -1479,6 +1442,41 @@ footer p {
             }, duration);
         }
 
+        // Initialize particles.js and counters
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize particles.js
+            particlesJS.load('particles-js', '/public/js/particles-config.json', function() {
+                console.log('[Index] Particles.js config loaded');
+            });
+
+            // Counter animation
+            const counters = document.querySelectorAll('.counter');
+            if (counters) {
+                counters.forEach(counter => {
+                    const target = +counter.getAttribute('data-target');
+                    const increment = target / 200;
+                    
+                    const updateCounter = () => {
+                        const count = +counter.innerText;
+                        if (count < target) {
+                            counter.innerText = Math.ceil(count + increment);
+                            setTimeout(updateCounter, 10);
+                        } else {
+                            counter.innerText = target;
+                        }
+                    };
+                    
+                    updateCounter();
+                });
+            }
+        });
+
+        // Global error handling
+        window.onerror = function(msg, url, line) {
+            console.error('[Index] Error:', msg, '\nURL:', url, '\nLine:', line);
+            showError('An unexpected error occurred. Please try again later.');
+        };
+
         // Wait for auth service to be ready
         async function waitForAuthService(timeoutMs = 5000) {
             const startTime = Date.now();
@@ -1502,11 +1500,11 @@ footer p {
         }
 
         // Initialize auth service and set up event handlers
-        async function initializeAuth() {
+        window.addEventListener('load', async () => {
             try {
                 const isReady = await waitForAuthService();
                 if (!isReady) {
-                    showError('Authentication service is temporarily unavailable');
+                    console.error('[Index] Auth service not ready');
                     return;
                 }
 
@@ -1517,16 +1515,16 @@ footer p {
                         event.preventDefault();
                         
                         try {
-                            if (!window.authService || typeof window.authService.validateToken !== 'function') {
+                            if (!window.authService || !window.authService.isInitialized()) {
                                 showError('Authentication service is not available');
                                 return;
                             }
 
                             const isValid = await window.authService.validateToken();
                             if (isValid) {
-                                window.location.href = '/dashboard.html';
+                                window.location.href = '/public/dashboard/index.html';
                             } else {
-                                window.location.href = '/auth/login.html';
+                                window.location.href = '/public/auth/login.html';
                             }
                         } catch (error) {
                             console.error('[Index] Auth validation failed:', error);
@@ -1538,12 +1536,6 @@ footer p {
                 console.error('[Index] Auth initialization failed:', error);
                 showError('Failed to initialize authentication service');
             }
-        }
-
-        // Start initialization after DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            // Delay initialization slightly to ensure script is loaded
-            setTimeout(initializeAuth, 100);
         });
     </script>
 </body>
