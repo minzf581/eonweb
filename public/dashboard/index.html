@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <!-- Load AuthService first -->
-    <script src="/public/js/authService.js"></script>
+    <script src="/public/js/authService.js" defer></script>
 </head>
 <body>
     <div id="dashboardContainer">
@@ -36,14 +36,8 @@
         }
 
         async function loadUserData() {
-            console.log('[Dashboard] Loading user data...');
-            
             try {
                 const user = await window.authService.getUser();
-                if (!user) {
-                    throw new Error('No user data available');
-                }
-
                 const userNameElement = document.getElementById('userName');
                 if (userNameElement) {
                     userNameElement.textContent = user.name || 'User';
@@ -73,16 +67,16 @@
 
         async function checkAuthentication() {
             try {
-                const result = await window.authService.validateToken();
-                if (!result.valid) {
-                    console.log('[Dashboard] Token invalid:', result.reason);
-                    window.location.href = '/public/auth/login.html?error=' + encodeURIComponent(result.reason);
+                const isAuthenticated = await window.authService.validateToken();
+                if (!isAuthenticated) {
+                    console.log('[Dashboard] User not authenticated, redirecting...');
+                    window.location.href = '/public/auth/login.html';
                     return false;
                 }
                 return true;
             } catch (error) {
                 console.error('[Dashboard] Auth check failed:', error);
-                window.location.href = '/public/auth/login.html?error=auth_check_failed';
+                window.location.href = '/public/auth/login.html';
                 return false;
             }
         }
@@ -92,7 +86,6 @@
             if (!contentElement) return;
 
             try {
-                // Add your dashboard content loading logic here
                 contentElement.innerHTML = '<div>Welcome to your dashboard!</div>';
             } catch (error) {
                 console.error('[Dashboard] Failed to load content:', error);
@@ -105,12 +98,11 @@
             
             try {
                 // Wait for auth service to be ready
-                if (!window.authServiceUtils?.initializeAuthService) {
-                    throw new Error('Auth service utilities not available');
+                const isReady = await window.authServiceUtils.waitForAuthService();
+                if (!isReady) {
+                    throw new Error('Auth service not available');
                 }
 
-                await window.authServiceUtils.initializeAuthService();
-                
                 // Check authentication
                 const isAuthenticated = await checkAuthentication();
                 if (!isAuthenticated) return;
@@ -129,7 +121,7 @@
             }
         }
 
-        // Ensure initialization runs
+        // Initialize on page load
         if (document.readyState === 'complete') {
             initializeDashboard();
         } else {

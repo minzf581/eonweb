@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <!-- Load AuthService first -->
-    <script src="/public/js/authService.js"></script>
+    <script src="/public/js/authService.js" defer></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -133,7 +133,7 @@
         <div id="loginError" class="error-message" style="display: none;"></div>
         <div id="loginInfo" class="info-message" style="display: none;"></div>
         
-        <form id="loginForm" novalidate>
+        <form id="loginForm" novalidate style="display: none;">
             <div class="form-group">
                 <label for="email">Email:</label>
                 <input type="email" id="email" required 
@@ -158,186 +158,46 @@
     </div>
 
     <script>
-        // Utility functions
-        function showError(message, field = null) {
+        function showError(message) {
             const errorElement = document.getElementById('loginError');
             if (errorElement) {
                 errorElement.textContent = message;
                 errorElement.style.display = 'block';
             }
-
-            if (field) {
-                const fieldError = document.getElementById(`${field}Error`);
-                if (fieldError) {
-                    fieldError.textContent = message;
-                    fieldError.style.display = 'block';
-                }
-            }
-
             console.error('[Login]', message);
         }
 
-        function showInfo(message) {
-            const infoElement = document.getElementById('loginInfo');
-            if (infoElement) {
-                infoElement.textContent = message;
-                infoElement.style.display = 'block';
-            }
-            console.log('[Login]', message);
-        }
-
-        function clearMessages() {
-            const messages = ['loginError', 'loginInfo', 'emailError', 'passwordError'];
-            messages.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.style.display = 'none';
-                    element.textContent = '';
-                }
-            });
-        }
-
-        function setLoading(isLoading) {
-            const button = document.getElementById('loginButton');
-            const spinner = button.querySelector('.loading-spinner');
-            const buttonText = button.querySelector('.button-text');
-            
-            button.disabled = isLoading;
-            spinner.style.display = isLoading ? 'inline-block' : 'none';
-            buttonText.style.display = isLoading ? 'none' : 'inline-block';
-            
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => input.disabled = isLoading);
-        }
-
-        function validateForm() {
-            const email = document.getElementById('email');
-            const password = document.getElementById('password');
-            let isValid = true;
-
-            // Clear previous errors
-            clearMessages();
-
-            // Validate email
-            if (!email.value) {
-                showError('Email is required', 'email');
-                isValid = false;
-            } else if (!email.validity.valid) {
-                showError('Please enter a valid email address', 'email');
-                isValid = false;
-            }
-
-            // Validate password
-            if (!password.value) {
-                showError('Password is required', 'password');
-                isValid = false;
-            } else if (password.value.length < 6) {
-                showError('Password must be at least 6 characters', 'password');
-                isValid = false;
-            }
-
-            return isValid;
-        }
-
-        // Initialize login page
         async function initializeLoginPage() {
-            console.log('[Login] Starting initialization...');
-            let authCheckAttempts = 0;
-            const MAX_AUTH_ATTEMPTS = 3;
-            
             try {
-                // Check for required functions
-                if (typeof window.authServiceUtils?.waitForAuthService !== 'function') {
-                    throw new Error('Authentication service not available');
-                }
-
-                showInfo('Initializing authentication service...');
-                const serviceReady = await window.authServiceUtils.waitForAuthService();
-                if (!serviceReady) {
-                    throw new Error('Authentication service failed to initialize');
-                }
-
-                if (!window.authServiceUtils.checkAuthMethod('validateToken')) {
-                    throw new Error('Token validation not available');
+                console.log('Checking auth status...');
+                
+                // Wait for auth service to be ready
+                const isReady = await window.authServiceUtils.waitForAuthService();
+                if (!isReady) {
+                    throw new Error('Auth service not available');
                 }
 
                 // Check if already authenticated
-                while (authCheckAttempts < MAX_AUTH_ATTEMPTS) {
-                    try {
-                        const isAuthenticated = await window.authService.validateToken();
-                        if (isAuthenticated) {
-                            showInfo('Already authenticated, redirecting...');
-                            window.location.href = '/public/dashboard/index.html';
-                            return;
-                        }
-                        break;
-                    } catch (error) {
-                        authCheckAttempts++;
-                        if (authCheckAttempts >= MAX_AUTH_ATTEMPTS) {
-                            throw new Error('Failed to validate authentication status');
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
+                const isAuthenticated = await window.authService.validateToken();
+                console.log('Auth status:', isAuthenticated);
+                
+                if (isAuthenticated) {
+                    window.location.href = '/public/dashboard/index.html';
+                    return;
                 }
 
-                // Setup login form
-                const loginForm = document.getElementById('loginForm');
-                if (!loginForm) {
-                    throw new Error('Login form not found');
+                // Enable the form if not authenticated
+                const form = document.getElementById('loginForm');
+                if (form) {
+                    form.style.display = 'block';
                 }
-
-                loginForm.addEventListener('submit', async (event) => {
-                    event.preventDefault();
-                    
-                    try {
-                        if (!validateForm()) {
-                            return;
-                        }
-
-                        if (!window.authServiceUtils.checkAuthMethod('login')) {
-                            throw new Error('Login method not available');
-                        }
-
-                        setLoading(true);
-                        clearMessages();
-
-                        const email = document.getElementById('email').value;
-                        const password = document.getElementById('password').value;
-
-                        await window.authService.login(email, password);
-                        showInfo('Login successful, redirecting...');
-                        
-                        // Small delay to show success message
-                        setTimeout(() => {
-                            window.location.href = '/public/dashboard/index.html';
-                        }, 500);
-                    } catch (error) {
-                        console.error('[Login] Login failed:', error);
-                        showError(error.message || 'Login failed. Please try again.');
-                    } finally {
-                        setLoading(false);
-                    }
-                });
-
-                // Add input validation listeners
-                const inputs = document.querySelectorAll('input');
-                inputs.forEach(input => {
-                    input.addEventListener('input', () => {
-                        clearMessages();
-                        if (input.validity.valid) {
-                            document.getElementById(`${input.id}Error`).style.display = 'none';
-                        }
-                    });
-                });
-
-                console.log('[Login] Page initialized successfully');
             } catch (error) {
-                console.error('[Login] Initialization failed:', error);
-                showError(`Initialization failed: ${error.message}`);
+                console.error('Login page initialization failed:', error);
+                showError('Failed to initialize login page. Please refresh.');
             }
         }
 
-        // Ensure initialization runs
+        // Initialize on page load
         if (document.readyState === 'complete') {
             initializeLoginPage();
         } else {
