@@ -36,7 +36,8 @@
             'clearAuth',
             'validateToken',
             'getUser',
-            'setToken'
+            'setToken',
+            'register'
         ];
 
         for (const method of requiredMethods) {
@@ -88,6 +89,7 @@
             this.validateToken = this.validateToken.bind(this);
             this.getUser = this.getUser.bind(this);
             this.setToken = this.setToken.bind(this);
+            this.register = this.register.bind(this);
 
             logInfo('Auth service instance created');
         }
@@ -303,6 +305,40 @@
                 logInfo('Token set successfully');
             } catch (error) {
                 logError('Failed to set token', error);
+                throw error;
+            }
+        }
+
+        async register(email, password, referralCode = '') {
+            if (!this.isInitialized()) {
+                throw new Error('AuthService not initialized');
+            }
+
+            if (!email || !password) {
+                throw new Error('Email and password are required');
+            }
+
+            try {
+                logInfo(`Registration attempt for: ${email}, with referral: ${referralCode}`);
+                
+                // 准备注册数据
+                const registrationData = {
+                    email: email,
+                    password: password
+                };
+
+                // 如果有推荐码，添加到注册数据中
+                if (referralCode) {
+                    registrationData.referralCode = referralCode;
+                    logInfo('Including referral code in registration');
+                }
+
+                // 模拟注册成功
+                // 在实际实现中，这里会调用后端 API
+                logInfo('Registration successful');
+                return true;
+            } catch (error) {
+                logError('Registration failed', error);
                 throw error;
             }
         }
