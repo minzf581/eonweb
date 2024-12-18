@@ -13,22 +13,22 @@
                     window.authService = new AuthService();
                 }
 
-                // 如果已经在登录页面，不需要重定向
+                // 如果已经在登录页面，不需要任何重定向
                 if (window.location.pathname.includes('/auth/login')) {
                     return;
                 }
 
-                // 检查 Token 是否存在且有效
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    console.log('No token found, user not logged in.');
-                    return; // 没有 token，停留在登录页面
+                    console.log('No token found, staying on login page.');
+                    return;
                 }
 
+                // 只验证token，不做重定向
                 const isValid = await window.authService.validateToken();
-                if (isValid) {
-                    console.log('Token valid, redirecting to dashboard...');
-                    window.location.href = '/public/dashboard/index.html';
+                if (!isValid) {
+                    console.log('Invalid token found, clearing auth data.');
+                    window.authService.clearAuth();
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
@@ -49,14 +49,18 @@
                     window.authService = new AuthService();
                 }
 
+                // 登录并获取token
                 await window.authService.login(email, password);
                 
-                // 登录成功后直接跳转，不需要再次验证token
+                // 只在明确的登录成功后跳转
+                console.log('Login successful, redirecting to dashboard...');
                 window.location.href = '/public/dashboard/index.html';
             } catch (error) {
                 console.error('Login error:', error);
                 errorElement.textContent = error.message || 'An error occurred during login';
                 errorElement.style.display = 'block';
+                // 确保清除任何可能存在的无效token
+                window.authService.clearAuth();
             }
         }
 
