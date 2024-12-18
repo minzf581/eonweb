@@ -54,34 +54,29 @@ class AuthService {
                 return this.#validationCache;
             }
 
-            console.log('[AuthService] Validating token with server...');
+            // 发送验证请求
             const response = await fetch(`${this.AUTH_BASE}/validate`, {
+                method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
             });
-            
-            if (!response.ok) {
-                console.warn('[AuthService] Token validation failed:', response.status);
-                this.#validationCache = false;
-                this.#lastValidation = now;
-                return false;
-            }
 
-            const data = await response.json();
-            this.#validationCache = data.valid === true;
+            const isValid = response.ok;
+            
+            // 更新缓存
+            this.#validationCache = isValid;
             this.#lastValidation = now;
 
-            if (!this.#validationCache) {
-                console.warn('[AuthService] Server reported token as invalid');
+            if (!isValid) {
+                console.log('[AuthService] Token validation failed');
                 this.clearAuth();
             }
 
-            return this.#validationCache;
+            return isValid;
         } catch (error) {
             console.error('[AuthService] Token validation error:', error);
-            this.#validationCache = null;
-            this.#lastValidation = 0;
+            this.clearAuth();
             return false;
         }
     }
@@ -96,6 +91,7 @@ class AuthService {
     }
 
     setAuth(token, user) {
+        console.log('[AuthService] Setting auth data...');
         localStorage.setItem(this.tokenKey, token);
         localStorage.setItem(this.userKey, JSON.stringify(user));
         this.token = token;
@@ -114,24 +110,20 @@ class AuthService {
 
     async login(email, password) {
         try {
-            console.log('[AuthService] Attempting login...');
             const response = await fetch(`${this.AUTH_BASE}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ email, password }),
-                credentials: 'include'
+                body: JSON.stringify({ email, password })
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Login failed');
+                throw new Error('Login failed');
             }
 
             const data = await response.json();
             this.setAuth(data.token, data.user);
-            console.log('[AuthService] Login successful');
             return true;
         } catch (error) {
             console.error('[AuthService] Login error:', error);
@@ -140,14 +132,11 @@ class AuthService {
         }
     }
 
-    logout() {
-        if (this.#redirecting) {
-            console.log('[AuthService] Redirect already in progress');
-            return;
-        }
+    async logout() {
         console.log('[AuthService] Logging out...');
-        this.clearAuth();
+        if (this.#redirecting) return;
         this.#redirecting = true;
+        this.clearAuth();
         window.location.href = '/public/auth/login.html';
     }
 }
@@ -157,7 +146,19 @@ function initializeAuthService() {
     console.log('[AuthService] Initializing auth service...');
     if (!window.authService) {
         try {
-            window.authService = new AuthService();
+            const authService = new AuthService();
+            // 确保所有方法都正确绑定到实例上
+            window.authService = {
+                isInitialized: () => authService.isInitialized(),
+                isAuthenticated: () => authService.isAuthenticated(),
+                validateToken: () => authService.validateToken(),
+                clearAuth: () => authService.clearAuth(),
+                setAuth: (token, user) => authService.setAuth(token, user),
+                getToken: () => authService.getToken(),
+                getUser: () => authService.getUser(),
+                login: (email, password) => authService.login(email, password),
+                logout: () => authService.logout()
+            };
             console.log('[AuthService] Auth service initialized successfully');
             return window.authService;
         } catch (error) {
@@ -169,13 +170,7 @@ function initializeAuthService() {
 }
 
 // 创建全局实例
-if (typeof window !== 'undefined' && !window.authService) {
-    console.log('[AuthService] Creating global instance...');
-    try {
-        window.authService = initializeAuthService();
-        console.log('[AuthService] Global instance created successfully');
-    } catch (error) {
-        console.error('[AuthService] Failed to create global instance:', error);
-        throw error;
-    }
+if (typeof window !== 'undefined') {
+    window.initializeAuthService = initializeAuthService;
+    initializeAuthService();
 }

@@ -350,6 +350,12 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Auth] DOM loaded, initializing dashboard...');
             try {
+                // 确保 AuthService 已初始化
+                if (!window.initializeAuthService) {
+                    throw new Error('AuthService initialization function not found');
+                }
+                
+                window.initializeAuthService();
                 await checkAuthService();
                 await initializeDashboard();
             } catch (error) {
