@@ -1,9 +1,6 @@
 class AuthService {
-    #redirecting = false;
-    #validationCache = null;
-    #lastValidation = 0;
-    #validationTimeout = 5000; // 5秒缓存
     #initialized = false;
+    #redirecting = false;
 
     constructor() {
         console.log('[AuthService] Starting initialization...');
@@ -14,7 +11,7 @@ class AuthService {
             this.userKey = 'user';
             this.token = localStorage.getItem(this.tokenKey);
             
-            // 重置重定向状态
+            // Reset redirect state on page show
             window.addEventListener('pageshow', () => {
                 this.#redirecting = false;
             });
@@ -27,34 +24,22 @@ class AuthService {
         }
     }
 
-    // 检查服务是否已初始化
     isInitialized() {
         return this.#initialized;
     }
 
-    // 基本的token存在检查
     isAuthenticated() {
         const token = this.getToken();
         return !!token;
     }
 
-    // 与后端验证token有效性
     async validateToken() {
         try {
-            // 如果没有token，直接返回false
             if (!this.token) {
                 console.log('[AuthService] No token found');
                 return false;
             }
 
-            // 检查缓存
-            const now = Date.now();
-            if (this.#validationCache !== null && (now - this.#lastValidation) < this.#validationTimeout) {
-                console.log('[AuthService] Using cached validation result:', this.#validationCache);
-                return this.#validationCache;
-            }
-
-            // 发送验证请求
             const response = await fetch(`${this.AUTH_BASE}/validate`, {
                 method: 'GET',
                 headers: {
@@ -62,18 +47,13 @@ class AuthService {
                 }
             });
 
-            const isValid = response.ok;
-            
-            // 更新缓存
-            this.#validationCache = isValid;
-            this.#lastValidation = now;
-
-            if (!isValid) {
+            if (!response.ok) {
                 console.log('[AuthService] Token validation failed');
                 this.clearAuth();
+                return false;
             }
 
-            return isValid;
+            return true;
         } catch (error) {
             console.error('[AuthService] Token validation error:', error);
             this.clearAuth();
@@ -86,8 +66,6 @@ class AuthService {
         localStorage.removeItem(this.tokenKey);
         localStorage.removeItem(this.userKey);
         this.token = null;
-        this.#validationCache = null;
-        this.#lastValidation = 0;
     }
 
     setAuth(token, user) {
@@ -95,8 +73,6 @@ class AuthService {
         localStorage.setItem(this.tokenKey, token);
         localStorage.setItem(this.userKey, JSON.stringify(user));
         this.token = token;
-        this.#validationCache = true;
-        this.#lastValidation = Date.now();
     }
 
     getToken() {
@@ -141,36 +117,17 @@ class AuthService {
     }
 }
 
-// 初始化函数
-function initializeAuthService() {
-    console.log('[AuthService] Initializing auth service...');
+// Create and expose the global auth service instance
+if (typeof window !== 'undefined') {
     if (!window.authService) {
+        console.log('[AuthService] Creating global instance...');
         try {
-            const authService = new AuthService();
-            // 确保所有方法都正确绑定到实例上
-            window.authService = {
-                isInitialized: () => authService.isInitialized(),
-                isAuthenticated: () => authService.isAuthenticated(),
-                validateToken: () => authService.validateToken(),
-                clearAuth: () => authService.clearAuth(),
-                setAuth: (token, user) => authService.setAuth(token, user),
-                getToken: () => authService.getToken(),
-                getUser: () => authService.getUser(),
-                login: (email, password) => authService.login(email, password),
-                logout: () => authService.logout()
-            };
-            console.log('[AuthService] Auth service initialized successfully');
-            return window.authService;
+            const auth = new AuthService();
+            window.authService = auth;
+            console.log('[AuthService] Global instance created successfully');
         } catch (error) {
-            console.error('[AuthService] Failed to initialize auth service:', error);
+            console.error('[AuthService] Failed to create global instance:', error);
             throw error;
         }
     }
-    return window.authService;
-}
-
-// 创建全局实例
-if (typeof window !== 'undefined') {
-    window.initializeAuthService = initializeAuthService;
-    initializeAuthService();
 }
