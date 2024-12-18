@@ -255,106 +255,72 @@
     </div>
 
     <script>
-        let hasRedirected = false;
-
-        function handleAuthError() {
-            if (hasRedirected) {
-                console.log('[Auth] Redirect already in progress');
-                return;
+        async function handleAuthError() {
+            console.error('[Auth] Authentication error occurred');
+            try {
+                if (window.authService) {
+                    await window.authService.logout();
+                } else {
+                    window.location.href = '/public/auth/login.html';
+                }
+            } catch (error) {
+                console.error('[Auth] Error during auth error handling:', error);
+                window.location.href = '/public/auth/login.html';
             }
-            console.log('[Auth] Handling auth error, clearing auth data and redirecting...');
-            hasRedirected = true;
-            if (window.authService) {
-                window.authService.clearAuth();
-            }
-            window.location.href = '/public/auth/login.html';
         }
 
         async function loadDashboardData() {
             try {
-                // 获取用户信息
-                const userInfo = await window.authService.getUser();
-                if (!userInfo) {
-                    throw new Error('Failed to load user info');
-                }
-
-                // 更新页面上的用户信息
-                const userNameElement = document.getElementById('userName');
-                if (userNameElement) {
-                    userNameElement.textContent = userInfo.name || userInfo.email || 'User';
-                }
-
-                // 加载其他仪表板数据...
-                console.log('[Auth] Dashboard data loaded successfully');
+                // Load dashboard data here
+                console.log('[Dashboard] Loading dashboard data...');
             } catch (error) {
-                console.error('[Auth] Error loading dashboard data:', error);
+                console.error('[Dashboard] Error loading dashboard data:', error);
                 throw error;
             }
         }
 
         async function initializeDashboard() {
             try {
-                if (!window.authService) {
-                    console.error('[Auth] Auth service not initialized');
-                    handleAuthError();
-                    return;
-                }
-
-                if (!window.authService.isInitialized()) {
-                    console.error('[Auth] Auth service not properly initialized');
-                    handleAuthError();
-                    return;
-                }
-
-                console.log('[Auth] Validating authentication...');
-                const isValid = await window.authService.validateToken();
-                
-                if (!isValid) {
-                    console.log('[Auth] Token invalid, redirecting to login...');
-                    handleAuthError();
-                    return;
-                }
-
-                console.log('[Auth] Token valid, loading dashboard data...');
+                console.log('[Dashboard] Starting dashboard initialization...');
                 await loadDashboardData();
+                console.log('[Dashboard] Dashboard initialized successfully');
             } catch (error) {
-                console.error('[Auth] Dashboard initialization error:', error);
-                handleAuthError();
+                console.error('[Dashboard] Dashboard initialization failed:', error);
+                await handleAuthError();
             }
         }
 
-        // 检查 AuthService 是否已初始化
-        function checkAuthService() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 20; // 最多等待1秒 (20 * 50ms)
-                
-                const check = () => {
-                    if (window.authService && window.authService.isInitialized()) {
-                        console.log('[Auth] AuthService initialized successfully');
-                        resolve(true);
-                    } else if (attempts >= maxAttempts) {
-                        console.error('[Auth] AuthService initialization timeout');
-                        reject(new Error('Authentication service initialization timeout'));
-                    } else {
-                        attempts++;
-                        setTimeout(check, 50);
-                    }
-                };
-                
-                check();
-            });
+        // Check if AuthService is properly initialized
+        async function checkAuthService() {
+            console.log('[Auth] Checking auth service...');
+            try {
+                if (!window.authService || !window.authService.isInitialized()) {
+                    console.error('[Auth] Auth service not initialized');
+                    throw new Error('Auth service not initialized');
+                }
+
+                const isAuthenticated = await window.authService.validateToken();
+                if (!isAuthenticated) {
+                    console.error('[Auth] User not authenticated');
+                    throw new Error('Not authenticated');
+                }
+
+                return true;
+            } catch (error) {
+                console.error('[Auth] Auth service check failed:', error);
+                throw error;
+            }
         }
 
-        // 页面加载完成后初始化仪表盘
+        // Initialize dashboard when DOM is loaded
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Auth] DOM loaded, initializing dashboard...');
             try {
                 await checkAuthService();
                 await initializeDashboard();
             } catch (error) {
-                console.error('[Auth] Dashboard initialization error:', error);
-                handleAuthError();
+                console.error('[Auth] Initialization error:', error);
+                await handleAuthError();
             }
         });
     </script>

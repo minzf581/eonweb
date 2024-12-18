@@ -1,3 +1,4 @@
+// AuthService class definition
 class AuthService {
     #initialized = false;
     #redirecting = false;
@@ -117,17 +118,26 @@ class AuthService {
     }
 }
 
-// Create and expose the global auth service instance
-if (typeof window !== 'undefined') {
+// Global initialization function
+function initializeAuthService() {
+    console.log('[AuthService] Initializing auth service...');
     if (!window.authService) {
-        console.log('[AuthService] Creating global instance...');
         try {
-            const auth = new AuthService();
-            window.authService = auth;
-            console.log('[AuthService] Global instance created successfully');
+            window.authService = new AuthService();
+            console.log('[AuthService] Auth service initialized successfully');
+            return window.authService;
         } catch (error) {
-            console.error('[AuthService] Failed to create global instance:', error);
+            console.error('[AuthService] Failed to initialize auth service:', error);
             throw error;
         }
     }
+    return window.authService;
+}
+
+// Make initializeAuthService globally available
+window.initializeAuthService = initializeAuthService;
+
+// Initialize auth service when the script loads
+if (typeof window !== 'undefined') {
+    initializeAuthService();
 }
