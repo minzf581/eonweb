@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
-    <script src="/public/js/authService.js" defer></script>
+    <script src="/public/js/authService.js"></script>
     <script>
         // 处理登录表单提交
         async function handleLogin(event) {
@@ -14,11 +14,6 @@
             const errorElement = document.getElementById('loginError');
 
             try {
-                if (!window.authService) {
-                    console.log('Initializing auth service...');
-                    window.authService = new AuthService();
-                }
-
                 console.log('Attempting login...');
                 await window.authService.login(email, password);
                 console.log('Login successful, redirecting to dashboard...');
@@ -27,9 +22,7 @@
                 console.error('Login error:', error);
                 errorElement.textContent = error.message || 'An error occurred during login';
                 errorElement.style.display = 'block';
-                if (window.authService) {
-                    window.authService.clearAuth();
-                }
+                window.authService.clearAuth();
             }
         }
 

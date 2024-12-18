@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - EON Protocol</title>
-    <script src="/public/js/authService.js" defer></script>
+    <script src="/public/js/authService.js"></script>
     <style>
         :root {
             --primary-color: #4dabf7;
@@ -262,13 +262,7 @@
             hasRedirected = true;
 
             console.log('Handling auth error, clearing auth data and redirecting...');
-            
-            if (window.authService) {
-                window.authService.clearAuth();
-            } else {
-                localStorage.removeItem('token');
-            }
-
+            window.authService.clearAuth();
             window.location.href = '/public/auth/login.html';
         }
 
@@ -276,13 +270,7 @@
             try {
                 console.log('Initializing dashboard...');
                 
-                if (!window.authService) {
-                    console.log('Initializing auth service...');
-                    window.authService = new AuthService();
-                }
-
-                const token = localStorage.getItem('token');
-                if (!token) {
+                if (!window.authService.isAuthenticated()) {
                     console.log('No token found, redirecting to login...');
                     handleAuthError();
                     return;
