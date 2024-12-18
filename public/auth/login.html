@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <!-- Load AuthService first -->
-    <script src="/public/js/authService.js"></script>
+    <script src="/js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -125,35 +125,52 @@
                 transform: rotate(360deg);
             }
         }
+
+        .register-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .register-link a {
+            color: #4A90E2;
+            text-decoration: none;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div id="loginContainer">
         <h1>Login</h1>
+        
+        <!-- Error Messages -->
         <div id="loginError" class="error-message" style="display: none;"></div>
         <div id="loginInfo" class="info-message" style="display: none;"></div>
         
-        <form id="loginForm" novalidate style="display: none;">
+        <!-- Login Form -->
+        <form id="loginForm" style="display: none;">
             <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" required 
-                       pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                       autocomplete="email">
-                <div class="error-text" id="emailError"></div>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+                <div id="emailError" class="error-message" style="display: none;"></div>
             </div>
             
             <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" required
-                       minlength="6"
-                       autocomplete="current-password">
-                <div class="error-text" id="passwordError"></div>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required minlength="6">
+                <div id="passwordError" class="error-message" style="display: none;"></div>
             </div>
             
             <button type="submit" id="loginButton">
+                <span class="loading-spinner" style="display: none;">Loading...</span>
                 <span class="button-text">Login</span>
-                <span class="loading-spinner" style="display: none;"></span>
             </button>
+
+            <div class="register-link">
+                <a href="/auth/register.html">Don't have an account? Register here</a>
+            </div>
         </form>
     </div>
 
@@ -268,6 +285,36 @@
             }
         }
 
+        async function handleLogin(event) {
+            event.preventDefault();
+            console.log('[Login] Attempting login...');
+            
+            try {
+                if (!validateForm()) {
+                    return;
+                }
+
+                setLoading(true);
+                clearMessages();
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                await window.authService.login(email, password);
+                showInfo('Login successful, redirecting...');
+                
+                // Small delay to show success message
+                setTimeout(() => {
+                    window.location.href = '/dashboard/index.html';
+                }, 500);
+            } catch (error) {
+                console.error('[Login] Login failed:', error);
+                showError(error.message || 'Login failed. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
         async function initializeLoginPage() {
             console.log('[Login] Starting initialization...');
             setLoading(true);
@@ -283,14 +330,14 @@
                     throw new Error('Auth service not available');
                 }
 
-                // Check authentication status
+                // Check if already authenticated
                 const isAuthenticated = await window.authService.validateToken();
                 console.log('[Login] Auth status:', isAuthenticated);
 
                 if (isAuthenticated) {
                     showInfo('Already authenticated, redirecting...');
                     setTimeout(() => {
-                        window.location.href = '/public/dashboard/index.html';
+                        window.location.href = '/dashboard/index.html';
                     }, 500);
                     return;
                 }
@@ -298,34 +345,7 @@
                 // Setup login form
                 if (form) {
                     form.style.display = 'block';
-                    form.addEventListener('submit', async (event) => {
-                        event.preventDefault();
-                        
-                        try {
-                            if (!validateForm()) {
-                                return;
-                            }
-
-                            setLoading(true);
-                            clearMessages();
-
-                            const email = document.getElementById('email').value;
-                            const password = document.getElementById('password').value;
-
-                            await window.authService.login(email, password);
-                            showInfo('Login successful, redirecting...');
-                            
-                            // Small delay to show success message
-                            setTimeout(() => {
-                                window.location.href = '/public/dashboard/index.html';
-                            }, 500);
-                        } catch (error) {
-                            console.error('[Login] Login failed:', error);
-                            showError(error.message || 'Login failed. Please try again.');
-                        } finally {
-                            setLoading(false);
-                        }
-                    });
+                    form.addEventListener('submit', handleLogin);
                 }
 
                 console.log('[Login] Initialization complete');
