@@ -1156,7 +1156,7 @@ footer p {
             <a href="#projects" class="nav-link">Features</a>
             <a href="#solution" class="nav-link">Solution</a>
             <a href="#contact" class="nav-link">Contact</a>
-            <a href="/public/auth/login.html" class="nav-link">Login</a>
+            <a href="/public/auth/login.html" class="nav-link" data-requires-auth="true">Login</a>
         </div>
     </nav>
 
@@ -1477,49 +1477,21 @@ footer p {
             showError('An unexpected error occurred. Please try again later.');
         };
 
-        // Wait for auth service to be ready
-        async function waitForAuthService(timeoutMs = 5000) {
-            const startTime = Date.now();
-            
-            while (Date.now() - startTime < timeoutMs) {
-                if (window.authService && typeof window.authService.initialize === 'function') {
-                    try {
-                        await window.authService.initialize();
-                        console.log('[Index] Auth service initialized successfully');
-                        return true;
-                    } catch (error) {
-                        console.error('[Index] Auth service initialization failed:', error);
-                        return false;
-                    }
-                }
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            console.error('[Index] Auth service initialization timeout');
-            return false;
-        }
-
-        // Initialize auth service and set up event handlers
         window.addEventListener('load', async () => {
-            try {
-                const isReady = await waitForAuthService();
-                if (!isReady) {
-                    console.error('[Index] Auth service not ready');
-                    return;
-                }
+            if (!window.authService || typeof window.authService.initialize !== 'function') {
+                console.error('[Index] Auth service is not available');
+                return;
+            }
 
+            try {
+                await window.authService.initialize();
+                console.log('[Index] Auth service initialized successfully');
+                
                 // Add click handlers to auth-required buttons
-                const authButtons = document.querySelectorAll('[data-requires-auth="true"]');
-                authButtons.forEach(button => {
+                document.querySelectorAll('[data-requires-auth="true"]').forEach(button => {
                     button.addEventListener('click', async (event) => {
                         event.preventDefault();
-                        
                         try {
-                            if (!window.authService || !window.authService.isInitialized()) {
-                                showError('Authentication service is not available');
-                                return;
-                            }
-
                             const isValid = await window.authService.validateToken();
                             if (isValid) {
                                 window.location.href = '/public/dashboard/index.html';
@@ -1534,7 +1506,6 @@ footer p {
                 });
             } catch (error) {
                 console.error('[Index] Auth initialization failed:', error);
-                showError('Failed to initialize authentication service');
             }
         });
     </script>
