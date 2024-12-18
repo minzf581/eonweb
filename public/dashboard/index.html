@@ -256,7 +256,7 @@
 
     <script>
         async function handleAuthError() {
-            console.error('[Auth] Authentication error occurred');
+            console.log('[Auth] Handling auth error...');
             try {
                 if (window.authService) {
                     await window.authService.logout();
@@ -271,50 +271,75 @@
 
         async function loadDashboardData() {
             try {
-                // Load dashboard data here
-                console.log('[Dashboard] Loading dashboard data...');
+                const user = window.authService.getUser();
+                if (!user) {
+                    throw new Error('No user data found');
+                }
+
+                // Update user info in UI
+                const userNameElement = document.getElementById('userName');
+                if (userNameElement) {
+                    userNameElement.textContent = user.name || user.email || 'User';
+                }
+
+                console.log('[Dashboard] Data loaded successfully');
             } catch (error) {
-                console.error('[Dashboard] Error loading dashboard data:', error);
+                console.error('[Dashboard] Error loading data:', error);
                 throw error;
             }
         }
 
         async function initializeDashboard() {
             try {
-                console.log('[Dashboard] Starting dashboard initialization...');
+                console.log('[Dashboard] Starting initialization...');
                 await loadDashboardData();
-                console.log('[Dashboard] Dashboard initialized successfully');
+                console.log('[Dashboard] Initialized successfully');
             } catch (error) {
-                console.error('[Dashboard] Dashboard initialization failed:', error);
+                console.error('[Dashboard] Initialization failed:', error);
                 await handleAuthError();
             }
         }
 
-        // Check if AuthService is properly initialized
+        async function waitForAuthService(maxAttempts = 20) {
+            console.log('[Auth] Waiting for auth service...');
+            for (let i = 0; i < maxAttempts; i++) {
+                if (window.authService && typeof window.authService.isInitialized === 'function') {
+                    console.log('[Auth] Auth service found');
+                    return true;
+                }
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            console.error('[Auth] Auth service not found after waiting');
+            return false;
+        }
+
         async function checkAuthService() {
-            console.log('[Auth] Checking auth service...');
             try {
-                if (!window.authService || !window.authService.isInitialized()) {
+                console.log('[Auth] Checking auth service...');
+                const serviceAvailable = await waitForAuthService();
+                
+                if (!serviceAvailable || !window.authService.isInitialized()) {
                     console.error('[Auth] Auth service not initialized');
                     throw new Error('Auth service not initialized');
                 }
 
                 const isAuthenticated = await window.authService.validateToken();
                 if (!isAuthenticated) {
-                    console.error('[Auth] User not authenticated');
+                    console.error('[Auth] Not authenticated');
                     throw new Error('Not authenticated');
                 }
 
+                console.log('[Auth] Auth check passed');
                 return true;
             } catch (error) {
-                console.error('[Auth] Auth service check failed:', error);
+                console.error('[Auth] Auth check failed:', error);
                 throw error;
             }
         }
 
         // Initialize dashboard when DOM is loaded
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Auth] DOM loaded, initializing dashboard...');
+            console.log('[Auth] DOM loaded, starting initialization...');
             try {
                 await checkAuthService();
                 await initializeDashboard();
