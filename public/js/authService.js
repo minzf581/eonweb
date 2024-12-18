@@ -317,9 +317,10 @@ if (typeof window !== 'undefined' && typeof window.AuthService === 'undefined') 
 if (typeof window !== 'undefined' && !window.authService) {
     console.log('[AuthService] Creating global instance...');
     try {
-        window.authService = new window.AuthService();
+        window.authService = new AuthService();
         console.log('[AuthService] Global instance created successfully');
     } catch (error) {
         console.error('[AuthService] Failed to create global instance:', error);
+        throw error;
     }
 }

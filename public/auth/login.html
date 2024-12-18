@@ -23,8 +23,7 @@
                 await window.authService.login(email, password);
                 
                 if (window.authService.isAuthenticated()) {
-                    console.log('Login successful, redirecting to dashboard...');
-                    window.location.href = '/public/dashboard/index.html';
+                    console.log('Login successful');
                 } else {
                     throw new Error('Login failed: Authentication error');
                 }
@@ -75,16 +74,9 @@
                     loginForm.addEventListener('submit', handleLogin);
                 }
 
-                // 检查是否已经登录
-                if (window.authService.isAuthenticated()) {
-                    const isValid = await window.authService.validateToken();
-                    if (isValid) {
-                        console.log('User already authenticated, redirecting to dashboard...');
-                        window.location.href = '/public/dashboard/index.html';
-                    } else {
-                        console.log('Invalid token found, clearing auth...');
-                        window.authService.clearAuth();
-                    }
+                // 清除任何可能存在的无效token
+                if (window.authService) {
+                    window.authService.clearAuth();
                 }
             } catch (error) {
                 console.error('Login page initialization error:', error);

@@ -1541,5 +1541,56 @@ footer p {
             });
         });
     </script>
+    <script>
+        let hasRedirected = false;
+
+        async function handleAuthError() {
+            if (hasRedirected) return;
+            hasRedirected = true;
+
+            console.log('[Auth] Handling auth error, clearing auth data and redirecting...');
+            if (window.authService) {
+                window.authService.clearAuth();
+            }
+            window.location.href = '/public/auth/login.html';
+        }
+
+        async function initializeDashboard() {
+            try {
+                if (!window.authService) {
+                    console.error('[Auth] Auth service not initialized');
+                    handleAuthError();
+                    return;
+                }
+
+                if (!window.authService.isInitialized()) {
+                    console.error('[Auth] Auth service not properly initialized');
+                    handleAuthError();
+                    return;
+                }
+
+                console.log('[Auth] Validating authentication...');
+                const isValid = await window.authService.validateToken();
+                
+                if (!isValid) {
+                    console.log('[Auth] Token invalid, redirecting to login...');
+                    handleAuthError();
+                    return;
+                }
+
+                console.log('[Auth] Token valid, proceeding with dashboard initialization...');
+                // Continue with dashboard initialization here
+            } catch (error) {
+                console.error('[Auth] Dashboard initialization error:', error);
+                handleAuthError();
+            }
+        }
+
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[Auth] DOM loaded, initializing dashboard...');
+            initializeDashboard();
+        });
+    </script>
 </body>
 </html>
