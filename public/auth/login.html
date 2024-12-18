@@ -20,10 +20,11 @@
                 }
 
                 console.log('Attempting login...');
-                await window.authService.login(email, password);
+                const success = await window.authService.login(email, password);
                 
-                if (window.authService.isAuthenticated()) {
-                    console.log('Login successful');
+                if (success) {
+                    console.log('Login successful, redirecting to dashboard...');
+                    window.location.href = '/public/dashboard/index.html';
                 } else {
                     throw new Error('Login failed: Authentication error');
                 }
@@ -72,11 +73,6 @@
                 // 添加表单事件监听
                 if (loginForm) {
                     loginForm.addEventListener('submit', handleLogin);
-                }
-
-                // 清除任何可能存在的无效token
-                if (window.authService) {
-                    window.authService.clearAuth();
                 }
             } catch (error) {
                 console.error('Login page initialization error:', error);
