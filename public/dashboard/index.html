@@ -196,7 +196,7 @@
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="user-info">
-                    <span id="welcomeMessage">Welcome, <span id="userEmail">Loading...</span></span>
+                    <span id="welcomeMessage">Welcome, <span id="userName">Loading...</span></span>
                 </div>
                 <div class="user-actions">
                     <button class="logout-btn">Logout</button>
@@ -254,14 +254,16 @@
         </main>
     </div>
 
-    <script defer>
+    <script>
         let hasRedirected = false;
 
         function handleAuthError() {
-            if (hasRedirected) return;
+            if (hasRedirected) {
+                console.log('[Auth] Redirect already in progress');
+                return;
+            }
+            console.log('[Auth] Handling auth error, clearing auth data and redirecting...');
             hasRedirected = true;
-
-            console.log('Handling auth error, redirecting to login...');
             if (window.authService) {
                 window.authService.clearAuth();
             }
@@ -270,63 +272,22 @@
 
         async function loadDashboardData() {
             try {
-                console.log('Loading dashboard data...');
-                
-                // Load user info
-                const userEmail = document.getElementById('userEmail');
-                if (userEmail) {
-                    const user = window.authService.getUser();
-                    userEmail.textContent = user ? user.email : 'Unknown User';
+                // 获取用户信息
+                const userInfo = await window.authService.getUser();
+                if (!userInfo) {
+                    throw new Error('Failed to load user info');
                 }
 
-                // Load tasks
-                const taskList = document.getElementById('taskList');
-                if (taskList) {
-                    const response = await fetch('/api/tasks/user', {
-                        headers: {
-                            'Authorization': `Bearer ${window.authService.getToken()}`
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to load tasks');
-                    }
-
-                    const data = await response.json();
-                    
-                    if (data.tasks && data.tasks.length > 0) {
-                        taskList.innerHTML = data.tasks.map(task => `
-                            <li class="task-item">
-                                <span>${task.name}</span>
-                                <span class="task-status status-${task.completed ? 'completed' : 'pending'}">
-                                    ${task.completed ? 'Completed' : 'Pending'}
-                                </span>
-                            </li>
-                        `).join('');
-                    } else {
-                        taskList.innerHTML = '<li class="empty-state">No tasks available</li>';
-                    }
+                // 更新页面上的用户信息
+                const userNameElement = document.getElementById('userName');
+                if (userNameElement) {
+                    userNameElement.textContent = userInfo.name || userInfo.email || 'User';
                 }
 
-                // Load referral info
-                const referralCode = document.getElementById('referralCode');
-                const referralCount = document.getElementById('referralCount');
-                if (referralCode || referralCount) {
-                    const response = await fetch('/api/users/referral-info', {
-                        headers: {
-                            'Authorization': `Bearer ${window.authService.getToken()}`
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (referralCode) referralCode.textContent = data.referralCode || 'N/A';
-                        if (referralCount) referralCount.textContent = data.referralCount || '0';
-                    }
-                }
-
+                // 加载其他仪表板数据...
+                console.log('[Auth] Dashboard data loaded successfully');
             } catch (error) {
-                console.error('Error loading dashboard data:', error);
+                console.error('[Auth] Error loading dashboard data:', error);
                 throw error;
             }
         }
@@ -334,48 +295,67 @@
         async function initializeDashboard() {
             try {
                 if (!window.authService) {
-                    console.error('Auth service not initialized');
+                    console.error('[Auth] Auth service not initialized');
                     handleAuthError();
                     return;
                 }
 
-                console.log('Validating authentication...');
+                if (!window.authService.isInitialized()) {
+                    console.error('[Auth] Auth service not properly initialized');
+                    handleAuthError();
+                    return;
+                }
+
+                console.log('[Auth] Validating authentication...');
                 const isValid = await window.authService.validateToken();
                 
                 if (!isValid) {
-                    console.log('Token invalid, redirecting to login...');
+                    console.log('[Auth] Token invalid, redirecting to login...');
                     handleAuthError();
                     return;
                 }
 
-                console.log('Token valid, loading dashboard data...');
+                console.log('[Auth] Token valid, loading dashboard data...');
                 await loadDashboardData();
             } catch (error) {
-                console.error('Dashboard initialization error:', error);
+                console.error('[Auth] Dashboard initialization error:', error);
                 handleAuthError();
             }
         }
 
-        // 页面加载完成后初始化仪表盘
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, waiting for AuthService initialization...');
-            
-            // 检查 AuthService 是否已经初始化
-            const checkAuthService = () => {
-                if (window.authService) {
-                    console.log('AuthService found, initializing dashboard...');
-                    initializeDashboard().catch(error => {
-                        console.error('Dashboard initialization failed:', error);
-                        handleAuthError();
-                    });
-                } else {
-                    console.log('AuthService not found, retrying in 50ms...');
-                    setTimeout(checkAuthService, 50);
-                }
-            };
+        // 检查 AuthService 是否已初始化
+        function checkAuthService() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 20; // 最多等待1秒 (20 * 50ms)
+                
+                const check = () => {
+                    if (window.authService && window.authService.isInitialized()) {
+                        console.log('[Auth] AuthService initialized successfully');
+                        resolve(true);
+                    } else if (attempts >= maxAttempts) {
+                        console.error('[Auth] AuthService initialization timeout');
+                        reject(new Error('Authentication service initialization timeout'));
+                    } else {
+                        attempts++;
+                        setTimeout(check, 50);
+                    }
+                };
+                
+                check();
+            });
+        }
 
-            // 开始检查
-            checkAuthService();
+        // 页面加载完成后初始化仪表盘
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[Auth] DOM loaded, initializing dashboard...');
+            try {
+                await checkAuthService();
+                await initializeDashboard();
+            } catch (error) {
+                console.error('[Auth] Dashboard initialization error:', error);
+                handleAuthError();
+            }
         });
     </script>
 </body>
