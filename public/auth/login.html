@@ -6,25 +6,20 @@
     <title>Login - EON Protocol</title>
     <script src="/public/js/authService.js"></script>
     <script>
-        // 检查用户是否已经登录
+        // 在登录页面只检查token状态，不做重定向
         async function checkAuthStatus() {
             try {
                 if (!window.authService) {
                     window.authService = new AuthService();
                 }
 
-                // 如果已经在登录页面，不需要任何重定向
-                if (window.location.pathname.includes('/auth/login')) {
-                    return;
-                }
-
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    console.log('No token found, staying on login page.');
-                    return;
+                    console.log('No token found, user stays on login page.');
+                    return; // 没有token时，用户停留在登录页面
                 }
 
-                // 只验证token，不做重定向
+                // 只验证token，不重定向
                 const isValid = await window.authService.validateToken();
                 if (!isValid) {
                     console.log('Invalid token found, clearing auth data.');
@@ -39,7 +34,6 @@
         // 处理登录表单提交
         async function handleLogin(event) {
             event.preventDefault();
-            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorElement = document.getElementById('loginError');
@@ -49,22 +43,18 @@
                     window.authService = new AuthService();
                 }
 
-                // 登录并获取token
                 await window.authService.login(email, password);
-                
-                // 只在明确的登录成功后跳转
                 console.log('Login successful, redirecting to dashboard...');
                 window.location.href = '/public/dashboard/index.html';
             } catch (error) {
                 console.error('Login error:', error);
                 errorElement.textContent = error.message || 'An error occurred during login';
                 errorElement.style.display = 'block';
-                // 确保清除任何可能存在的无效token
                 window.authService.clearAuth();
             }
         }
 
-        // 页面加载时检查认证状态
+        // 页面加载时只检查认证状态
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', checkAuthStatus);
         } else {

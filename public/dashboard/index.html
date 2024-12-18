@@ -255,44 +255,33 @@
     </div>
 
     <script>
-        let dashboardInitialized = false;
         let hasRedirected = false;
 
-        // 统一处理认证错误的函数
         function handleAuthError() {
             if (hasRedirected) {
                 console.log('Redirect already in progress, skipping...');
                 return;
             }
-            
+
             hasRedirected = true;
             console.log('Handling auth error, clearing auth data and redirecting...');
             
-            // 清除认证数据
+            // 确保在重定向前清除token
             if (window.authService) {
                 window.authService.clearAuth();
             } else {
                 localStorage.removeItem('token');
             }
             
-            // 重定向到登录页面
             window.location.href = '/public/auth/login.html';
         }
 
         async function initializeDashboard() {
             try {
-                // 检查是否已经初始化
-                if (dashboardInitialized) {
-                    console.log('Dashboard already initialized');
-                    return;
-                }
-
-                // 初始化 authService
                 if (!window.authService) {
                     window.authService = new AuthService();
                 }
 
-                // 首先检查token是否存在
                 const token = localStorage.getItem('token');
                 if (!token) {
                     console.log('No token found, redirecting to login...');
@@ -300,39 +289,34 @@
                     return;
                 }
 
-                // 验证token有效性
-                console.log('Validating token...');
                 const isValid = await window.authService.validateToken();
                 if (!isValid) {
-                    console.log('Token validation failed');
+                    console.log('Token validation failed, redirecting to login...');
                     handleAuthError();
                     return;
                 }
 
-                // Token验证成功，加载仪表盘数据
+                // Token 验证成功，加载仪表盘数据
                 console.log('Token valid, loading dashboard data...');
                 await loadDashboardData();
-                dashboardInitialized = true;
-                console.log('Dashboard initialized successfully');
             } catch (error) {
                 console.error('Dashboard initialization error:', error);
                 handleAuthError();
             }
         }
 
-        // 加载仪表盘数据的具体实现
         async function loadDashboardData() {
             try {
-                // 这里实现加载具体数据的逻辑
-                // ...
-                console.log('Dashboard data loaded successfully');
+                // 加载仪表盘数据的具体实现
+                console.log('Loading dashboard data...');
+                // ... 具体的数据加载逻辑
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
                 throw error; // 向上传播错误，让initializeDashboard处理
             }
         }
 
-        // 页面加载完成后初始化仪表盘
+        // 页面加载时初始化仪表盘
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeDashboard);
         } else {
