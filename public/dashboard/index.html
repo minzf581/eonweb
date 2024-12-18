@@ -258,7 +258,8 @@
         async function handleAuthError() {
             console.log('[Auth] Handling auth error...');
             try {
-                if (window.authService) {
+                const serviceReady = await window.waitForAuthService();
+                if (serviceReady && window.checkAuthMethod('logout')) {
                     await window.authService.logout();
                 } else {
                     window.location.href = '/public/auth/login.html';
@@ -271,6 +272,10 @@
 
         async function loadDashboardData() {
             try {
+                if (!window.checkAuthMethod('getUser')) {
+                    throw new Error('User data not available');
+                }
+
                 const user = window.authService.getUser();
                 if (!user) {
                     throw new Error('No user data found');
@@ -300,32 +305,20 @@
             }
         }
 
-        async function waitForAuthService(maxAttempts = 20) {
-            console.log('[Auth] Waiting for auth service...');
-            for (let i = 0; i < maxAttempts; i++) {
-                if (window.authService && typeof window.authService.isInitialized === 'function') {
-                    console.log('[Auth] Auth service found');
-                    return true;
-                }
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            console.error('[Auth] Auth service not found after waiting');
-            return false;
-        }
-
         async function checkAuthService() {
             try {
                 console.log('[Auth] Checking auth service...');
-                const serviceAvailable = await waitForAuthService();
-                
-                if (!serviceAvailable || !window.authService.isInitialized()) {
-                    console.error('[Auth] Auth service not initialized');
-                    throw new Error('Auth service not initialized');
+                const serviceReady = await window.waitForAuthService();
+                if (!serviceReady) {
+                    throw new Error('Authentication service not available');
+                }
+
+                if (!window.checkAuthMethod('validateToken')) {
+                    throw new Error('Token validation not available');
                 }
 
                 const isAuthenticated = await window.authService.validateToken();
                 if (!isAuthenticated) {
-                    console.error('[Auth] Not authenticated');
                     throw new Error('Not authenticated');
                 }
 

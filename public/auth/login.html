@@ -14,9 +14,15 @@
             const errorElement = document.getElementById('loginError');
 
             try {
-                // Ensure auth service is initialized
-                if (!window.authService || !window.authService.isInitialized()) {
-                    throw new Error('Authentication service not initialized');
+                // Wait for auth service
+                const serviceReady = await window.waitForAuthService();
+                if (!serviceReady) {
+                    throw new Error('Authentication service not available');
+                }
+
+                // Verify required methods exist
+                if (!window.checkAuthMethod('login')) {
+                    throw new Error('Login method not available');
                 }
 
                 console.log('[Auth] Attempting login...');
@@ -25,7 +31,7 @@
                 window.location.href = '/public/dashboard/index.html';
             } catch (error) {
                 console.error('[Auth] Login error:', error);
-                errorElement.textContent = 'Invalid email or password';
+                errorElement.textContent = error.message || 'An error occurred during login';
                 errorElement.style.display = 'block';
             }
         }
@@ -34,14 +40,21 @@
         async function checkAuthStatus() {
             try {
                 console.log('[Auth] Checking auth status...');
-                if (window.authService && window.authService.isInitialized()) {
-                    const isAuthenticated = await window.authService.validateToken();
-                    console.log('[Auth] Auth status:', isAuthenticated);
-                    
-                    if (isAuthenticated) {
-                        console.log('[Auth] User is authenticated, redirecting to dashboard...');
-                        window.location.href = '/public/dashboard/index.html';
-                    }
+                const serviceReady = await window.waitForAuthService();
+                if (!serviceReady) {
+                    throw new Error('Authentication service not available');
+                }
+
+                if (!window.checkAuthMethod('validateToken')) {
+                    throw new Error('Token validation not available');
+                }
+
+                const isAuthenticated = await window.authService.validateToken();
+                console.log('[Auth] Auth status:', isAuthenticated);
+                
+                if (isAuthenticated) {
+                    console.log('[Auth] User is authenticated, redirecting to dashboard...');
+                    window.location.href = '/public/dashboard/index.html';
                 }
             } catch (error) {
                 console.error('[Auth] Error checking auth status:', error);
@@ -52,17 +65,13 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Auth] Login page loading...');
             const loginForm = document.getElementById('loginForm');
+            const errorElement = document.getElementById('loginError');
             
             try {
                 // Wait for auth service to be available
-                let attempts = 0;
-                while (!window.authService && attempts < 20) {
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                    attempts++;
-                }
-
-                if (!window.authService) {
-                    throw new Error('Auth service not available');
+                const serviceReady = await window.waitForAuthService();
+                if (!serviceReady) {
+                    throw new Error('Authentication service not available');
                 }
 
                 // Check if user is already authenticated
@@ -74,7 +83,6 @@
                 }
             } catch (error) {
                 console.error('[Auth] Login page initialization error:', error);
-                const errorElement = document.getElementById('loginError');
                 if (errorElement) {
                     errorElement.textContent = 'Failed to initialize authentication service';
                     errorElement.style.display = 'block';

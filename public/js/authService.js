@@ -1,11 +1,36 @@
-// AuthService class definition
+// AuthService singleton implementation
 class AuthService {
     constructor() {
+        if (window.authService) {
+            console.warn('[AuthService] Instance already exists, returning existing instance');
+            return window.authService;
+        }
+
         this.DEBUG = process.env.NODE_ENV !== 'production';
         this._initialized = false;
+        this._initializing = false;
         this._redirecting = false;
 
+        // Store instance in window object
+        window.authService = this;
+    }
+
+    // Initialize the service
+    async initialize() {
+        if (this._initialized) {
+            this.debug('Already initialized');
+            return true;
+        }
+
+        if (this._initializing) {
+            this.debug('Initialization already in progress');
+            return false;
+        }
+
         try {
+            this._initializing = true;
+            this.debug('Starting initialization...');
+
             // Initialize API paths
             this.AUTH_BASE = '/api/auth';
             this.API_BASE = '/api';
@@ -36,25 +61,28 @@ class AuthService {
 
             this._initialized = true;
             this.debug('Initialization completed successfully');
+            return true;
         } catch (error) {
             this.error('Initialization failed:', error);
             throw new Error('AuthService initialization failed: ' + error.message);
+        } finally {
+            this._initializing = false;
         }
     }
 
-    // Logging utilities
+    // Logging utilities with timestamps
     debug(...args) {
         if (this.DEBUG) {
-            console.debug('[AuthService]', ...args);
+            console.debug(`[AuthService ${new Date().toISOString()}]`, ...args);
         }
     }
 
     log(...args) {
-        console.log('[AuthService]', ...args);
+        console.log(`[AuthService ${new Date().toISOString()}]`, ...args);
     }
 
     error(...args) {
-        console.error('[AuthService]', ...args);
+        console.error(`[AuthService ${new Date().toISOString()}]`, ...args);
     }
 
     // Check if the service is initialized
@@ -208,27 +236,25 @@ class AuthService {
     }
 }
 
-// Create and expose the auth service instance
-const initializeAuthService = () => {
-    console.log('[AuthService] Initializing auth service...');
-    try {
-        if (!window.authService) {
-            window.authService = new AuthService();
-            console.log('[AuthService] Auth service initialized successfully');
-        } else {
-            console.log('[AuthService] Auth service already initialized');
+// Helper function to wait for auth service initialization
+async function waitForAuthService(maxAttempts = 20) {
+    console.log('[AuthService] Waiting for service...');
+    for (let i = 0; i < maxAttempts; i++) {
+        if (window.authService?.isInitialized?.()) {
+            console.log('[AuthService] Service is ready');
+            return true;
         }
-        return window.authService;
-    } catch (error) {
-        console.error('[AuthService] Failed to initialize auth service:', error);
-        throw error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log(`[AuthService] Attempt ${i + 1}/${maxAttempts}`);
     }
-};
+    console.error('[AuthService] Service not available after maximum attempts');
+    return false;
+}
 
 // Helper function to check if a method exists
-const checkMethod = (methodName) => {
+function checkAuthMethod(methodName) {
     if (!window.authService) {
-        console.error(`[AuthService] Auth service not initialized when checking ${methodName}`);
+        console.error(`[AuthService] Service not initialized when checking ${methodName}`);
         return false;
     }
     if (typeof window.authService[methodName] !== 'function') {
@@ -236,15 +262,37 @@ const checkMethod = (methodName) => {
         return false;
     }
     return true;
-};
+}
+
+// Initialize auth service
+async function initializeAuthService() {
+    console.log('[AuthService] Starting initialization...');
+    try {
+        // Create singleton instance if it doesn't exist
+        if (!window.authService) {
+            window.authService = new AuthService();
+        }
+        
+        // Initialize the service
+        await window.authService.initialize();
+        console.log('[AuthService] Initialization successful');
+        return window.authService;
+    } catch (error) {
+        console.error('[AuthService] Initialization failed:', error);
+        throw error;
+    }
+}
 
 // Expose globally
 window.authService = null;
 window.initializeAuthService = initializeAuthService;
-window.checkAuthMethod = checkMethod;
+window.waitForAuthService = waitForAuthService;
+window.checkAuthMethod = checkAuthMethod;
 
 // Initialize when the script loads
 if (typeof window !== 'undefined') {
     console.log('[AuthService] Script loaded, initializing...');
-    initializeAuthService();
+    initializeAuthService().catch(error => {
+        console.error('[AuthService] Auto-initialization failed:', error);
+    });
 }
