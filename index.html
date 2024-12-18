@@ -1171,7 +1171,7 @@ footer p {
             <p>Empower AI achieve secure and seamless data collaboration</p>
         </div>
         <div class="button-container">
-          <a href="/public/auth/login.html" class="cta-button">Get started and Earn</a>
+          <a href="/public/auth/login.html" class="cta-button login-button">Get started and Earn</a>
         </div>
         <div id="particles-js" style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh;"></div>
          
@@ -1542,6 +1542,80 @@ footer p {
         });
     </script>
     <script>
+        async function waitForAuthServiceWithTimeout(timeoutMs = 5000) {
+            console.log('[Main] Waiting for auth service...');
+            
+            if (!window.authServiceUtils) {
+                console.error('[Main] AuthServiceUtils not available');
+                return false;
+            }
+
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs);
+            });
+
+            try {
+                await Promise.race([
+                    window.authServiceUtils.waitForAuthService(),
+                    timeoutPromise
+                ]);
+                console.log('[Main] Auth service ready');
+                return true;
+            } catch (error) {
+                console.error('[Main] Auth service wait failed:', error);
+                return false;
+            }
+        }
+
+        async function checkAuthAndRedirect() {
+            try {
+                // Wait for auth service
+                const isReady = await waitForAuthServiceWithTimeout();
+                if (!isReady) {
+                    console.error('[Main] Auth service not available');
+                    window.location.href = '/public/auth/login.html';
+                    return;
+                }
+
+                const isAuthenticated = await window.authService.validateToken();
+                console.log('[Main] Authentication status:', isAuthenticated);
+                
+                if (!isAuthenticated) {
+                    console.log('[Main] User not authenticated, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return;
+                }
+                
+                // If authenticated, redirect to dashboard
+                window.location.href = '/public/dashboard/index.html';
+            } catch (error) {
+                console.error('[Main] Auth check failed:', error);
+                window.location.href = '/public/auth/login.html';
+            }
+        }
+
+        // Initialize button handlers when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle login button click
+            const loginButton = document.querySelector('.login-button');
+            if (loginButton) {
+                loginButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    checkAuthAndRedirect();
+                });
+            }
+
+            // Handle start button click
+            const startButton = document.querySelector('.start-button');
+            if (startButton) {
+                startButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    checkAuthAndRedirect();
+                });
+            }
+        });
+    </script>
+    <script>
         let hasRedirected = false;
 
         async function handleAuthError() {
@@ -1590,6 +1664,84 @@ footer p {
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[Auth] DOM loaded, initializing dashboard...');
             initializeDashboard();
+        });
+    </script>
+    <script>
+        async function waitForAuthServiceWithTimeout(timeoutMs = 5000) {
+            console.log('[Main] Waiting for auth service...');
+            
+            if (!window.authServiceUtils) {
+                console.error('[Main] AuthServiceUtils not available');
+                return false;
+            }
+
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs);
+            });
+
+            try {
+                await Promise.race([
+                    window.authServiceUtils.waitForAuthService(),
+                    timeoutPromise
+                ]);
+                console.log('[Main] Auth service ready');
+                return true;
+            } catch (error) {
+                console.error('[Main] Auth service wait failed:', error);
+                return false;
+            }
+        }
+
+        async function checkAuthentication() {
+            try {
+                const isAuthenticated = await window.authService.validateToken();
+                console.log('[Main] Authentication status:', isAuthenticated);
+                
+                if (!isAuthenticated) {
+                    console.log('[Main] User not authenticated, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return false;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('[Main] Auth check failed:', error);
+                window.location.href = '/public/auth/login.html';
+                return false;
+            }
+        }
+
+        async function initializeApp() {
+            console.log('[Main] Starting initialization...');
+            
+            try {
+                // Wait for auth service
+                const isReady = await waitForAuthServiceWithTimeout();
+                if (!isReady) {
+                    throw new Error('Auth service not available');
+                }
+
+                // Check authentication
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return;
+                }
+
+                // Continue with normal initialization
+                console.log('[Main] User authenticated, proceeding with initialization...');
+                
+                // Your existing initialization code here...
+                
+            } catch (error) {
+                console.error('[Main] Initialization error:', error);
+                window.location.href = '/public/auth/login.html';
+            }
+        }
+
+        // Initialize when DOM is loaded
+        window.addEventListener('load', () => {
+            // Give authService.js a moment to load and initialize
+            setTimeout(initializeApp, 100);
         });
     </script>
 </body>

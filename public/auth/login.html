@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <!-- Load AuthService first -->
-    <script src="/public/js/authService.js" async></script>
+    <script src="/public/js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -244,8 +244,11 @@
         }
 
         async function waitForAuthServiceWithTimeout(timeoutMs = 5000) {
+            console.log('[Login] Waiting for auth service...');
+            
             if (!window.authServiceUtils) {
-                throw new Error('AuthServiceUtils not available');
+                console.error('[Login] AuthServiceUtils not available');
+                return false;
             }
 
             const timeoutPromise = new Promise((_, reject) => {
@@ -257,6 +260,7 @@
                     window.authServiceUtils.waitForAuthService(),
                     timeoutPromise
                 ]);
+                console.log('[Login] Auth service ready');
                 return true;
             } catch (error) {
                 console.error('[Login] Auth service wait failed:', error);
@@ -323,6 +327,8 @@
                         }
                     });
                 }
+
+                console.log('[Login] Initialization complete');
             } catch (error) {
                 console.error('[Login] Initialization failed:', error);
                 showError('Failed to initialize login page. Please refresh and try again.');
@@ -332,7 +338,10 @@
         }
 
         // Initialize on page load
-        window.addEventListener('load', initializeLoginPage);
+        window.addEventListener('load', () => {
+            // Give authService.js a moment to load and initialize
+            setTimeout(initializeLoginPage, 100);
+        });
     </script>
 </body>
 </html>

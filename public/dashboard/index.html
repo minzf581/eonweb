@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <!-- Load AuthService first -->
-    <script src="/public/js/authService.js" defer></script>
+    <script src="/public/js/authService.js" async></script>
 </head>
 <body>
     <div id="dashboardContainer">
@@ -35,6 +35,15 @@
             console.error('[Dashboard]', message);
         }
 
+        function showLoading(show = true) {
+            const content = document.getElementById('dashboardContent');
+            if (!content) return;
+
+            if (show) {
+                content.innerHTML = '<div class="loading">Loading dashboard...</div>';
+            }
+        }
+
         async function loadUserData() {
             try {
                 const user = await window.authService.getUser();
@@ -42,6 +51,7 @@
                 if (userNameElement) {
                     userNameElement.textContent = user.name || 'User';
                 }
+                console.log('[Dashboard] User data loaded successfully');
             } catch (error) {
                 console.error('[Dashboard] Failed to load user data:', error);
                 throw error;
@@ -56,6 +66,7 @@
                 try {
                     logoutButton.disabled = true;
                     await window.authService.logout();
+                    console.log('[Dashboard] Logout successful, redirecting...');
                     window.location.href = '/public/auth/login.html';
                 } catch (error) {
                     console.error('[Dashboard] Logout failed:', error);
@@ -63,16 +74,52 @@
                     logoutButton.disabled = false;
                 }
             });
+            console.log('[Dashboard] Logout handler setup complete');
+        }
+
+        async function waitForAuthServiceWithTimeout(timeoutMs = 5000) {
+            console.log('[Dashboard] Waiting for auth service...');
+            
+            if (!window.authServiceUtils) {
+                throw new Error('AuthServiceUtils not available');
+            }
+
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs);
+            });
+
+            try {
+                await Promise.race([
+                    window.authServiceUtils.waitForAuthService(),
+                    timeoutPromise
+                ]);
+                console.log('[Dashboard] Auth service ready');
+                return true;
+            } catch (error) {
+                console.error('[Dashboard] Auth service wait failed:', error);
+                return false;
+            }
         }
 
         async function checkAuthentication() {
+            console.log('[Dashboard] Checking authentication...');
+            
             try {
+                // Check if auth service is properly initialized
+                if (!window.authService || typeof window.authService.validateToken !== 'function') {
+                    console.error('[Dashboard] Auth service not properly initialized');
+                    return false;
+                }
+
                 const isAuthenticated = await window.authService.validateToken();
+                console.log('[Dashboard] Authentication status:', isAuthenticated);
+
                 if (!isAuthenticated) {
                     console.log('[Dashboard] User not authenticated, redirecting...');
                     window.location.href = '/public/auth/login.html';
                     return false;
                 }
+
                 return true;
             } catch (error) {
                 console.error('[Dashboard] Auth check failed:', error);
@@ -87,6 +134,7 @@
 
             try {
                 contentElement.innerHTML = '<div>Welcome to your dashboard!</div>';
+                console.log('[Dashboard] Content loaded successfully');
             } catch (error) {
                 console.error('[Dashboard] Failed to load content:', error);
                 contentElement.innerHTML = '<div>Failed to load dashboard content. Please refresh the page.</div>';
@@ -94,20 +142,26 @@
         }
 
         async function initializeDashboard() {
-            console.log('[Dashboard] DOM loaded, initializing...');
+            console.log('[Dashboard] Starting initialization...');
+            showLoading(true);
             
             try {
                 // Wait for auth service to be ready
-                const isReady = await window.authServiceUtils.waitForAuthService();
+                const isReady = await waitForAuthServiceWithTimeout();
                 if (!isReady) {
                     throw new Error('Auth service not available');
                 }
 
-                // Check authentication
+                // Check authentication before proceeding
                 const isAuthenticated = await checkAuthentication();
-                if (!isAuthenticated) return;
+                if (!isAuthenticated) {
+                    console.log('[Dashboard] Authentication check failed, stopping initialization');
+                    return;
+                }
 
-                // Setup UI
+                console.log('[Dashboard] Authentication successful, loading dashboard...');
+
+                // Setup UI components in parallel
                 await Promise.all([
                     loadUserData(),
                     setupLogout(),
@@ -118,15 +172,13 @@
             } catch (error) {
                 console.error('[Dashboard] Initialization error:', error);
                 showError('Failed to initialize dashboard. Please refresh the page.');
+            } finally {
+                showLoading(false);
             }
         }
 
         // Initialize on page load
-        if (document.readyState === 'complete') {
-            initializeDashboard();
-        } else {
-            document.addEventListener('DOMContentLoaded', initializeDashboard);
-        }
+        window.addEventListener('load', initializeDashboard);
     </script>
 
     <style>

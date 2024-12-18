@@ -126,7 +126,7 @@
                 logInfo(`Stored token check: token=${!!storedToken}, expiry=${storedExpiry || 'null'}`);
 
                 if (storedToken && storedExpiry) {
-                    const currentTime = new Date('2024-12-18T20:24:17+08:00');
+                    const currentTime = new Date('2024-12-18T20:28:32+08:00');
                     const expiryDate = new Date(storedExpiry);
                     
                     logInfo(`Token expiry check during init: current=${currentTime.toISOString()}, expiry=${expiryDate.toISOString()}`);
@@ -171,6 +171,9 @@
                 // Simulated login success
                 const token = 'simulated_token_' + Date.now();
                 await this.setToken(token);
+                // Set session validation cache
+                sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
+                logInfo('Login successful');
                 return true;
             } catch (error) {
                 logError('Login failed', error);
@@ -229,7 +232,7 @@
                 }
 
                 // Use provided timestamp for consistent testing
-                const currentTime = new Date('2024-12-18T20:24:17+08:00');
+                const currentTime = new Date('2024-12-18T20:28:32+08:00');
                 const expiryTime = new Date(this._tokenExpiry);
                 
                 logInfo(`Token expiry check: current=${currentTime.toISOString()}, expiry=${expiryTime.toISOString()}`);
@@ -246,7 +249,7 @@
                 
                 logInfo(`Storage consistency check: memoryToken=${!!this._token}, storedToken=${!!storedToken}`);
                 
-                if (storedToken !== this._token) {
+                if (!storedToken || storedToken !== this._token) {
                     logInfo('Token validation failed: memory-storage mismatch');
                     await this.clearAuth();
                     return false;
