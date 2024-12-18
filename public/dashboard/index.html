@@ -38,111 +38,94 @@
         async function loadUserData() {
             console.log('[Dashboard] Loading user data...');
             
-            if (!window.checkAuthMethod('getUser')) {
-                throw new Error('User data method not available');
-            }
+            try {
+                const user = await window.authService.getUser();
+                if (!user) {
+                    throw new Error('No user data available');
+                }
 
-            const user = await window.authService.getUser();
-            if (!user) {
-                throw new Error('No user data available');
+                const userNameElement = document.getElementById('userName');
+                if (userNameElement) {
+                    userNameElement.textContent = user.name || 'User';
+                }
+            } catch (error) {
+                console.error('[Dashboard] Failed to load user data:', error);
+                throw error;
             }
-
-            const userNameElement = document.getElementById('userName');
-            if (userNameElement) {
-                userNameElement.textContent = user.name || user.email || 'User';
-            }
-
-            return user;
         }
 
         async function setupLogout() {
-            console.log('[Dashboard] Setting up logout handler...');
-            
             const logoutButton = document.getElementById('logoutButton');
-            if (!logoutButton) {
-                throw new Error('Logout button not found');
-            }
-
-            if (!window.checkAuthMethod('logout')) {
-                throw new Error('Logout method not available');
-            }
+            if (!logoutButton) return;
 
             logoutButton.addEventListener('click', async () => {
                 try {
+                    logoutButton.disabled = true;
                     await window.authService.logout();
-                    console.log('[Dashboard] Logout successful, redirecting...');
                     window.location.href = '/public/auth/login.html';
                 } catch (error) {
                     console.error('[Dashboard] Logout failed:', error);
-                    showError(`Logout failed: ${error.message || 'Unknown error occurred'}`);
+                    showError('Failed to logout. Please try again.');
+                    logoutButton.disabled = false;
                 }
             });
         }
 
         async function checkAuthentication() {
-            console.log('[Dashboard] Checking authentication...');
-            
-            if (!window.checkAuthMethod('validateToken')) {
-                throw new Error('Token validation not available');
-            }
-
-            const isAuthenticated = await window.authService.validateToken();
-            if (!isAuthenticated) {
-                console.log('[Dashboard] User not authenticated, redirecting...');
-                window.location.href = '/public/auth/login.html';
+            try {
+                const result = await window.authService.validateToken();
+                if (!result.valid) {
+                    console.log('[Dashboard] Token invalid:', result.reason);
+                    window.location.href = '/public/auth/login.html?error=' + encodeURIComponent(result.reason);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('[Dashboard] Auth check failed:', error);
+                window.location.href = '/public/auth/login.html?error=auth_check_failed';
                 return false;
             }
-
-            return true;
         }
 
         async function loadDashboardContent() {
-            console.log('[Dashboard] Loading dashboard content...');
-            
             const contentElement = document.getElementById('dashboardContent');
-            if (!contentElement) {
-                throw new Error('Dashboard content container not found');
-            }
+            if (!contentElement) return;
 
-            // Here you would typically load dashboard data from your backend
-            // For now, we'll just update the loading message
-            contentElement.innerHTML = '<div>Dashboard content loaded successfully!</div>';
+            try {
+                // Add your dashboard content loading logic here
+                contentElement.innerHTML = '<div>Welcome to your dashboard!</div>';
+            } catch (error) {
+                console.error('[Dashboard] Failed to load content:', error);
+                contentElement.innerHTML = '<div>Failed to load dashboard content. Please refresh the page.</div>';
+            }
         }
 
         async function initializeDashboard() {
-            console.log('[Dashboard] Starting initialization...');
+            console.log('[Dashboard] DOM loaded, initializing...');
             
             try {
-                // Check for auth service
-                if (typeof window.waitForAuthService !== 'function') {
-                    throw new Error('Authentication service not available');
+                // Wait for auth service to be ready
+                if (!window.authServiceUtils?.initializeAuthService) {
+                    throw new Error('Auth service utilities not available');
                 }
 
-                const serviceReady = await window.waitForAuthService();
-                if (!serviceReady) {
-                    throw new Error('Authentication service failed to initialize');
-                }
-
-                // Verify authentication
+                await window.authServiceUtils.initializeAuthService();
+                
+                // Check authentication
                 const isAuthenticated = await checkAuthentication();
-                if (!isAuthenticated) {
-                    return;
-                }
+                if (!isAuthenticated) return;
 
-                // Load user data and setup UI
-                await loadUserData();
-                await setupLogout();
-                await loadDashboardContent();
+                // Setup UI
+                await Promise.all([
+                    loadUserData(),
+                    setupLogout(),
+                    loadDashboardContent()
+                ]);
 
                 console.log('[Dashboard] Initialization complete');
             } catch (error) {
-                console.error('[Dashboard] Initialization failed:', error);
-                showError(`Dashboard initialization failed: ${error.message || 'Unknown error occurred'}`);
-                
-                // If there's an authentication error, redirect to login
-                if (error.message.includes('not authenticated')) {
-                    window.location.href = '/public/auth/login.html';
-                }
+                console.error('[Dashboard] Initialization error:', error);
+                showError('Failed to initialize dashboard. Please refresh the page.');
             }
         }
 
