@@ -254,7 +254,7 @@
         </main>
     </div>
 
-    <script>
+    <script defer>
         let hasRedirected = false;
 
         function handleAuthError() {
@@ -266,6 +266,69 @@
                 window.authService.clearAuth();
             }
             window.location.href = '/public/auth/login.html';
+        }
+
+        async function loadDashboardData() {
+            try {
+                console.log('Loading dashboard data...');
+                
+                // Load user info
+                const userEmail = document.getElementById('userEmail');
+                if (userEmail) {
+                    const user = window.authService.getUser();
+                    userEmail.textContent = user ? user.email : 'Unknown User';
+                }
+
+                // Load tasks
+                const taskList = document.getElementById('taskList');
+                if (taskList) {
+                    const response = await fetch('/api/tasks/user', {
+                        headers: {
+                            'Authorization': `Bearer ${window.authService.getToken()}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load tasks');
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.tasks && data.tasks.length > 0) {
+                        taskList.innerHTML = data.tasks.map(task => `
+                            <li class="task-item">
+                                <span>${task.name}</span>
+                                <span class="task-status status-${task.completed ? 'completed' : 'pending'}">
+                                    ${task.completed ? 'Completed' : 'Pending'}
+                                </span>
+                            </li>
+                        `).join('');
+                    } else {
+                        taskList.innerHTML = '<li class="empty-state">No tasks available</li>';
+                    }
+                }
+
+                // Load referral info
+                const referralCode = document.getElementById('referralCode');
+                const referralCount = document.getElementById('referralCount');
+                if (referralCode || referralCount) {
+                    const response = await fetch('/api/users/referral-info', {
+                        headers: {
+                            'Authorization': `Bearer ${window.authService.getToken()}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (referralCode) referralCode.textContent = data.referralCode || 'N/A';
+                        if (referralCount) referralCount.textContent = data.referralCount || '0';
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                throw error;
+            }
         }
 
         async function initializeDashboard() {
@@ -293,26 +356,27 @@
             }
         }
 
-        async function loadDashboardData() {
-            try {
-                console.log('Loading dashboard data...');
-                // 这里实现加载具体数据的逻辑
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-                throw error; // 向上传播错误，让initializeDashboard处理
-            }
-        }
+        // 页面加载完成后初始化仪表盘
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, waiting for AuthService initialization...');
+            
+            // 检查 AuthService 是否已经初始化
+            const checkAuthService = () => {
+                if (window.authService) {
+                    console.log('AuthService found, initializing dashboard...');
+                    initializeDashboard().catch(error => {
+                        console.error('Dashboard initialization failed:', error);
+                        handleAuthError();
+                    });
+                } else {
+                    console.log('AuthService not found, retrying in 50ms...');
+                    setTimeout(checkAuthService, 50);
+                }
+            };
 
-        // 等待 DOM 和脚本加载完成后初始化仪表盘
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                console.log('DOM loaded, initializing dashboard...');
-                setTimeout(initializeDashboard, 100); // 给 authService 一点时间加载
-            });
-        } else {
-            console.log('DOM already loaded, initializing dashboard...');
-            setTimeout(initializeDashboard, 100);
-        }
+            // 开始检查
+            checkAuthService();
+        });
     </script>
 </body>
 </html>

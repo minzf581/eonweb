@@ -1,23 +1,33 @@
 // 只在 window.AuthService 未定义时声明类
-if (typeof window.AuthService === 'undefined') {
+if (typeof window !== 'undefined' && typeof window.AuthService === 'undefined') {
     window.AuthService = class AuthService {
         #redirecting = false;
         #validationCache = null;
         #lastValidation = 0;
         #validationTimeout = 5000; // 5秒缓存
+        #initialized = false;
 
         constructor() {
-            console.log('[AuthService] Initializing...');
-            this.AUTH_BASE = '/api/auth';
-            this.API_BASE = '/api';
-            this.tokenKey = 'token';
-            this.userKey = 'user';
-            this.token = localStorage.getItem(this.tokenKey);
-            
-            // 重置重定向状态
-            window.addEventListener('pageshow', () => {
-                this.#redirecting = false;
-            });
+            console.log('[AuthService] Starting initialization...');
+            try {
+                this.AUTH_BASE = '/api/auth';
+                this.API_BASE = '/api';
+                this.tokenKey = 'token';
+                this.userKey = 'user';
+                this.token = localStorage.getItem(this.tokenKey);
+                
+                // 重置重定向状态
+                window.addEventListener('pageshow', () => {
+                    this.#redirecting = false;
+                });
+
+                this.addRequestInterceptor();
+                this.#initialized = true;
+                console.log('[AuthService] Initialization completed successfully');
+            } catch (error) {
+                console.error('[AuthService] Initialization failed:', error);
+                throw error;
+            }
         }
         
         addRequestInterceptor() {
@@ -56,48 +66,52 @@ if (typeof window.AuthService === 'undefined') {
             return !!token;
         }
 
+        // 检查服务是否已初始化
+        isInitialized() {
+            return this.#initialized;
+        }
+
         // 与后端验证token有效性
         async validateToken() {
-            const token = this.getToken();
-            if (!token) {
-                console.log('[AuthService] No token found');
-                return false;
-            }
-
-            // 检查缓存
-            const now = Date.now();
-            if (this.#validationCache !== null && 
-                (now - this.#lastValidation) < this.#validationTimeout) {
-                console.log('[AuthService] Using cached validation result');
-                return this.#validationCache;
-            }
-
             try {
-                console.log('[AuthService] Validating token...');
-                const response = await fetch(`${this.AUTH_BASE}/verify`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                });
-
-                this.#validationCache = response.ok;
-                this.#lastValidation = now;
-
-                if (!response.ok) {
-                    console.log('[AuthService] Token validation failed:', response.status);
-                    if (response.status === 401 || response.status === 403) {
-                        this.clearAuth();
-                    }
+                // 如果没有token，直接返回false
+                if (!this.token) {
+                    console.log('[AuthService] No token found');
                     return false;
                 }
 
-                return true;
+                // 检查缓存
+                const now = Date.now();
+                if (this.#validationCache !== null && (now - this.#lastValidation) < this.#validationTimeout) {
+                    console.log('[AuthService] Using cached validation result:', this.#validationCache);
+                    return this.#validationCache;
+                }
+
+                console.log('[AuthService] Validating token with server...');
+                const response = await this.fetchWithAuth(`${this.AUTH_BASE}/validate`);
+                
+                if (!response.ok) {
+                    console.warn('[AuthService] Token validation failed:', response.status);
+                    this.#validationCache = false;
+                    this.#lastValidation = now;
+                    return false;
+                }
+
+                const data = await response.json();
+                this.#validationCache = data.valid === true;
+                this.#lastValidation = now;
+
+                if (!this.#validationCache) {
+                    console.warn('[AuthService] Server reported token as invalid');
+                    this.clearAuth();
+                }
+
+                return this.#validationCache;
             } catch (error) {
                 console.error('[AuthService] Token validation error:', error);
-                this.#validationCache = false;
+                // 在发生错误时清除缓存，这样下次可以重试
+                this.#validationCache = null;
+                this.#lastValidation = 0;
                 return false;
             }
         }
@@ -302,6 +316,10 @@ if (typeof window.AuthService === 'undefined') {
 // 创建全局实例
 if (typeof window !== 'undefined' && !window.authService) {
     console.log('[AuthService] Creating global instance...');
-    window.authService = new window.AuthService();
-    window.authService.addRequestInterceptor();
+    try {
+        window.authService = new window.AuthService();
+        console.log('[AuthService] Global instance created successfully');
+    } catch (error) {
+        console.error('[AuthService] Failed to create global instance:', error);
+    }
 }

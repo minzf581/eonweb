@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EON Protocol</title>
     <script src="/public/js/authService.js" defer></script>
-    <script>
+    <script defer>
         // 处理登录表单提交
         async function handleLogin(event) {
             event.preventDefault();
@@ -15,7 +15,7 @@
 
             try {
                 // 确保 authService 已初始化
-                if (!window.authService) {
+                if (!window.authService || !window.authService.isInitialized()) {
                     throw new Error('Authentication service not initialized');
                 }
 
@@ -38,12 +38,60 @@
             }
         }
 
-        // 页面加载完成后添加事件监听器
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Login page initialized');
+        // 检查 AuthService 是否已初始化
+        function checkAuthService() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 20; // 最多等待1秒 (20 * 50ms)
+                
+                const check = () => {
+                    if (window.authService && window.authService.isInitialized()) {
+                        console.log('AuthService initialized successfully');
+                        resolve(true);
+                    } else if (attempts >= maxAttempts) {
+                        console.error('AuthService initialization timeout');
+                        reject(new Error('Authentication service initialization timeout'));
+                    } else {
+                        attempts++;
+                        setTimeout(check, 50);
+                    }
+                };
+                
+                check();
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Login page loading...');
             const loginForm = document.getElementById('loginForm');
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleLogin);
+            const errorElement = document.getElementById('loginError');
+            
+            try {
+                await checkAuthService();
+                
+                // 添加表单事件监听
+                if (loginForm) {
+                    loginForm.addEventListener('submit', handleLogin);
+                }
+
+                // 检查是否已经登录
+                if (window.authService.isAuthenticated()) {
+                    const isValid = await window.authService.validateToken();
+                    if (isValid) {
+                        console.log('User already authenticated, redirecting to dashboard...');
+                        window.location.href = '/public/dashboard/index.html';
+                    } else {
+                        console.log('Invalid token found, clearing auth...');
+                        window.authService.clearAuth();
+                    }
+                }
+            } catch (error) {
+                console.error('Login page initialization error:', error);
+                if (errorElement) {
+                    errorElement.textContent = 'Failed to initialize authentication service';
+                    errorElement.style.display = 'block';
+                }
             }
         });
     </script>
