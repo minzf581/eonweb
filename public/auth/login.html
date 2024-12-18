@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <!-- Load AuthService first -->
-    <script src="/public/js/authService.js" defer></script>
+    <script src="/public/js/authService.js" async></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -199,12 +199,14 @@
 
         function setLoading(isLoading) {
             const button = document.getElementById('loginButton');
+            if (!button) return;
+
             const spinner = button.querySelector('.loading-spinner');
             const buttonText = button.querySelector('.button-text');
             
             button.disabled = isLoading;
-            spinner.style.display = isLoading ? 'inline-block' : 'none';
-            buttonText.style.display = isLoading ? 'none' : 'inline-block';
+            if (spinner) spinner.style.display = isLoading ? 'inline-block' : 'none';
+            if (buttonText) buttonText.style.display = isLoading ? 'none' : 'inline-block';
             
             const inputs = document.querySelectorAll('input');
             inputs.forEach(input => input.disabled = isLoading);
@@ -216,6 +218,11 @@
             let isValid = true;
 
             clearMessages();
+
+            if (!email || !password) {
+                showError('Form elements not found');
+                return false;
+            }
 
             if (!email.value) {
                 showError('Email is required', 'email');
@@ -236,75 +243,96 @@
             return isValid;
         }
 
+        async function waitForAuthServiceWithTimeout(timeoutMs = 5000) {
+            if (!window.authServiceUtils) {
+                throw new Error('AuthServiceUtils not available');
+            }
+
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs);
+            });
+
+            try {
+                await Promise.race([
+                    window.authServiceUtils.waitForAuthService(),
+                    timeoutPromise
+                ]);
+                return true;
+            } catch (error) {
+                console.error('[Login] Auth service wait failed:', error);
+                return false;
+            }
+        }
+
         async function initializeLoginPage() {
             console.log('[Login] Starting initialization...');
+            setLoading(true);
             
             try {
-                // Wait for auth service
-                const isReady = await window.authServiceUtils.waitForAuthService();
+                // Hide form until we're ready
+                const form = document.getElementById('loginForm');
+                if (form) form.style.display = 'none';
+
+                // Wait for auth service with timeout
+                const isReady = await waitForAuthServiceWithTimeout();
                 if (!isReady) {
                     throw new Error('Auth service not available');
                 }
 
-                // Check if already authenticated
+                // Check authentication status
                 const isAuthenticated = await window.authService.validateToken();
                 console.log('[Login] Auth status:', isAuthenticated);
-                
+
                 if (isAuthenticated) {
                     showInfo('Already authenticated, redirecting...');
-                    window.location.href = '/public/dashboard/index.html';
+                    setTimeout(() => {
+                        window.location.href = '/public/dashboard/index.html';
+                    }, 500);
                     return;
                 }
 
                 // Setup login form
-                const form = document.getElementById('loginForm');
-                if (!form) {
-                    throw new Error('Login form not found');
-                }
-
-                form.style.display = 'block';
-                form.addEventListener('submit', async (event) => {
-                    event.preventDefault();
-                    
-                    try {
-                        if (!validateForm()) {
-                            return;
-                        }
-
-                        setLoading(true);
-                        clearMessages();
-
-                        const email = document.getElementById('email').value;
-                        const password = document.getElementById('password').value;
-
-                        await window.authService.login(email, password);
-                        showInfo('Login successful, redirecting...');
+                if (form) {
+                    form.style.display = 'block';
+                    form.addEventListener('submit', async (event) => {
+                        event.preventDefault();
                         
-                        // Small delay to show success message
-                        setTimeout(() => {
-                            window.location.href = '/public/dashboard/index.html';
-                        }, 500);
-                    } catch (error) {
-                        console.error('[Login] Login failed:', error);
-                        showError(error.message || 'Login failed. Please try again.');
-                    } finally {
-                        setLoading(false);
-                    }
-                });
+                        try {
+                            if (!validateForm()) {
+                                return;
+                            }
 
-                console.log('[Login] Page initialized successfully');
+                            setLoading(true);
+                            clearMessages();
+
+                            const email = document.getElementById('email').value;
+                            const password = document.getElementById('password').value;
+
+                            await window.authService.login(email, password);
+                            showInfo('Login successful, redirecting...');
+                            
+                            // Small delay to show success message
+                            setTimeout(() => {
+                                window.location.href = '/public/dashboard/index.html';
+                            }, 500);
+                        } catch (error) {
+                            console.error('[Login] Login failed:', error);
+                            showError(error.message || 'Login failed. Please try again.');
+                        } finally {
+                            setLoading(false);
+                        }
+                    });
+                }
             } catch (error) {
                 console.error('[Login] Initialization failed:', error);
-                showError('Failed to initialize login page. Please refresh.');
+                showError('Failed to initialize login page. Please refresh and try again.');
+            } finally {
+                setLoading(false);
             }
         }
 
         // Initialize on page load
-        if (document.readyState === 'complete') {
-            initializeLoginPage();
-        } else {
-            document.addEventListener('DOMContentLoaded', initializeLoginPage);
-        }
+        window.addEventListener('load', initializeLoginPage);
     </script>
 </body>
 </html>
