@@ -9,25 +9,28 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: white;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            background-color: #f5f5f5;
         }
 
         #loginContainer {
-            display: block;  
-            background-color: #2a2a2a;
+            background-color: white;
             padding: 2rem;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
-            margin: 1rem;
+        }
+
+        h1 {
+            margin: 0 0 1.5rem;
+            text-align: center;
+            color: #333;
         }
 
         .form-group {
@@ -37,115 +40,244 @@
         label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #e0e0e0;
+            color: #555;
         }
 
         input {
             width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #404040;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
             border-radius: 4px;
-            background-color: #333;
-            color: white;
-            margin-bottom: 1rem;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
+
+        input:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
         }
 
         button {
             width: 100%;
             padding: 0.75rem;
-            background-color: #4dabf7;
+            background-color: #4A90E2;
             color: white;
             border: none;
             border-radius: 4px;
-            cursor: pointer;
             font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: relative;
         }
 
-        button:hover {
-            background-color: #339af0;
+        button:hover:not(:disabled) {
+            background-color: #357ABD;
         }
 
-        #loginError {
-            color: #ff6b6b;
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background-color: #fff3f3;
+            color: #dc3545;
+            padding: 0.75rem;
+            border-radius: 4px;
             margin-bottom: 1rem;
-            text-align: center;
+            border: 1px solid #dc3545;
+        }
+
+        .info-message {
+            background-color: #f3f9ff;
+            color: #004085;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            border: 1px solid #b8daff;
+        }
+
+        .error-text {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
             display: none;
         }
 
-        .links {
-            margin-top: 1rem;
-            text-align: center;
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 0.5rem;
         }
 
-        .links a {
-            color: #4dabf7;
-            text-decoration: none;
-        }
-
-        .links a:hover {
-            text-decoration: underline;
-        }
-
-        h1 {
-            color: #4dabf7;
-            text-align: center;
-            margin-bottom: 2rem;
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
 <body>
     <div id="loginContainer">
         <h1>Login</h1>
-        <div id="loginError" style="display: none; color: red;"></div>
-        <form id="loginForm">
+        <div id="loginError" class="error-message" style="display: none;"></div>
+        <div id="loginInfo" class="info-message" style="display: none;"></div>
+        
+        <form id="loginForm" novalidate>
             <div class="form-group">
                 <label for="email">Email:</label>
-                <input type="email" id="email" required>
+                <input type="email" id="email" required 
+                       pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                       autocomplete="email">
+                <div class="error-text" id="emailError"></div>
             </div>
+            
             <div class="form-group">
                 <label for="password">Password:</label>
-                <input type="password" id="password" required>
+                <input type="password" id="password" required
+                       minlength="6"
+                       autocomplete="current-password">
+                <div class="error-text" id="passwordError"></div>
             </div>
-            <button type="submit">Login</button>
+            
+            <button type="submit" id="loginButton">
+                <span class="button-text">Login</span>
+                <span class="loading-spinner" style="display: none;"></span>
+            </button>
         </form>
-        <div class="links">
-            <a href="register.html">Don't have an account? Register</a>
-        </div>
     </div>
 
     <script>
-        function showError(message) {
+        // Utility functions
+        function showError(message, field = null) {
             const errorElement = document.getElementById('loginError');
             if (errorElement) {
                 errorElement.textContent = message;
                 errorElement.style.display = 'block';
             }
+
+            if (field) {
+                const fieldError = document.getElementById(`${field}Error`);
+                if (fieldError) {
+                    fieldError.textContent = message;
+                    fieldError.style.display = 'block';
+                }
+            }
+
+            console.error('[Login]', message);
         }
 
+        function showInfo(message) {
+            const infoElement = document.getElementById('loginInfo');
+            if (infoElement) {
+                infoElement.textContent = message;
+                infoElement.style.display = 'block';
+            }
+            console.log('[Login]', message);
+        }
+
+        function clearMessages() {
+            const messages = ['loginError', 'loginInfo', 'emailError', 'passwordError'];
+            messages.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.display = 'none';
+                    element.textContent = '';
+                }
+            });
+        }
+
+        function setLoading(isLoading) {
+            const button = document.getElementById('loginButton');
+            const spinner = button.querySelector('.loading-spinner');
+            const buttonText = button.querySelector('.button-text');
+            
+            button.disabled = isLoading;
+            spinner.style.display = isLoading ? 'inline-block' : 'none';
+            buttonText.style.display = isLoading ? 'none' : 'inline-block';
+            
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => input.disabled = isLoading);
+        }
+
+        function validateForm() {
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            let isValid = true;
+
+            // Clear previous errors
+            clearMessages();
+
+            // Validate email
+            if (!email.value) {
+                showError('Email is required', 'email');
+                isValid = false;
+            } else if (!email.validity.valid) {
+                showError('Please enter a valid email address', 'email');
+                isValid = false;
+            }
+
+            // Validate password
+            if (!password.value) {
+                showError('Password is required', 'password');
+                isValid = false;
+            } else if (password.value.length < 6) {
+                showError('Password must be at least 6 characters', 'password');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Initialize login page
         async function initializeLoginPage() {
             console.log('[Login] Starting initialization...');
+            let authCheckAttempts = 0;
+            const MAX_AUTH_ATTEMPTS = 3;
             
             try {
                 // Check for required functions
-                if (typeof window.waitForAuthService !== 'function') {
+                if (typeof window.authServiceUtils?.waitForAuthService !== 'function') {
                     throw new Error('Authentication service not available');
                 }
 
-                const serviceReady = await window.waitForAuthService();
+                showInfo('Initializing authentication service...');
+                const serviceReady = await window.authServiceUtils.waitForAuthService();
                 if (!serviceReady) {
                     throw new Error('Authentication service failed to initialize');
                 }
 
-                if (!window.checkAuthMethod('validateToken')) {
+                if (!window.authServiceUtils.checkAuthMethod('validateToken')) {
                     throw new Error('Token validation not available');
                 }
 
                 // Check if already authenticated
-                const isAuthenticated = await window.authService.validateToken();
-                if (isAuthenticated) {
-                    console.log('[Login] User already authenticated, redirecting...');
-                    window.location.href = '/public/dashboard/index.html';
-                    return;
+                while (authCheckAttempts < MAX_AUTH_ATTEMPTS) {
+                    try {
+                        const isAuthenticated = await window.authService.validateToken();
+                        if (isAuthenticated) {
+                            showInfo('Already authenticated, redirecting...');
+                            window.location.href = '/public/dashboard/index.html';
+                            return;
+                        }
+                        break;
+                    } catch (error) {
+                        authCheckAttempts++;
+                        if (authCheckAttempts >= MAX_AUTH_ATTEMPTS) {
+                            throw new Error('Failed to validate authentication status');
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
                 }
 
                 // Setup login form
@@ -156,30 +288,52 @@
 
                 loginForm.addEventListener('submit', async (event) => {
                     event.preventDefault();
-                    const errorElement = document.getElementById('loginError');
-                    errorElement.style.display = 'none';
-
+                    
                     try {
-                        if (!window.checkAuthMethod('login')) {
+                        if (!validateForm()) {
+                            return;
+                        }
+
+                        if (!window.authServiceUtils.checkAuthMethod('login')) {
                             throw new Error('Login method not available');
                         }
+
+                        setLoading(true);
+                        clearMessages();
 
                         const email = document.getElementById('email').value;
                         const password = document.getElementById('password').value;
 
                         await window.authService.login(email, password);
-                        console.log('[Login] Login successful, redirecting...');
-                        window.location.href = '/public/dashboard/index.html';
+                        showInfo('Login successful, redirecting...');
+                        
+                        // Small delay to show success message
+                        setTimeout(() => {
+                            window.location.href = '/public/dashboard/index.html';
+                        }, 500);
                     } catch (error) {
                         console.error('[Login] Login failed:', error);
-                        showError(`Login failed: ${error.message || 'Unknown error occurred'}`);
+                        showError(error.message || 'Login failed. Please try again.');
+                    } finally {
+                        setLoading(false);
                     }
+                });
+
+                // Add input validation listeners
+                const inputs = document.querySelectorAll('input');
+                inputs.forEach(input => {
+                    input.addEventListener('input', () => {
+                        clearMessages();
+                        if (input.validity.valid) {
+                            document.getElementById(`${input.id}Error`).style.display = 'none';
+                        }
+                    });
                 });
 
                 console.log('[Login] Page initialized successfully');
             } catch (error) {
                 console.error('[Login] Initialization failed:', error);
-                showError(`Initialization failed: ${error.message || 'Unknown error occurred'}`);
+                showError(`Initialization failed: ${error.message}`);
             }
         }
 

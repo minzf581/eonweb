@@ -1,14 +1,23 @@
-// AuthService implementation with improved error handling and checks
+// AuthService implementation with improved method exposure and error handling
 (function() {
-    // Helper functions
+    // Utility functions
+    function getTimestamp() {
+        return new Date().toISOString();
+    }
+
     function logError(context, error) {
-        console.error(`[AuthService] ${context}:`, error);
-        console.error('[AuthService] Stack:', error.stack);
+        console.error(`[AuthService ${getTimestamp()}] ${context}:`, error);
+        console.error(`[AuthService ${getTimestamp()}] Stack:`, error.stack);
     }
 
     function logInfo(message) {
-        console.log(`[AuthService] ${message}`);
+        console.log(`[AuthService ${getTimestamp()}] ${message}`);
     }
+
+    // Constants
+    const TOKEN_KEY = 'auth_token';
+    const TOKEN_EXPIRY_KEY = 'auth_token_expiry';
+    const TOKEN_EXPIRY_HOURS = 24;
 
     class AuthService {
         constructor() {
@@ -24,15 +33,21 @@
             this._initialized = false;
             this._initializing = false;
             this._token = null;
+            this._tokenExpiry = null;
+
+            // Bind all methods to instance
+            const methods = [
+                'initialize', 'isInitialized', 'login', 'logout',
+                'clearAuth', 'validateToken', 'getUser', 'setToken'
+            ];
             
-            // Bind methods to instance
-            this.initialize = this.initialize.bind(this);
-            this.isInitialized = this.isInitialized.bind(this);
-            this.login = this.login.bind(this);
-            this.logout = this.logout.bind(this);
-            this.clearAuth = this.clearAuth.bind(this);
-            this.validateToken = this.validateToken.bind(this);
-            this.getUser = this.getUser.bind(this);
+            methods.forEach(method => {
+                if (typeof this[method] === 'function') {
+                    this[method] = this[method].bind(this);
+                } else {
+                    logError(`Method binding failed`, new Error(`Method ${method} not found`));
+                }
+            });
 
             logInfo('New instance created');
         }
@@ -59,9 +74,21 @@
                 this._initializing = true;
                 logInfo('Starting initialization');
 
-                // Load stored token
-                this._token = localStorage.getItem('auth_token');
-                logInfo(`Token ${this._token ? 'found' : 'not found'} in storage`);
+                // Load and validate stored token
+                const storedToken = localStorage.getItem(TOKEN_KEY);
+                const storedExpiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+
+                if (storedToken && storedExpiry) {
+                    const expiryDate = new Date(storedExpiry);
+                    if (expiryDate > new Date()) {
+                        this._token = storedToken;
+                        this._tokenExpiry = expiryDate;
+                        logInfo('Valid token loaded from storage');
+                    } else {
+                        logInfo('Stored token expired, clearing auth data');
+                        await this.clearAuth();
+                    }
+                }
 
                 this._initialized = true;
                 logInfo('Initialization complete');
@@ -79,6 +106,28 @@
             return this._initialized === true;
         }
 
+        setToken(token) {
+            if (!token) {
+                throw new Error('Token is required');
+            }
+
+            try {
+                const expiry = new Date();
+                expiry.setHours(expiry.getHours() + TOKEN_EXPIRY_HOURS);
+
+                this._token = token;
+                this._tokenExpiry = expiry;
+
+                localStorage.setItem(TOKEN_KEY, token);
+                localStorage.setItem(TOKEN_EXPIRY_KEY, expiry.toISOString());
+
+                logInfo('Token set successfully');
+            } catch (error) {
+                logError('Failed to set token', error);
+                throw error;
+            }
+        }
+
         async login(email, password) {
             if (!this._initialized) {
                 throw new Error('AuthService not initialized');
@@ -91,12 +140,12 @@
             try {
                 logInfo(`Login attempt for: ${email}`);
                 // Simulated login success
-                this._token = 'simulated_token';
-                localStorage.setItem('auth_token', this._token);
+                const token = 'simulated_token_' + Date.now();
+                this.setToken(token);
                 return true;
             } catch (error) {
                 logError('Login failed', error);
-                this.clearAuth();
+                await this.clearAuth();
                 throw error;
             }
         }
@@ -109,6 +158,15 @@
             try {
                 logInfo('Logging out');
                 await this.clearAuth();
+                
+                // Clear any session storage
+                sessionStorage.clear();
+                
+                // Clear any cookies
+                document.cookie.split(';').forEach(cookie => {
+                    document.cookie = cookie.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+                });
+                
                 return true;
             } catch (error) {
                 logError('Logout failed', error);
@@ -123,8 +181,10 @@
 
             try {
                 logInfo('Clearing auth data');
-                localStorage.removeItem('auth_token');
+                localStorage.removeItem(TOKEN_KEY);
+                localStorage.removeItem(TOKEN_EXPIRY_KEY);
                 this._token = null;
+                this._tokenExpiry = null;
             } catch (error) {
                 logError('Clear auth failed', error);
                 throw error;
@@ -137,9 +197,19 @@
             }
 
             try {
-                const token = localStorage.getItem('auth_token');
-                logInfo(`Validating token: ${token ? 'exists' : 'not found'}`);
-                return !!token;
+                if (!this._token || !this._tokenExpiry) {
+                    logInfo('No token or expiry found');
+                    return false;
+                }
+
+                if (new Date() > this._tokenExpiry) {
+                    logInfo('Token expired');
+                    await this.clearAuth();
+                    return false;
+                }
+
+                logInfo('Token is valid');
+                return true;
             } catch (error) {
                 logError('Token validation failed', error);
                 return false;
@@ -152,8 +222,15 @@
             }
 
             try {
+                if (!this._token) {
+                    throw new Error('No authenticated user');
+                }
                 // Simulated user data
-                return { email: 'user@example.com', name: 'Test User' };
+                return {
+                    email: 'user@example.com',
+                    name: 'Test User',
+                    avatar: 'https://via.placeholder.com/150'
+                };
             } catch (error) {
                 logError('Get user failed', error);
                 throw error;
@@ -161,60 +238,91 @@
         }
     }
 
-    // Helper function to check auth method availability
+    // Helper function to check auth method availability with error handling
     function checkAuthMethod(methodName) {
-        if (!window.authService) {
-            logError('Method check failed', new Error('AuthService not available'));
-            return false;
-        }
-
-        const methodExists = typeof window.authService[methodName] === 'function';
-        if (!methodExists) {
-            logError('Method check failed', new Error(`Method ${methodName} not available`));
-        }
-        return methodExists;
-    }
-
-    // Helper function to wait for auth service
-    async function waitForAuthService(maxAttempts = 20) {
-        logInfo('Waiting for service availability');
-        
-        for (let i = 0; i < maxAttempts; i++) {
-            if (window.authService instanceof AuthService) {
-                logInfo('Service instance found');
-                
-                if (!checkAuthMethod('initialize')) {
-                    logError('Wait failed', new Error('Initialize method not available'));
-                    return false;
-                }
-
-                try {
-                    await window.authService.initialize();
-                    logInfo('Service initialized successfully');
-                    return true;
-                } catch (error) {
-                    logError('Service initialization failed', error);
-                    return false;
-                }
+        try {
+            if (!window.authService) {
+                throw new Error('AuthService not available');
             }
 
-            await new Promise(resolve => setTimeout(resolve, 100));
-            logInfo(`Attempt ${i + 1}/${maxAttempts}`);
-        }
+            const methodExists = typeof window.authService[methodName] === 'function';
+            if (!methodExists) {
+                throw new Error(`Method ${methodName} not available`);
+            }
 
-        logError('Wait failed', new Error('Service not available after maximum attempts'));
-        return false;
+            // Try to bind the method to ensure it's callable
+            const boundMethod = window.authService[methodName].bind(window.authService);
+            if (typeof boundMethod !== 'function') {
+                throw new Error(`Method ${methodName} cannot be bound`);
+            }
+
+            return true;
+        } catch (error) {
+            logError('Method check failed', error);
+            return false;
+        }
     }
 
-    // Create and expose the singleton instance
+    // Helper function to wait for auth service with timeout
+    async function waitForAuthService(maxAttempts = 20, interval = 100) {
+        logInfo('Waiting for service availability');
+        
+        let attempts = 0;
+        const timeout = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Service wait timeout')), maxAttempts * interval);
+        });
+
+        const checkService = new Promise(async (resolve) => {
+            while (attempts < maxAttempts) {
+                if (window.authService instanceof AuthService) {
+                    logInfo('Service instance found');
+                    
+                    if (!checkAuthMethod('initialize')) {
+                        logError('Wait failed', new Error('Initialize method not available'));
+                        resolve(false);
+                        return;
+                    }
+
+                    try {
+                        await window.authService.initialize();
+                        logInfo('Service initialized successfully');
+                        resolve(true);
+                        return;
+                    } catch (error) {
+                        logError('Service initialization failed', error);
+                        resolve(false);
+                        return;
+                    }
+                }
+
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, interval));
+                logInfo(`Attempt ${attempts}/${maxAttempts}`);
+            }
+            resolve(false);
+        });
+
+        try {
+            return await Promise.race([checkService, timeout]);
+        } catch (error) {
+            logError('Wait failed', error);
+            return false;
+        }
+    }
+
+    // Create and expose the singleton instance and utilities
     try {
+        // Create auth service namespace
+        window.authServiceUtils = {
+            waitForAuthService,
+            checkAuthMethod,
+            getTimestamp
+        };
+
+        // Create singleton instance
         if (!window.authService) {
             window.authService = new AuthService();
         }
-
-        // Expose helper functions
-        window.waitForAuthService = waitForAuthService;
-        window.checkAuthMethod = checkAuthMethod;
 
         // Initialize on page load
         window.addEventListener('load', () => {
