@@ -1411,18 +1411,12 @@ footer p {
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 确保 authService 已加载
-            if (!window.authService) {
-                console.error('AuthService not loaded');
-                return;
-            }
-
-            // 初始化 particles.js
+            // Initialize particles.js
             particlesJS.load('particles-js', '/public/js/particles-config.json', function() {
                 console.log('callback - particles.js config loaded');
             });
 
-            // 数字计数器动画
+            // Counter animation
             const counters = document.querySelectorAll('.counter');
             if (counters) {
                 counters.forEach(counter => {
@@ -1444,146 +1438,112 @@ footer p {
             }
         });
 
-        // 添加全局错误处理
+        // Global error handling
         window.onerror = function(msg, url, line) {
-            console.error('Error: ' + msg + '\nURL: ' + url + '\nLine: ' + line);
+            console.error('[Index] Error:', msg, '\nURL:', url, '\nLine:', line);
+            showError('An unexpected error occurred. Please try again later.');
         };
     </script>
-    <!-- 添加Font Awesome图标 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <script>
-        async function waitForAuthServiceWithTimeout(timeoutMs = 5000) {
-            console.log('[Index] Waiting for auth service...');
-            
-            if (!window.authServiceUtils) {
-                console.error('[Index] AuthServiceUtils not available');
-                return false;
-            }
+        // Error message display
+        function showError(message, duration = 5000) {
+            const errorContainer = document.getElementById('error-container') || (() => {
+                const container = document.createElement('div');
+                container.id = 'error-container';
+                container.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background-color: #ff4444;
+                    color: white;
+                    padding: 15px 25px;
+                    border-radius: 5px;
+                    z-index: 10000;
+                    display: none;
+                    transition: opacity 0.3s ease-in-out;
+                `;
+                document.body.appendChild(container);
+                return container;
+            })();
 
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs);
-            });
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+            errorContainer.style.opacity = '1';
 
-            try {
-                await Promise.race([
-                    window.authServiceUtils.waitForAuthService(),
-                    timeoutPromise
-                ]);
-                console.log('[Index] Auth service ready');
-                return true;
-            } catch (error) {
-                console.error('[Index] Auth service wait failed:', error);
-                return false;
-            }
+            setTimeout(() => {
+                errorContainer.style.opacity = '0';
+                setTimeout(() => {
+                    errorContainer.style.display = 'none';
+                }, 300);
+            }, duration);
         }
 
-        async function handleAuthError() {
-            console.log('[Index] Handling auth error, clearing auth data...');
-            try {
-                if (window.authService) {
-                    await window.authService.clearAuth();
+        // Wait for auth service to be ready
+        async function waitForAuthService(timeoutMs = 5000) {
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < timeoutMs) {
+                if (window.authService && typeof window.authService.initialize === 'function') {
+                    try {
+                        await window.authService.initialize();
+                        console.log('[Index] Auth service initialized successfully');
+                        return true;
+                    } catch (error) {
+                        console.error('[Index] Auth service initialization failed:', error);
+                        return false;
+                    }
                 }
-            } catch (error) {
-                console.error('[Index] Error clearing auth data:', error);
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
-        }
-
-        async function checkAuthentication() {
-            try {
-                const isAuthenticated = await window.authService.validateToken();
-                console.log('[Index] Auth status:', isAuthenticated);
-                return isAuthenticated;
-            } catch (error) {
-                console.error('[Index] Auth check failed:', error);
-                await handleAuthError();
-                return false;
-            }
-        }
-
-        async function initializeApp() {
-            console.log('[Index] Starting initialization...');
             
+            console.error('[Index] Auth service initialization timeout');
+            return false;
+        }
+
+        // Initialize auth service and set up event handlers
+        async function initializeAuth() {
             try {
-                // 等待 auth service 初始化
-                const isReady = await waitForAuthServiceWithTimeout();
+                const isReady = await waitForAuthService();
                 if (!isReady) {
-                    console.error('[Index] Auth service not available');
+                    showError('Authentication service is temporarily unavailable');
                     return;
                 }
 
-                // 设置登录按钮点击事件
-                const loginButton = document.querySelector('.login-button');
-                if (loginButton) {
-                    loginButton.addEventListener('click', async () => {
-                        const isAuthenticated = await checkAuthentication();
-                        if (isAuthenticated) {
-                            window.location.href = '/dashboard/index.html';
-                        } else {
-                            window.location.href = '/auth/login.html';
+                // Add click handlers to auth-required buttons
+                const authButtons = document.querySelectorAll('[data-requires-auth="true"]');
+                authButtons.forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        event.preventDefault();
+                        
+                        try {
+                            if (!window.authService || typeof window.authService.validateToken !== 'function') {
+                                showError('Authentication service is not available');
+                                return;
+                            }
+
+                            const isValid = await window.authService.validateToken();
+                            if (isValid) {
+                                window.location.href = '/dashboard.html';
+                            } else {
+                                window.location.href = '/auth/login.html';
+                            }
+                        } catch (error) {
+                            console.error('[Index] Auth validation failed:', error);
+                            showError('Unable to verify authentication. Please try again.');
                         }
                     });
-                }
-
-                // 设置开始赚取按钮点击事件
-                const startButton = document.querySelector('.start-earning-button');
-                if (startButton) {
-                    startButton.addEventListener('click', async () => {
-                        const isAuthenticated = await checkAuthentication();
-                        if (isAuthenticated) {
-                            window.location.href = '/dashboard/index.html';
-                        } else {
-                            window.location.href = '/auth/login.html';
-                        }
-                    });
-                }
-
-                console.log('[Index] Initialization complete');
+                });
             } catch (error) {
-                console.error('[Index] Initialization failed:', error);
-                await handleAuthError();
+                console.error('[Index] Auth initialization failed:', error);
+                showError('Failed to initialize authentication service');
             }
         }
 
-        // Initialize when DOM is loaded
-        window.addEventListener('load', () => {
-            // Give authService.js a moment to load and initialize
-            setTimeout(initializeApp, 100);
-        });
-    </script>
-    <script>
-        // Initialize auth service when DOM is loaded
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await authService.initialize();
-                console.log('[Index] Auth service initialized');
-            } catch (error) {
-                console.error('[Index] Failed to initialize auth service:', error);
-            }
-        });
-
-        // Handle auth-required button clicks
-        async function handleAuthRequiredAction(event) {
-            event.preventDefault();
-            
-            try {
-                const isValid = await authService.validateToken();
-                if (isValid) {
-                    window.location.href = '/dashboard.html';
-                } else {
-                    window.location.href = '/auth/login.html';
-                }
-            } catch (error) {
-                console.error('[Index] Auth validation failed:', error);
-                window.location.href = '/auth/login.html';
-            }
-        }
-
-        // Add click handlers to auth-required buttons
+        // Start initialization after DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
-            const authButtons = document.querySelectorAll('[data-requires-auth="true"]');
-            authButtons.forEach(button => {
-                button.addEventListener('click', handleAuthRequiredAction);
-            });
+            // Delay initialization slightly to ensure script is loaded
+            setTimeout(initializeAuth, 100);
         });
     </script>
 </body>
