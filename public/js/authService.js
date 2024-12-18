@@ -300,6 +300,8 @@ if (typeof window.AuthService === 'undefined') {
 }
 
 // 创建全局实例
-if (!window.authService) {
+if (typeof window !== 'undefined' && !window.authService) {
+    console.log('[AuthService] Creating global instance...');
     window.authService = new window.AuthService();
+    window.authService.addRequestInterceptor();
 }

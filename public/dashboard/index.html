@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - EON Protocol</title>
-    <script src="/public/js/authService.js"></script>
+    <script src="/public/js/authService.js" defer></script>
     <style>
         :root {
             --primary-color: #4dabf7;
@@ -261,25 +261,26 @@
             if (hasRedirected) return;
             hasRedirected = true;
 
-            console.log('Handling auth error, clearing auth data and redirecting...');
-            window.authService.clearAuth();
+            console.log('Handling auth error, redirecting to login...');
+            if (window.authService) {
+                window.authService.clearAuth();
+            }
             window.location.href = '/public/auth/login.html';
         }
 
         async function initializeDashboard() {
             try {
-                console.log('Initializing dashboard...');
-                
-                if (!window.authService.isAuthenticated()) {
-                    console.log('No token found, redirecting to login...');
+                if (!window.authService) {
+                    console.error('Auth service not initialized');
                     handleAuthError();
                     return;
                 }
 
-                console.log('Validating token...');
+                console.log('Validating authentication...');
                 const isValid = await window.authService.validateToken();
+                
                 if (!isValid) {
-                    console.log('Token validation failed, redirecting to login...');
+                    console.log('Token invalid, redirecting to login...');
                     handleAuthError();
                     return;
                 }
@@ -306,11 +307,11 @@
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 console.log('DOM loaded, initializing dashboard...');
-                initializeDashboard();
+                setTimeout(initializeDashboard, 100); // 给 authService 一点时间加载
             });
         } else {
             console.log('DOM already loaded, initializing dashboard...');
-            initializeDashboard();
+            setTimeout(initializeDashboard, 100);
         }
     </script>
 </body>
