@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - EON Protocol</title>
-    <script src="/public/js/authService.js"></script>
+    <script src="/public/js/authService.js" defer></script>
     <style>
         :root {
             --primary-color: #4dabf7;
@@ -258,22 +258,17 @@
         let hasRedirected = false;
 
         function handleAuthError() {
-            if (hasRedirected) {
-                console.log('Redirect already in progress, skipping...');
-                return;
-            }
-
+            if (hasRedirected) return;
             hasRedirected = true;
+
             console.log('Handling auth error, clearing auth data and redirecting...');
             
-            // 确保清除认证数据
             if (window.authService) {
                 window.authService.clearAuth();
             } else {
-                console.log('AuthService not available, removing token directly');
                 localStorage.removeItem('token');
             }
-            
+
             window.location.href = '/public/auth/login.html';
         }
 
@@ -281,13 +276,11 @@
             try {
                 console.log('Initializing dashboard...');
                 
-                // 确保 AuthService 已初始化
                 if (!window.authService) {
                     console.log('Initializing auth service...');
                     window.authService = new AuthService();
                 }
 
-                // 检查token是否存在
                 const token = localStorage.getItem('token');
                 if (!token) {
                     console.log('No token found, redirecting to login...');
@@ -295,7 +288,6 @@
                     return;
                 }
 
-                // 验证token有效性
                 console.log('Validating token...');
                 const isValid = await window.authService.validateToken();
                 if (!isValid) {
@@ -304,10 +296,8 @@
                     return;
                 }
 
-                // 加载仪表盘数据
                 console.log('Token valid, loading dashboard data...');
                 await loadDashboardData();
-                console.log('Dashboard initialized successfully');
             } catch (error) {
                 console.error('Dashboard initialization error:', error);
                 handleAuthError();
@@ -324,7 +314,7 @@
             }
         }
 
-        // 确保在DOM加载完成后初始化仪表盘
+        // 等待 DOM 和脚本加载完成后初始化仪表盘
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 console.log('DOM loaded, initializing dashboard...');
