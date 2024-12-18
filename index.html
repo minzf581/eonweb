@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eon Protocol</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
@@ -1411,6 +1412,32 @@ footer p {
     <script>
         // Improved authentication handling
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize particles.js
+            particlesJS.load('particles-js', '/public/js/particles-config.json', function() {
+                console.log('[Index] Particles.js config loaded');
+            });
+
+            // Counter animation
+            const counters = document.querySelectorAll('.counter');
+            if (counters) {
+                counters.forEach(counter => {
+                    const target = +counter.getAttribute('data-target');
+                    const increment = target / 200;
+                    
+                    const updateCounter = () => {
+                        const count = +counter.innerText;
+                        if (count < target) {
+                            counter.innerText = Math.ceil(count + increment);
+                            setTimeout(updateCounter, 10);
+                        } else {
+                            counter.innerText = target;
+                        }
+                    };
+                    
+                    updateCounter();
+                });
+            }
+
             const showError = (message, duration = 5000) => {
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'error-message';
@@ -1479,6 +1506,12 @@ footer p {
                 }
             });
         });
+
+        // Global error handling
+        window.onerror = function(msg, url, line) {
+            console.error('[Index] Error:', msg, '\nURL:', url, '\nLine:', line);
+            showError('An unexpected error occurred. Please try again later.');
+        };
     </script>
 </body>
 </html>
