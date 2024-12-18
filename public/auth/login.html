@@ -6,66 +6,41 @@
     <title>Login - EON Protocol</title>
     <script src="/public/js/authService.js"></script>
     <script>
-        // 在登录页面只检查token状态，不做重定向
-        async function checkAuthStatus() {
-            try {
-                if (!window.authService) {
-                    window.authService = new AuthService();
-                }
-
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    console.log('No token found, user stays on login page.');
-                    return; // 没有token时，用户停留在登录页面
-                }
-
-                // 只验证token，不重定向
-                const isValid = await window.authService.validateToken();
-                if (!isValid) {
-                    console.log('Invalid token found, clearing auth data.');
-                    window.authService.clearAuth();
-                }
-            } catch (error) {
-                console.error('Auth check error:', error);
-                window.authService.clearAuth();
-            }
-        }
-
         // 处理登录表单提交
         async function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorElement = document.getElementById('loginError');
-            
+
             try {
                 if (!window.authService) {
+                    console.log('Initializing auth service...');
                     window.authService = new AuthService();
                 }
 
+                console.log('Attempting login...');
                 await window.authService.login(email, password);
                 console.log('Login successful, redirecting to dashboard...');
-                window.location.href = '/public/dashboard/index.html';
+                window.location.href = '/public/dashboard/index.html'; // 只在登录成功后跳转
             } catch (error) {
                 console.error('Login error:', error);
                 errorElement.textContent = error.message || 'An error occurred during login';
                 errorElement.style.display = 'block';
-                window.authService.clearAuth();
+                if (window.authService) {
+                    window.authService.clearAuth();
+                }
             }
         }
 
-        // 页面加载时只检查认证状态
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', checkAuthStatus);
-        } else {
-            checkAuthStatus();
-        }
-        
         // 添加表单提交事件监听器
-        const loginForm = document.getElementById('loginForm');
-        if (loginForm) {
-            loginForm.addEventListener('submit', handleLogin);
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Login page initialized');
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+        });
     </script>
     <style>
         body {
