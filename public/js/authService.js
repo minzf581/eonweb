@@ -355,19 +355,41 @@
         };
 
         // Create and expose the singleton instance
-        window.authService = new AuthService();
+        if (typeof window.authService === 'undefined') {
+            window.authService = new AuthService();
+            logInfo('Auth service instance created');
+        } else {
+            logInfo('Auth service instance already exists');
+        }
         
-        // Initialize on page load
-        window.addEventListener('load', () => {
+        // Initialize on page load with retry mechanism
+        window.addEventListener('load', async () => {
             logInfo('Page loaded, initializing service');
-            window.authService.initialize().catch(error => {
-                logError('Load initialization failed', error);
-            });
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            const initializeWithRetry = async () => {
+                try {
+                    await window.authService.initialize();
+                    logInfo('Service initialized successfully');
+                } catch (error) {
+                    logError('Initialization attempt failed', error);
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        logInfo(`Retrying initialization (${retryCount}/${maxRetries})`);
+                        setTimeout(initializeWithRetry, 1000);
+                    } else {
+                        logError('Max retries reached, initialization failed', error);
+                    }
+                }
+            };
+            
+            await initializeWithRetry();
         });
 
         logInfo('Auth service setup complete');
     } catch (error) {
         logError('Service setup failed', error);
-        throw error;
+        console.error('[AuthService] Critical setup error:', error);
     }
 })();

@@ -1409,104 +1409,75 @@ footer p {
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script>
-        // Error message display
-        function showError(message, duration = 5000) {
-            const errorContainer = document.getElementById('error-container') || (() => {
-                const container = document.createElement('div');
-                container.id = 'error-container';
-                container.style.cssText = `
+        // Improved authentication handling
+        document.addEventListener('DOMContentLoaded', () => {
+            const showError = (message, duration = 5000) => {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = message;
+                errorDiv.style.cssText = `
                     position: fixed;
                     top: 20px;
                     right: 20px;
                     background-color: #ff4444;
                     color: white;
-                    padding: 15px 25px;
+                    padding: 15px;
                     border-radius: 5px;
-                    z-index: 10000;
-                    display: none;
-                    transition: opacity 0.3s ease-in-out;
+                    z-index: 1000;
+                    opacity: 0;
+                    transition: opacity 0.3s;
                 `;
-                document.body.appendChild(container);
-                return container;
-            })();
-
-            errorContainer.textContent = message;
-            errorContainer.style.display = 'block';
-            errorContainer.style.opacity = '1';
-
-            setTimeout(() => {
-                errorContainer.style.opacity = '0';
+                document.body.appendChild(errorDiv);
+                setTimeout(() => errorDiv.style.opacity = '1', 10);
                 setTimeout(() => {
-                    errorContainer.style.display = 'none';
-                }, 300);
-            }, duration);
-        }
+                    errorDiv.style.opacity = '0';
+                    setTimeout(() => errorDiv.remove(), 300);
+                }, duration);
+            };
 
-        // Initialize particles.js and counters
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize particles.js
-            particlesJS.load('particles-js', '/public/js/particles-config.json', function() {
-                console.log('[Index] Particles.js config loaded');
-            });
+            // Event delegation for auth-required buttons
+            document.body.addEventListener('click', async (event) => {
+                const target = event.target.closest('[data-requires-auth="true"]');
+                if (!target) return;
 
-            // Counter animation
-            const counters = document.querySelectorAll('.counter');
-            if (counters) {
-                counters.forEach(counter => {
-                    const target = +counter.getAttribute('data-target');
-                    const increment = target / 200;
-                    
-                    const updateCounter = () => {
-                        const count = +counter.innerText;
-                        if (count < target) {
-                            counter.innerText = Math.ceil(count + increment);
-                            setTimeout(updateCounter, 10);
+                event.preventDefault();
+
+                // Check if auth service is available
+                if (typeof window.authService === 'undefined') {
+                    showError('Authentication service is not available. Please try again later.');
+                    console.error('[Index] Auth service is not defined');
+                    return;
+                }
+
+                try {
+                    // Wait for service to be ready
+                    if (!window.authService.isInitialized()) {
+                        await window.authServiceUtils.waitForAuthService();
+                    }
+
+                    const isValid = await window.authService.validateToken();
+                    if (isValid) {
+                        // Handle different auth-required actions
+                        const href = target.getAttribute('href');
+                        if (href && href.includes('login.html')) {
+                            // If already logged in and clicking login, go to dashboard
+                            window.location.href = '/public/dashboard/index.html';
                         } else {
-                            counter.innerText = target;
+                            // Follow the button's intended action
+                            window.location.href = href || '/public/dashboard/index.html';
                         }
-                    };
-                    
-                    updateCounter();
-                });
-            }
-        });
-
-        // Global error handling
-        window.onerror = function(msg, url, line) {
-            console.error('[Index] Error:', msg, '\nURL:', url, '\nLine:', line);
-            showError('An unexpected error occurred. Please try again later.');
-        };
-
-        window.addEventListener('load', async () => {
-            if (!window.authService || typeof window.authService.initialize !== 'function') {
-                console.error('[Index] Auth service is not available');
-                return;
-            }
-
-            try {
-                await window.authService.initialize();
-                console.log('[Index] Auth service initialized successfully');
-                
-                // Add click handlers to auth-required buttons
-                document.querySelectorAll('[data-requires-auth="true"]').forEach(button => {
-                    button.addEventListener('click', async (event) => {
-                        event.preventDefault();
-                        try {
-                            const isValid = await window.authService.validateToken();
-                            if (isValid) {
-                                window.location.href = '/public/dashboard/index.html';
-                            } else {
-                                window.location.href = '/public/auth/login.html';
-                            }
-                        } catch (error) {
-                            console.error('[Index] Auth validation failed:', error);
-                            showError('Unable to verify authentication. Please try again.');
+                    } else {
+                        // Store the intended destination
+                        if (target.getAttribute('href') !== '/public/auth/login.html') {
+                            sessionStorage.setItem('auth_redirect', target.getAttribute('href'));
                         }
-                    });
-                });
-            } catch (error) {
-                console.error('[Index] Auth initialization failed:', error);
-            }
+                        window.location.href = '/public/auth/login.html';
+                    }
+                } catch (error) {
+                    console.error('[Index] Auth validation failed:', error);
+                    showError('Unable to verify authentication. Please try again.');
+                }
+            });
         });
     </script>
 </body>
