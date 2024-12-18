@@ -84,200 +84,172 @@
             cursor: not-allowed;
         }
 
-        .error-message {
-            background-color: #fff3f3;
-            color: #dc3545;
-            padding: 0.75rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            border: 1px solid #dc3545;
-        }
-
-        .info-message {
-            background-color: #f3f9ff;
-            color: #004085;
-            padding: 0.75rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            border: 1px solid #b8daff;
-        }
-
-        .error-text {
-            color: #dc3545;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            display: none;
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
 
         .loading-spinner {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid #ffffff;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
             border-radius: 50%;
-            border-top-color: transparent;
             animation: spin 1s linear infinite;
-            margin-left: 0.5rem;
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .register-link {
+        .error-message {
+            background-color: #ff4444;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
             text-align: center;
-            margin-top: 1rem;
         }
 
-        .register-link a {
-            color: #4A90E2;
-            text-decoration: none;
+        .info-message {
+            background-color: #4CAF50;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            text-align: center;
         }
 
-        .register-link a:hover {
-            text-decoration: underline;
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
+    <div id="loadingOverlay" class="loading-container hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
     <div id="loginContainer">
         <h1>Login</h1>
-        
-        <!-- Error Messages -->
-        <div id="loginError" class="error-message" style="display: none;"></div>
-        <div id="loginInfo" class="info-message" style="display: none;"></div>
-        
-        <!-- Login Form -->
-        <form id="loginForm" style="display: none;">
+        <div id="messageContainer"></div>
+        <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required>
-                <div id="emailError" class="error-message" style="display: none;"></div>
             </div>
-            
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required minlength="6">
-                <div id="passwordError" class="error-message" style="display: none;"></div>
+                <input type="password" id="password" name="password" required>
             </div>
-            
             <button type="submit" id="loginButton">
-                <span class="loading-spinner" style="display: none;">Loading...</span>
                 <span class="button-text">Login</span>
+                <span class="button-spinner hidden"></span>
             </button>
-
-            <div class="register-link">
-                <a href="/auth/register.html">Don't have an account? Register here</a>
-            </div>
         </form>
     </div>
 
     <script>
         // Utility functions
         function showError(message, field = null) {
-            const errorElement = document.getElementById('loginError');
-            if (errorElement) {
-                errorElement.textContent = message;
-                errorElement.style.display = 'block';
-            }
+            const container = document.getElementById('messageContainer');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            
+            // Clear existing messages
+            container.innerHTML = '';
+            container.appendChild(errorDiv);
 
             if (field) {
-                const fieldError = document.getElementById(`${field}Error`);
-                if (fieldError) {
-                    fieldError.textContent = message;
-                    fieldError.style.display = 'block';
+                const inputField = document.getElementById(field);
+                if (inputField) {
+                    inputField.focus();
+                    inputField.classList.add('error');
                 }
             }
-
-            console.error('[Login]', message);
         }
 
         function showInfo(message) {
-            const infoElement = document.getElementById('loginInfo');
-            if (infoElement) {
-                infoElement.textContent = message;
-                infoElement.style.display = 'block';
-            }
-            console.log('[Login]', message);
+            const container = document.getElementById('messageContainer');
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'info-message';
+            infoDiv.textContent = message;
+            
+            container.innerHTML = '';
+            container.appendChild(infoDiv);
         }
 
         function clearMessages() {
-            const messages = ['loginError', 'loginInfo', 'emailError', 'passwordError'];
-            messages.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.style.display = 'none';
-                    element.textContent = '';
-                }
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = '';
+            
+            // Clear field errors
+            document.querySelectorAll('.error').forEach(field => {
+                field.classList.remove('error');
             });
         }
 
         function setLoading(isLoading) {
-            const button = document.getElementById('loginButton');
-            if (!button) return;
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loginButton = document.getElementById('loginButton');
+            const buttonText = loginButton.querySelector('.button-text');
+            const buttonSpinner = loginButton.querySelector('.button-spinner');
 
-            const spinner = button.querySelector('.loading-spinner');
-            const buttonText = button.querySelector('.button-text');
-            
-            button.disabled = isLoading;
-            if (spinner) spinner.style.display = isLoading ? 'inline-block' : 'none';
-            if (buttonText) buttonText.style.display = isLoading ? 'none' : 'inline-block';
-            
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => input.disabled = isLoading);
+            if (isLoading) {
+                loadingOverlay.classList.remove('hidden');
+                loginButton.disabled = true;
+                buttonText.classList.add('hidden');
+                buttonSpinner.classList.remove('hidden');
+            } else {
+                loadingOverlay.classList.add('hidden');
+                loginButton.disabled = false;
+                buttonText.classList.remove('hidden');
+                buttonSpinner.classList.add('hidden');
+            }
         }
 
         function validateForm() {
-            const email = document.getElementById('email');
-            const password = document.getElementById('password');
-            let isValid = true;
-
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            
             clearMessages();
 
-            if (!email || !password) {
-                showError('Form elements not found');
+            if (!email) {
+                showError('Email is required', 'email');
                 return false;
             }
 
-            if (!email.value) {
-                showError('Email is required', 'email');
-                isValid = false;
-            } else if (!email.validity.valid) {
-                showError('Please enter a valid email address', 'email');
-                isValid = false;
-            }
-
-            if (!password.value) {
+            if (!password) {
                 showError('Password is required', 'password');
-                isValid = false;
-            } else if (password.value.length < 6) {
-                showError('Password must be at least 6 characters', 'password');
-                isValid = false;
+                return false;
             }
 
-            return isValid;
+            return true;
         }
 
-        async function waitForAuthServiceWithTimeout(timeoutMs = 5000) {
-            console.log('[Login] Waiting for auth service...');
-            
+        async function waitForAuthService(timeoutMs = 5000) {
             if (!window.authServiceUtils) {
                 console.error('[Login] AuthServiceUtils not available');
                 return false;
             }
 
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs);
-            });
-
             try {
                 await Promise.race([
                     window.authServiceUtils.waitForAuthService(),
-                    timeoutPromise
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs)
+                    )
                 ]);
-                console.log('[Login] Auth service ready');
                 return true;
             } catch (error) {
                 console.error('[Login] Auth service wait failed:', error);
@@ -287,17 +259,21 @@
 
         async function handleLogin(event) {
             event.preventDefault();
-            console.log('[Login] Attempting login...');
             
+            if (!validateForm()) {
+                return;
+            }
+
+            if (!window.authService) {
+                showError('Authentication service is not available. Please refresh the page.');
+                return;
+            }
+
+            setLoading(true);
+            clearMessages();
+
             try {
-                if (!validateForm()) {
-                    return;
-                }
-
-                setLoading(true);
-                clearMessages();
-
-                const email = document.getElementById('email').value;
+                const email = document.getElementById('email').value.trim();
                 const password = document.getElementById('password').value;
 
                 await window.authService.login(email, password);
@@ -305,9 +281,8 @@
                 
                 // Check for stored redirect or go to dashboard
                 const redirectUrl = sessionStorage.getItem('auth_redirect') || '/public/dashboard/index.html';
-                sessionStorage.removeItem('auth_redirect'); // Clear stored redirect
+                sessionStorage.removeItem('auth_redirect');
                 
-                // Small delay to show success message
                 setTimeout(() => {
                     window.location.href = redirectUrl;
                 }, 1000);
@@ -321,58 +296,52 @@
 
         async function initializeLoginPage() {
             console.log('[Login] Starting initialization...');
-            setLoading(true);
             
-            try {
-                // Hide form until we're ready
-                const form = document.getElementById('loginForm');
-                if (form) form.style.display = 'none';
+            // Show loading overlay immediately
+            setLoading(true);
 
-                // Wait for auth service with timeout
-                const isReady = await waitForAuthServiceWithTimeout(10000); // Increased timeout to 10s
+            try {
+                // Check for AuthService availability
+                if (!window.authService) {
+                    throw new Error('Authentication service is not available');
+                }
+
+                // Wait for auth service to be ready
+                const isReady = await waitForAuthService(10000);
                 if (!isReady) {
-                    throw new Error('Auth service not available. Please refresh the page.');
+                    throw new Error('Authentication service failed to initialize');
                 }
 
                 // Initialize auth service if needed
-                if (typeof window.authService !== 'undefined' && !window.authService.isInitialized()) {
+                if (!window.authService.isInitialized()) {
                     await window.authService.initialize();
                 }
 
                 // Check if already authenticated
                 const isAuthenticated = await window.authService.validateToken();
-                console.log('[Login] Auth status:', isAuthenticated);
-
                 if (isAuthenticated) {
-                    showInfo('Already authenticated, redirecting...');
                     const redirectUrl = sessionStorage.getItem('auth_redirect') || '/public/dashboard/index.html';
                     sessionStorage.removeItem('auth_redirect');
-                    setTimeout(() => {
-                        window.location.href = redirectUrl;
-                    }, 1000);
+                    window.location.href = redirectUrl;
                     return;
                 }
 
-                // Setup login form
-                if (form) {
-                    form.style.display = 'block';
-                    form.addEventListener('submit', handleLogin);
-                }
+                // Setup form event listener
+                const form = document.getElementById('loginForm');
+                form.addEventListener('submit', handleLogin);
 
+                // Show the form
+                setLoading(false);
                 console.log('[Login] Initialization complete');
             } catch (error) {
                 console.error('[Login] Initialization failed:', error);
-                showError('Failed to initialize login page: ' + (error.message || 'Unknown error') + '. Please refresh and try again.');
-            } finally {
+                showError(error.message || 'Failed to initialize login page. Please refresh and try again.');
                 setLoading(false);
             }
         }
 
-        // Initialize on page load with longer delay
-        window.addEventListener('load', () => {
-            // Give authService.js more time to load and initialize
-            setTimeout(initializeLoginPage, 500);
-        });
+        // Initialize as soon as DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeLoginPage);
     </script>
 </body>
 </html>
