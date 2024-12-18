@@ -3,93 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - EON Protocol</title>
-    <script src="/public/js/authService.js" defer></script>
-    <script defer>
-        // Handle login form submission
-        async function handleLogin(event) {
-            event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorElement = document.getElementById('loginError');
-
-            try {
-                // Wait for auth service
-                const serviceReady = await window.waitForAuthService();
-                if (!serviceReady) {
-                    throw new Error('Authentication service not available');
-                }
-
-                // Verify required methods exist
-                if (!window.checkAuthMethod('login')) {
-                    throw new Error('Login method not available');
-                }
-
-                console.log('[Auth] Attempting login...');
-                await window.authService.login(email, password);
-                console.log('[Auth] Login successful, redirecting to dashboard...');
-                window.location.href = '/public/dashboard/index.html';
-            } catch (error) {
-                console.error('[Auth] Login error:', error);
-                errorElement.textContent = error.message || 'An error occurred during login';
-                errorElement.style.display = 'block';
-            }
-        }
-
-        // Check if user is already authenticated
-        async function checkAuthStatus() {
-            try {
-                console.log('[Auth] Checking auth status...');
-                const serviceReady = await window.waitForAuthService();
-                if (!serviceReady) {
-                    throw new Error('Authentication service not available');
-                }
-
-                if (!window.checkAuthMethod('validateToken')) {
-                    throw new Error('Token validation not available');
-                }
-
-                const isAuthenticated = await window.authService.validateToken();
-                console.log('[Auth] Auth status:', isAuthenticated);
-                
-                if (isAuthenticated) {
-                    console.log('[Auth] User is authenticated, redirecting to dashboard...');
-                    window.location.href = '/public/dashboard/index.html';
-                }
-            } catch (error) {
-                console.error('[Auth] Error checking auth status:', error);
-            }
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Auth] Login page loading...');
-            const loginForm = document.getElementById('loginForm');
-            const errorElement = document.getElementById('loginError');
-            
-            try {
-                // Wait for auth service to be available
-                const serviceReady = await window.waitForAuthService();
-                if (!serviceReady) {
-                    throw new Error('Authentication service not available');
-                }
-
-                // Check if user is already authenticated
-                await checkAuthStatus();
-                
-                // Add form event listener
-                if (loginForm) {
-                    loginForm.addEventListener('submit', handleLogin);
-                }
-            } catch (error) {
-                console.error('[Auth] Login page initialization error:', error);
-                if (errorElement) {
-                    errorElement.textContent = 'Failed to initialize authentication service';
-                    errorElement.style.display = 'block';
-                }
-            }
-        });
-    </script>
+    <title>Login</title>
+    <!-- Load AuthService first -->
+    <script src="/public/js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -103,7 +19,7 @@
             min-height: 100vh;
         }
 
-        #login-container {
+        #loginContainer {
             display: block;  
             background-color: #2a2a2a;
             padding: 2rem;
@@ -178,9 +94,9 @@
     </style>
 </head>
 <body>
-    <div id="login-container">
-        <h1>EON Protocol</h1>
-        <div id="loginError"></div>
+    <div id="loginContainer">
+        <h1>Login</h1>
+        <div id="loginError" style="display: none; color: red;"></div>
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email:</label>
@@ -196,5 +112,83 @@
             <a href="register.html">Don't have an account? Register</a>
         </div>
     </div>
+
+    <script>
+        function showError(message) {
+            const errorElement = document.getElementById('loginError');
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
+        }
+
+        async function initializeLoginPage() {
+            console.log('[Login] Starting initialization...');
+            
+            try {
+                // Check for required functions
+                if (typeof window.waitForAuthService !== 'function') {
+                    throw new Error('Authentication service not available');
+                }
+
+                const serviceReady = await window.waitForAuthService();
+                if (!serviceReady) {
+                    throw new Error('Authentication service failed to initialize');
+                }
+
+                if (!window.checkAuthMethod('validateToken')) {
+                    throw new Error('Token validation not available');
+                }
+
+                // Check if already authenticated
+                const isAuthenticated = await window.authService.validateToken();
+                if (isAuthenticated) {
+                    console.log('[Login] User already authenticated, redirecting...');
+                    window.location.href = '/public/dashboard/index.html';
+                    return;
+                }
+
+                // Setup login form
+                const loginForm = document.getElementById('loginForm');
+                if (!loginForm) {
+                    throw new Error('Login form not found');
+                }
+
+                loginForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const errorElement = document.getElementById('loginError');
+                    errorElement.style.display = 'none';
+
+                    try {
+                        if (!window.checkAuthMethod('login')) {
+                            throw new Error('Login method not available');
+                        }
+
+                        const email = document.getElementById('email').value;
+                        const password = document.getElementById('password').value;
+
+                        await window.authService.login(email, password);
+                        console.log('[Login] Login successful, redirecting...');
+                        window.location.href = '/public/dashboard/index.html';
+                    } catch (error) {
+                        console.error('[Login] Login failed:', error);
+                        showError(`Login failed: ${error.message || 'Unknown error occurred'}`);
+                    }
+                });
+
+                console.log('[Login] Page initialized successfully');
+            } catch (error) {
+                console.error('[Login] Initialization failed:', error);
+                showError(`Initialization failed: ${error.message || 'Unknown error occurred'}`);
+            }
+        }
+
+        // Ensure initialization runs
+        if (document.readyState === 'complete') {
+            initializeLoginPage();
+        } else {
+            document.addEventListener('DOMContentLoaded', initializeLoginPage);
+        }
+    </script>
 </body>
 </html>
