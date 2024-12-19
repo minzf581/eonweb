@@ -1,28 +1,13 @@
 // AuthService implementation
 class AuthService {
+    _initialized = false;
+    _initializing = false;
+    _token = localStorage.getItem('auth_token');
+    _tokenExpiry = localStorage.getItem('auth_token_expiry');
+
     constructor() {
         console.log('[AuthService] Creating new instance');
         
-        this._initialized = false;
-        this._initializing = false;
-        this._token = localStorage.getItem('auth_token');
-        this._tokenExpiry = localStorage.getItem('auth_token_expiry');
-
-        // Bind all methods to this instance
-        this.logInfo = this.logInfo.bind(this);
-        this.logError = this.logError.bind(this);
-        this.isInitialized = this.isInitialized.bind(this);
-        this.getToken = this.getToken.bind(this);
-        this.initialize = this.initialize.bind(this);
-        this.validateToken = this.validateToken.bind(this);
-        this.clearAuth = this.clearAuth.bind(this);
-        this.logout = this.logout.bind(this);
-        this.login = this.login.bind(this);
-        this.register = this.register.bind(this);
-        this.setToken = this.setToken.bind(this);
-        this.getUser = this.getUser.bind(this);
-        this.isAdmin = this.isAdmin.bind(this);
-
         // Log the instance structure
         console.log('[AuthService] Instance structure:', {
             _initialized: this._initialized,
@@ -49,15 +34,15 @@ class AuthService {
         });
     }
 
-    logInfo(message) {
+    logInfo = (message) => {
         console.log(`[AuthService ${new Date().toISOString()}] ${message}`);
     }
 
-    logError(message, error) {
+    logError = (message, error) => {
         console.error(`[AuthService ${new Date().toISOString()}] ${message}:`, error);
     }
 
-    isInitialized() {
+    isInitialized = () => {
         console.log('[AuthService] Checking initialization status:', {
             _initialized: this._initialized,
             hasToken: !!this._token,
@@ -66,7 +51,7 @@ class AuthService {
         return this._initialized;
     }
 
-    getToken() {
+    getToken = () => {
         console.log('[AuthService] getToken called:', {
             _initialized: this._initialized,
             hasToken: !!this._token,
@@ -84,7 +69,7 @@ class AuthService {
         }
     }
 
-    async initialize() {
+    initialize = async () => {
         console.log('[AuthService] Initialize called:', {
             _initialized: this._initialized,
             _initializing: this._initializing
@@ -132,7 +117,7 @@ class AuthService {
         }
     }
 
-    async validateToken() {
+    validateToken = async () => {
         console.log('[AuthService] validateToken called:', {
             hasToken: !!this._token
         });
@@ -160,7 +145,7 @@ class AuthService {
         }
     }
 
-    clearAuth() {
+    clearAuth = () => {
         console.log('[AuthService] clearAuth called');
         this._token = null;
         this._tokenExpiry = null;
@@ -169,7 +154,7 @@ class AuthService {
         this.logInfo('Auth cleared');
     }
 
-    async logout() {
+    logout = async () => {
         console.log('[AuthService] logout called');
         try {
             await fetch('/api/auth/logout', {
@@ -186,7 +171,7 @@ class AuthService {
         }
     }
 
-    async login(email, password) {
+    login = async (email, password) => {
         console.log('[AuthService] login called');
         try {
             const response = await fetch('/api/auth/login', {
@@ -210,7 +195,7 @@ class AuthService {
         }
     }
 
-    async register(email, password, referralCode = '') {
+    register = async (email, password, referralCode = '') => {
         console.log('[AuthService] register called');
         try {
             const response = await fetch('/api/auth/register', {
@@ -234,7 +219,7 @@ class AuthService {
         }
     }
 
-    setToken(token) {
+    setToken = (token) => {
         console.log('[AuthService] setToken called');
         this._token = token;
         const expiry = new Date();
@@ -244,7 +229,7 @@ class AuthService {
         localStorage.setItem('auth_token_expiry', this._tokenExpiry);
     }
 
-    async getUser() {
+    getUser = async () => {
         console.log('[AuthService] getUser called:', {
             hasToken: !!this._token
         });
@@ -269,7 +254,7 @@ class AuthService {
         }
     }
 
-    async isAdmin() {
+    isAdmin = async () => {
         console.log('[AuthService] isAdmin called');
         const user = await this.getUser();
         return user && user.isAdmin;
