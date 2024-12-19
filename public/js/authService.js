@@ -1,4 +1,4 @@
-// AuthService implementation with improved initialization and method exposure
+// AuthService implementation
 class AuthService {
     constructor() {
         // Initialize private fields
@@ -9,6 +9,9 @@ class AuthService {
         
         this.logInfo('Auth service instance created');
         this.logInfo('Auth service setup complete');
+
+        // Initialize immediately
+        this.initialize();
     }
 
     logInfo = (message) => {
@@ -195,16 +198,4 @@ class AuthService {
 }
 
 // Create and expose a singleton instance
-const createAuthService = async () => {
-    const authService = new AuthService();
-    await authService.initialize();
-    return authService;
-};
-
-// Initialize the auth service
-createAuthService().then(service => {
-    window.authService = service;
-    service.logInfo('Service initialized successfully');
-}).catch(error => {
-    console.error('Failed to initialize AuthService:', error);
-});
+window.authService = new AuthService();
