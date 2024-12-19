@@ -346,7 +346,7 @@
             const startTime = Date.now();
             
             while (Date.now() - startTime < timeout) {
-                if (window.authService && typeof window.authService.getToken === 'function') {
+                if (window.authService && window.authService.isInitialized()) {
                     console.log('AuthService is ready');
                     return true;
                 }
