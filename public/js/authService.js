@@ -203,6 +203,11 @@ class AuthService {
 
             const data = await response.json();
             this.setToken(data.token);
+            
+            // Check if user is admin and redirect accordingly
+            const isAdmin = await this.isAdmin();
+            window.location.href = isAdmin ? '/admin/dashboard' : '/dashboard';
+            
             return true;
         } catch (error) {
             this.logError('Login failed', error);
