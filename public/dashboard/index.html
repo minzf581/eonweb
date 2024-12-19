@@ -342,203 +342,166 @@
     <!-- Scripts -->
     <script>
         // Wait for AuthService to be fully loaded and initialized
-        async function waitForAuthService(timeout = 10000) {
-            const startTime = Date.now();
-            
-            while (Date.now() - startTime < timeout) {
+        async function waitForAuthService() {
+            let retries = 0;
+            const maxRetries = 10;
+            const retryDelay = 100;
+
+            while (retries < maxRetries) {
                 if (window.authService && window.authService.isInitialized()) {
                     console.log('AuthService is ready');
                     return true;
                 }
-                await new Promise(resolve => setTimeout(resolve, 100));
+                console.log('Waiting for AuthService to initialize...');
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                retries++;
             }
-            
             throw new Error('AuthService initialization timeout');
         }
 
-        // Load user data with retries
-        async function loadUserData(retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const user = await window.authService.getUser();
-                    if (user) {
-                        document.getElementById('userName').textContent = user.email || 'Unknown User';
-                        return;
+        // Load user stats with retry logic
+        async function loadStats(attempt = 1, maxAttempts = 3) {
+            try {
+                await waitForAuthService();
+                const token = window.authService.getToken();
+                if (!token) throw new Error('No token available');
+
+                const response = await fetch('/api/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
-                } catch (error) {
-                    console.error(`Error loading user data (attempt ${i + 1}/${retries}):`, error);
-                    if (i === retries - 1) {
-                        document.getElementById('userName').textContent = 'Error loading user data';
-                        throw error;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load stats: ${response.status}`);
                 }
+
+                const data = await response.json();
+                
+                // Update stats display
+                document.getElementById('pointsStats').textContent = data.points || 0;
+                document.getElementById('completedTasksStats').textContent = data.completedTasks || 0;
+                document.getElementById('activeTasksStats').textContent = data.activeTasks || 0;
+            } catch (error) {
+                console.error(`Error loading stats (attempt ${attempt}/${maxAttempts}):`, error);
+                if (attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return loadStats(attempt + 1, maxAttempts);
+                }
+                throw error;
             }
         }
 
-        // Load stats with retries
-        async function loadStats(retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const token = window.authService.getToken();
-                    const response = await fetch('/api/stats', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to load stats');
-                    }
+        // Load tasks with retry logic
+        async function loadTasks(attempt = 1, maxAttempts = 3) {
+            try {
+                await waitForAuthService();
+                const token = window.authService.getToken();
+                if (!token) throw new Error('No token available');
 
-                    const stats = await response.json();
-                    
-                    // Update stats display
-                    document.getElementById('pointsStats').textContent = stats.points || '0';
-                    document.getElementById('completedTasksStats').textContent = stats.completedTasks || '0';
-                    document.getElementById('activeTasksStats').textContent = stats.activeTasks || '0';
+                const response = await fetch('/api/tasks', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load tasks: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const tasksContainer = document.getElementById('tasksContainer');
+                
+                if (data.length === 0) {
+                    tasksContainer.innerHTML = '<p>No available tasks</p>';
                     return;
-                } catch (error) {
-                    console.error(`Error loading stats (attempt ${i + 1}/${retries}):`, error);
-                    if (i === retries - 1) {
-                        document.getElementById('pointsStats').textContent = 'Error';
-                        document.getElementById('completedTasksStats').textContent = 'Error';
-                        document.getElementById('activeTasksStats').textContent = 'Error';
-                        throw error;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
-            }
-        }
 
-        // Load tasks with retries
-        async function loadTasks(retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const token = window.authService.getToken();
-                    const response = await fetch('/api/tasks', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to load tasks');
-                    }
-
-                    const tasks = await response.json();
-                    const tasksContainer = document.getElementById('tasksContainer');
-                    
-                    if (tasks.length === 0) {
-                        tasksContainer.innerHTML = '<p>No available tasks</p>';
-                        return;
-                    }
-
-                    tasksContainer.innerHTML = tasks.map(task => `
-                        <div class="task-card ${task.status === 'completed' ? 'completed' : ''}">
-                            <div class="task-header">
-                                <h3>${task.title}</h3>
-                                <span class="task-reward">${task.reward} Points</span>
-                            </div>
-                            <p class="task-description">${task.description}</p>
-                            <div class="task-footer">
-                                <span class="task-status">${task.status === 'completed' ? 'Completed' : 'Not Started'}</span>
-                                ${task.status !== 'completed' ? 
-                                    `<button onclick="startTask('${task._id}')" class="task-action start-task">
-                                        Start Task
-                                    </button>` : 
-                                    ''
-                                }
-                            </div>
+                tasksContainer.innerHTML = data.map(task => `
+                    <div class="task-card ${task.status === 'completed' ? 'completed' : ''}">
+                        <div class="task-header">
+                            <h3>${task.title}</h3>
+                            <span class="task-reward">${task.reward} Points</span>
                         </div>
-                    `).join('');
-                    return;
-                } catch (error) {
-                    console.error(`Error loading tasks (attempt ${i + 1}/${retries}):`, error);
-                    if (i === retries - 1) {
-                        document.getElementById('tasksContainer').innerHTML = '<p>Error loading tasks</p>';
-                        throw error;
-                    }
+                        <p class="task-description">${task.description}</p>
+                        <div class="task-footer">
+                            <span class="task-status">${task.status === 'completed' ? 'Completed' : 'Not Started'}</span>
+                            ${task.status !== 'completed' ? 
+                                `<button onclick="startTask('${task._id}')" class="task-action start-task">
+                                    Start Task
+                                </button>` : 
+                                ''
+                            }
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error(`Error loading tasks (attempt ${attempt}/${maxAttempts}):`, error);
+                if (attempt < maxAttempts) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
+                    return loadTasks(attempt + 1, maxAttempts);
                 }
+                throw error;
             }
         }
 
-        // Load referral data with retries
-        async function loadReferralData(retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const token = window.authService.getToken();
-                    const response = await fetch('/api/referral', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
+        // Load referral data with retry logic
+        async function loadReferralData(attempt = 1, maxAttempts = 3) {
+            try {
+                await waitForAuthService();
+                const token = window.authService.getToken();
+                if (!token) throw new Error('No token available');
 
-                    if (!response.ok) {
-                        throw new Error('Failed to load referral data');
+                const response = await fetch('/api/referral', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
+                });
 
-                    const data = await response.json();
-                    
-                    document.getElementById('referralCode').textContent = data.referralCode || 'N/A';
-                    document.getElementById('referralCount').textContent = data.referralCount || '0';
-                    document.getElementById('referralPoints').textContent = data.referralPoints || '0';
-                    return;
-                } catch (error) {
-                    console.error(`Error loading referral data (attempt ${i + 1}/${retries}):`, error);
-                    if (i === retries - 1) {
-                        document.getElementById('referralCode').textContent = 'Error';
-                        document.getElementById('referralCount').textContent = 'Error';
-                        document.getElementById('referralPoints').textContent = 'Error';
-                        throw error;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                if (!response.ok) {
+                    throw new Error(`Failed to load referral data: ${response.status}`);
                 }
+
+                const data = await response.json();
+                
+                document.getElementById('referralCode').textContent = data.referralCode || 'N/A';
+                document.getElementById('referralCount').textContent = data.referralCount || 0;
+                document.getElementById('referralPoints').textContent = data.referralPoints || 0;
+            } catch (error) {
+                console.error(`Error loading referral data (attempt ${attempt}/${maxAttempts}):`, error);
+                if (attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return loadReferralData(attempt + 1, maxAttempts);
+                }
+                throw error;
             }
         }
 
-        // Initialize dashboard with retries
-        async function initializeDashboard(retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    // Wait for AuthService to initialize
-                    await waitForAuthService();
-                    
-                    // Validate token
-                    const isValid = await window.authService.validateToken();
-                    if (!isValid) {
-                        window.location.href = '/auth/login';
-                        return;
-                    }
+        // Initialize dashboard with retry logic
+        async function initializeDashboard(attempt = 1, maxAttempts = 3) {
+            try {
+                // Wait for AuthService to be ready
+                await waitForAuthService();
 
-                    // Load all data
-                    await Promise.all([
-                        loadUserData(),
-                        loadStats(),
-                        loadTasks(),
-                        loadReferralData()
-                    ]);
-                    
-                    console.log('Dashboard initialized successfully');
-                    return;
-                } catch (error) {
-                    console.error(`Dashboard initialization failed (attempt ${i + 1}/${retries}):`, error);
-                    if (i === retries - 1) {
-                        // If auth error, redirect to login page
-                        if (error.message.includes('auth') || error.message.includes('token')) {
-                            window.location.href = '/auth/login';
-                        }
-                        throw error;
-                    }
+                // Load all data concurrently
+                await Promise.all([
+                    loadStats(),
+                    loadTasks(),
+                    loadReferralData()
+                ]);
+
+            } catch (error) {
+                console.error(`Dashboard initialization failed (attempt ${attempt}/${maxAttempts}):`, error);
+                if (attempt < maxAttempts) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
+                    return initializeDashboard(attempt + 1, maxAttempts);
                 }
+                throw error;
             }
         }
 
-        // Wait for DOM to load before initializing
+        // Start initialization when the page loads
         document.addEventListener('DOMContentLoaded', () => {
-            // Start initialization
             initializeDashboard().catch(error => {
                 console.error('Failed to initialize dashboard:', error);
             });
