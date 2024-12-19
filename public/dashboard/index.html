@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     
-    <!-- 引入 AuthService -->
+    <!-- Load AuthService first -->
     <script src="/js/authService.js"></script>
     
     <!-- Styles -->
@@ -284,22 +284,22 @@
                     </div>
                     <span class="user-name" id="userName">Loading...</span>
                 </div>
-                <button onclick="window.authService.logout()" class="task-action">登出</button>
+                <button onclick="window.authService.logout()" class="task-action">Logout</button>
             </div>
 
             <main>
                 <!-- Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3>总积分</h3>
+                        <h3>Total Points</h3>
                         <div class="stat-value" id="pointsStats">0</div>
                     </div>
                     <div class="stat-card">
-                        <h3>已完成任务</h3>
+                        <h3>Completed Tasks</h3>
                         <div class="stat-value" id="completedTasksStats">0</div>
                     </div>
                     <div class="stat-card">
-                        <h3>进行中任务</h3>
+                        <h3>Active Tasks</h3>
                         <div class="stat-value" id="activeTasksStats">0</div>
                     </div>
                 </div>
@@ -307,30 +307,30 @@
                 <!-- Tasks Section -->
                 <div class="tasks-section">
                     <div class="section-header">
-                        <h2 class="section-title">可用任务</h2>
+                        <h2 class="section-title">Available Tasks</h2>
                     </div>
                     <div id="tasksContainer">
-                        <p>加载任务中...</p>
+                        <p>Loading tasks...</p>
                     </div>
                 </div>
 
                 <!-- Referral Section -->
                 <div class="referral-section">
                     <div class="section-header">
-                        <h2 class="section-title">推荐计划</h2>
+                        <h2 class="section-title">Referral Program</h2>
                     </div>
-                    <p>邀请好友加入，双方都可以获得额外积分奖励！</p>
+                    <p>Invite friends to join and both of you will earn bonus points!</p>
                     <div class="referral-code">
-                        <span class="code-display" id="referralCode">加载中...</span>
-                        <button onclick="copyReferralCode()" class="copy-button">复制</button>
+                        <span class="code-display" id="referralCode">Loading...</span>
+                        <button onclick="copyReferralCode()" class="copy-button">Copy</button>
                     </div>
                     <div class="referral-stats">
                         <div class="stat-item">
-                            <h4>已邀请用户</h4>
+                            <h4>Referred Users</h4>
                             <p id="referralCount">0</p>
                         </div>
                         <div class="stat-item">
-                            <h4>获得积分</h4>
+                            <h4>Earned Points</h4>
                             <p id="referralPoints">0</p>
                         </div>
                     </div>
@@ -341,22 +341,24 @@
 
     <!-- Scripts -->
     <script>
-        // 等待 AuthService
-        async function waitForAuthService(timeout = 5000) {
+        // Wait for AuthService to be fully loaded and initialized
+        async function waitForAuthService(timeout = 10000) {
             const startTime = Date.now();
             
             while (Date.now() - startTime < timeout) {
-                if (window.authService && window.authService.isInitialized()) {
-                    console.log('AuthService is ready');
+                try {
+                    const token = window.authService.getToken();
+                    console.log('AuthService is ready, token:', !!token);
                     return true;
+                } catch (error) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
-                await new Promise(resolve => setTimeout(resolve, 100));
             }
             
             throw new Error('AuthService initialization timeout');
         }
 
-        // 加载用户数据
+        // Load user data
         async function loadUserData() {
             try {
                 const user = await window.authService.getUser();
@@ -369,7 +371,7 @@
             }
         }
 
-        // 加载统计数据
+        // Load stats
         async function loadStats() {
             try {
                 const response = await fetch('/api/stats', {
@@ -384,7 +386,7 @@
 
                 const stats = await response.json();
                 
-                // 更新统计数据显示
+                // Update stats display
                 document.getElementById('pointsStats').textContent = stats.points || '0';
                 document.getElementById('completedTasksStats').textContent = stats.completedTasks || '0';
                 document.getElementById('activeTasksStats').textContent = stats.activeTasks || '0';
@@ -396,7 +398,7 @@
             }
         }
 
-        // 加载任务数据
+        // Load tasks
         async function loadTasks() {
             try {
                 const response = await fetch('/api/tasks', {
@@ -413,7 +415,7 @@
                 const tasksContainer = document.getElementById('tasksContainer');
                 
                 if (tasks.length === 0) {
-                    tasksContainer.innerHTML = '<p>暂无可用任务</p>';
+                    tasksContainer.innerHTML = '<p>No available tasks</p>';
                     return;
                 }
 
@@ -421,14 +423,14 @@
                     <div class="task-card ${task.status === 'completed' ? 'completed' : ''}">
                         <div class="task-header">
                             <h3>${task.title}</h3>
-                            <span class="task-reward">${task.reward} 积分</span>
+                            <span class="task-reward">${task.reward} Points</span>
                         </div>
                         <p class="task-description">${task.description}</p>
                         <div class="task-footer">
-                            <span class="task-status">${task.status === 'completed' ? '已完成' : '未开始'}</span>
+                            <span class="task-status">${task.status === 'completed' ? 'Completed' : 'Not Started'}</span>
                             ${task.status !== 'completed' ? 
                                 `<button onclick="startTask('${task._id}')" class="task-action start-task">
-                                    开始任务
+                                    Start Task
                                 </button>` : 
                                 ''
                             }
@@ -441,7 +443,7 @@
             }
         }
 
-        // 开始任务
+        // Start task
         async function startTask(taskId) {
             try {
                 const response = await fetch(`/api/tasks/${taskId}/start`, {
@@ -455,9 +457,9 @@
                     throw new Error('Failed to start task');
                 }
 
-                // 重新加载任务列表
+                // Reload tasks list
                 await loadTasks();
-                // 重新加载统计数据
+                // Reload stats
                 await loadStats();
             } catch (error) {
                 console.error('Error starting task:', error);
@@ -465,7 +467,7 @@
             }
         }
 
-        // 加载推荐数据
+        // Load referral data
         async function loadReferralData() {
             try {
                 const response = await fetch('/api/referral', {
@@ -491,47 +493,47 @@
             }
         }
 
-        // 复制推荐码
+        // Copy referral code
         function copyReferralCode() {
             const code = document.getElementById('referralCode').textContent;
             navigator.clipboard.writeText(code).then(() => {
-                alert('推荐码已复制到剪贴板');
+                alert('Referral code copied to clipboard');
             }).catch(err => {
                 console.error('Failed to copy:', err);
-                alert('复制失败');
+                alert('Failed to copy');
             });
         }
 
-        // Dashboard 初始化
+        // Initialize dashboard
         async function initializeDashboard() {
             try {
-                // 等待 AuthService 初始化
+                // Wait for AuthService to initialize
                 await waitForAuthService();
                 
-                // 验证 token
+                // Validate token
                 const isValid = await window.authService.validateToken();
                 if (!isValid) {
                     window.location.href = '/auth/login';
                     return;
                 }
 
-                // 加载所有数据
+                // Load all data
                 await loadUserData();
                 await loadStats();
                 await loadTasks();
                 await loadReferralData();
             } catch (error) {
                 console.error('Dashboard initialization failed:', error);
-                // 如果是认证错误，重定向到登录页面
+                // If auth error, redirect to login page
                 if (error.message.includes('auth') || error.message.includes('token')) {
                     window.location.href = '/auth/login';
                 }
             }
         }
 
-        // 等待 DOM 加载完成后再初始化
+        // Wait for DOM to load before initializing
         document.addEventListener('DOMContentLoaded', () => {
-            // 启动初始化
+            // Start initialization
             initializeDashboard().catch(error => {
                 console.error('Failed to initialize dashboard:', error);
             });
