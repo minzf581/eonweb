@@ -182,7 +182,7 @@ class AuthService {
             this.logError('Logout failed', error);
         } finally {
             this.clearAuth();
-            window.location.href = '/login';
+            window.location.href = '/';  // 重定向到首页
         }
     }
 
