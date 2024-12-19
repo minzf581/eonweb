@@ -941,6 +941,165 @@ footer p {
                 width: 100%;
             }
         }
+
+        /* Core Strengths Section */
+        .core-strengths {
+            padding: 6rem 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2c3e50 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .core-strengths::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(77, 171, 247, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 50%, rgba(52, 152, 219, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .core-strengths-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .core-strengths h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-color);
+            font-weight: 700;
+        }
+
+        .core-strengths h2::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: var(--primary-color);
+            margin: 1rem auto;
+            border-radius: 2px;
+        }
+
+        .strengths-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .strength-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .strength-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(77, 171, 247, 0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .strength-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .strength-item:hover::before {
+            opacity: 1;
+        }
+
+        .strength-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #357ABD 100%);
+            border-radius: 50%;
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .strength-item:hover .strength-icon {
+            transform: scale(1.1);
+        }
+
+        .strength-icon i {
+            font-size: 2rem;
+            color: white;
+            transition: transform 0.3s;
+        }
+
+        .strength-item:hover .strength-icon i {
+            transform: scale(1.1);
+        }
+
+        .strength-item h3 {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .strength-item p {
+            color: var(--secondary-color);
+            line-height: 1.6;
+            font-size: 1rem;
+            position: relative;
+            margin: 0;
+            transition: color 0.3s;
+        }
+
+        .strength-item:hover p {
+            color: var(--text-color);
+        }
+
+        @media (max-width: 968px) {
+            .strengths-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 576px) {
+            .strengths-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .core-strengths {
+                padding: 4rem 0;
+            }
+
+            .core-strengths h2 {
+                font-size: 2rem;
+            }
+
+            .strength-item {
+                padding: 2rem 1.5rem;
+            }
+        }
     </style>
     <script src="js/authService.js"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
@@ -1013,6 +1172,35 @@ footer p {
     </div>
 </section>
 
+    <!-- Core Strengths Section -->
+    <section class="core-strengths">
+        <div class="core-strengths-container">
+            <h2>Our Core Strengths</h2>
+            <div class="strengths-grid">
+                <div class="strength-item">
+                    <div class="strength-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Security First</h3>
+                    <p>Enterprise-grade encryption and secure data handling ensure your information remains protected at all times.</p>
+                </div>
+                <div class="strength-item">
+                    <div class="strength-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>High Performance</h3>
+                    <p>Optimized architecture delivers lightning-fast processing and real-time data collaboration capabilities.</p>
+                </div>
+                <div class="strength-item">
+                    <div class="strength-icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h3>Scalable Solution</h3>
+                    <p>Built to grow with your needs, our platform seamlessly scales from startups to enterprise-level operations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- About Section -->
     <section id="about" class="section">
@@ -1153,7 +1341,7 @@ footer p {
       </div>
     </div>
   </div>
-{{ ... }}
+
     <!-- Footer -->
 <!-- 更新社交媒体链接部分 -->
 <footer>
