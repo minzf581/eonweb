@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <script src="/js/authService.js"></script>
+    <link rel="stylesheet" href="/public/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Styles -->
     <style>
         /* Reset and Base Styles */
         * {
@@ -402,9 +404,10 @@
 </head>
 <body>
     <!-- Loading and Error containers -->
-    <div id="loading-indicator">加载中...</div>
-    <div id="error-message"></div>
+    <div id="loading-indicator" class="loading-indicator">加载中...</div>
+    <div id="error-message" class="error-message"></div>
 
+    <!-- Main dashboard content -->
     <div class="dashboard-layout">
         <!-- Sidebar -->
         <nav class="sidebar">
@@ -527,26 +530,53 @@
         </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="/public/js/authService.js"></script>
     <script>
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[Dashboard] DOM Content Loaded');
-            
-            // Initialize dashboard after a short delay to ensure all elements are ready
-            setTimeout(initializeDashboard, 100);
-        });
+        // 等待 AuthService 初始化完成
+        async function waitForAuthService(maxAttempts = 20, interval = 100) {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const checkInterval = setInterval(() => {
+                    if (window.authService && window.authService.isInitialized()) {
+                        console.log('[Dashboard] Auth service is ready');
+                        clearInterval(checkInterval);
+                        resolve(true);
+                        return;
+                    }
+                    attempts++;
+                    if (attempts >= maxAttempts) {
+                        clearInterval(checkInterval);
+                        reject(new Error('Auth service wait timeout'));
+                    }
+                }, interval);
+            });
+        }
 
         // Utility functions
+        function showLoading(show = true) {
+            const loadingDiv = document.getElementById('loading-indicator');
+            if (!loadingDiv) {
+                console.error('[Dashboard] Loading indicator not found, elements:', {
+                    loading: document.getElementById('loading-indicator'),
+                    error: document.getElementById('error-message')
+                });
+                return;
+            }
+            console.log('[Dashboard] Setting loading state:', show);
+            loadingDiv.style.display = show ? 'block' : 'none';
+        }
+
         function showError(message, retryCallback = null) {
-            console.log('[Dashboard] Showing error:', message);
             const errorDiv = document.getElementById('error-message');
             if (!errorDiv) {
                 console.error('[Dashboard] Error element not found');
                 return;
             }
+            console.log('[Dashboard] Showing error:', message);
             
             const content = retryCallback ? 
-                `${message} <button onclick="retryInitialization()">重试</button>` : 
+                `${message} <button onclick="window.retryInitialization()">重试</button>` : 
                 message;
             
             errorDiv.innerHTML = content;
@@ -560,359 +590,59 @@
             }
         }
 
-        function showLoading(show = true) {
-            console.log('[Dashboard] Setting loading state:', show);
-            const loadingDiv = document.getElementById('loading-indicator');
-            if (!loadingDiv) {
-                console.error('[Dashboard] Loading indicator not found');
-                return;
-            }
-            loadingDiv.style.display = show ? 'block' : 'none';
-        }
-
-        async function waitForAuthService(maxWaitTime = 10000) {
-            console.log('[Dashboard] Waiting for auth service...');
-            const pollInterval = 200;
-            let elapsedTime = 0;
-            let lastMethodsLog = 0;
-
-            try {
-                while (elapsedTime < maxWaitTime) {
-                    // Check if authService exists
-                    if (window.authService) {
-                        // Check if isInitialized method exists and service is initialized
-                        if (typeof window.authService.isInitialized === 'function') {
-                            const isInit = window.authService.isInitialized();
-                            if (isInit) {
-                                console.log('[Dashboard] Auth service is ready and initialized');
-                                return true;
-                            }
-                        }
-                        
-                        // Only log methods every second to avoid console spam
-                        if (elapsedTime - lastMethodsLog >= 1000) {
-                            console.log('[Dashboard] Auth service not ready, waiting... Available methods:', 
-                                Object.keys(window.authService));
-                            lastMethodsLog = elapsedTime;
-                        }
-                    } else {
-                        if (elapsedTime - lastMethodsLog >= 1000) {
-                            console.log('[Dashboard] Auth service not available yet');
-                            lastMethodsLog = elapsedTime;
-                        }
-                    }
-                    
-                    await new Promise(resolve => setTimeout(resolve, pollInterval));
-                    elapsedTime += pollInterval;
-                }
-                
-                throw new Error('Auth service wait timeout');
-            } catch (error) {
-                console.error('[Dashboard] Auth service wait failed:', error);
-                throw error;
-            }
-        }
-
-        async function checkAuthentication() {
-            console.log('[Dashboard] Checking authentication...');
-            try {
-                // Wait for auth service to be ready
-                await waitForAuthService();
-                
-                // Double check initialization
-                if (!window.authService || !window.authService.isInitialized()) {
-                    console.error('[Dashboard] Auth service not properly initialized');
-                    throw new Error('Auth service not properly initialized');
-                }
-
-                // Check token first
-                try {
-                    const token = window.authService.getToken();
-                    if (!token) {
-                        console.log('[Dashboard] No valid token found, redirecting to login...');
-                        window.location.href = '/public/auth/login.html';
-                        return false;
-                    }
-                } catch (error) {
-                    console.log('[Dashboard] Token validation failed, redirecting to login...');
-                    window.location.href = '/public/auth/login.html';
-                    return false;
-                }
-
-                // Validate token with server
-                const isAuthenticated = await window.authService.validateToken();
-                console.log('[Dashboard] Authentication status:', isAuthenticated);
-                
-                if (!isAuthenticated) {
-                    console.log('[Dashboard] Token invalid, redirecting to login...');
-                    window.location.href = '/public/auth/login.html';
-                    return false;
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('[Dashboard] Authentication check failed:', error);
-                throw error;
-            }
-        }
-
-        async function loadUserData() {
-            try {
-                console.log('[Dashboard] Loading user data...');
-                console.log('[Dashboard] Auth token:', window.authService.getToken());
-                
-                const response = await fetch('/public/api/user', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
-                    }
-                });
-                
-                console.log('[Dashboard] User API response status:', response.status);
-                
-                if (!response.ok) {
-                    console.error('[Dashboard] User API error:', response.status, response.statusText);
-                    throw new Error(`Failed to load user data: ${response.status} ${response.statusText}`);
-                }
-                
-                const user = await response.json();
-                console.log('[Dashboard] User data received:', user);
-                
-                document.getElementById('userName').textContent = user.email;
-                console.log('[Dashboard] User data loaded successfully');
-            } catch (error) {
-                console.error('[Dashboard] Failed to load user data:', error);
-                console.error('[Dashboard] Error stack:', error.stack);
-                throw error;
-            }
-        }
-
-        async function loadStats() {
-            try {
-                console.log('[Dashboard] Loading user stats...');
-                
-                const response = await fetch('/public/api/users/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
-                    }
-                });
-                
-                console.log('[Dashboard] Stats API response status:', response.status);
-                
-                if (!response.ok) {
-                    console.error('[Dashboard] Stats API error:', response.status, response.statusText);
-                    throw new Error(`Failed to load stats: ${response.status} ${response.statusText}`);
-                }
-                
-                const stats = await response.json();
-                console.log('[Dashboard] Stats data received:', stats);
-                
-                document.getElementById('totalPoints').textContent = stats.earnedPoints;
-                document.getElementById('activeTasks').textContent = stats.totalTasks - stats.completedTasks;
-                document.getElementById('completedTasks').textContent = stats.completedTasks;
-                console.log('[Dashboard] Stats updated in UI');
-            } catch (error) {
-                console.error('[Dashboard] Failed to load stats:', error);
-                console.error('[Dashboard] Error stack:', error.stack);
-                throw error;
-            }
-        }
-
-        async function loadTasks() {
-            try {
-                console.log('[Dashboard] Loading user tasks...');
-                
-                const response = await fetch('/public/api/tasks/user', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
-                    }
-                });
-                
-                console.log('[Dashboard] Tasks API response status:', response.status);
-                
-                if (!response.ok) {
-                    console.error('[Dashboard] Tasks API error:', response.status, response.statusText);
-                    throw new Error(`Failed to load tasks: ${response.status} ${response.statusText}`);
-                }
-                
-                const { tasks } = await response.json();
-                console.log('[Dashboard] Tasks data received:', tasks);
-                
-                const tasksList = document.getElementById('tasksList');
-                
-                if (tasks.length === 0) {
-                    console.log('[Dashboard] No tasks available');
-                    tasksList.innerHTML = '<div class="empty-state">No tasks available</div>';
-                    return;
-                }
-
-                tasksList.innerHTML = tasks.map(task => `
-                    <div class="task-card ${task.completed ? 'completed' : ''}">
-                        <div class="task-header">
-                            <h3>${task.name}</h3>
-                            <span class="points">${task.points} points</span>
-                        </div>
-                        <p>${task.description}</p>
-                        <div class="task-footer">
-                            <span class="status">${task.completed ? 'Completed' : 'In Progress'}</span>
-                            ${task.completed ? 
-                                `<span class="completion-date">Completed on ${new Date(task.completedAt).toLocaleDateString()}</span>` :
-                                '<button class="task-btn">Start Task</button>'
-                            }
-                        </div>
-                    </div>
-                `).join('');
-                console.log('[Dashboard] Tasks rendered in UI');
-            } catch (error) {
-                console.error('[Dashboard] Failed to load tasks:', error);
-                console.error('[Dashboard] Error stack:', error.stack);
-                document.getElementById('tasksList').innerHTML = 
-                    '<div class="error-state">Failed to load tasks. Please try again later.</div>';
-            }
-        }
-
-        async function loadReferralInfo() {
-            try {
-                console.log('[Dashboard] Loading referral info...');
-                
-                const response = await fetch('/public/api/users/referral-info', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
-                    }
-                });
-                
-                console.log('[Dashboard] Referral API response status:', response.status);
-                
-                if (!response.ok) {
-                    console.error('[Dashboard] Referral API error:', response.status, response.statusText);
-                    throw new Error(`Failed to load referral info: ${response.status} ${response.statusText}`);
-                }
-                
-                const info = await response.json();
-                console.log('[Dashboard] Referral data received:', info);
-                
-                document.getElementById('referralCode').textContent = info.referralCode;
-                document.getElementById('totalReferrals').textContent = info.referralCount;
-                document.getElementById('referralLink').value = `${window.location.origin}/register?ref=${info.referralCode}`;
-                console.log('[Dashboard] Referral info updated in UI');
-            } catch (error) {
-                console.error('[Dashboard] Failed to load referral info:', error);
-                console.error('[Dashboard] Error stack:', error.stack);
-            }
-        }
-
+        // 初始化 dashboard
         async function initializeDashboard() {
             console.log('[Dashboard] Starting initialization...');
             
             try {
+                // 确保 loading indicator 存在
+                const loadingDiv = document.getElementById('loading-indicator');
+                const errorDiv = document.getElementById('error-message');
+                
+                if (!loadingDiv || !errorDiv) {
+                    throw new Error('Required DOM elements not found');
+                }
+                
                 showLoading(true);
                 hideError();
 
-                const isAuthenticated = await checkAuthentication();
-                if (!isAuthenticated) {
-                    console.log('[Dashboard] User not authenticated, redirecting...');
-                    return;
-                }
-
-                console.log('[Dashboard] Authentication successful, loading dashboard data...');
-
-                try {
-                    // Load all dashboard data in parallel
-                    await Promise.all([
-                        loadUserData().catch(error => {
-                            console.error('[Dashboard] Failed to load user data:', error);
-                            showError('无法加载用户数据');
-                        }),
-                        loadStats().catch(error => {
-                            console.error('[Dashboard] Failed to load stats:', error);
-                            // Don't show error for stats, not critical
-                        }),
-                        loadTasks().catch(error => {
-                            console.error('[Dashboard] Failed to load tasks:', error);
-                            // Don't show error for tasks, not critical
-                        })
-                    ]);
-
-                    console.log('[Dashboard] Dashboard data loaded successfully');
-                } catch (error) {
-                    console.error('[Dashboard] Failed to load dashboard data:', error);
-                    showError('加载数据失败，请重试', true);
-                    return;
-                }
-
-                // Setup event handlers
-                setupEventHandlers();
+                // 等待 AuthService 初始化
+                await waitForAuthService();
                 
-                console.log('[Dashboard] Dashboard initialized successfully');
+                // 验证认证状态
+                const isAuthenticated = await window.authService.validateToken();
+                if (!isAuthenticated) {
+                    console.log('[Dashboard] Not authenticated, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return;
+                }
+
+                // 并行加载数据
+                await Promise.all([
+                    loadUserData(),
+                    loadStats(),
+                    loadTasks()
+                ]);
+
+                console.log('[Dashboard] Initialization complete');
             } catch (error) {
-                console.error('[Dashboard] Dashboard initialization failed:', error);
-                console.error('[Dashboard] Error stack:', error.stack);
-                showError('初始化仪表板失败，请重试', true);
+                console.error('[Dashboard] Initialization failed:', error);
+                showError('初始化失败，请重试', () => window.retryInitialization());
             } finally {
                 showLoading(false);
             }
         }
 
-        function setupEventHandlers() {
-            // Setup logout handler
-            const logoutButton = document.getElementById('logoutButton');
-            if (logoutButton) {
-                logoutButton.addEventListener('click', async () => {
-                    try {
-                        showLoading(true);
-                        await window.authService.logout();
-                        window.location.href = '/public/auth/login.html';
-                    } catch (error) {
-                        console.error('[Dashboard] Logout failed:', error);
-                        showError('登出失败，请重试');
-                    } finally {
-                        showLoading(false);
-                    }
-                });
-            }
-
-            // Setup other event handlers...
+        // 确保在 DOM 和 AuthService 都准备好后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('[Dashboard] DOM Content Loaded');
+                setTimeout(initializeDashboard, 100);
+            });
+        } else {
+            console.log('[Dashboard] DOM already loaded');
+            setTimeout(initializeDashboard, 100);
         }
-
-        // Add retry functionality
-        window.retryInitialization = async function() {
-            console.log('[Dashboard] Retrying initialization...');
-            hideError();
-            await initializeDashboard();
-        };
-
-        // Copy functionality
-        function setupCopyButtons() {
-            document.getElementById('copyCode').addEventListener('click', () => {
-                const code = document.getElementById('referralCode').textContent;
-                navigator.clipboard.writeText(code);
-                alert('Referral code copied!');
-            });
-
-            document.getElementById('copyLink').addEventListener('click', () => {
-                const link = document.getElementById('referralLink').value;
-                navigator.clipboard.writeText(link);
-                alert('Referral link copied!');
-            });
-        }
-
-        // Setup navigation
-        document.querySelectorAll('.nav-links li').forEach(link => {
-            link.addEventListener('click', () => {
-                // Update active state
-                document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
-
-                // Show corresponding section
-                const sectionId = link.dataset.section;
-                document.querySelectorAll('.dashboard-section').forEach(section => {
-                    section.style.display = 'none';
-                });
-                document.getElementById(sectionId).style.display = 'block';
-            });
-        });
-
-        // Setup copy buttons
-        setupCopyButtons();
     </script>
 </body>
 </html>
