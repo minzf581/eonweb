@@ -82,91 +82,74 @@
             this._token = null;
             this._tokenExpiry = null;
 
-            // Define methods using Object.defineProperty to ensure proper binding and enumeration
-            const methods = {
-                getToken: () => {
-                    logInfo(`Getting token: ${this._token ? 'token exists' : 'no token'}`);
-                    return this._token;
-                },
-                isInitialized: () => this._initialized,
-                initialize: this.initialize.bind(this),
-                login: this.login.bind(this),
-                logout: this.logout.bind(this),
-                clearAuth: this.clearAuth.bind(this),
-                validateToken: this.validateToken.bind(this),
-                getUser: this.getUser.bind(this),
-                setToken: this.setToken.bind(this),
-                register: this.register.bind(this),
-                isAdmin: this.isAdmin.bind(this)
-            };
+            // Bind methods
+            this.isInitialized = this.isInitialized.bind(this);
+            this.initialize = this.initialize.bind(this);
+            this.login = this.login.bind(this);
+            this.logout = this.logout.bind(this);
+            this.clearAuth = this.clearAuth.bind(this);
+            this.validateToken = this.validateToken.bind(this);
+            this.getUser = this.getUser.bind(this);
+            this.setToken = this.setToken.bind(this);
+            this.register = this.register.bind(this);
+            this.isAdmin = this.isAdmin.bind(this);
+            this.getToken = this.getToken.bind(this);
 
-            // Define each method on the instance with proper descriptors
-            Object.keys(methods).forEach(method => {
-                Object.defineProperty(this, method, {
-                    value: methods[method],
-                    writable: false,
-                    enumerable: true,
-                    configurable: false
-                });
-            });
+            logInfo('Auth service instance created');
+        }
 
-            logInfo('Auth service instance created with methods:', Object.keys(this));
+        isInitialized() {
+            const status = this._initialized === true;
+            logInfo(`Checking initialization status: ${status}`);
+            return status;
         }
 
         async initialize() {
+            if (this._initializing) {
+                logInfo('Initialization already in progress');
+                return;
+            }
+
             if (this._initialized) {
                 logInfo('Already initialized');
-                return true;
+                return;
             }
 
-            if (this._initializing) {
-                logInfo('Initialization in progress');
-                return new Promise((resolve) => {
-                    const checkInit = setInterval(() => {
-                        if (this._initialized) {
-                            clearInterval(checkInit);
-                            resolve(true);
-                        }
-                    }, 100);
-                });
-            }
+            this._initializing = true;
+            logInfo('Starting initialization');
 
             try {
-                this._initializing = true;
-                logInfo('Starting initialization');
-
-                // Load and validate stored token
+                // Check for stored token
                 const storedToken = localStorage.getItem(TOKEN_KEY);
                 const storedExpiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
-
-                logInfo(`Stored token check: token=${!!storedToken}, expiry=${storedExpiry || 'null'}`);
+                
+                logInfo(`Stored token check: token=${!!storedToken}, expiry=${storedExpiry}`);
 
                 if (storedToken && storedExpiry) {
-                    const currentTime = new Date('2024-12-18T20:28:32+08:00');
-                    const expiryDate = new Date(storedExpiry);
+                    const expiry = new Date(storedExpiry);
+                    const current = new Date(getTimestamp());
                     
-                    logInfo(`Token expiry check during init: current=${currentTime.toISOString()}, expiry=${expiryDate.toISOString()}`);
-                    
-                    if (expiryDate > currentTime) {
+                    logInfo(`Token expiry check during init: current=${current.toISOString()}, expiry=${expiry.toISOString()}`);
+
+                    if (expiry > current) {
                         this._token = storedToken;
-                        this._tokenExpiry = expiryDate;
+                        this._tokenExpiry = expiry;
                         logInfo('Valid token loaded from storage');
                     } else {
-                        logInfo('Stored token expired during init, clearing auth data');
-                        await this.clearAuth();
+                        logInfo('Stored token expired, clearing auth');
+                        this.clearAuth();
                     }
                 } else {
-                    logInfo('No stored token found during init');
-                    await this.clearAuth();
+                    logInfo('No stored token found');
+                    this.clearAuth();
                 }
 
+                // Set initialized flag only after successful initialization
                 this._initialized = true;
                 logInfo('Initialization complete');
-                return true;
             } catch (error) {
                 logError('Initialization failed', error);
                 this._initialized = false;
-                await this.clearAuth();
                 throw error;
             } finally {
                 this._initializing = false;
@@ -370,6 +353,15 @@
                 logError('Registration failed', error);
                 throw error;
             }
+        }
+
+        getToken() {
+            if (!this._initialized) {
+                logError('getToken called before initialization');
+                throw new Error('AuthService not initialized');
+            }
+            logInfo(`Getting token: ${this._token ? 'token exists' : 'no token'}`);
+            return this._token;
         }
     }
 

@@ -315,23 +315,33 @@
             });
         }
 
-        async function waitForAuthService(timeoutMs = 10000) {
+        async function waitForAuthService(maxWaitTime = 10000) {
             console.log('[Dashboard] Waiting for auth service...');
+            const pollInterval = 200;
+            let elapsedTime = 0;
+
             try {
-                const startTime = Date.now();
-                while (Date.now() - startTime < timeoutMs) {
-                    // Check if authService exists and is initialized
-                    if (window.authService && window.authService.isInitialized()) {
-                        // Verify getToken method is available
-                        if (typeof window.authService.getToken === 'function') {
-                            console.log('[Dashboard] Auth service ready and verified');
-                            return true;
+                while (elapsedTime < maxWaitTime) {
+                    // Check if authService exists
+                    if (window.authService) {
+                        // Check if isInitialized method exists and service is initialized
+                        if (typeof window.authService.isInitialized === 'function') {
+                            const isInit = window.authService.isInitialized();
+                            if (isInit) {
+                                console.log('[Dashboard] Auth service is ready and initialized');
+                                return true;
+                            }
                         }
+                        console.log('[Dashboard] Auth service not ready, waiting... Available methods:', 
+                            Object.keys(window.authService));
+                    } else {
+                        console.log('[Dashboard] Auth service not available yet');
                     }
-                    console.log('[Dashboard] Auth service not ready, waiting... Available methods:', 
-                        window.authService ? Object.keys(window.authService) : 'No authService');
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    await new Promise(resolve => setTimeout(resolve, pollInterval));
+                    elapsedTime += pollInterval;
                 }
+                
                 throw new Error('Auth service wait timeout');
             } catch (error) {
                 console.error('[Dashboard] Auth service wait failed:', error);
@@ -345,16 +355,24 @@
                 // Wait for auth service to be ready
                 await waitForAuthService();
                 
+                // Double check initialization
                 if (!window.authService || !window.authService.isInitialized()) {
                     console.error('[Dashboard] Auth service not properly initialized');
                     throw new Error('Auth service not properly initialized');
+                }
+
+                const token = window.authService.getToken();
+                if (!token) {
+                    console.log('[Dashboard] No valid token found, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return false;
                 }
 
                 const isAuthenticated = await window.authService.validateToken();
                 console.log('[Dashboard] Authentication status:', isAuthenticated);
                 
                 if (!isAuthenticated) {
-                    console.log('[Dashboard] User not authenticated, redirecting to login...');
+                    console.log('[Dashboard] Token invalid, redirecting to login...');
                     window.location.href = '/public/auth/login.html';
                     return false;
                 }
