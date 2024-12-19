@@ -198,13 +198,23 @@ class AuthService {
 }
 
 // Initialize and expose the auth service
-window.authService = new AuthService();
+const authService = new AuthService();
+window.authService = authService;
 
-// Initialize the service when the page loads
+// Initialize the service immediately
+authService.initialize().then(() => {
+    authService.logInfo('Service initialized successfully');
+}).catch(error => {
+    authService.logError('Service initialization failed', error);
+});
+
+// Also initialize when the page loads (in case the first initialization fails)
 document.addEventListener('DOMContentLoaded', () => {
-    window.authService.initialize().then(() => {
-        window.authService.logInfo('Service initialized successfully');
-    }).catch(error => {
-        window.authService.logError('Service initialization failed', error);
-    });
+    if (!authService.isInitialized()) {
+        authService.initialize().then(() => {
+            authService.logInfo('Service initialized successfully');
+        }).catch(error => {
+            authService.logError('Service initialization failed', error);
+        });
+    }
 });
