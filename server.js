@@ -153,17 +153,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// 请求日志中间件
-app.use((req, res, next) => {
-    console.log('\n=== Incoming Request ===');
-    console.log('Time:', new Date().toISOString());
-    console.log('Method:', req.method);
-    console.log('Path:', req.path);
-    console.log('Origin:', req.headers.origin);
-    console.log('Headers:', req.headers);
-    next();
-});
-
 // 启用压缩
 app.use(compression());
 
@@ -193,30 +182,35 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// 请求日志中间件
+app.use((req, res, next) => {
+    console.log('\n=== Incoming Request ===');
+    console.log('Time:', new Date().toISOString());
+    console.log('Method:', req.method);
+    console.log('Path:', req.path);
+    console.log('Origin:', req.headers.origin);
+    console.log('Headers:', req.headers);
+    next();
+});
+
 // 静态文件服务
 app.use(express.static(path.join(__dirname, 'public'), {
     maxAge: '1h',
     etag: true,
     lastModified: true,
-    fallthrough: true,
     index: false
 }));
 
-// 主页路由
+// 基本路由处理
 app.get(['/', '/index.html'], (req, res) => {
-    console.log('Serving index page...');
     res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Dashboard 路由
 app.get(['/dashboard', '/dashboard/index.html'], (req, res) => {
-    console.log('Serving dashboard page...');
     res.sendFile(path.join(__dirname, 'public/dashboard/index.html'));
 });
 
-// 处理 auth 相关页面
 app.get(['/auth/login', '/auth/login.html'], (req, res) => {
-    console.log('Serving login page...');
     res.sendFile(path.join(__dirname, 'public/auth/login.html'));
 });
 

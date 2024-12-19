@@ -6,7 +6,7 @@
     <title>Dashboard</title>
     
     <!-- Styles -->
-    <link rel="stylesheet" href="/public/css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -338,7 +338,7 @@
         <!-- Sidebar -->
         <nav class="sidebar">
             <div class="sidebar-header">
-                <img src="/public/images/enologo.jpg" alt="Logo" class="logo">
+                <img src="/images/enologo.jpg" alt="Logo" class="logo">
                 <h2>Dashboard</h2>
             </div>
             <ul class="nav-links">
@@ -362,7 +362,7 @@
             <!-- Top Bar -->
             <header class="top-bar">
                 <div class="user-info">
-                    <img src="/public/images/default-avatar.svg" alt="User" class="avatar">
+                    <img src="/images/default-avatar.svg" alt="User" class="avatar">
                     <span id="userName">User</span>
                     <button id="logoutButton" class="logout-btn">
                         <i class="fas fa-sign-out-alt"></i>
@@ -497,7 +497,7 @@
                 // 验证认证
                 const isAuthenticated = await window.authService.validateToken();
                 if (!isAuthenticated) {
-                    window.location.href = '/public/auth/login.html';
+                    window.location.href = '/auth/login.html';
                     return;
                 }
 
@@ -526,6 +526,6 @@
     </script>
 
     <!-- Load AuthService -->
-    <script src="/public/js/authService.js"></script>
+    <script src="/js/authService.js"></script>
 </body>
 </html>
