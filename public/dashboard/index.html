@@ -540,10 +540,13 @@
             }
         }
 
-        // 启动初始化
-        initializeDashboard().catch(error => {
-            showStatus('发生严重错误，请刷新页面', 'error');
-            console.error('[Dashboard] Critical error:', error);
+        // 等待 DOM 加载完成后再初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 启动初始化
+            initializeDashboard().catch(error => {
+                showStatus('发生严重错误，请刷新页面', 'error');
+                console.error('[Dashboard] Critical error:', error);
+            });
         });
     </script>
 
