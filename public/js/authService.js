@@ -379,8 +379,25 @@
 
         // Create and expose the singleton instance
         if (typeof window.authService === 'undefined') {
-            window.authService = new AuthService();
-            logInfo('Auth service instance created');
+            logInfo('Creating new auth service instance...');
+            const instance = new AuthService();
+            
+            // Expose all methods explicitly
+            window.authService = {
+                isInitialized: instance.isInitialized.bind(instance),
+                initialize: instance.initialize.bind(instance),
+                login: instance.login.bind(instance),
+                logout: instance.logout.bind(instance),
+                clearAuth: instance.clearAuth.bind(instance),
+                validateToken: instance.validateToken.bind(instance),
+                getUser: instance.getUser.bind(instance),
+                setToken: instance.setToken.bind(instance),
+                register: instance.register.bind(instance),
+                isAdmin: instance.isAdmin.bind(instance),
+                getToken: instance.getToken.bind(instance)
+            };
+            
+            logInfo('Auth service methods exposed:', Object.keys(window.authService));
         } else {
             logInfo('Auth service instance already exists');
         }
@@ -399,10 +416,10 @@
                     logError('Initialization attempt failed', error);
                     if (retryCount < maxRetries) {
                         retryCount++;
-                        logInfo(`Retrying initialization (${retryCount}/${maxRetries})`);
+                        logInfo(`Retrying initialization (${retryCount}/${maxRetries})...`);
                         setTimeout(initializeWithRetry, 1000);
                     } else {
-                        logError('Max retries reached, initialization failed', error);
+                        logError('Max retries reached, initialization failed');
                     }
                 }
             };
@@ -412,7 +429,7 @@
 
         logInfo('Auth service setup complete');
     } catch (error) {
-        logError('Service setup failed', error);
-        console.error('[AuthService] Critical setup error:', error);
+        logError('Failed to setup auth service', error);
+        throw error;
     }
 })();
