@@ -38,7 +38,8 @@
             'getUser',
             'setToken',
             'register',
-            'isAdmin'
+            'isAdmin',
+            'getToken'
         ];
 
         for (const method of requiredMethods) {
@@ -92,6 +93,7 @@
             this.setToken = this.setToken.bind(this);
             this.register = this.register.bind(this);
             this.isAdmin = this.isAdmin.bind(this);
+            this.getToken = this.getToken.bind(this);
 
             logInfo('Auth service instance created');
         }
@@ -302,6 +304,10 @@
                 logError('isAdmin check failed', error);
                 return false;
             }
+        }
+
+        getToken() {
+            return this._token;
         }
 
         async setToken(token) {

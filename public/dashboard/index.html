@@ -159,7 +159,7 @@
 
         async function loadUserData() {
             try {
-                const response = await fetch('/api/user', {
+                const response = await fetch('/public/api/user', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
@@ -178,7 +178,7 @@
 
         async function loadStats() {
             try {
-                const response = await fetch('/api/users/stats', {
+                const response = await fetch('/public/api/users/stats', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
@@ -197,7 +197,7 @@
 
         async function loadTasks() {
             try {
-                const response = await fetch('/api/tasks/user', {
+                const response = await fetch('/public/api/tasks/user', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
@@ -238,7 +238,7 @@
 
         async function loadReferralInfo() {
             try {
-                const response = await fetch('/api/users/referral-info', {
+                const response = await fetch('/public/api/users/referral-info', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
