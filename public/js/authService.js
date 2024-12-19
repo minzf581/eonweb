@@ -3,19 +3,21 @@ class AuthService {
     constructor() {
         console.log('[AuthService] Creating new instance');
         
-        this._initialized = false;
-        this._initializing = false;
-        this._token = localStorage.getItem('auth_token');
-        this._tokenExpiry = localStorage.getItem('auth_token_expiry');
+        // Private fields
+        this._data = {
+            initialized: false,
+            initializing: false,
+            token: localStorage.getItem('auth_token'),
+            tokenExpiry: localStorage.getItem('auth_token_expiry')
+        };
         
         // Log the instance structure
         console.log('[AuthService] Instance structure:', {
-            _initialized: this._initialized,
-            _initializing: this._initializing,
-            _token: !!this._token,
-            _tokenExpiry: this._tokenExpiry,
-            getToken: typeof this.getToken,
-            isInitialized: typeof this.isInitialized
+            initialized: this.initialized,
+            initializing: this.initializing,
+            hasToken: !!this.token,
+            tokenExpiry: this.tokenExpiry,
+            getToken: typeof this.getToken
         });
 
         this.logInfo('Auth service instance created');
@@ -24,16 +26,29 @@ class AuthService {
         // Initialize immediately
         this.initialize().then(() => {
             console.log('[AuthService] Initialization complete, rechecking instance structure:', {
-                _initialized: this._initialized,
-                _initializing: this._initializing,
-                _token: !!this._token,
-                _tokenExpiry: this._tokenExpiry,
-                getToken: typeof this.getToken,
-                isInitialized: typeof this.isInitialized
+                initialized: this.initialized,
+                initializing: this.initializing,
+                hasToken: !!this.token,
+                tokenExpiry: this.tokenExpiry,
+                getToken: typeof this.getToken
             });
         });
     }
 
+    // Getters
+    get initialized() {
+        return this._data.initialized;
+    }
+
+    get token() {
+        return this._data.token;
+    }
+
+    get tokenExpiry() {
+        return this._data.tokenExpiry;
+    }
+
+    // Methods
     logInfo(message) {
         console.log(`[AuthService ${new Date().toISOString()}] ${message}`);
     }
@@ -44,25 +59,25 @@ class AuthService {
 
     isInitialized() {
         console.log('[AuthService] Checking initialization status:', {
-            _initialized: this._initialized,
-            hasToken: !!this._token,
-            tokenExpiry: this._tokenExpiry
+            initialized: this.initialized,
+            hasToken: !!this.token,
+            tokenExpiry: this.tokenExpiry
         });
-        return this._initialized;
+        return this.initialized;
     }
 
     getToken() {
         console.log('[AuthService] getToken called:', {
-            _initialized: this._initialized,
-            hasToken: !!this._token,
-            tokenExpiry: this._tokenExpiry
+            initialized: this.initialized,
+            hasToken: !!this.token,
+            tokenExpiry: this.tokenExpiry
         });
 
         try {
-            if (!this._initialized) {
+            if (!this.initialized) {
                 throw new Error('AuthService not initialized');
             }
-            return this._token;
+            return this.token;
         } catch (error) {
             this.logError('Error accessing token', error);
             return null;
@@ -71,23 +86,23 @@ class AuthService {
 
     async initialize() {
         console.log('[AuthService] Initialize called:', {
-            _initialized: this._initialized,
-            _initializing: this._initializing
+            initialized: this.initialized,
+            initializing: this.initializing
         });
 
-        if (this._initializing || this._initialized) {
+        if (this.initializing || this.initialized) {
             console.log('[AuthService] Initialize skipped - already initialized or initializing');
             return;
         }
 
-        this._initializing = true;
+        this._data.initializing = true;
         this.logInfo('Starting initialization');
 
         try {
-            if (this._token && this._tokenExpiry) {
-                this.logInfo(`Stored token check: token=${!!this._token}, expiry=${this._tokenExpiry}`);
+            if (this.token && this.tokenExpiry) {
+                this.logInfo(`Stored token check: token=${!!this.token}, expiry=${this.tokenExpiry}`);
                 const now = new Date();
-                const expiry = new Date(this._tokenExpiry);
+                const expiry = new Date(this.tokenExpiry);
                 this.logInfo(`Token expiry check during init: current=${now.toISOString()}, expiry=${expiry.toISOString()}`);
 
                 if (now < expiry) {
@@ -99,35 +114,35 @@ class AuthService {
                 }
             }
 
-            this._initialized = true;
+            this._data.initialized = true;
             this.logInfo('Initialization complete');
             
             // Log final state after initialization
             console.log('[AuthService] Final state after initialization:', {
-                _initialized: this._initialized,
-                _initializing: this._initializing,
-                hasToken: !!this._token,
-                tokenExpiry: this._tokenExpiry
+                initialized: this.initialized,
+                initializing: this.initializing,
+                hasToken: !!this.token,
+                tokenExpiry: this.tokenExpiry
             });
         } catch (error) {
             this.logError('Initialization failed', error);
             this.clearAuth();
         } finally {
-            this._initializing = false;
+            this._data.initializing = false;
         }
     }
 
     async validateToken() {
         console.log('[AuthService] validateToken called:', {
-            hasToken: !!this._token
+            hasToken: !!this.token
         });
 
-        if (!this._token) return false;
+        if (!this.token) return false;
 
         try {
             const response = await fetch('/api/auth/validate', {
                 headers: {
-                    'Authorization': `Bearer ${this._token}`
+                    'Authorization': `Bearer ${this.token}`
                 }
             });
 
@@ -147,8 +162,8 @@ class AuthService {
 
     clearAuth() {
         console.log('[AuthService] clearAuth called');
-        this._token = null;
-        this._tokenExpiry = null;
+        this._data.token = null;
+        this._data.tokenExpiry = null;
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_token_expiry');
         this.logInfo('Auth cleared');
@@ -160,7 +175,7 @@ class AuthService {
             await fetch('/api/auth/logout', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this._token}`
+                    'Authorization': `Bearer ${this.token}`
                 }
             });
         } catch (error) {
@@ -221,25 +236,25 @@ class AuthService {
 
     setToken(token) {
         console.log('[AuthService] setToken called');
-        this._token = token;
+        this._data.token = token;
         const expiry = new Date();
         expiry.setHours(expiry.getHours() + 24);
-        this._tokenExpiry = expiry.toISOString();
+        this._data.tokenExpiry = expiry.toISOString();
         localStorage.setItem('auth_token', token);
-        localStorage.setItem('auth_token_expiry', this._tokenExpiry);
+        localStorage.setItem('auth_token_expiry', this._data.tokenExpiry);
     }
 
     async getUser() {
         console.log('[AuthService] getUser called:', {
-            hasToken: !!this._token
+            hasToken: !!this.token
         });
 
-        if (!this._token) return null;
+        if (!this.token) return null;
 
         try {
             const response = await fetch('/api/auth/user', {
                 headers: {
-                    'Authorization': `Bearer ${this._token}`
+                    'Authorization': `Bearer ${this.token}`
                 }
             });
 
@@ -273,16 +288,11 @@ console.log('[AuthService] Instance methods check:', {
     methodNames: Object.getOwnPropertyNames(AuthService.prototype)
 });
 
-// Bind all methods to the instance
-Object.getOwnPropertyNames(AuthService.prototype).forEach(method => {
-    if (typeof authService[method] === 'function') {
-        authService[method] = authService[method].bind(authService);
-    }
-});
-
-// Assign to window and prevent modification of the instance itself
+// Define the window.authService property with a getter
 Object.defineProperty(window, 'authService', {
-    value: authService,
-    writable: false,
-    configurable: false
+    get() {
+        return authService;
+    },
+    configurable: false,
+    enumerable: true
 });
