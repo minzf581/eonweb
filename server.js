@@ -202,7 +202,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 // 基本路由处理
-app.get(['/', '/index.html'], (req, res) => {
+app.get('/', (req, res) => {
+    res.redirect('/index.html');
+});
+
+app.get('/index.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
