@@ -263,15 +263,26 @@ class AuthService {
 
 // Create and expose the singleton instance
 console.log('[AuthService] Creating global instance');
-window.authService = new AuthService();
+const authService = new AuthService();
 
 // Log the instance and its methods
 console.log('[AuthService] Instance methods check:', {
-    instance: window.authService,
-    getToken: window.authService.getToken,
-    isInitialized: window.authService.isInitialized,
-    methodNames: Object.getOwnPropertyNames(Object.getPrototypeOf(window.authService))
+    instance: authService,
+    getToken: authService.getToken,
+    isInitialized: authService.isInitialized,
+    methodNames: Object.getOwnPropertyNames(AuthService.prototype)
 });
 
-// Freeze the instance to prevent modifications
-Object.freeze(window.authService);
+// Bind all methods to the instance
+Object.getOwnPropertyNames(AuthService.prototype).forEach(method => {
+    if (typeof authService[method] === 'function') {
+        authService[method] = authService[method].bind(authService);
+    }
+});
+
+// Assign to window and prevent modification of the instance itself
+Object.defineProperty(window, 'authService', {
+    value: authService,
+    writable: false,
+    configurable: false
+});
