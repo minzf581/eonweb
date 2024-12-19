@@ -378,17 +378,6 @@
     </style>
 </head>
 <body>
-    <!-- Loading Indicator -->
-    <div id="loading-indicator" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; justify-content: center; align-items: center;">
-        <div style="text-align: center;">
-            <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
-            <div style="color: #333; font-size: 16px;">加载中...</div>
-        </div>
-    </div>
-
-    <!-- Error Message -->
-    <div id="error-message" style="display: none; position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 15px 20px; border-radius: 4px; z-index: 10000;"></div>
-
     <!-- Main dashboard content -->
     <div class="dashboard-layout">
         <!-- Sidebar -->
@@ -514,45 +503,121 @@
 
     <!-- Scripts -->
     <script>
-        // 全局状态管理
-        window.dashboardState = {
-            domReady: false,
-            initialized: false
-        };
-
-        // 基础工具函数
-        function showLoading(show) {
-            const loading = document.getElementById('loading-indicator');
-            if (!loading) {
-                console.error('[Dashboard] Loading indicator not found');
-                return false;
+        // 动态创建 loading indicator
+        function createLoadingIndicator() {
+            // 如果已存在，先移除
+            const existingLoader = document.getElementById('loading-indicator');
+            if (existingLoader) {
+                existingLoader.remove();
             }
-            loading.style.display = show ? 'flex' : 'none';
-            console.log('[Dashboard] Loading indicator ' + (show ? 'shown' : 'hidden'));
-            return true;
+
+            // 创建新的 loading indicator
+            const loader = document.createElement('div');
+            loader.id = 'loading-indicator';
+            loader.style.cssText = `
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255,255,255,0.9);
+                z-index: 9999;
+                justify-content: center;
+                align-items: center;
+            `;
+
+            const content = document.createElement('div');
+            content.style.cssText = 'text-align: center;';
+
+            const spinner = document.createElement('div');
+            spinner.style.cssText = `
+                width: 40px;
+                height: 40px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #3498db;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 10px;
+            `;
+
+            const text = document.createElement('div');
+            text.style.cssText = 'color: #333; font-size: 16px;';
+            text.textContent = '加载中...';
+
+            content.appendChild(spinner);
+            content.appendChild(text);
+            loader.appendChild(content);
+            document.body.appendChild(loader);
+
+            return loader;
         }
 
+        // 动态创建 error message
+        function createErrorMessage() {
+            // 如果已存在，先移除
+            const existingError = document.getElementById('error-message');
+            if (existingError) {
+                existingError.remove();
+            }
+
+            const error = document.createElement('div');
+            error.id = 'error-message';
+            error.style.cssText = `
+                display: none;
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #ff4444;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 4px;
+                z-index: 10000;
+            `;
+
+            document.body.appendChild(error);
+            return error;
+        }
+
+        // 创建必要的样式
+        function createStyles() {
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Loading 状态管理
+        function showLoading(show = true) {
+            let loader = document.getElementById('loading-indicator');
+            if (!loader) {
+                loader = createLoadingIndicator();
+            }
+            loader.style.display = show ? 'flex' : 'none';
+            console.log('[Dashboard] Loading indicator ' + (show ? 'shown' : 'hidden'));
+        }
+
+        // Error 状态管理
         function showError(message) {
-            const error = document.getElementById('error-message');
+            let error = document.getElementById('error-message');
             if (!error) {
-                console.error('[Dashboard] Error element not found');
-                return false;
+                error = createErrorMessage();
             }
             error.textContent = message;
             error.style.display = 'block';
             console.log('[Dashboard] Error shown:', message);
-            return true;
         }
 
         function hideError() {
             const error = document.getElementById('error-message');
-            if (!error) {
-                console.error('[Dashboard] Error element not found');
-                return false;
+            if (error) {
+                error.style.display = 'none';
+                console.log('[Dashboard] Error hidden');
             }
-            error.style.display = 'none';
-            console.log('[Dashboard] Error hidden');
-            return true;
         }
 
         // 等待 AuthService
@@ -576,11 +641,10 @@
             console.log('[Dashboard] Starting initialization...');
             
             try {
-                // 确保 loading indicator 可用
-                if (!document.getElementById('loading-indicator')) {
-                    throw new Error('Loading indicator not found in DOM');
-                }
-
+                // 确保样式和元素存在
+                createStyles();
+                
+                // 显示加载状态
                 showLoading(true);
                 hideError();
 
@@ -599,7 +663,6 @@
                     loadTasks().catch(err => console.error('Tasks error:', err))
                 ]);
 
-                window.dashboardState.initialized = true;
                 console.log('[Dashboard] Initialization complete');
             } catch (error) {
                 console.error('[Dashboard] Initialization failed:', error);
@@ -609,29 +672,13 @@
             }
         }
 
-        // 确保在 DOM 完全加载后再初始化
-        function startInitialization() {
-            console.log('[Dashboard] Document ready state:', document.readyState);
-            window.dashboardState.domReady = true;
-            initializeDashboard().catch(error => {
-                console.error('[Dashboard] Initialization error:', error);
-            });
-        }
-
-        // 监听 DOM 加载完成事件
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startInitialization);
-        } else {
-            startInitialization();
-        }
-
-        // 防止重复初始化
-        window.addEventListener('load', () => {
-            console.log('[Dashboard] Window load event fired');
+        // 启动初始化
+        initializeDashboard().catch(error => {
+            console.error('[Dashboard] Initialization error:', error);
         });
     </script>
 
-    <!-- 最后加载 AuthService -->
-    <script src="/public/js/authService.js" async defer></script>
+    <!-- Load AuthService -->
+    <script src="/public/js/authService.js"></script>
 </body>
 </html>
