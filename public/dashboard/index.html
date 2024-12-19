@@ -159,56 +159,88 @@
 
         async function loadUserData() {
             try {
+                console.log('[Dashboard] Loading user data...');
+                console.log('[Dashboard] Auth token:', window.authService.getToken());
+                
                 const response = await fetch('/public/api/user', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
                 
-                if (!response.ok) throw new Error('Failed to load user data');
+                console.log('[Dashboard] User API response status:', response.status);
+                
+                if (!response.ok) {
+                    console.error('[Dashboard] User API error:', response.status, response.statusText);
+                    throw new Error(`Failed to load user data: ${response.status} ${response.statusText}`);
+                }
                 
                 const user = await response.json();
+                console.log('[Dashboard] User data received:', user);
+                
                 document.getElementById('userName').textContent = user.email;
                 console.log('[Dashboard] User data loaded successfully');
             } catch (error) {
                 console.error('[Dashboard] Failed to load user data:', error);
+                console.error('[Dashboard] Error stack:', error.stack);
                 throw error;
             }
         }
 
         async function loadStats() {
             try {
+                console.log('[Dashboard] Loading user stats...');
+                
                 const response = await fetch('/public/api/users/stats', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
                 
-                if (!response.ok) throw new Error('Failed to load stats');
+                console.log('[Dashboard] Stats API response status:', response.status);
+                
+                if (!response.ok) {
+                    console.error('[Dashboard] Stats API error:', response.status, response.statusText);
+                    throw new Error(`Failed to load stats: ${response.status} ${response.statusText}`);
+                }
                 
                 const stats = await response.json();
+                console.log('[Dashboard] Stats data received:', stats);
+                
                 document.getElementById('totalPoints').textContent = stats.earnedPoints;
                 document.getElementById('activeTasks').textContent = stats.totalTasks - stats.completedTasks;
                 document.getElementById('completedTasks').textContent = stats.completedTasks;
+                console.log('[Dashboard] Stats updated in UI');
             } catch (error) {
                 console.error('[Dashboard] Failed to load stats:', error);
+                console.error('[Dashboard] Error stack:', error.stack);
             }
         }
 
         async function loadTasks() {
             try {
+                console.log('[Dashboard] Loading user tasks...');
+                
                 const response = await fetch('/public/api/tasks/user', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
                 
-                if (!response.ok) throw new Error('Failed to load tasks');
+                console.log('[Dashboard] Tasks API response status:', response.status);
+                
+                if (!response.ok) {
+                    console.error('[Dashboard] Tasks API error:', response.status, response.statusText);
+                    throw new Error(`Failed to load tasks: ${response.status} ${response.statusText}`);
+                }
                 
                 const { tasks } = await response.json();
+                console.log('[Dashboard] Tasks data received:', tasks);
+                
                 const tasksList = document.getElementById('tasksList');
                 
                 if (tasks.length === 0) {
+                    console.log('[Dashboard] No tasks available');
                     tasksList.innerHTML = '<div class="empty-state">No tasks available</div>';
                     return;
                 }
@@ -229,8 +261,10 @@
                         </div>
                     </div>
                 `).join('');
+                console.log('[Dashboard] Tasks rendered in UI');
             } catch (error) {
                 console.error('[Dashboard] Failed to load tasks:', error);
+                console.error('[Dashboard] Error stack:', error.stack);
                 document.getElementById('tasksList').innerHTML = 
                     '<div class="error-state">Failed to load tasks. Please try again later.</div>';
             }
@@ -238,24 +272,31 @@
 
         async function loadReferralInfo() {
             try {
+                console.log('[Dashboard] Loading referral info...');
+                
                 const response = await fetch('/public/api/users/referral-info', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
                 
-                if (!response.ok) throw new Error('Failed to load referral info');
+                console.log('[Dashboard] Referral API response status:', response.status);
+                
+                if (!response.ok) {
+                    console.error('[Dashboard] Referral API error:', response.status, response.statusText);
+                    throw new Error(`Failed to load referral info: ${response.status} ${response.statusText}`);
+                }
                 
                 const info = await response.json();
+                console.log('[Dashboard] Referral data received:', info);
+                
                 document.getElementById('referralCode').textContent = info.referralCode;
                 document.getElementById('totalReferrals').textContent = info.referralCount;
-                document.getElementById('referralPoints').textContent = info.totalPoints;
-                
-                // Set up referral link
-                const referralLink = `${window.location.origin}/register?ref=${info.referralCode}`;
-                document.getElementById('referralLink').value = referralLink;
+                document.getElementById('referralLink').value = `${window.location.origin}/register?ref=${info.referralCode}`;
+                console.log('[Dashboard] Referral info updated in UI');
             } catch (error) {
                 console.error('[Dashboard] Failed to load referral info:', error);
+                console.error('[Dashboard] Error stack:', error.stack);
             }
         }
 
@@ -274,62 +315,125 @@
             });
         }
 
+        async function waitForAuthService(timeoutMs = 5000) {
+            console.log('[Dashboard] Waiting for auth service...');
+            try {
+                const startTime = Date.now();
+                while (Date.now() - startTime < timeoutMs) {
+                    if (window.authService && window.authService.isInitialized()) {
+                        console.log('[Dashboard] Auth service ready');
+                        return true;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                console.error('[Dashboard] Auth service wait timeout after', timeoutMs, 'ms');
+                return false;
+            } catch (error) {
+                console.error('[Dashboard] Auth service wait failed:', error);
+                return false;
+            }
+        }
+
+        async function checkAuthentication() {
+            console.log('[Dashboard] Checking authentication...');
+            try {
+                const isAuthenticated = await window.authService.validateToken();
+                console.log('[Dashboard] Authentication status:', isAuthenticated);
+                
+                if (!isAuthenticated) {
+                    console.log('[Dashboard] User not authenticated, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return false;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('[Dashboard] Authentication check failed:', error);
+                console.error('[Dashboard] Error stack:', error.stack);
+                window.location.href = '/public/auth/login.html';
+                return false;
+            }
+        }
+
         async function initializeDashboard() {
             console.log('[Dashboard] Starting initialization...');
             showLoading(true);
-            
+
             try {
-                // Wait for auth service to be ready
-                if (!window.authService) {
+                // Wait for auth service
+                if (!await waitForAuthService()) {
                     throw new Error('Auth service not available');
                 }
 
-                // Load all data
+                // Check authentication
+                if (!await checkAuthentication()) {
+                    return;
+                }
+
+                console.log('[Dashboard] Authentication successful, loading dashboard...');
+
+                // Setup logout handler
+                document.getElementById('logoutButton').addEventListener('click', async () => {
+                    console.log('[Dashboard] Logout clicked');
+                    try {
+                        await window.authService.logout();
+                        console.log('[Dashboard] Logout successful');
+                        window.location.href = '/public/auth/login.html';
+                    } catch (error) {
+                        console.error('[Dashboard] Logout failed:', error);
+                        showError('Failed to logout. Please try again.');
+                    }
+                });
+                console.log('[Dashboard] Logout handler setup complete');
+
+                // Load all dashboard data
                 await Promise.all([
-                    loadUserData(),
-                    loadStats(),
-                    loadTasks(),
-                    loadReferralInfo()
+                    loadUserData().catch(error => {
+                        console.error('[Dashboard] User data load failed:', error);
+                        showError('Failed to load user data');
+                    }),
+                    loadStats().catch(error => {
+                        console.error('[Dashboard] Stats load failed:', error);
+                        showError('Failed to load statistics');
+                    }),
+                    loadTasks().catch(error => {
+                        console.error('[Dashboard] Tasks load failed:', error);
+                        showError('Failed to load tasks');
+                    }),
+                    loadReferralInfo().catch(error => {
+                        console.error('[Dashboard] Referral info load failed:', error);
+                        showError('Failed to load referral information');
+                    })
                 ]);
 
-                // Setup navigation
-                document.querySelectorAll('.nav-links li').forEach(link => {
-                    link.addEventListener('click', () => {
-                        // Update active state
-                        document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
-                        link.classList.add('active');
-
-                        // Show corresponding section
-                        const sectionId = link.dataset.section;
-                        document.querySelectorAll('.dashboard-section').forEach(section => {
-                            section.style.display = 'none';
-                        });
-                        document.getElementById(sectionId).style.display = 'block';
-                    });
-                });
-
-                // Setup copy buttons
-                setupCopyButtons();
-
-                console.log('[Dashboard] Initialization complete');
+                console.log('[Dashboard] Content loaded successfully');
             } catch (error) {
-                console.error('[Dashboard] Initialization error:', error);
+                console.error('[Dashboard] Dashboard initialization failed:', error);
+                console.error('[Dashboard] Error stack:', error.stack);
                 showError('Failed to initialize dashboard. Please refresh the page.');
             } finally {
                 showLoading(false);
             }
         }
 
-        // Setup logout
-        document.getElementById('logoutButton').addEventListener('click', async () => {
-            try {
-                await window.authService.logout();
-                window.location.href = '/auth/login.html';
-            } catch (error) {
-                console.error('[Dashboard] Logout failed:', error);
-                showError('Failed to logout. Please try again.');
-            }
+        // Setup navigation
+        document.querySelectorAll('.nav-links li').forEach(link => {
+            link.addEventListener('click', () => {
+                // Update active state
+                document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Show corresponding section
+                const sectionId = link.dataset.section;
+                document.querySelectorAll('.dashboard-section').forEach(section => {
+                    section.style.display = 'none';
+                });
+                document.getElementById(sectionId).style.display = 'block';
+            });
         });
+
+        // Setup copy buttons
+        setupCopyButtons();
 
         // Initialize on page load
         window.addEventListener('load', initializeDashboard);
