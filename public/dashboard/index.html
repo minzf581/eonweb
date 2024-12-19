@@ -320,23 +320,29 @@
             try {
                 const startTime = Date.now();
                 while (Date.now() - startTime < timeoutMs) {
-                    if (window.authService && window.authService.isInitialized()) {
+                    if (window.authService && typeof window.authService.getToken === 'function') {
                         console.log('[Dashboard] Auth service ready');
                         return true;
                     }
+                    console.log('[Dashboard] Auth service not ready, waiting... Available methods:', 
+                        window.authService ? Object.keys(window.authService) : 'No authService');
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
-                console.error('[Dashboard] Auth service wait timeout after', timeoutMs, 'ms');
-                return false;
+                throw new Error('Auth service wait timeout');
             } catch (error) {
                 console.error('[Dashboard] Auth service wait failed:', error);
-                return false;
+                throw error;
             }
         }
 
         async function checkAuthentication() {
             console.log('[Dashboard] Checking authentication...');
             try {
+                if (!window.authService || typeof window.authService.getToken !== 'function') {
+                    console.error('[Dashboard] Auth service not properly initialized');
+                    throw new Error('Auth service not properly initialized');
+                }
+
                 const isAuthenticated = await window.authService.validateToken();
                 console.log('[Dashboard] Authentication status:', isAuthenticated);
                 
@@ -360,11 +366,9 @@
             showLoading(true);
 
             try {
-                // Wait for auth service
-                if (!await waitForAuthService()) {
-                    throw new Error('Auth service not available');
-                }
-
+                // Wait for auth service to be ready
+                await waitForAuthService(10000);
+                
                 // Check authentication
                 if (!await checkAuthentication()) {
                     return;
@@ -373,44 +377,50 @@
                 console.log('[Dashboard] Authentication successful, loading dashboard...');
 
                 // Setup logout handler
-                document.getElementById('logoutButton').addEventListener('click', async () => {
-                    console.log('[Dashboard] Logout clicked');
-                    try {
-                        await window.authService.logout();
-                        console.log('[Dashboard] Logout successful');
-                        window.location.href = '/public/auth/login.html';
-                    } catch (error) {
-                        console.error('[Dashboard] Logout failed:', error);
-                        showError('Failed to logout. Please try again.');
-                    }
-                });
+                const logoutButton = document.getElementById('logoutButton');
+                if (logoutButton) {
+                    logoutButton.addEventListener('click', async () => {
+                        try {
+                            await window.authService.logout();
+                            window.location.href = '/public/auth/login.html';
+                        } catch (error) {
+                            console.error('[Dashboard] Logout failed:', error);
+                        }
+                    });
+                }
                 console.log('[Dashboard] Logout handler setup complete');
 
                 // Load all dashboard data
-                await Promise.all([
-                    loadUserData().catch(error => {
-                        console.error('[Dashboard] User data load failed:', error);
-                        showError('Failed to load user data');
-                    }),
-                    loadStats().catch(error => {
-                        console.error('[Dashboard] Stats load failed:', error);
-                        showError('Failed to load statistics');
-                    }),
-                    loadTasks().catch(error => {
-                        console.error('[Dashboard] Tasks load failed:', error);
-                        showError('Failed to load tasks');
-                    }),
-                    loadReferralInfo().catch(error => {
-                        console.error('[Dashboard] Referral info load failed:', error);
-                        showError('Failed to load referral information');
-                    })
-                ]);
+                try {
+                    await loadUserData();
+                } catch (error) {
+                    console.error('[Dashboard] User data load failed:', error);
+                    showError('Failed to load user data');
+                }
+
+                try {
+                    await loadStats();
+                } catch (error) {
+                    console.error('[Dashboard] Stats load failed:', error);
+                }
+
+                try {
+                    await loadTasks();
+                } catch (error) {
+                    console.error('[Dashboard] Tasks load failed:', error);
+                }
+
+                try {
+                    await loadReferralInfo();
+                } catch (error) {
+                    console.error('[Dashboard] Referral info load failed:', error);
+                }
 
                 console.log('[Dashboard] Content loaded successfully');
             } catch (error) {
                 console.error('[Dashboard] Dashboard initialization failed:', error);
                 console.error('[Dashboard] Error stack:', error.stack);
-                showError('Failed to initialize dashboard. Please refresh the page.');
+                showError('Failed to initialize dashboard');
             } finally {
                 showLoading(false);
             }
