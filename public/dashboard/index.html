@@ -347,12 +347,16 @@
             
             while (Date.now() - startTime < timeout) {
                 try {
-                    const token = window.authService.getToken();
-                    console.log('AuthService is ready, token:', !!token);
-                    return true;
+                    if (window.authService && window.authService.isInitialized()) {
+                        // Wait a bit more to ensure everything is ready
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        console.log('AuthService is ready');
+                        return true;
+                    }
                 } catch (error) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    console.log('Waiting for AuthService...', error);
                 }
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
             
             throw new Error('AuthService initialization timeout');
