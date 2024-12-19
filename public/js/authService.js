@@ -82,30 +82,35 @@
             this._token = null;
             this._tokenExpiry = null;
 
-            // Define getToken method directly on the instance
-            this.getToken = () => {
-                logInfo(`Getting token: ${this._token ? 'token exists' : 'no token'}`);
-                return this._token;
+            // Define methods using Object.defineProperty to ensure proper binding and enumeration
+            const methods = {
+                getToken: () => {
+                    logInfo(`Getting token: ${this._token ? 'token exists' : 'no token'}`);
+                    return this._token;
+                },
+                isInitialized: () => this._initialized,
+                initialize: this.initialize.bind(this),
+                login: this.login.bind(this),
+                logout: this.logout.bind(this),
+                clearAuth: this.clearAuth.bind(this),
+                validateToken: this.validateToken.bind(this),
+                getUser: this.getUser.bind(this),
+                setToken: this.setToken.bind(this),
+                register: this.register.bind(this),
+                isAdmin: this.isAdmin.bind(this)
             };
 
-            // Explicitly bind all other methods to this instance
-            this.initialize = this.initialize.bind(this);
-            this.isInitialized = this.isInitialized.bind(this);
-            this.login = this.login.bind(this);
-            this.logout = this.logout.bind(this);
-            this.clearAuth = this.clearAuth.bind(this);
-            this.validateToken = this.validateToken.bind(this);
-            this.getUser = this.getUser.bind(this);
-            this.setToken = this.setToken.bind(this);
-            this.register = this.register.bind(this);
-            this.isAdmin = this.isAdmin.bind(this);
+            // Define each method on the instance with proper descriptors
+            Object.keys(methods).forEach(method => {
+                Object.defineProperty(this, method, {
+                    value: methods[method],
+                    writable: false,
+                    enumerable: true,
+                    configurable: false
+                });
+            });
 
-            logInfo('Auth service instance created');
-        }
-
-        isInitialized() {
-            logInfo(`Checking initialization status: ${this._initialized}`);
-            return this._initialized === true;
+            logInfo('Auth service instance created with methods:', Object.keys(this));
         }
 
         async initialize() {
@@ -386,8 +391,13 @@
             // Initialize the instance first
             await instance.initialize();
             
-            // Expose the instance directly
-            window.authService = instance;
+            // Expose the instance directly with proper descriptors
+            Object.defineProperty(window, 'authService', {
+                value: instance,
+                writable: false,
+                enumerable: true,
+                configurable: false
+            });
             
             // Verify all required methods are accessible
             const requiredMethods = [
@@ -404,8 +414,14 @@
                 'getToken'
             ];
             
-            const missingMethods = requiredMethods.filter(method => 
-                typeof window.authService[method] !== 'function'
+            const availableMethods = Object.getOwnPropertyNames(instance).filter(
+                prop => typeof instance[prop] === 'function'
+            );
+            
+            logInfo('Available methods:', availableMethods);
+            
+            const missingMethods = requiredMethods.filter(
+                method => !availableMethods.includes(method)
             );
             
             if (missingMethods.length > 0) {
