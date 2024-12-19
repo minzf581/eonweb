@@ -89,6 +89,7 @@
             this.validateToken = this.validateToken.bind(this);
             this.clearAuth = this.clearAuth.bind(this);
             this.logout = this.logout.bind(this);
+            this.isAdmin = this.isAdmin.bind(this);
             
             this.logInfo('Auth service setup complete');
         }
