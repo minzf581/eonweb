@@ -82,7 +82,7 @@
             this._token = null;
             this._tokenExpiry = null;
 
-            // Explicitly bind all methods
+            // Explicitly bind all methods to this instance
             this.initialize = this.initialize.bind(this);
             this.isInitialized = this.isInitialized.bind(this);
             this.login = this.login.bind(this);
@@ -307,6 +307,7 @@
         }
 
         getToken() {
+            logInfo(`Getting token: ${this._token ? 'token exists' : 'no token'}`);
             return this._token;
         }
 
@@ -380,11 +381,24 @@
         // Create and expose the singleton instance
         if (typeof window.authService === 'undefined') {
             logInfo('Creating new auth service instance...');
-            window.authService = new AuthService();
-            logInfo('Auth service instance created with methods:', 
-                Object.keys(Object.getPrototypeOf(window.authService))
-                    .filter(key => typeof window.authService[key] === 'function')
-            );
+            const instance = new AuthService();
+            
+            // Expose all methods explicitly
+            window.authService = {
+                isInitialized: instance.isInitialized.bind(instance),
+                initialize: instance.initialize.bind(instance),
+                login: instance.login.bind(instance),
+                logout: instance.logout.bind(instance),
+                clearAuth: instance.clearAuth.bind(instance),
+                validateToken: instance.validateToken.bind(instance),
+                getUser: instance.getUser.bind(instance),
+                setToken: instance.setToken.bind(instance),
+                register: instance.register.bind(instance),
+                isAdmin: instance.isAdmin.bind(instance),
+                getToken: instance.getToken.bind(instance)
+            };
+            
+            logInfo('Auth service methods exposed:', Object.keys(window.authService));
         } else {
             logInfo('Auth service instance already exists');
         }
