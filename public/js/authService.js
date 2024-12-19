@@ -25,6 +25,9 @@ class AuthService {
     }
 
     getToken = () => {
+        if (!this._initialized) {
+            throw new Error('AuthService not initialized');
+        }
         return this._token;
     }
 
@@ -191,24 +194,17 @@ class AuthService {
     }
 }
 
-// Initialize and expose the auth service
-const authService = new AuthService();
-window.authService = authService;
+// Create and expose a singleton instance
+const createAuthService = async () => {
+    const authService = new AuthService();
+    await authService.initialize();
+    return authService;
+};
 
-// Initialize the service immediately
-authService.initialize().then(() => {
-    authService.logInfo('Service initialized successfully');
+// Initialize the auth service
+createAuthService().then(service => {
+    window.authService = service;
+    service.logInfo('Service initialized successfully');
 }).catch(error => {
-    authService.logError('Service initialization failed', error);
-});
-
-// Also initialize when the page loads (in case the first initialization fails)
-document.addEventListener('DOMContentLoaded', () => {
-    if (!authService.isInitialized()) {
-        authService.initialize().then(() => {
-            authService.logInfo('Service initialized successfully');
-        }).catch(error => {
-            authService.logError('Service initialization failed', error);
-        });
-    }
+    console.error('Failed to initialize AuthService:', error);
 });

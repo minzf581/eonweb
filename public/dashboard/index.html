@@ -346,15 +346,15 @@
             const startTime = Date.now();
             
             while (Date.now() - startTime < timeout) {
-                try {
-                    if (window.authService && window.authService.isInitialized()) {
-                        // Wait a bit more to ensure everything is ready
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        console.log('AuthService is ready');
+                if (window.authService) {
+                    try {
+                        // Try to get a token to verify the service is working
+                        const token = window.authService.getToken();
+                        console.log('AuthService is ready with token:', !!token);
                         return true;
+                    } catch (error) {
+                        console.log('AuthService not ready yet:', error.message);
                     }
-                } catch (error) {
-                    console.log('Waiting for AuthService...', error);
                 }
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
@@ -362,175 +362,182 @@
             throw new Error('AuthService initialization timeout');
         }
 
-        // Load user data
-        async function loadUserData() {
-            try {
-                const user = await window.authService.getUser();
-                if (user) {
-                    document.getElementById('userName').textContent = user.email || 'Unknown User';
+        // Load user data with retries
+        async function loadUserData(retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const user = await window.authService.getUser();
+                    if (user) {
+                        document.getElementById('userName').textContent = user.email || 'Unknown User';
+                        return;
+                    }
+                } catch (error) {
+                    console.error(`Error loading user data (attempt ${i + 1}/${retries}):`, error);
+                    if (i === retries - 1) {
+                        document.getElementById('userName').textContent = 'Error loading user data';
+                        throw error;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
-            } catch (error) {
-                console.error('Error loading user data:', error);
-                document.getElementById('userName').textContent = 'Error loading user data';
             }
         }
 
-        // Load stats
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
+        // Load stats with retries
+        async function loadStats(retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const token = window.authService.getToken();
+                    const response = await fetch('/api/stats', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load stats');
                     }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to load stats');
-                }
 
-                const stats = await response.json();
-                
-                // Update stats display
-                document.getElementById('pointsStats').textContent = stats.points || '0';
-                document.getElementById('completedTasksStats').textContent = stats.completedTasks || '0';
-                document.getElementById('activeTasksStats').textContent = stats.activeTasks || '0';
-            } catch (error) {
-                console.error('Error loading stats:', error);
-                document.getElementById('pointsStats').textContent = 'Error';
-                document.getElementById('completedTasksStats').textContent = 'Error';
-                document.getElementById('activeTasksStats').textContent = 'Error';
-            }
-        }
-
-        // Load tasks
-        async function loadTasks() {
-            try {
-                const response = await fetch('/api/tasks', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to load tasks');
-                }
-
-                const tasks = await response.json();
-                const tasksContainer = document.getElementById('tasksContainer');
-                
-                if (tasks.length === 0) {
-                    tasksContainer.innerHTML = '<p>No available tasks</p>';
+                    const stats = await response.json();
+                    
+                    // Update stats display
+                    document.getElementById('pointsStats').textContent = stats.points || '0';
+                    document.getElementById('completedTasksStats').textContent = stats.completedTasks || '0';
+                    document.getElementById('activeTasksStats').textContent = stats.activeTasks || '0';
                     return;
-                }
-
-                tasksContainer.innerHTML = tasks.map(task => `
-                    <div class="task-card ${task.status === 'completed' ? 'completed' : ''}">
-                        <div class="task-header">
-                            <h3>${task.title}</h3>
-                            <span class="task-reward">${task.reward} Points</span>
-                        </div>
-                        <p class="task-description">${task.description}</p>
-                        <div class="task-footer">
-                            <span class="task-status">${task.status === 'completed' ? 'Completed' : 'Not Started'}</span>
-                            ${task.status !== 'completed' ? 
-                                `<button onclick="startTask('${task._id}')" class="task-action start-task">
-                                    Start Task
-                                </button>` : 
-                                ''
-                            }
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading tasks:', error);
-                document.getElementById('tasksContainer').innerHTML = '<p>Error loading tasks</p>';
-            }
-        }
-
-        // Start task
-        async function startTask(taskId) {
-            try {
-                const response = await fetch(`/api/tasks/${taskId}/start`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
+                } catch (error) {
+                    console.error(`Error loading stats (attempt ${i + 1}/${retries}):`, error);
+                    if (i === retries - 1) {
+                        document.getElementById('pointsStats').textContent = 'Error';
+                        document.getElementById('completedTasksStats').textContent = 'Error';
+                        document.getElementById('activeTasksStats').textContent = 'Error';
+                        throw error;
                     }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to start task');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
-
-                // Reload tasks list
-                await loadTasks();
-                // Reload stats
-                await loadStats();
-            } catch (error) {
-                console.error('Error starting task:', error);
-                alert('Failed to start task');
             }
         }
 
-        // Load referral data
-        async function loadReferralData() {
-            try {
-                const response = await fetch('/api/referral', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
+        // Load tasks with retries
+        async function loadTasks(retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const token = window.authService.getToken();
+                    const response = await fetch('/api/tasks', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load tasks');
                     }
-                });
 
-                if (!response.ok) {
-                    throw new Error('Failed to load referral data');
-                }
+                    const tasks = await response.json();
+                    const tasksContainer = document.getElementById('tasksContainer');
+                    
+                    if (tasks.length === 0) {
+                        tasksContainer.innerHTML = '<p>No available tasks</p>';
+                        return;
+                    }
 
-                const data = await response.json();
-                
-                document.getElementById('referralCode').textContent = data.referralCode || 'N/A';
-                document.getElementById('referralCount').textContent = data.referralCount || '0';
-                document.getElementById('referralPoints').textContent = data.referralPoints || '0';
-            } catch (error) {
-                console.error('Error loading referral data:', error);
-                document.getElementById('referralCode').textContent = 'Error';
-                document.getElementById('referralCount').textContent = 'Error';
-                document.getElementById('referralPoints').textContent = 'Error';
-            }
-        }
-
-        // Copy referral code
-        function copyReferralCode() {
-            const code = document.getElementById('referralCode').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                alert('Referral code copied to clipboard');
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-                alert('Failed to copy');
-            });
-        }
-
-        // Initialize dashboard
-        async function initializeDashboard() {
-            try {
-                // Wait for AuthService to initialize
-                await waitForAuthService();
-                
-                // Validate token
-                const isValid = await window.authService.validateToken();
-                if (!isValid) {
-                    window.location.href = '/auth/login';
+                    tasksContainer.innerHTML = tasks.map(task => `
+                        <div class="task-card ${task.status === 'completed' ? 'completed' : ''}">
+                            <div class="task-header">
+                                <h3>${task.title}</h3>
+                                <span class="task-reward">${task.reward} Points</span>
+                            </div>
+                            <p class="task-description">${task.description}</p>
+                            <div class="task-footer">
+                                <span class="task-status">${task.status === 'completed' ? 'Completed' : 'Not Started'}</span>
+                                ${task.status !== 'completed' ? 
+                                    `<button onclick="startTask('${task._id}')" class="task-action start-task">
+                                        Start Task
+                                    </button>` : 
+                                    ''
+                                }
+                            </div>
+                        </div>
+                    `).join('');
                     return;
+                } catch (error) {
+                    console.error(`Error loading tasks (attempt ${i + 1}/${retries}):`, error);
+                    if (i === retries - 1) {
+                        document.getElementById('tasksContainer').innerHTML = '<p>Error loading tasks</p>';
+                        throw error;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
+            }
+        }
 
-                // Load all data
-                await loadUserData();
-                await loadStats();
-                await loadTasks();
-                await loadReferralData();
-            } catch (error) {
-                console.error('Dashboard initialization failed:', error);
-                // If auth error, redirect to login page
-                if (error.message.includes('auth') || error.message.includes('token')) {
-                    window.location.href = '/auth/login';
+        // Load referral data with retries
+        async function loadReferralData(retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const token = window.authService.getToken();
+                    const response = await fetch('/api/referral', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load referral data');
+                    }
+
+                    const data = await response.json();
+                    
+                    document.getElementById('referralCode').textContent = data.referralCode || 'N/A';
+                    document.getElementById('referralCount').textContent = data.referralCount || '0';
+                    document.getElementById('referralPoints').textContent = data.referralPoints || '0';
+                    return;
+                } catch (error) {
+                    console.error(`Error loading referral data (attempt ${i + 1}/${retries}):`, error);
+                    if (i === retries - 1) {
+                        document.getElementById('referralCode').textContent = 'Error';
+                        document.getElementById('referralCount').textContent = 'Error';
+                        document.getElementById('referralPoints').textContent = 'Error';
+                        throw error;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        }
+
+        // Initialize dashboard with retries
+        async function initializeDashboard(retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    // Wait for AuthService to initialize
+                    await waitForAuthService();
+                    
+                    // Validate token
+                    const isValid = await window.authService.validateToken();
+                    if (!isValid) {
+                        window.location.href = '/auth/login';
+                        return;
+                    }
+
+                    // Load all data
+                    await Promise.all([
+                        loadUserData(),
+                        loadStats(),
+                        loadTasks(),
+                        loadReferralData()
+                    ]);
+                    
+                    console.log('Dashboard initialized successfully');
+                    return;
+                } catch (error) {
+                    console.error(`Dashboard initialization failed (attempt ${i + 1}/${retries}):`, error);
+                    if (i === retries - 1) {
+                        // If auth error, redirect to login page
+                        if (error.message.includes('auth') || error.message.includes('token')) {
+                            window.location.href = '/auth/login';
+                        }
+                        throw error;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
         }
