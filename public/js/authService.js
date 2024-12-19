@@ -182,7 +182,7 @@ class AuthService {
             this.logError('Logout failed', error);
         } finally {
             this.clearAuth();
-            window.location.href = '/auth/login';
+            window.location.href = '/login';
         }
     }
 
