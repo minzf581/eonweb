@@ -14,27 +14,27 @@ class AuthService {
         this.initialize();
     }
 
-    logInfo = (message) => {
+    logInfo(message) {
         console.log(`[AuthService ${new Date().toISOString()}] ${message}`);
     }
 
-    logError = (message, error) => {
+    logError(message, error) {
         console.error(`[AuthService ${new Date().toISOString()}] ${message}:`, error);
     }
 
-    isInitialized = () => {
+    isInitialized() {
         this.logInfo(`Checking initialization status: ${this._initialized}`);
         return this._initialized;
     }
 
-    getToken = () => {
+    getToken() {
         if (!this._initialized) {
             throw new Error('AuthService not initialized');
         }
         return this._token;
     }
 
-    initialize = async () => {
+    async initialize() {
         if (this._initializing) return;
         if (this._initialized) return;
 
@@ -67,7 +67,7 @@ class AuthService {
         }
     }
 
-    validateToken = async () => {
+    async validateToken() {
         if (!this._token) return false;
 
         try {
@@ -91,7 +91,7 @@ class AuthService {
         }
     }
 
-    clearAuth = () => {
+    clearAuth() {
         this._token = null;
         this._tokenExpiry = null;
         localStorage.removeItem('auth_token');
@@ -99,7 +99,7 @@ class AuthService {
         this.logInfo('Auth cleared');
     }
 
-    logout = async () => {
+    async logout() {
         try {
             await fetch('/api/auth/logout', {
                 method: 'POST',
@@ -115,7 +115,7 @@ class AuthService {
         }
     }
 
-    login = async (email, password) => {
+    async login(email, password) {
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -138,7 +138,7 @@ class AuthService {
         }
     }
 
-    register = async (email, password, referralCode = '') => {
+    async register(email, password, referralCode = '') {
         try {
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -161,7 +161,7 @@ class AuthService {
         }
     }
 
-    setToken = (token) => {
+    setToken(token) {
         this._token = token;
         const expiry = new Date();
         expiry.setHours(expiry.getHours() + 24);
@@ -170,7 +170,7 @@ class AuthService {
         localStorage.setItem('auth_token_expiry', this._tokenExpiry);
     }
 
-    getUser = async () => {
+    async getUser() {
         if (!this._token) return null;
 
         try {
@@ -191,7 +191,7 @@ class AuthService {
         }
     }
 
-    isAdmin = async () => {
+    async isAdmin() {
         const user = await this.getUser();
         return user && user.isAdmin;
     }
