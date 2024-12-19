@@ -209,85 +209,26 @@
             top: -2px;
         }
         
-        .strengths-visual {
+        .solution-image {
             position: relative;
-            height: 400px;
             border-radius: 20px;
             overflow: hidden;
-            background: rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
         }
-
-        .geometric-animation {
-            position: relative;
+        
+        .solution-image:hover {
+            transform: translateY(-10px);
+        }
+        
+        .solution-image img {
             width: 100%;
-            height: 100%;
+            height: auto;
+            display: block;
+            border-radius: 20px;
+            transition: transform 0.3s ease;
         }
-
-        .geometric-shape {
-            position: absolute;
-            width: 150px;
-            height: 150px;
-            border: 2px solid rgba(0, 102, 255, 0.5);
-            border-radius: 15px;
-            animation: float 6s infinite ease-in-out;
-        }
-
-        .shape1 {
-            top: 20%;
-            left: 20%;
-            transform: rotate(45deg);
-            animation-delay: 0s;
-        }
-
-        .shape2 {
-            top: 40%;
-            left: 50%;
-            transform: rotate(90deg);
-            animation-delay: 2s;
-        }
-
-        .shape3 {
-            top: 60%;
-            left: 30%;
-            transform: rotate(135deg);
-            animation-delay: 4s;
-        }
-
-        .geometric-glow {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, rgba(0, 102, 255, 0.2) 0%, transparent 70%);
-            pointer-events: none;
-            animation: pulse 4s infinite ease-in-out;
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0) rotate(0deg);
-            }
-            50% {
-                transform: translateY(-20px) rotate(180deg);
-            }
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 0.5;
-            }
-            50% {
-                opacity: 0.8;
-            }
-        }
-
-        .geometric-shape:hover {
-            transform: scale(1.1) rotate(90deg);
-            border-color: rgba(0, 102, 255, 0.8);
-            box-shadow: 0 0 30px rgba(0, 102, 255, 0.3);
-        }
-
+        
         @media (max-width: 768px) {
             .solution-container {
                 grid-template-columns: 1fr;
@@ -298,8 +239,8 @@
                 padding-right: 0;
             }
             
-            .strengths-visual {
-                height: 300px;
+            .solution-image {
+                margin-top: 2rem;
             }
         }
 
@@ -1001,7 +942,7 @@ footer p {
             }
         }
     </style>
-    <script src="/public/js/authService.js"></script>
+    <script src="/eonweb/public/js/authService.js"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 </head>
 <body>
@@ -1009,7 +950,7 @@ footer p {
     <!-- Navigation with Company Logo -->
     <nav class="main-nav" style="background-color: black;">
         <div class="nav-brand">
-            <img src="/public/images/enologo.jpg" alt="Company Logo" style="height: 80px; margin-top: 1.5rem;" >
+            <img src="/eonweb/public/images/enologo.jpg" alt="Company Logo" style="height: 80px; margin-top: 1.5rem;" >
             <a href="#home"></a>
         </div>
         <div class="nav-links">
@@ -1065,14 +1006,9 @@ footer p {
                 <li>Robust Community-Driven Development and Support Ecosystem</li>
             </ul>
         </div>
-        <div class="strengths-visual">
-            <div class="geometric-animation">
-                <div class="geometric-shape shape1"></div>
-                <div class="geometric-shape shape2"></div>
-                <div class="geometric-shape shape3"></div>
-                <div class="geometric-glow"></div>
-            </div>
-        </div>
+        <div class="solution-image">
+          <img src="/eonweb/public/images/solution-modern.jpg" alt="EON Protocol Solution Visualization" loading="lazy">
+      </div>
     </div>
 </section>
 
@@ -1166,29 +1102,29 @@ footer p {
   <div class="partners-container">
     <div class="partners-scroll">
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="/public/images/antler.jpg" alt="Partner 1">
+        <img src="/eonweb/public/images/antler.jpg" alt="Partner 1">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="/public/images/cogitent.jpg" alt="Partner 2">
+        <img src="/eonweb/public/images/cogitent.jpg" alt="Partner 2">
       </a>
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="/public/images/omo.jpg" alt="Partner 3">
+        <img src="/eonweb/public/images/omo.jpg" alt="Partner 3">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="/public/images/cogitent.jpg" alt="Partner 4">
+        <img src="/eonweb/public/images/cogitent.jpg" alt="Partner 4">
       </a>
       <a href="https://dsiasia.framer.website/" class="partner-item" target="_blank">
-        <img src="/public/images/datascience.jpg" alt="Data Science for Good">
+        <img src="/eonweb/public/images/datascience.jpg" alt="Data Science for Good">
       </a>
       <!-- 复制一组用于无缝滚动 -->
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="/public/images/antler.jpg" alt="Partner 1">
+        <img src="/eonweb/public/images/antler.jpg" alt="Partner 1">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="/public/images/cogitent.jpg" alt="Partner 2">
+        <img src="/eonweb/public/images/cogitent.jpg" alt="Partner 2">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="/public/images/omo.jpg" alt="Partner 4">
+        <img src="/eonweb/public/images/omo.jpg" alt="Partner 4">
       </a>
     </div>
   </div>
@@ -1243,10 +1179,10 @@ footer p {
 </footer>
 
     <!-- Scripts -->
-    <script src="/public/js/particles.min.js"></script>
-    <script src="/public/js/authService.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="/eonweb/public/js/authService.js"></script>
     <script>
-        particlesJS.load('particles-js', '/public/js/particles-config.json', function() {
+        particlesJS.load('particles-js', '/eonweb/public/js/particles-config.json', function() {
             console.log('callback - particles.js config loaded');
         });
 
