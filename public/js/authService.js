@@ -48,6 +48,24 @@ class AuthService {
         return this._data.tokenExpiry;
     }
 
+    get getToken() {
+        console.log('[AuthService] getToken called:', {
+            initialized: this.initialized,
+            hasToken: !!this.token,
+            tokenExpiry: this.tokenExpiry
+        });
+
+        try {
+            if (!this.initialized) {
+                throw new Error('AuthService not initialized');
+            }
+            return this.token;
+        } catch (error) {
+            this.logError('Error accessing token', error);
+            return null;
+        }
+    }
+
     // Methods
     logInfo(message) {
         console.log(`[AuthService ${new Date().toISOString()}] ${message}`);
@@ -64,24 +82,6 @@ class AuthService {
             tokenExpiry: this.tokenExpiry
         });
         return this.initialized;
-    }
-
-    getToken() {
-        console.log('[AuthService] getToken called:', {
-            initialized: this.initialized,
-            hasToken: !!this.token,
-            tokenExpiry: this.tokenExpiry
-        });
-
-        try {
-            if (!this.initialized) {
-                throw new Error('AuthService not initialized');
-            }
-            return this.token;
-        } catch (error) {
-            this.logError('Error accessing token', error);
-            return null;
-        }
     }
 
     async initialize() {

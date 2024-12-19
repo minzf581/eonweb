@@ -381,12 +381,12 @@
             console.log('[Dashboard] Loading stats...');
             console.log('[Dashboard] AuthService state:', {
                 exists: !!window.authService,
-                hasGetToken: window.authService && typeof window.authService.getToken === 'function'
+                hasGetToken: window.authService && typeof window.authService.getToken !== 'undefined'
             });
 
             try {
                 await waitForAuthService();
-                const token = window.authService.getToken();
+                const token = window.authService.getToken;
                 console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/stats', {
@@ -420,12 +420,12 @@
             console.log('[Dashboard] Loading tasks...');
             console.log('[Dashboard] AuthService state:', {
                 exists: !!window.authService,
-                hasGetToken: window.authService && typeof window.authService.getToken === 'function'
+                hasGetToken: window.authService && typeof window.authService.getToken !== 'undefined'
             });
 
             try {
                 await waitForAuthService();
-                const token = window.authService.getToken();
+                const token = window.authService.getToken;
                 console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/tasks', {
@@ -482,12 +482,12 @@
             console.log('[Dashboard] Loading referral data...');
             console.log('[Dashboard] AuthService state:', {
                 exists: !!window.authService,
-                hasGetToken: window.authService && typeof window.authService.getToken === 'function'
+                hasGetToken: window.authService && typeof window.authService.getToken !== 'undefined'
             });
 
             try {
                 await waitForAuthService();
-                const token = window.authService.getToken();
+                const token = window.authService.getToken;
                 console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/referral', {
