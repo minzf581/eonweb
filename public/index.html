@@ -945,79 +945,59 @@ footer p {
         /* Core Strengths Section */
         .core-strengths {
             padding: 6rem 0;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2c3e50 100%);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .core-strengths::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 30% 50%, rgba(77, 171, 247, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 50%, rgba(52, 152, 219, 0.1) 0%, transparent 50%);
-            pointer-events: none;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
         }
 
         .core-strengths-container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 2rem;
-            position: relative;
-            z-index: 2;
         }
 
         .core-strengths h2 {
             text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
             color: var(--text-color);
-            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            position: relative;
         }
 
-        .core-strengths h2::after {
+        .core-strengths h2:after {
             content: '';
-            display: block;
-            width: 80px;
-            height: 4px;
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
             background: var(--primary-color);
-            margin: 1rem auto;
-            border-radius: 2px;
         }
 
         .strengths-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
-            margin-top: 3rem;
         }
 
         .strength-item {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 2.5rem 2rem;
+            border-radius: 15px;
+            padding: 2.5rem;
             text-align: center;
             transition: transform 0.3s, box-shadow 0.3s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
             position: relative;
             overflow: hidden;
-            cursor: pointer;
         }
 
-        .strength-item::before {
+        .strength-item:before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(77, 171, 247, 0.1) 0%, transparent 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
+            background: linear-gradient(135deg, rgba(77, 171, 247, 0.1) 0%, rgba(77, 171, 247, 0) 100%);
+            z-index: 0;
         }
 
         .strength-item:hover {
@@ -1025,69 +1005,35 @@ footer p {
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
         }
 
-        .strength-item:hover::before {
-            opacity: 1;
-        }
-
         .strength-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--primary-color) 0%, #357ABD 100%);
-            border-radius: 50%;
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
             position: relative;
-            transition: transform 0.3s;
-        }
-
-        .strength-item:hover .strength-icon {
-            transform: scale(1.1);
-        }
-
-        .strength-icon i {
-            font-size: 2rem;
-            color: white;
-            transition: transform 0.3s;
-        }
-
-        .strength-item:hover .strength-icon i {
-            transform: scale(1.1);
+            z-index: 1;
         }
 
         .strength-item h3 {
-            font-size: 1.5rem;
             color: var(--text-color);
+            font-size: 1.5rem;
             margin-bottom: 1rem;
             position: relative;
+            z-index: 1;
         }
 
         .strength-item p {
             color: var(--secondary-color);
             line-height: 1.6;
-            font-size: 1rem;
-            position: relative;
             margin: 0;
-            transition: color 0.3s;
+            position: relative;
+            z-index: 1;
         }
 
-        .strength-item:hover p {
-            color: var(--text-color);
-        }
-
-        @media (max-width: 968px) {
-            .strengths-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 576px) {
+        @media (max-width: 768px) {
             .strengths-grid {
                 grid-template-columns: 1fr;
-                gap: 1.5rem;
             }
-            
+
             .core-strengths {
                 padding: 4rem 0;
             }
@@ -1097,7 +1043,7 @@ footer p {
             }
 
             .strength-item {
-                padding: 2rem 1.5rem;
+                padding: 2rem;
             }
         }
     </style>
