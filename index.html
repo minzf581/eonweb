@@ -40,6 +40,8 @@
             height: 100vh;
             background-color: transparent;
             z-index: 1;
+            top: 0;
+            left: 0;
         }
 
         .main-nav {
@@ -57,15 +59,11 @@
             z-index: 1000;
         }
 
-        .nav-brand {
-            display: flex;
-            align-items: center;
-        }
-
-        .nav-brand img {
-            height: 40px;
-            
-            margin-top: 8px; /* 为Logo增加顶部空隙 */
+        .nav-brand a {
+            text-decoration: none;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: bold;
         }
 
         .nav-links {
@@ -77,127 +75,175 @@
             text-decoration: none;
             color: var(--text-color);
             transition: color 0.3s;
+            font-size: 1.2rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
         }
 
         .nav-link:hover {
             color: var(--primary-color);
         }
-/* 样式省略 */
-        .solution-section {
-            display: flex;
-            align-items: flex-start; /* 确保标题与图片顶部平齐 */
-        }
-        
-        .solution-section h2 {
-            margin-top: 1.5rem; /* 确保标题与图片顶部平齐 */
-            margin-bottom: 1.5rem; /* 增大行间距 */
-        }
-        .solution-points {
-            list-style-type: none; /* 移除点 */
-            padding: 0; /* 去除列表默认缩进 */
-        }
 
-        .solution-points li {
-            margin-bottom: 1.5rem; /* 增大行间距 */
-        }
-        
-
-/* Solution Section Styles */
-#solution {
-    padding: 4rem 2rem;
-}
-
-.solution-container {
-    display: flex;
-    align-items: flex-start; /* 改为顶部对齐 */
-    gap: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.solution-image {
-    flex: 1;
-}
-
-.solution-image img {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.solution-content {
-    flex: 1;
-    padding-left: 2rem;
-}
-
-.solution-content h2 {
-    margin: 0;  /* 移除标题的默认边距 */
-    margin-bottom: 2rem; /* 标题下方增加间距 */
-}
-
-.solution-content ul {
-    list-style: none;  /* 移除列表项前的点 */
-    padding: 0;
-    margin: 0;
-}
-
-.solution-content ul li {
-    margin-bottom: 2rem; /* 增加列表项之间的间距 */
-    line-height: 1.5;
-}
-
-.solution-content ul li:last-child {
-    margin-bottom: 0; /* 最后一项不需要底部间距 */
-}
-
-
-
+        /* Hero Section Styles */
         .hero {
             height: 100vh;
             position: relative;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding-top: var(--header-height);
-            background-color: rgba(0, 0, 0, 0.7);
             color: white;
+            background-color: var(--background-color);
+            overflow: hidden;
         }
 
         .hero-content {
             position: relative;
             z-index: 2;
+            max-width: 100%;
+            padding: 0 2rem;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+            white-space: nowrap;
+            text-align: center;
+            overflow: visible;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: var(--secondary-color);
         }
 
         .button-container {
-    position: fixed;
-    left: 50%;
-    bottom: 100px;
-    transform: translateX(-50%);
-    z-index: 1000;
-}
+            position: relative;
+            z-index: 2;
+            margin-top: 2rem;
+        }
 
-.cta-button {
-    display: inline-block;
-    padding: 15px 30px;
-    background-color: #0066cc;
-    color: white !important;
-    text-decoration: none;
-    border-radius: 5px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            color: white;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
 
-.cta-button:hover {
-    background-color: #0052a3;
-    transform: translateY(-2px);
-}
+        .cta-button:hover {
+            background-color: #3994d4;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(77, 171, 247, 0.3);
+        }
+
+        .solution-section {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            padding: 6rem 2rem;
+        }
+        
+        .solution-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        .solution-content {
+            padding-right: 2rem;
+        }
+        
+        .solution-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #ffffff;
+            position: relative;
+        }
+        
+        .solution-section h2:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: #007bff;
+        }
+        
+        .solution-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .solution-list li {
+            margin-bottom: 1.5rem;
+            padding-left: 2rem;
+            position: relative;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .solution-list li:before {
+            content: '•';
+            color: #007bff;
+            font-size: 1.5rem;
+            position: absolute;
+            left: 0;
+            top: -2px;
+        }
+        
+        .solution-image {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+        
+        .solution-image:hover {
+            transform: translateY(-10px);
+        }
+        
+        .solution-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .solution-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .solution-content {
+                padding-right: 0;
+            }
+            
+            .solution-image {
+                margin-top: 2rem;
+            }
+        }
+
         .section {
             padding: 5rem 2rem;
             position: relative;
@@ -239,7 +285,7 @@
             background: rgba(255, 255, 255, 0.1);
             padding: 1.5rem;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .contact-form {
@@ -341,11 +387,16 @@
             }
             
             .hero h1 {
-                font-size: 1.8rem;
+                font-size: 1.8rem; /* 减小字体大小以适应移动端 */
+                padding: 0 1rem;
+                white-space: nowrap;
             }
+
             .hero p {
-                font-size: 1rem;
+                font-size: 1.2rem;
+                padding: 0 1rem;
             }
+
             .projects-grid {
                 grid-template-columns: 1fr;
             }
@@ -683,14 +734,223 @@ footer p {
 .social-link.telegram:hover {
   background: #0088cc;
 }
+
+        .about-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .about-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .about-section h3 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .about-section h3::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--primary-color);
+        }
+
+        .values-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .values-list li {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .values-list li::before {
+            content: '•';
+            color: var(--primary-color);
+            position: absolute;
+            left: 0;
+            font-size: 1.5rem;
+        }
+
+        .culture-subsection {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+        }
+
+        .culture-subsection h4 {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+        }
+
+        .culture-subsection h5 {
+            color: #fff;
+            font-size: 1.1rem;
+            margin: 1rem 0;
+        }
+
+        .culture-content ul {
+            list-style: none;
+            padding-left: 1.5rem;
+        }
+
+        .culture-content ul li {
+            margin-bottom: 0.8rem;
+            position: relative;
+        }
+
+        .culture-content ul li::before {
+            content: '→';
+            color: var(--primary-color);
+            position: absolute;
+            left: -1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .about-section {
+                padding: 1.5rem;
+            }
+
+            .about-section h3 {
+                font-size: 1.5rem;
+            }
+
+            .culture-subsection {
+                padding: 1rem;
+            }
+
+            .culture-subsection h4 {
+                font-size: 1.2rem;
+            }
+
+            .culture-content ul {
+                padding-left: 1rem;
+            }
+        }
+
+        /* Add new styles for the about section layout */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .collapsible {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 15px;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 1.5rem 2rem;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .collapsible:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .collapsible:after {
+            content: '+';
+            color: var(--primary-color);
+            font-weight: bold;
+            float: right;
+            font-size: 1.8rem;
+            margin-left: 1rem;
+        }
+
+        .collapsible.active:after {
+            content: '-';
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 0 0 15px 15px;
+            padding: 0 2rem;
+        }
+
+        .collapsible-content.show {
+            max-height: 2000px;
+            padding: 2rem;
+        }
+
+        .contact-options {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .contact-option {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .contact-option:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .contact-option h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .contact-option .contact-description {
+            color: var(--text-color);
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .contact-options {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .contact-option {
+                width: 100%;
+            }
+        }
     </style>
+    <script src="/eonweb/public/js/authService.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 </head>
 <body>
     <!-- Navigation -->
     <!-- Navigation with Company Logo -->
     <nav class="main-nav" style="background-color: black;">
         <div class="nav-brand">
-            <img src="/public/images/enologo.jpg" alt="Company Logo" style="height: 80px; margin-top: 1.5rem;" >
+            <img src="/eonweb/public/images/enologo.jpg" alt="Company Logo" style="height: 80px; margin-top: 1.5rem;" >
             <a href="#home"></a>
         </div>
         <div class="nav-links">
@@ -699,76 +959,55 @@ footer p {
             <a href="#solution" class="nav-link">Solution</a>
             <a href="#about" class="nav-link">About</a>
             <a href="#contact" class="nav-link">Contact</a>
-            <a href="/auth/login" class="cta-button">Get Started</a>
         </div>
     </nav>
 
 
     <!-- Hero Section with Particles -->
     <section id="home" class="hero">
-        <div id="particles-js"></div>
         <div class="hero-content">
-            <h1>AI Intelligence Meets Secure Distributed Power</h1>
-            <p>Next-Gen Distributed Computing: Powered by FHE</p>
-
-        <div class="button-container">
-          <a href="/auth/login" class="cta-button">Get started and Earn</a>
+            <h1>AI Meets Secure Distributed Power</h1>
+            <p>Empower AI achieve secure and seamless data collaboration</p>
         </div>
+        <div class="button-container">
+          <a href="javascript:void(0)" onclick="window.authService.handleAuthRedirect()" class="cta-button">Get started and Earn</a>
+        </div>
+        <div id="particles-js" style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh;"></div>
          
     </section>
 
 
     <!-- Projects Section -->
     <section id="projects" class="partners-section">
-        <h2>Distributed Computing powered by FHE</h2>
+        <h2>Eon Platform</h2>
         <div class="projects-grid">
             <div class="project-card">
-                <h3>Fully Homomorphic Encryption</h3>
-                <p>FHE enables AI model training on encrypted data, allowing enterprises to leverage sensitive datasets while maintaining complete privacy</p>
+                <h3>Enterprise</h3>
+                <p>Transform your data strategy with our enterprise-grade privacy-preserving platform. Access compliant, secure data services while maintaining complete control over sensitive information</p>
             </div>
             <div class="project-card">
-                <h3>Distributed Network</h3>
-                <p>The distributed network enhances computational efficiency, increasing the scalability of FHE in large-scale applications</p>
+                <h3>Developer</h3>
+                <p>Leverage our cutting-edge infrastructure to build innovative solutions. Unlock new revenue streams and expand your market reach with our comprehensive development toolkit</p>
             </div>
             <div class="project-card">
-                <h3>Decentralized Open Platform</h3>
-                <p>The open, decentralized platform allows more third parties to participate in network development, providing greater value to customers</p>
+                <h3>Community</h3>
+                <p>Shape the future of secure data collaboration. Join a thriving ecosystem of innovators building the next generation of privacy-first AI solutions</p>
             </div>
         </div>
     </section>
 
-<section id="feature" class="section solution-section">
-    <div class="solution-container">
-        <div class="solution-image">
-            <img src="/public/images/solution.jpg" alt="Solution Image">
-        </div>
-        <div class="solution-content">
-            <h2>Data Processing Procedure</h2>
-            <ul>
-                <li>Reducing computation costs via distributed network</li>
-                <li>A: After data is encrypted, it is segmented into small parts</li>
-                <li>B: These data fragments are processed through distributed computation</li>
-                <li>C: The distributed network enhances computational efficiency</li>
-                <li>D: Processing time improves while privacy is maintained</li>
-            </ul>
-        </div>
-    </div>
-</section>
 <section id="solution" class="section solution-section">
     <div class="solution-container">
-        
         <div class="solution-content">
-            <h2>Solution</h2>
-            <ul>
-                <li>A distributed FHE platform enabling secure data monetization while preserving privacy.</li>
-                <li>A: Distributed FHE technology</li>
-                <li>B: Secure data monetization</li>
-                <li>C: Third-party application ecosystem</li>
-                <li>D: Regulatory compliance</li>
+            <h2>Our Core Strengths</h2>
+            <ul class="solution-list">
+                <li>Advanced Privacy Computing with FHE Technology, Powered by Distributed Architecture</li>
+                <li>Industry-Leading Compliance Framework for Secure Data Operations</li>
+                <li>Robust Community-Driven Development and Support Ecosystem</li>
             </ul>
         </div>
         <div class="solution-image">
-          <img src="/public/images/eonsolution.jpg" alt="Solution Image">
+          <img src="/eonweb/public/images/solution-modern.jpg" alt="EON Protocol Solution Visualization" loading="lazy">
       </div>
     </div>
 </section>
@@ -778,54 +1017,114 @@ footer p {
     <section id="about" class="section">
         <div class="about-content">
             <h2>About Us</h2>
-            <p>Eon Protocol specializes in privacy computing, offering data protection and privacy solutions that ensure security. The team has extensive experience in distributed computing, cryptography, data regulation, which allows them to address complex privacy needs and performance requirements.</p>
-           
- <div class="stats">
-                <div class="stat-item">
-                    <span class="counter" data-target="5">Blockchain</span>
-                    <span>Expert</span>
+            
+            <!-- Vision and Mission Grid -->
+            <div class="about-grid">
+                <!-- Vision Section -->
+                <div class="about-section">
+                    <h3>Vision</h3>
+                    <p>EON Protocol envisions a world where the free flow of secure and encrypted data empowers individuals, enterprises, and organizations to collaborate seamlessly within and across borders. We strive to establish a digital ecosystem built on privacy, security, and interoperability, driving trust and innovation globally.</p>
                 </div>
-                <div class="stat-item">
-                    <span class="counter" data-target="50">Network</span>
-                    <span> Scientist </span>
+
+                <!-- Mission Section -->
+                <div class="about-section">
+                    <h3>Mission</h3>
+                    <p>We empower enterprises and individuals to achieve secure and seamless data collaboration by delivering scalable, privacy-preserving, and decentralized technology solutions that facilitate the free flow of encrypted data across networks, industries, and borders.</p>
                 </div>
-                <div class="stat-item">
-                    <span class="counter" data-target="50">Data Science</span>
-                    <span> Practitioner </span>
+            </div>
+
+            <!-- Collapsible Core Values Section -->
+            <button class="collapsible">Core Values</button>
+            <div class="collapsible-content">
+                <div class="about-section" style="margin-bottom: 0;">
+                    <ul class="values-list">
+                        <li><strong>Innovation:</strong> Leveraging cutting-edge blockchain, AI, and Web3 technologies to create privacy-preserving and decentralized solutions.</li>
+                        <li><strong>Collaboration:</strong> Fostering a culture of teamwork across employees, partners, and investors to achieve shared goals.</li>
+                        <li><strong>Integrity:</strong> Maintaining transparency and ethical business practices in all operations.</li>
+                        <li><strong>Customer-Centricity:</strong> Prioritizing user needs and creating scalable, secure solutions for enterprises and individuals.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Collapsible People and Culture Section -->
+            <button class="collapsible">People and Culture</button>
+            <div class="collapsible-content">
+                <div class="about-section" style="margin-bottom: 0;">
+                    <div class="culture-subsection">
+                        <h4>Employees</h4>
+                        <div class="culture-content">
+                            <h5>Recruitment Criteria</h5>
+                            <ul>
+                                <li>Candidates must align with EON Protocol's values, demonstrate technical expertise in blockchain, telco, or AI, and possess a proactive, problem-solving mindset.</li>
+                                <li>A passion for Web3 and decentralization is a significant plus.</li>
+                            </ul>
+                            
+                            <h5>Cultural Fit</h5>
+                            <ul>
+                                <li>Emphasize openness, continuous learning, and resilience in the face of challenges.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="culture-subsection">
+                        <h4>Investors</h4>
+                        <div class="culture-content">
+                            <h5>Alignment</h5>
+                            <ul>
+                                <li>Investors should resonate with EON Protocol's vision of decentralized privacy-first solutions and have a long-term focus.</li>
+                            </ul>
+                            
+                            <h5>Board Representation</h5>
+                            <ul>
+                                <li>Engage with investors who actively contribute expertise without compromising the company's innovative spirit.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="culture-subsection" style="margin-bottom: 0;">
+                        <h4>Permanent Partners</h4>
+                        <div class="culture-content">
+                            <h5>Selection Criteria</h5>
+                            <ul>
+                                <li>Work with organizations committed to innovation, privacy, and compliance in fintech and Web3 ecosystems.</li>
+                                <li>Partners should actively collaborate to enhance the ecosystem.</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-<!-- 更新合作伙伴部分 -->
+<!-- 更合作伙部分 -->
 <section class="partners-section">
   <h2>Our Partners</h2>
   <div class="partners-container">
     <div class="partners-scroll">
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="/public/images/antler.jpg" alt="Partner 1">
+        <img src="/eonweb/public/images/antler.jpg" alt="Partner 1">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="/public/images/cogitent.jpg" alt="Partner 2">
+        <img src="/eonweb/public/images/cogitent.jpg" alt="Partner 2">
       </a>
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="/public/images/omo.jpg" alt="Partner 3">
+        <img src="/eonweb/public/images/omo.jpg" alt="Partner 3">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="/public/images/cogitent.jpg" alt="Partner 4">
+        <img src="/eonweb/public/images/cogitent.jpg" alt="Partner 4">
+      </a>
+      <a href="https://dsiasia.framer.website/" class="partner-item" target="_blank">
+        <img src="/eonweb/public/images/datascience.jpg" alt="Data Science for Good">
       </a>
       <!-- 复制一组用于无缝滚动 -->
       <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="/public/images/antler.jpg" alt="Partner 1">
+        <img src="/eonweb/public/images/antler.jpg" alt="Partner 1">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="/public/images/cogitent.jpg" alt="Partner 2">
-      </a>
-      <a href="https://www.antler.co" class="partner-item" target="_blank">
-        <img src="/public/images/antler.jpg" alt="Partner 3">
+        <img src="/eonweb/public/images/cogitent.jpg" alt="Partner 2">
       </a>
       <a href="https://cogitent.ventures" class="partner-item" target="_blank">
-        <img src="/public/images/omo.jpg" alt="Partner 4">
+        <img src="/eonweb/public/images/omo.jpg" alt="Partner 4">
       </a>
     </div>
   </div>
@@ -836,14 +1135,24 @@ footer p {
 <section id="contact" class="contact-section">
   <div class="contact-container">
     <div class="contact-header">
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSeZcbNV-RH8rXRRBRGAYLFx69HOUddvDsSDX3YjPqXbNY19aQ/viewform?usp=sf_link" target="_blank">
-        <h2>Join the Waitlist</h2>
-      </a>
-      
-      <p class="contact-description">Leave your information to stay updated on upcoming airdrops!</p>
+      <div class="contact-options">
+        <div class="contact-option">
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSeZcbNV-RH8rXRRBRGAYLFx69HOUddvDsSDX3YjPqXbNY19aQ/viewform?usp=sf_link" target="_blank">
+            <h2>Contact Business</h2>
+            <p class="contact-description">Get in touch with our business team for partnership opportunities!</p>
+          </a>
+        </div>
+        
+        <div class="contact-option">
+          <a href="https://www.linkedin.com/jobs/view/4097011356" target="_blank">
+            <h2>We're Hiring!</h2>
+            <p class="contact-description">Join our team and help build the future of secure data collaboration!</p>
+          </a>
+        </div>
+      </div>
     </div>
-
   </div>
+{{ ... }}
     <!-- Footer -->
 <!-- 更新社交媒体链接部分 -->
 <footer>
@@ -852,7 +1161,7 @@ footer p {
       <a href="https://tiktok.com/@eon_protocol" class="social-link tiktok" target="_blank">
         <i class="fab fa-tiktok"></i>
       </a>
-      <a href="https://discord.gg/DnEAGCbm" class="social-link discord" target="_blank">
+      <a href="https://discord.gg/2Yt5eNdm" class="social-link discord" target="_blank">
         <i class="fab fa-discord"></i>
       </a>
       <a href="https://youtube.com/@eon_protocol" class="social-link youtube" target="_blank">
@@ -870,16 +1179,16 @@ footer p {
 </footer>
 
     <!-- Scripts -->
-    <script src="/public/js/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="/eonweb/public/js/authService.js"></script>
     <script>
-        // 初始化 Particles.js
-        particlesJS.load('particles-js', '/public/js/particles-config.json', function() {
+        particlesJS.load('particles-js', '/eonweb/public/js/particles-config.json', function() {
             console.log('callback - particles.js config loaded');
         });
 
         // 主题切换
         const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
-        
+
         function switchTheme(e) {
             if (e.target.checked) {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -909,10 +1218,66 @@ footer p {
 
             updateCounter();
         });
-
     </script>
-<!-- 添加Font Awesome图标 -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    <!-- 添加Font Awesome图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 80,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                color: {
+                    value: '#4dabf7'
+                },
+                shape: {
+                    type: 'circle'
+                },
+                opacity: {
+                    value: 0.5,
+                    random: false
+                },
+                size: {
+                    value: 3,
+                    random: true
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#4dabf7',
+                    opacity: 0.4,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 6,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'grab'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                }
+            },
+            retina_detect: true
+        });
+    </script>
 </body>
 </html>
