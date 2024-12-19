@@ -153,10 +153,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
 // 启用压缩
 app.use(compression());
 
@@ -197,19 +193,22 @@ app.use((req, res, next) => {
     next();
 });
 
-// 静态文件服务 - 先处理 js 文件
-app.use('/js', express.static(path.join(__dirname, 'public/js'), {
-    maxAge: '1d',
+// 静态文件服务
+app.use('/public', express.static(path.join(__dirname, 'public'), {
+    maxAge: '1h',
     etag: true,
     lastModified: true
 }));
 
-// 其他静态文件
-app.use('/public', express.static(path.join(__dirname, 'public'), {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true
-}));
+// 主页路由
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+// Dashboard 路由
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/dashboard/index.html'));
+});
 
 // 处理 auth 相关页面
 app.get('/auth/login', (req, res) => {
