@@ -133,15 +133,13 @@
             width: 100%;
             height: 100%;
             background: rgba(255, 255, 255, 0.9);
-            display: none; /* 默认隐藏 */
+            display: none;
             z-index: 9999;
+            justify-content: center;
+            align-items: center;
         }
 
         .loading-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             text-align: center;
         }
 
@@ -155,26 +153,27 @@
             animation: spin 1s linear infinite;
         }
 
-        .loading-text {
-            color: #333;
-            font-size: 16px;
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
+        .loading-text {
+            color: #333;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
         /* Error Message Styles */
         #error-message {
+            display: none;
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 15px 20px;
             background: #ff4444;
             color: white;
+            padding: 15px 20px;
             border-radius: 4px;
-            display: none;
             z-index: 10000;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
@@ -544,7 +543,7 @@
             const element = document.getElementById(id);
             if (!element) {
                 console.error(`[Dashboard] Element #${id} not found in DOM`);
-                console.trace();  // 添加堆栈跟踪
+                console.trace();  
                 return null;
             }
             return element;
@@ -552,7 +551,6 @@
 
         // Loading 状态管理
         function showLoading(show = true) {
-            // 确保 DOM 已经准备好
             if (!window.dashboardState.domReady) {
                 console.error('[Dashboard] Attempted to show loading before DOM ready');
                 return;
@@ -561,7 +559,7 @@
             const loadingDiv = document.getElementById('loading-indicator');
             if (!loadingDiv) {
                 console.error('[Dashboard] Loading indicator not found');
-                console.trace();  // 添加堆栈跟踪
+                console.trace();  
                 return;
             }
 
@@ -575,7 +573,6 @@
 
         // Error 状态管理
         function showError(message, retryCallback = null) {
-            // 确保 DOM 已经准备好
             if (!window.dashboardState.domReady) {
                 console.error('[Dashboard] Attempted to show error before DOM ready');
                 return;
