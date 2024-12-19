@@ -458,25 +458,12 @@
 
     <!-- Scripts -->
     <script>
-        // 使用 console 来显示状态
-        function showStatus(message, type = 'info') {
-            const timestamp = new Date().toISOString();
-            console.log(`[Dashboard ${timestamp}] ${message}`);
-            
-            // 只在错误时显示 alert
-            if (type === 'error') {
-                alert(message);
-            }
-        }
-
         // 等待 AuthService
         async function waitForAuthService(timeout = 5000) {
-            showStatus('等待 AuthService 初始化...');
             const startTime = Date.now();
             
             while (Date.now() - startTime < timeout) {
                 if (window.authService?.isInitialized?.()) {
-                    showStatus('AuthService 已就绪');
                     return true;
                 }
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -487,25 +474,21 @@
 
         // 加载用户数据
         async function loadUserData() {
-            showStatus('加载用户数据...');
             // 实现用户数据加载逻辑
         }
 
         // 加载统计数据
         async function loadStats() {
-            showStatus('加载统计数据...');
             // 实现统计数据加载逻辑
         }
 
         // 加载任务数据
         async function loadTasks() {
-            showStatus('加载任务数据...');
             // 实现任务数据加载逻辑
         }
 
         // Dashboard 初始化
         async function initializeDashboard() {
-            showStatus('开始初始化 Dashboard...');
             
             try {
                 // 等待 AuthService
@@ -514,29 +497,22 @@
                 // 验证认证
                 const isAuthenticated = await window.authService.validateToken();
                 if (!isAuthenticated) {
-                    showStatus('未登录，即将跳转到登录页面...', 'error');
                     window.location.href = '/public/auth/login.html';
                     return;
                 }
 
                 // 加载数据
-                showStatus('正在加载数据...');
                 await Promise.all([
                     loadUserData(),
                     loadStats().catch(err => {
                         console.error('Stats error:', err);
-                        showStatus('加载统计数据失败', 'error');
                     }),
                     loadTasks().catch(err => {
                         console.error('Tasks error:', err);
-                        showStatus('加载任务数据失败', 'error');
                     })
                 ]);
-
-                showStatus('Dashboard 初始化完成');
             } catch (error) {
                 console.error('[Dashboard] Error:', error);
-                showStatus('初始化失败，请刷新页面重试', 'error');
             }
         }
 
@@ -544,7 +520,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             // 启动初始化
             initializeDashboard().catch(error => {
-                showStatus('发生严重错误，请刷新页面', 'error');
                 console.error('[Dashboard] Critical error:', error);
             });
         });
