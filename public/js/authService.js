@@ -1,37 +1,34 @@
 // AuthService implementation with improved initialization and method exposure
 class AuthService {
     constructor() {
-        this.logInfo('Auth service instance created');
+        // Initialize private fields
         this._initialized = false;
         this._initializing = false;
         this._token = localStorage.getItem('auth_token');
         this._tokenExpiry = localStorage.getItem('auth_token_expiry');
         
-        // Bind methods to ensure correct 'this' context
-        this.initialize = this.initialize.bind(this);
-        this.isInitialized = this.isInitialized.bind(this);
-        this.getToken = this.getToken.bind(this);
-        this.validateToken = this.validateToken.bind(this);
-        this.clearAuth = this.clearAuth.bind(this);
-        this.logout = this.logout.bind(this);
-        this.isAdmin = this.isAdmin.bind(this);
-        
+        this.logInfo('Auth service instance created');
         this.logInfo('Auth service setup complete');
     }
 
-    logInfo(message) {
+    logInfo = (message) => {
         console.log(`[AuthService ${new Date().toISOString()}] ${message}`);
     }
 
-    logError(message, error) {
+    logError = (message, error) => {
         console.error(`[AuthService ${new Date().toISOString()}] ${message}:`, error);
     }
 
-    isInitialized() {
+    isInitialized = () => {
+        this.logInfo(`Checking initialization status: ${this._initialized}`);
         return this._initialized;
     }
 
-    async initialize() {
+    getToken = () => {
+        return this._token;
+    }
+
+    initialize = async () => {
         if (this._initializing) return;
         if (this._initialized) return;
 
@@ -64,11 +61,7 @@ class AuthService {
         }
     }
 
-    getToken() {
-        return this._token;
-    }
-
-    async validateToken() {
+    validateToken = async () => {
         if (!this._token) return false;
 
         try {
@@ -83,6 +76,7 @@ class AuthService {
                 return false;
             }
 
+            this.logInfo('Token validated from session cache');
             return true;
         } catch (error) {
             this.logError('Token validation failed', error);
@@ -91,7 +85,7 @@ class AuthService {
         }
     }
 
-    clearAuth() {
+    clearAuth = () => {
         this._token = null;
         this._tokenExpiry = null;
         localStorage.removeItem('auth_token');
@@ -99,7 +93,7 @@ class AuthService {
         this.logInfo('Auth cleared');
     }
 
-    async logout() {
+    logout = async () => {
         try {
             await fetch('/api/auth/logout', {
                 method: 'POST',
@@ -115,7 +109,7 @@ class AuthService {
         }
     }
 
-    async login(email, password) {
+    login = async (email, password) => {
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -138,7 +132,7 @@ class AuthService {
         }
     }
 
-    async register(email, password, referralCode = '') {
+    register = async (email, password, referralCode = '') => {
         try {
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -161,7 +155,7 @@ class AuthService {
         }
     }
 
-    setToken(token) {
+    setToken = (token) => {
         this._token = token;
         const expiry = new Date();
         expiry.setHours(expiry.getHours() + 24);
@@ -170,7 +164,7 @@ class AuthService {
         localStorage.setItem('auth_token_expiry', this._tokenExpiry);
     }
 
-    async getUser() {
+    getUser = async () => {
         if (!this._token) return null;
 
         try {
@@ -191,7 +185,7 @@ class AuthService {
         }
     }
 
-    async isAdmin() {
+    isAdmin = async () => {
         const user = await this.getUser();
         return user && user.isAdmin;
     }
