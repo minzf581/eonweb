@@ -186,25 +186,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 静态文件服务
-app.use('/public', express.static(path.join(__dirname, 'public'), {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true
-}));
-
-// 处理 /public 路径下的 404
-app.use('/public/*', (req, res) => {
-    res.status(404).sendFile(path.join(__dirname, '404.html'));
-});
-
-// 所有其他路由都返回 index.html
-app.get('*', (req, res) => {
-    if (!req.path.startsWith('/public/')) {
-        res.sendFile(path.join(__dirname, 'index.html'));
-    }
-});
-
 // 请求日志中间件
 app.use((req, res, next) => {
     console.log('\n=== Incoming Request ===');
@@ -214,6 +195,41 @@ app.use((req, res, next) => {
     console.log('Origin:', req.headers.origin);
     console.log('Headers:', req.headers);
     next();
+});
+
+// 静态文件服务 - 先处理 js 文件
+app.use('/js', express.static(path.join(__dirname, 'public/js'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+}));
+
+// 其他静态文件
+app.use('/public', express.static(path.join(__dirname, 'public'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+}));
+
+// 处理 auth 相关页面
+app.get('/auth/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/auth/login.html'));
+});
+
+app.get('/auth/register', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/auth/register.html'));
+});
+
+// 处理 /public 路径下的 404
+app.use('/public/*', (req, res) => {
+    res.status(404).sendFile(path.join(__dirname, '404.html'));
+});
+
+// 所有其他路由都返回 index.html
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/public/') && !req.path.startsWith('/js/')) {
+        res.sendFile(path.join(__dirname, 'index.html'));
+    }
 });
 
 // 错误处理中间件
