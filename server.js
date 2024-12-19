@@ -549,3 +549,173 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+// 获取用户的推荐信息
+app.get('/api/referral', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        const referralCount = await User.countDocuments({ referredBy: user._id });
+        
+        res.json({
+            referralCode: user.referralCode,
+            referralCount,
+            points: user.points
+        });
+    } catch (error) {
+        console.error('Error fetching referral info:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 获取用户的推荐列表
+app.get('/api/referral/list', authenticateToken, async (req, res) => {
+    try {
+        const referrals = await User.find({ referredBy: req.user.id })
+            .select('email createdAt')
+            .sort({ createdAt: -1 });
+        
+        res.json(referrals);
+    } catch (error) {
+        console.error('Error fetching referral list:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 获取用户统计信息
+app.get('/api/stats', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        // 获取用户信息
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // 获取任务统计
+        const completedTasks = await UserTask.countDocuments({ 
+            userId: userId,
+            completed: true 
+        });
+        
+        const activeTasks = await UserTask.countDocuments({ 
+            userId: userId,
+            completed: false 
+        });
+        
+        res.json({
+            points: user.points || 0,
+            completedTasks,
+            activeTasks
+        });
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 获取任务列表
+app.get('/api/tasks', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        // 获取所有任务
+        const tasks = await Task.find();
+        
+        // 获取用户的任务状态
+        const userTasks = await UserTask.find({ userId });
+        
+        // 合并任务信息和状态
+        const tasksWithStatus = tasks.map(task => {
+            const userTask = userTasks.find(ut => ut.taskId.toString() === task._id.toString());
+            return {
+                id: task._id,
+                name: task.name,
+                description: task.description,
+                points: task.points,
+                type: task.type,
+                status: userTask ? (userTask.completed ? 'completed' : 'in_progress') : 'available'
+            };
+        });
+        
+        res.json(tasksWithStatus);
+    } catch (error) {
+        console.error('Error fetching tasks:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 开始任务
+app.post('/api/tasks/:taskId/start', authenticateToken, async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const userId = req.user.id;
+        
+        // 检查任务是否存在
+        const task = await Task.findById(taskId);
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        
+        // 检查用户是否已经开始或完成了这个任务
+        let userTask = await UserTask.findOne({ userId, taskId });
+        if (userTask) {
+            return res.status(400).json({ message: 'Task already started or completed' });
+        }
+        
+        // 创建新的用户任务
+        userTask = new UserTask({
+            userId,
+            taskId,
+            completed: false
+        });
+        
+        await userTask.save();
+        res.json({ message: 'Task started successfully' });
+    } catch (error) {
+        console.error('Error starting task:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// 完成任务
+app.post('/api/tasks/:taskId/complete', authenticateToken, async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const userId = req.user.id;
+        
+        // 检查任务是否存在
+        const task = await Task.findById(taskId);
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        
+        // 检查用户是否已经开始了这个任务
+        const userTask = await UserTask.findOne({ userId, taskId });
+        if (!userTask) {
+            return res.status(400).json({ message: 'Task not started' });
+        }
+        
+        if (userTask.completed) {
+            return res.status(400).json({ message: 'Task already completed' });
+        }
+        
+        // 更新任务状态
+        userTask.completed = true;
+        userTask.completedAt = new Date();
+        await userTask.save();
+        
+        // 更新用户积分
+        const user = await User.findById(userId);
+        user.points += task.points;
+        await user.save();
+        
+        res.json({ 
+            message: 'Task completed successfully',
+            pointsEarned: task.points
+        });
+    } catch (error) {
+        console.error('Error completing task:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
