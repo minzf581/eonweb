@@ -1,12 +1,12 @@
 // AuthService implementation
 class AuthService {
-    _initialized = false;
-    _initializing = false;
-    _token = localStorage.getItem('auth_token');
-    _tokenExpiry = localStorage.getItem('auth_token_expiry');
-
     constructor() {
         console.log('[AuthService] Creating new instance');
+        
+        this._initialized = false;
+        this._initializing = false;
+        this._token = localStorage.getItem('auth_token');
+        this._tokenExpiry = localStorage.getItem('auth_token_expiry');
         
         // Log the instance structure
         console.log('[AuthService] Instance structure:', {
@@ -34,15 +34,15 @@ class AuthService {
         });
     }
 
-    logInfo = (message) => {
+    logInfo(message) {
         console.log(`[AuthService ${new Date().toISOString()}] ${message}`);
     }
 
-    logError = (message, error) => {
+    logError(message, error) {
         console.error(`[AuthService ${new Date().toISOString()}] ${message}:`, error);
     }
 
-    isInitialized = () => {
+    isInitialized() {
         console.log('[AuthService] Checking initialization status:', {
             _initialized: this._initialized,
             hasToken: !!this._token,
@@ -51,7 +51,7 @@ class AuthService {
         return this._initialized;
     }
 
-    getToken = () => {
+    getToken() {
         console.log('[AuthService] getToken called:', {
             _initialized: this._initialized,
             hasToken: !!this._token,
@@ -69,7 +69,7 @@ class AuthService {
         }
     }
 
-    initialize = async () => {
+    async initialize() {
         console.log('[AuthService] Initialize called:', {
             _initialized: this._initialized,
             _initializing: this._initializing
@@ -117,7 +117,7 @@ class AuthService {
         }
     }
 
-    validateToken = async () => {
+    async validateToken() {
         console.log('[AuthService] validateToken called:', {
             hasToken: !!this._token
         });
@@ -145,7 +145,7 @@ class AuthService {
         }
     }
 
-    clearAuth = () => {
+    clearAuth() {
         console.log('[AuthService] clearAuth called');
         this._token = null;
         this._tokenExpiry = null;
@@ -154,7 +154,7 @@ class AuthService {
         this.logInfo('Auth cleared');
     }
 
-    logout = async () => {
+    async logout() {
         console.log('[AuthService] logout called');
         try {
             await fetch('/api/auth/logout', {
@@ -171,7 +171,7 @@ class AuthService {
         }
     }
 
-    login = async (email, password) => {
+    async login(email, password) {
         console.log('[AuthService] login called');
         try {
             const response = await fetch('/api/auth/login', {
@@ -195,7 +195,7 @@ class AuthService {
         }
     }
 
-    register = async (email, password, referralCode = '') => {
+    async register(email, password, referralCode = '') {
         console.log('[AuthService] register called');
         try {
             const response = await fetch('/api/auth/register', {
@@ -219,7 +219,7 @@ class AuthService {
         }
     }
 
-    setToken = (token) => {
+    setToken(token) {
         console.log('[AuthService] setToken called');
         this._token = token;
         const expiry = new Date();
@@ -229,7 +229,7 @@ class AuthService {
         localStorage.setItem('auth_token_expiry', this._tokenExpiry);
     }
 
-    getUser = async () => {
+    async getUser() {
         console.log('[AuthService] getUser called:', {
             hasToken: !!this._token
         });
@@ -254,7 +254,7 @@ class AuthService {
         }
     }
 
-    isAdmin = async () => {
+    async isAdmin() {
         console.log('[AuthService] isAdmin called');
         const user = await this.getUser();
         return user && user.isAdmin;
@@ -263,25 +263,15 @@ class AuthService {
 
 // Create and expose the singleton instance
 console.log('[AuthService] Creating global instance');
-const authService = new AuthService();
+window.authService = new AuthService();
 
-// Log the instance before attaching to window
-console.log('[AuthService] Instance before attaching to window:', {
-    instance: authService,
-    hasGetToken: typeof authService.getToken === 'function',
-    hasIsInitialized: typeof authService.isInitialized === 'function'
-});
-
-// Attach to window and make it non-configurable
-Object.defineProperty(window, 'authService', {
-    value: authService,
-    writable: false,
-    configurable: false
-});
-
-// Log the instance after attaching to window
-console.log('[AuthService] Instance after attaching to window:', {
+// Log the instance and its methods
+console.log('[AuthService] Instance methods check:', {
     instance: window.authService,
-    hasGetToken: typeof window.authService.getToken === 'function',
-    hasIsInitialized: typeof window.authService.isInitialized === 'function'
+    getToken: window.authService.getToken,
+    isInitialized: window.authService.isInitialized,
+    methodNames: Object.getOwnPropertyNames(Object.getPrototypeOf(window.authService))
 });
+
+// Freeze the instance to prevent modifications
+Object.freeze(window.authService);
