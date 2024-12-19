@@ -514,59 +514,79 @@
 
     <!-- Scripts -->
     <script>
-        // 确保在其他脚本之前定义这些函数
+        // 全局状态管理
+        window.dashboardState = {
+            domReady: false,
+            initialized: false
+        };
+
+        // 基础工具函数
         function showLoading(show) {
             const loading = document.getElementById('loading-indicator');
-            if (loading) {
-                loading.style.display = show ? 'flex' : 'none';
-                console.log('[Dashboard] Loading indicator ' + (show ? 'shown' : 'hidden'));
-            } else {
+            if (!loading) {
                 console.error('[Dashboard] Loading indicator not found');
+                return false;
             }
+            loading.style.display = show ? 'flex' : 'none';
+            console.log('[Dashboard] Loading indicator ' + (show ? 'shown' : 'hidden'));
+            return true;
         }
 
         function showError(message) {
             const error = document.getElementById('error-message');
-            if (error) {
-                error.textContent = message;
-                error.style.display = 'block';
-                console.log('[Dashboard] Error shown:', message);
-            } else {
+            if (!error) {
                 console.error('[Dashboard] Error element not found');
+                return false;
             }
+            error.textContent = message;
+            error.style.display = 'block';
+            console.log('[Dashboard] Error shown:', message);
+            return true;
         }
 
         function hideError() {
             const error = document.getElementById('error-message');
-            if (error) {
-                error.style.display = 'none';
-                console.log('[Dashboard] Error hidden');
+            if (!error) {
+                console.error('[Dashboard] Error element not found');
+                return false;
             }
+            error.style.display = 'none';
+            console.log('[Dashboard] Error hidden');
+            return true;
         }
 
-        // 等待 DOM 加载
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[Dashboard] DOM Content Loaded');
-            // 立即显示加载指示器
-            showLoading(true);
-        });
+        // 等待 AuthService
+        async function waitForAuthService(timeout = 5000) {
+            console.log('[Dashboard] Waiting for auth service...');
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < timeout) {
+                if (window.authService?.isInitialized?.()) {
+                    console.log('[Dashboard] Auth service is ready');
+                    return true;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            throw new Error('Auth service initialization timeout');
+        }
 
-        // 初始化函数
+        // Dashboard 初始化
         async function initializeDashboard() {
             console.log('[Dashboard] Starting initialization...');
             
             try {
+                // 确保 loading indicator 可用
+                if (!document.getElementById('loading-indicator')) {
+                    throw new Error('Loading indicator not found in DOM');
+                }
+
+                showLoading(true);
+                hideError();
+
                 // 等待 AuthService
-                let attempts = 0;
-                while (!window.authService?.isInitialized?.() && attempts < 50) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-
-                if (!window.authService?.isInitialized?.()) {
-                    throw new Error('Auth service initialization timeout');
-                }
-
+                await waitForAuthService();
+                
                 const isAuthenticated = await window.authService.validateToken();
                 if (!isAuthenticated) {
                     window.location.href = '/public/auth/login.html';
@@ -579,6 +599,7 @@
                     loadTasks().catch(err => console.error('Tasks error:', err))
                 ]);
 
+                window.dashboardState.initialized = true;
                 console.log('[Dashboard] Initialization complete');
             } catch (error) {
                 console.error('[Dashboard] Initialization failed:', error);
@@ -588,14 +609,29 @@
             }
         }
 
-        // 在页面加载完成后初始化
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeDashboard);
-        } else {
-            initializeDashboard();
+        // 确保在 DOM 完全加载后再初始化
+        function startInitialization() {
+            console.log('[Dashboard] Document ready state:', document.readyState);
+            window.dashboardState.domReady = true;
+            initializeDashboard().catch(error => {
+                console.error('[Dashboard] Initialization error:', error);
+            });
         }
+
+        // 监听 DOM 加载完成事件
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startInitialization);
+        } else {
+            startInitialization();
+        }
+
+        // 防止重复初始化
+        window.addEventListener('load', () => {
+            console.log('[Dashboard] Window load event fired');
+        });
     </script>
 
-    <script src="/public/js/authService.js"></script>
+    <!-- 最后加载 AuthService -->
+    <script src="/public/js/authService.js" async defer></script>
 </body>
 </html>
