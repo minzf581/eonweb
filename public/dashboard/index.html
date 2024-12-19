@@ -503,178 +503,68 @@
 
     <!-- Scripts -->
     <script>
-        // 动态创建 loading indicator
-        function createLoadingIndicator() {
-            // 如果已存在，先移除
-            const existingLoader = document.getElementById('loading-indicator');
-            if (existingLoader) {
-                existingLoader.remove();
-            }
-
-            // 创建新的 loading indicator
-            const loader = document.createElement('div');
-            loader.id = 'loading-indicator';
-            loader.style.cssText = `
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(255,255,255,0.9);
-                z-index: 9999;
-                justify-content: center;
-                align-items: center;
-            `;
-
-            const content = document.createElement('div');
-            content.style.cssText = 'text-align: center;';
-
-            const spinner = document.createElement('div');
-            spinner.style.cssText = `
-                width: 40px;
-                height: 40px;
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #3498db;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 10px;
-            `;
-
-            const text = document.createElement('div');
-            text.style.cssText = 'color: #333; font-size: 16px;';
-            text.textContent = '加载中...';
-
-            content.appendChild(spinner);
-            content.appendChild(text);
-            loader.appendChild(content);
-            document.body.appendChild(loader);
-
-            return loader;
-        }
-
-        // 动态创建 error message
-        function createErrorMessage() {
-            // 如果已存在，先移除
-            const existingError = document.getElementById('error-message');
-            if (existingError) {
-                existingError.remove();
-            }
-
-            const error = document.createElement('div');
-            error.id = 'error-message';
-            error.style.cssText = `
-                display: none;
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #ff4444;
-                color: white;
-                padding: 15px 20px;
-                border-radius: 4px;
-                z-index: 10000;
-            `;
-
-            document.body.appendChild(error);
-            return error;
-        }
-
-        // 创建必要的样式
-        function createStyles() {
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-
-        // Loading 状态管理
-        function showLoading(show = true) {
-            let loader = document.getElementById('loading-indicator');
-            if (!loader) {
-                loader = createLoadingIndicator();
-            }
-            loader.style.display = show ? 'flex' : 'none';
-            console.log('[Dashboard] Loading indicator ' + (show ? 'shown' : 'hidden'));
-        }
-
-        // Error 状态管理
-        function showError(message) {
-            let error = document.getElementById('error-message');
-            if (!error) {
-                error = createErrorMessage();
-            }
-            error.textContent = message;
-            error.style.display = 'block';
-            console.log('[Dashboard] Error shown:', message);
-        }
-
-        function hideError() {
-            const error = document.getElementById('error-message');
-            if (error) {
-                error.style.display = 'none';
-                console.log('[Dashboard] Error hidden');
+        // 使用 console 来显示状态
+        function showStatus(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            console.log(`[Dashboard ${timestamp}] ${message}`);
+            
+            // 只在错误时显示 alert
+            if (type === 'error') {
+                alert(message);
             }
         }
 
         // 等待 AuthService
         async function waitForAuthService(timeout = 5000) {
-            console.log('[Dashboard] Waiting for auth service...');
+            showStatus('等待 AuthService 初始化...');
             const startTime = Date.now();
             
             while (Date.now() - startTime < timeout) {
                 if (window.authService?.isInitialized?.()) {
-                    console.log('[Dashboard] Auth service is ready');
+                    showStatus('AuthService 已就绪');
                     return true;
                 }
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
             
-            throw new Error('Auth service initialization timeout');
+            throw new Error('AuthService 初始化超时');
         }
 
         // Dashboard 初始化
         async function initializeDashboard() {
-            console.log('[Dashboard] Starting initialization...');
+            showStatus('开始初始化 Dashboard...');
             
             try {
-                // 确保样式和元素存在
-                createStyles();
-                
-                // 显示加载状态
-                showLoading(true);
-                hideError();
-
                 // 等待 AuthService
                 await waitForAuthService();
                 
+                // 验证认证
                 const isAuthenticated = await window.authService.validateToken();
                 if (!isAuthenticated) {
+                    showStatus('未登录，即将跳转到登录页面...', 'error');
                     window.location.href = '/public/auth/login.html';
                     return;
                 }
 
+                showStatus('正在加载数据...');
                 await Promise.all([
                     loadUserData(),
                     loadStats().catch(err => console.error('Stats error:', err)),
                     loadTasks().catch(err => console.error('Tasks error:', err))
                 ]);
 
-                console.log('[Dashboard] Initialization complete');
+                showStatus('Dashboard 初始化完成');
             } catch (error) {
-                console.error('[Dashboard] Initialization failed:', error);
-                showError('初始化失败，请刷新页面重试');
-            } finally {
-                showLoading(false);
+                const errorMessage = '初始化失败，请刷新页面重试';
+                showStatus(errorMessage, 'error');
+                console.error('[Dashboard] Error:', error);
             }
         }
 
         // 启动初始化
         initializeDashboard().catch(error => {
-            console.error('[Dashboard] Initialization error:', error);
+            showStatus('发生严重错误，请刷新页面', 'error');
+            console.error('[Dashboard] Critical error:', error);
         });
     </script>
 
