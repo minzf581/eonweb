@@ -198,4 +198,11 @@ class AuthService {
 }
 
 // Create and expose a singleton instance
-window.authService = new AuthService();
+const authServiceInstance = new AuthService();
+
+// Use Object.defineProperty to ensure the instance is properly bound
+Object.defineProperty(window, 'authService', {
+    value: authServiceInstance,
+    writable: false,
+    configurable: false
+});
