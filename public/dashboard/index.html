@@ -141,19 +141,126 @@
 
     <script>
         // Utility functions
-        function showError(message) {
-            const errorElement = document.getElementById('dashboardError');
-            if (errorElement) {
-                errorElement.textContent = message;
-                errorElement.style.display = 'block';
+        function showError(message, retryCallback = null) {
+            const errorDiv = document.getElementById('error-message');
+            if (!errorDiv) {
+                const div = document.createElement('div');
+                div.id = 'error-message';
+                div.className = 'error-message';
+                document.body.appendChild(div);
             }
+            
+            const content = retryCallback ? 
+                `${message} <button onclick="retryInitialization()">重试</button>` : 
+                message;
+            
+            errorDiv.innerHTML = content;
+            errorDiv.style.display = 'block';
             console.error('[Dashboard]', message);
         }
 
+        function hideError() {
+            const errorDiv = document.getElementById('error-message');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+        }
+
         function showLoading(show = true) {
-            const overlay = document.getElementById('loadingOverlay');
-            if (overlay) {
-                overlay.style.display = show ? 'flex' : 'none';
+            const loadingDiv = document.getElementById('loading-indicator');
+            if (!loadingDiv) {
+                const div = document.createElement('div');
+                div.id = 'loading-indicator';
+                div.className = 'loading-indicator';
+                div.innerHTML = '加载中...';
+                document.body.appendChild(div);
+            }
+            loadingDiv.style.display = show ? 'block' : 'none';
+        }
+
+        async function waitForAuthService(maxWaitTime = 10000) {
+            console.log('[Dashboard] Waiting for auth service...');
+            const pollInterval = 200;
+            let elapsedTime = 0;
+            let lastMethodsLog = 0;
+
+            try {
+                while (elapsedTime < maxWaitTime) {
+                    // Check if authService exists
+                    if (window.authService) {
+                        // Check if isInitialized method exists and service is initialized
+                        if (typeof window.authService.isInitialized === 'function') {
+                            const isInit = window.authService.isInitialized();
+                            if (isInit) {
+                                console.log('[Dashboard] Auth service is ready and initialized');
+                                return true;
+                            }
+                        }
+                        
+                        // Only log methods every second to avoid console spam
+                        if (elapsedTime - lastMethodsLog >= 1000) {
+                            console.log('[Dashboard] Auth service not ready, waiting... Available methods:', 
+                                Object.keys(window.authService));
+                            lastMethodsLog = elapsedTime;
+                        }
+                    } else {
+                        if (elapsedTime - lastMethodsLog >= 1000) {
+                            console.log('[Dashboard] Auth service not available yet');
+                            lastMethodsLog = elapsedTime;
+                        }
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, pollInterval));
+                    elapsedTime += pollInterval;
+                }
+                
+                throw new Error('Auth service wait timeout');
+            } catch (error) {
+                console.error('[Dashboard] Auth service wait failed:', error);
+                throw error;
+            }
+        }
+
+        async function checkAuthentication() {
+            console.log('[Dashboard] Checking authentication...');
+            try {
+                // Wait for auth service to be ready
+                await waitForAuthService();
+                
+                // Double check initialization
+                if (!window.authService || !window.authService.isInitialized()) {
+                    console.error('[Dashboard] Auth service not properly initialized');
+                    throw new Error('Auth service not properly initialized');
+                }
+
+                // Check token first
+                try {
+                    const token = window.authService.getToken();
+                    if (!token) {
+                        console.log('[Dashboard] No valid token found, redirecting to login...');
+                        window.location.href = '/public/auth/login.html';
+                        return false;
+                    }
+                } catch (error) {
+                    console.log('[Dashboard] Token validation failed, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return false;
+                }
+
+                // Validate token with server
+                const isAuthenticated = await window.authService.validateToken();
+                console.log('[Dashboard] Authentication status:', isAuthenticated);
+                
+                if (!isAuthenticated) {
+                    console.log('[Dashboard] Token invalid, redirecting to login...');
+                    window.location.href = '/public/auth/login.html';
+                    return false;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('[Dashboard] Authentication check failed:', error);
+                throw error;
             }
         }
 
@@ -300,6 +407,42 @@
             }
         }
 
+        async function initializeDashboard() {
+            console.log('[Dashboard] Starting initialization...');
+            showLoading(true);
+            hideError();
+
+            try {
+                const isAuthenticated = await checkAuthentication();
+                if (!isAuthenticated) {
+                    return;
+                }
+
+                // Load all dashboard data
+                await Promise.all([
+                    loadUserData(),
+                    loadStats(),
+                    loadTasks()
+                ]);
+
+                console.log('[Dashboard] Dashboard initialized successfully');
+                showLoading(false);
+            } catch (error) {
+                console.error('[Dashboard] Dashboard initialization failed:', error);
+                console.error('[Dashboard] Error stack:', error.stack);
+                
+                showLoading(false);
+                showError('初始化仪表板失败，请重试', true);
+            }
+        }
+
+        // Add retry functionality
+        window.retryInitialization = async function() {
+            console.log('[Dashboard] Retrying initialization...');
+            hideError();
+            await initializeDashboard();
+        };
+
         // Copy functionality
         function setupCopyButtons() {
             document.getElementById('copyCode').addEventListener('click', () => {
@@ -313,140 +456,6 @@
                 navigator.clipboard.writeText(link);
                 alert('Referral link copied!');
             });
-        }
-
-        async function waitForAuthService(maxWaitTime = 10000) {
-            console.log('[Dashboard] Waiting for auth service...');
-            const pollInterval = 200;
-            let elapsedTime = 0;
-
-            try {
-                while (elapsedTime < maxWaitTime) {
-                    // Check if authService exists
-                    if (window.authService) {
-                        // Check if isInitialized method exists and service is initialized
-                        if (typeof window.authService.isInitialized === 'function') {
-                            const isInit = window.authService.isInitialized();
-                            if (isInit) {
-                                console.log('[Dashboard] Auth service is ready and initialized');
-                                return true;
-                            }
-                        }
-                        console.log('[Dashboard] Auth service not ready, waiting... Available methods:', 
-                            Object.keys(window.authService));
-                    } else {
-                        console.log('[Dashboard] Auth service not available yet');
-                    }
-                    
-                    await new Promise(resolve => setTimeout(resolve, pollInterval));
-                    elapsedTime += pollInterval;
-                }
-                
-                throw new Error('Auth service wait timeout');
-            } catch (error) {
-                console.error('[Dashboard] Auth service wait failed:', error);
-                throw error;
-            }
-        }
-
-        async function checkAuthentication() {
-            console.log('[Dashboard] Checking authentication...');
-            try {
-                // Wait for auth service to be ready
-                await waitForAuthService();
-                
-                // Double check initialization
-                if (!window.authService || !window.authService.isInitialized()) {
-                    console.error('[Dashboard] Auth service not properly initialized');
-                    throw new Error('Auth service not properly initialized');
-                }
-
-                const token = window.authService.getToken();
-                if (!token) {
-                    console.log('[Dashboard] No valid token found, redirecting to login...');
-                    window.location.href = '/public/auth/login.html';
-                    return false;
-                }
-
-                const isAuthenticated = await window.authService.validateToken();
-                console.log('[Dashboard] Authentication status:', isAuthenticated);
-                
-                if (!isAuthenticated) {
-                    console.log('[Dashboard] Token invalid, redirecting to login...');
-                    window.location.href = '/public/auth/login.html';
-                    return false;
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('[Dashboard] Authentication check failed:', error);
-                throw error;
-            }
-        }
-
-        async function initializeDashboard() {
-            console.log('[Dashboard] Starting initialization...');
-            showLoading(true);
-
-            try {
-                // Wait for auth service to be ready
-                await waitForAuthService(10000);
-                
-                // Check authentication
-                if (!await checkAuthentication()) {
-                    return;
-                }
-
-                console.log('[Dashboard] Authentication successful, loading dashboard...');
-
-                // Setup logout handler
-                const logoutButton = document.getElementById('logoutButton');
-                if (logoutButton) {
-                    logoutButton.addEventListener('click', async () => {
-                        try {
-                            await window.authService.logout();
-                            window.location.href = '/public/auth/login.html';
-                        } catch (error) {
-                            console.error('[Dashboard] Logout failed:', error);
-                        }
-                    });
-                }
-                console.log('[Dashboard] Logout handler setup complete');
-
-                // Load all dashboard data
-                try {
-                    await loadUserData();
-                } catch (error) {
-                    console.error('[Dashboard] User data load failed:', error);
-                    showError('Failed to load user data');
-                }
-
-                try {
-                    await loadStats();
-                } catch (error) {
-                    console.error('[Dashboard] Stats load failed:', error);
-                }
-
-                try {
-                    await loadTasks();
-                } catch (error) {
-                    console.error('[Dashboard] Tasks load failed:', error);
-                }
-
-                try {
-                    await loadReferralInfo();
-                } catch (error) {
-                    console.error('[Dashboard] Referral info load failed:', error);
-                }
-
-                console.log('[Dashboard] Content loaded successfully');
-            } catch (error) {
-                console.error('[Dashboard] Dashboard initialization failed:', error);
-                console.error('[Dashboard] Error stack:', error.stack);
-                showError('Failed to initialize dashboard');
-            } finally {
-                showLoading(false);
-            }
         }
 
         // Setup navigation
@@ -617,12 +626,73 @@
         }
 
         .error-message {
-            background-color: #fee;
-            color: #e74c3c;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #ff4444;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
             display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .error-message button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border: none;
+            background: white;
+            color: #ff4444;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .error-message button:hover {
+            background: #f8f8f8;
+        }
+
+        .loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px 40px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+        }
+
+        .loading-indicator::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Stats Grid */

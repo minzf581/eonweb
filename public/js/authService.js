@@ -82,20 +82,30 @@
             this._token = null;
             this._tokenExpiry = null;
 
-            // Bind methods
-            this.isInitialized = this.isInitialized.bind(this);
-            this.initialize = this.initialize.bind(this);
-            this.login = this.login.bind(this);
-            this.logout = this.logout.bind(this);
-            this.clearAuth = this.clearAuth.bind(this);
-            this.validateToken = this.validateToken.bind(this);
-            this.getUser = this.getUser.bind(this);
-            this.setToken = this.setToken.bind(this);
-            this.register = this.register.bind(this);
-            this.isAdmin = this.isAdmin.bind(this);
-            this.getToken = this.getToken.bind(this);
+            // Bind all methods to ensure correct 'this' context
+            const methods = [
+                'isInitialized',
+                'initialize',
+                'login',
+                'logout',
+                'clearAuth',
+                'validateToken',
+                'getUser',
+                'setToken',
+                'register',
+                'isAdmin',
+                'getToken'
+            ];
 
-            logInfo('Auth service instance created');
+            methods.forEach(method => {
+                if (typeof this[method] === 'function') {
+                    this[method] = this[method].bind(this);
+                } else {
+                    logError('Method binding failed', new Error(`Method ${method} not found`));
+                }
+            });
+
+            logInfo('Auth service instance created with bound methods:', methods);
         }
 
         isInitialized() {
@@ -106,8 +116,15 @@
 
         async initialize() {
             if (this._initializing) {
-                logInfo('Initialization already in progress');
-                return;
+                logInfo('Initialization already in progress, waiting...');
+                return new Promise(resolve => {
+                    const checkInterval = setInterval(() => {
+                        if (!this._initializing) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                });
             }
 
             if (this._initialized) {
@@ -137,11 +154,11 @@
                         logInfo('Valid token loaded from storage');
                     } else {
                         logInfo('Stored token expired, clearing auth');
-                        this.clearAuth();
+                        await this.clearAuth();
                     }
                 } else {
                     logInfo('No stored token found');
-                    this.clearAuth();
+                    await this.clearAuth();
                 }
 
                 // Set initialized flag only after successful initialization
@@ -150,6 +167,7 @@
             } catch (error) {
                 logError('Initialization failed', error);
                 this._initialized = false;
+                await this.clearAuth();
                 throw error;
             } finally {
                 this._initializing = false;
@@ -194,16 +212,14 @@
         }
 
         async clearAuth() {
-            logInfo('Clearing auth data');
             try {
-                localStorage.removeItem(TOKEN_KEY);
-                localStorage.removeItem(TOKEN_EXPIRY_KEY);
-                sessionStorage.removeItem(AUTH_SESSION_KEY);
                 this._token = null;
                 this._tokenExpiry = null;
+                localStorage.removeItem(TOKEN_KEY);
+                localStorage.removeItem(TOKEN_EXPIRY_KEY);
                 logInfo('Auth data cleared successfully');
             } catch (error) {
-                logError('Clear auth failed', error);
+                logError('Failed to clear auth data', error);
                 throw error;
             }
         }
@@ -357,9 +373,18 @@
 
         getToken() {
             if (!this._initialized) {
-                logError('getToken called before initialization');
-                throw new Error('AuthService not initialized');
+                const error = new Error('AuthService not initialized');
+                logError('getToken called before initialization', error);
+                throw error;
             }
+
+            if (!this._token || !this._tokenExpiry || new Date(getTimestamp()) > this._tokenExpiry) {
+                const error = new Error('Token is invalid or expired');
+                logError('getToken validation failed', error);
+                this.clearAuth();
+                throw error;
+            }
+
             logInfo(`Getting token: ${this._token ? 'token exists' : 'no token'}`);
             return this._token;
         }
