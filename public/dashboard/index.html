@@ -341,30 +341,53 @@
 
     <!-- Scripts -->
     <script>
-        // Wait for AuthService to be fully loaded and initialized
+        // Wait for AuthService to be initialized
         async function waitForAuthService() {
-            let retries = 0;
-            const maxRetries = 10;
-            const retryDelay = 100;
+            console.log('[Dashboard] Waiting for AuthService...');
+            const maxAttempts = 10;
+            let attempts = 0;
 
-            while (retries < maxRetries) {
-                if (window.authService && window.authService.isInitialized()) {
-                    console.log('AuthService is ready');
-                    return true;
+            while (attempts < maxAttempts) {
+                console.log('[Dashboard] Checking AuthService initialization attempt', attempts + 1);
+                console.log('[Dashboard] window.authService:', window.authService);
+                
+                if (window.authService && typeof window.authService.isInitialized === 'function') {
+                    console.log('[Dashboard] AuthService found, checking initialization');
+                    if (window.authService.isInitialized()) {
+                        console.log('[Dashboard] AuthService is initialized');
+                        return true;
+                    }
+                } else {
+                    console.log('[Dashboard] AuthService or isInitialized not available');
+                    console.log('[Dashboard] window.authService:', window.authService);
+                    if (window.authService) {
+                        console.log('[Dashboard] Methods:', {
+                            getToken: typeof window.authService.getToken,
+                            isInitialized: typeof window.authService.isInitialized
+                        });
+                    }
                 }
-                console.log('Waiting for AuthService to initialize...');
-                await new Promise(resolve => setTimeout(resolve, retryDelay));
-                retries++;
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                attempts++;
             }
-            throw new Error('AuthService initialization timeout');
+
+            console.error('[Dashboard] AuthService initialization timeout');
+            return false;
         }
 
         // Load user stats with retry logic
         async function loadStats(attempt = 1, maxAttempts = 3) {
+            console.log('[Dashboard] Loading stats...');
+            console.log('[Dashboard] AuthService state:', {
+                exists: !!window.authService,
+                hasGetToken: window.authService && typeof window.authService.getToken === 'function'
+            });
+
             try {
                 await waitForAuthService();
                 const token = window.authService.getToken();
-                if (!token) throw new Error('No token available');
+                console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/stats', {
                     headers: {
@@ -373,17 +396,17 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to load stats: ${response.status}`);
+                    throw new Error('Failed to load stats');
                 }
 
                 const data = await response.json();
+                console.log('[Dashboard] Stats loaded successfully');
                 
-                // Update stats display
                 document.getElementById('pointsStats').textContent = data.points || 0;
                 document.getElementById('completedTasksStats').textContent = data.completedTasks || 0;
                 document.getElementById('activeTasksStats').textContent = data.activeTasks || 0;
             } catch (error) {
-                console.error(`Error loading stats (attempt ${attempt}/${maxAttempts}):`, error);
+                console.error('[Dashboard] Error loading stats:', error);
                 if (attempt < maxAttempts) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     return loadStats(attempt + 1, maxAttempts);
@@ -394,10 +417,16 @@
 
         // Load tasks with retry logic
         async function loadTasks(attempt = 1, maxAttempts = 3) {
+            console.log('[Dashboard] Loading tasks...');
+            console.log('[Dashboard] AuthService state:', {
+                exists: !!window.authService,
+                hasGetToken: window.authService && typeof window.authService.getToken === 'function'
+            });
+
             try {
                 await waitForAuthService();
                 const token = window.authService.getToken();
-                if (!token) throw new Error('No token available');
+                console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/tasks', {
                     headers: {
@@ -406,12 +435,15 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to load tasks: ${response.status}`);
+                    throw new Error('Failed to load tasks');
                 }
 
                 const data = await response.json();
+                console.log('[Dashboard] Tasks loaded successfully');
+
                 const tasksContainer = document.getElementById('tasksContainer');
-                
+                tasksContainer.innerHTML = '';
+
                 if (data.length === 0) {
                     tasksContainer.innerHTML = '<p>No available tasks</p>';
                     return;
@@ -436,7 +468,7 @@
                     </div>
                 `).join('');
             } catch (error) {
-                console.error(`Error loading tasks (attempt ${attempt}/${maxAttempts}):`, error);
+                console.error('[Dashboard] Error loading tasks:', error);
                 if (attempt < maxAttempts) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     return loadTasks(attempt + 1, maxAttempts);
@@ -447,10 +479,16 @@
 
         // Load referral data with retry logic
         async function loadReferralData(attempt = 1, maxAttempts = 3) {
+            console.log('[Dashboard] Loading referral data...');
+            console.log('[Dashboard] AuthService state:', {
+                exists: !!window.authService,
+                hasGetToken: window.authService && typeof window.authService.getToken === 'function'
+            });
+
             try {
                 await waitForAuthService();
                 const token = window.authService.getToken();
-                if (!token) throw new Error('No token available');
+                console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/referral', {
                     headers: {
@@ -459,16 +497,17 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to load referral data: ${response.status}`);
+                    throw new Error('Failed to load referral data');
                 }
 
                 const data = await response.json();
+                console.log('[Dashboard] Referral data loaded successfully');
                 
                 document.getElementById('referralCode').textContent = data.referralCode || 'N/A';
                 document.getElementById('referralCount').textContent = data.referralCount || 0;
                 document.getElementById('referralPoints').textContent = data.referralPoints || 0;
             } catch (error) {
-                console.error(`Error loading referral data (attempt ${attempt}/${maxAttempts}):`, error);
+                console.error('[Dashboard] Error loading referral data:', error);
                 if (attempt < maxAttempts) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     return loadReferralData(attempt + 1, maxAttempts);
@@ -479,6 +518,8 @@
 
         // Initialize dashboard with retry logic
         async function initializeDashboard(attempt = 1, maxAttempts = 3) {
+            console.log('[Dashboard] Initializing dashboard...');
+            
             try {
                 // Wait for AuthService to be ready
                 await waitForAuthService();
@@ -491,7 +532,7 @@
                 ]);
 
             } catch (error) {
-                console.error(`Dashboard initialization failed (attempt ${attempt}/${maxAttempts}):`, error);
+                console.error('[Dashboard] Dashboard initialization failed (attempt ' + attempt + '/' + maxAttempts + '):', error);
                 if (attempt < maxAttempts) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     return initializeDashboard(attempt + 1, maxAttempts);
