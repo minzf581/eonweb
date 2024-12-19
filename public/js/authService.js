@@ -108,7 +108,14 @@
         async initialize() {
             if (this._initializing) {
                 this.logInfo('Already initializing, waiting...');
-                return;
+                return new Promise((resolve) => {
+                    const checkInterval = setInterval(() => {
+                        if (!this._initializing) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 100);
+                });
             }
 
             if (this._initialized) {
@@ -121,17 +128,21 @@
 
             try {
                 // 检查存储的令牌
-                if (this._token && this._tokenExpiry) {
-                    this.logInfo(`Stored token check: token=${!!this._token}, expiry=${this._tokenExpiry}`);
-                    
+                const storedToken = localStorage.getItem('auth_token');
+                const storedExpiry = localStorage.getItem('auth_token_expiry');
+                
+                this.logInfo(`Stored token check: token=${!!storedToken}, expiry=${storedExpiry}`);
+                
+                if (storedToken && storedExpiry) {
                     const currentTime = new Date();
-                    const expiryTime = new Date(this._tokenExpiry);
+                    const expiryTime = new Date(storedExpiry);
                     
                     this.logInfo(`Token expiry check during init: current=${currentTime.toISOString()}, expiry=${expiryTime.toISOString()}`);
                     
                     if (expiryTime > currentTime) {
+                        this._token = storedToken;
+                        this._tokenExpiry = expiryTime;
                         this.logInfo('Valid token loaded from storage');
-                        this._initialized = true;
                     } else {
                         this.logInfo('Token expired during init, clearing auth');
                         await this.clearAuth();
@@ -140,19 +151,16 @@
                     this.logInfo('No token in storage during init');
                     await this.clearAuth();
                 }
+                
+                this._initialized = true;
+                this.logInfo('Service initialized successfully');
+                return true;
             } catch (error) {
                 this.logError('Initialization failed', error);
                 await this.clearAuth();
                 throw error;
             } finally {
                 this._initializing = false;
-                this.logInfo('Initialization complete');
-            }
-            
-            if (this._initialized) {
-                this.logInfo('Service initialized successfully');
-            } else {
-                this.logInfo('Service initialized but no valid auth');
             }
         }
 
