@@ -194,22 +194,14 @@ app.use((req, res, next) => {
 });
 
 // 静态文件服务
-app.use(express.static(path.join(__dirname, 'public'), {
-    maxAge: '1h',
-    etag: true,
-    lastModified: true,
-    index: false
-}));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 基本路由处理
+// 主页路由
 app.get('/', (req, res) => {
-    res.redirect('/index.html');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/index.html'));
-});
-
+// 处理其他页面路由
 app.get(['/dashboard', '/dashboard/index.html'], (req, res) => {
     res.sendFile(path.join(__dirname, 'public/dashboard/index.html'));
 });
