@@ -1,14 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import path from 'path';
+import { dirname, join } from 'path';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import crypto from 'crypto';
 
 // Initialize dotenv
@@ -194,36 +193,36 @@ app.use((req, res, next) => {
 });
 
 // 静态文件服务
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(join(__dirname, 'public')));
 
 // 首页路由
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/index.html'));
+    res.sendFile(join(__dirname, 'public/index.html'));
 });
 
 // 处理其他页面路由
 app.get(['/dashboard', '/dashboard/index.html'], (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/dashboard/index.html'));
+    res.sendFile(join(__dirname, 'public/dashboard/index.html'));
 });
 
 app.get(['/auth/login', '/auth/login.html'], (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/auth/login.html'));
+    res.sendFile(join(__dirname, 'public/auth/login.html'));
 });
 
 app.get('/auth/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/auth/register.html'));
+    res.sendFile(join(__dirname, 'public/auth/register.html'));
 });
 
 // 所有其他路由都返回 index.html
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
-        res.sendFile(path.join(__dirname, 'public/index.html'));
+        res.sendFile(join(__dirname, 'public/index.html'));
     }
 });
 
 // 处理 /public 路径下的 404
 app.use('/public/*', (req, res) => {
-    res.status(404).sendFile(path.join(__dirname, '404.html'));
+    res.status(404).sendFile(join(__dirname, '404.html'));
 });
 
 // 404 处理
@@ -388,7 +387,7 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // 验证密码
-        const validPassword = await bcrypt.compare(password, user.password);
+        const validPassword = await bcryptjs.compare(password, user.password);
         if (!validPassword) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
@@ -509,7 +508,7 @@ app.post('/api/auth/register', async (req, res) => {
         const newReferralCode = crypto.randomBytes(4).toString('hex');
 
         // 创建新用户
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcryptjs.hash(password, 10);
         const user = new User({
             email,
             password: hashedPassword,
