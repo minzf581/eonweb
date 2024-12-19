@@ -269,6 +269,10 @@
                 // Set session validation cache
                 sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
                 this.logInfo('Login successful');
+                
+                // 登录成功后重定向到 dashboard
+                window.location.href = '/dashboard';
+                
                 return true;
             } catch (error) {
                 this.logError('Login failed', error);

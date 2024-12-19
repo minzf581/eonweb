@@ -153,6 +153,17 @@ app.get('/health', (req, res) => {
     });
 });
 
+// 请求日志中间件
+app.use((req, res, next) => {
+    console.log('\n=== Incoming Request ===');
+    console.log('Time:', new Date().toISOString());
+    console.log('Method:', req.method);
+    console.log('Path:', req.path);
+    console.log('Origin:', req.headers.origin);
+    console.log('Headers:', req.headers);
+    next();
+});
+
 // 启用压缩
 app.use(compression());
 
@@ -182,36 +193,30 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 请求日志中间件
-app.use((req, res, next) => {
-    console.log('\n=== Incoming Request ===');
-    console.log('Time:', new Date().toISOString());
-    console.log('Method:', req.method);
-    console.log('Path:', req.path);
-    console.log('Origin:', req.headers.origin);
-    console.log('Headers:', req.headers);
-    next();
-});
-
 // 静态文件服务
-app.use('/public', express.static(path.join(__dirname, 'public'), {
+app.use(express.static(path.join(__dirname, 'public'), {
     maxAge: '1h',
     etag: true,
-    lastModified: true
+    lastModified: true,
+    fallthrough: true,
+    index: false
 }));
 
 // 主页路由
-app.get('/', (req, res) => {
+app.get(['/', '/index.html'], (req, res) => {
+    console.log('Serving index page...');
     res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
 // Dashboard 路由
-app.get('/dashboard', (req, res) => {
+app.get(['/dashboard', '/dashboard/index.html'], (req, res) => {
+    console.log('Serving dashboard page...');
     res.sendFile(path.join(__dirname, 'public/dashboard/index.html'));
 });
 
 // 处理 auth 相关页面
-app.get('/auth/login', (req, res) => {
+app.get(['/auth/login', '/auth/login.html'], (req, res) => {
+    console.log('Serving login page...');
     res.sendFile(path.join(__dirname, 'public/auth/login.html'));
 });
 
@@ -229,6 +234,12 @@ app.get('*', (req, res) => {
     if (!req.path.startsWith('/public/') && !req.path.startsWith('/js/')) {
         res.sendFile(path.join(__dirname, 'index.html'));
     }
+});
+
+// 404 处理
+app.use((req, res, next) => {
+    console.log('404 Not Found:', req.path);
+    res.status(404).send('404 Not Found');
 });
 
 // 错误处理中间件
