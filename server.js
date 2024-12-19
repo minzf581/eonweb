@@ -196,9 +196,9 @@ app.use((req, res, next) => {
 // 静态文件服务
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 主页路由
+// 首页路由
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
 // 处理其他页面路由
@@ -214,16 +214,16 @@ app.get('/auth/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/auth/register.html'));
 });
 
+// 所有其他路由都返回 index.html
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/')) {
+        res.sendFile(path.join(__dirname, 'public/index.html'));
+    }
+});
+
 // 处理 /public 路径下的 404
 app.use('/public/*', (req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));
-});
-
-// 所有其他路由都返回 index.html
-app.get('*', (req, res) => {
-    if (!req.path.startsWith('/public/') && !req.path.startsWith('/js/')) {
-        res.sendFile(path.join(__dirname, 'index.html'));
-    }
 });
 
 // 404 处理
