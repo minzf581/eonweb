@@ -82,7 +82,13 @@
             this._token = null;
             this._tokenExpiry = null;
 
-            // Explicitly bind all methods to this instance
+            // Define getToken method directly on the instance
+            this.getToken = () => {
+                logInfo(`Getting token: ${this._token ? 'token exists' : 'no token'}`);
+                return this._token;
+            };
+
+            // Explicitly bind all other methods to this instance
             this.initialize = this.initialize.bind(this);
             this.isInitialized = this.isInitialized.bind(this);
             this.login = this.login.bind(this);
@@ -93,7 +99,6 @@
             this.setToken = this.setToken.bind(this);
             this.register = this.register.bind(this);
             this.isAdmin = this.isAdmin.bind(this);
-            this.getToken = this.getToken.bind(this);
 
             logInfo('Auth service instance created');
         }
@@ -306,11 +311,6 @@
             }
         }
 
-        getToken() {
-            logInfo(`Getting token: ${this._token ? 'token exists' : 'no token'}`);
-            return this._token;
-        }
-
         async setToken(token) {
             if (!token) {
                 throw new Error('Token is required');
@@ -389,13 +389,29 @@
             // Expose the instance directly
             window.authService = instance;
             
-            logInfo('Auth service instance exposed with methods:', Object.keys(window.authService));
+            // Verify all required methods are accessible
+            const requiredMethods = [
+                'isInitialized',
+                'initialize',
+                'login',
+                'logout',
+                'clearAuth',
+                'validateToken',
+                'getUser',
+                'setToken',
+                'register',
+                'isAdmin',
+                'getToken'
+            ];
             
-            // Verify getToken method is accessible
-            if (typeof window.authService.getToken === 'function') {
-                logInfo('getToken method verified as accessible');
+            const missingMethods = requiredMethods.filter(method => 
+                typeof window.authService[method] !== 'function'
+            );
+            
+            if (missingMethods.length > 0) {
+                logError('Method verification failed', new Error(`Missing methods: ${missingMethods.join(', ')}`));
             } else {
-                logError('Method verification failed', new Error('getToken method not properly exposed'));
+                logInfo('All required methods verified and accessible');
             }
         } else {
             logInfo('Auth service instance already exists');
