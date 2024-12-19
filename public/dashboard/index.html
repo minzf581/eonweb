@@ -127,44 +127,39 @@
 
         /* Loading and Error Styles */
         #loading-indicator {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            display: none;
+            background: rgba(255,255,255,0.9);
             z-index: 9999;
-            justify-content: center;
-            align-items: center;
         }
 
-        .loading-content {
+        #loading-indicator > div {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
         }
 
-        .spinner {
+        #loading-indicator > div > div {
             width: 40px;
             height: 40px;
-            margin: 0 auto 10px;
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
+        #loading-indicator > div > div + div {
             color: #333;
             font-size: 16px;
-            margin-top: 10px;
         }
 
-        /* Error Message Styles */
         #error-message {
             display: none;
             position: fixed;
@@ -175,17 +170,6 @@
             padding: 15px 20px;
             border-radius: 4px;
             z-index: 10000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-
-        #error-message button {
-            margin-left: 10px;
-            padding: 5px 10px;
-            background: white;
-            border: none;
-            border-radius: 3px;
-            color: #ff4444;
-            cursor: pointer;
         }
 
         /* Stats Grid */
@@ -397,15 +381,15 @@
 </head>
 <body>
     <!-- Loading Indicator -->
-    <div id="loading-indicator">
-        <div class="loading-content">
-            <div class="spinner"></div>
-            <div class="loading-text">加载中...</div>
+    <div id="loading-indicator" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+            <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
+            <div style="color: #333; font-size: 16px;">加载中...</div>
         </div>
     </div>
 
     <!-- Error Message -->
-    <div id="error-message"></div>
+    <div id="error-message" style="display: none; position: fixed; top: 20px; right: 20px; background: #ff4444; color: white; padding: 15px 20px; border-radius: 4px; z-index: 10000;"></div>
 
     <!-- Main dashboard content -->
     <div class="dashboard-layout">
@@ -532,188 +516,106 @@
 
     <!-- Scripts -->
     <script>
-        // 全局状态对象
-        window.dashboardState = {
-            domReady: false,
-            authServiceReady: false
-        };
-
-        // DOM 状态检查函数
-        function checkDOMElement(id) {
-            const element = document.getElementById(id);
-            if (!element) {
-                console.error(`[Dashboard] Element #${id} not found in DOM`);
-                console.trace();  
-                return null;
-            }
-            return element;
-        }
-
-        // Loading 状态管理
-        function showLoading(show = true) {
-            if (!window.dashboardState.domReady) {
-                console.error('[Dashboard] Attempted to show loading before DOM ready');
-                return;
-            }
-
-            const loadingDiv = document.getElementById('loading-indicator');
-            if (!loadingDiv) {
-                console.error('[Dashboard] Loading indicator not found');
-                console.trace();  
-                return;
-            }
-
-            try {
-                loadingDiv.style.display = show ? 'flex' : 'none';
-                console.log('[Dashboard] Loading state set:', show);
-            } catch (error) {
-                console.error('[Dashboard] Error setting loading state:', error);
-            }
-        }
-
-        // Error 状态管理
-        function showError(message, retryCallback = null) {
-            if (!window.dashboardState.domReady) {
-                console.error('[Dashboard] Attempted to show error before DOM ready');
-                return;
-            }
-
-            const errorDiv = document.getElementById('error-message');
-            if (!errorDiv) {
-                console.error('[Dashboard] Error message container not found');
-                return;
-            }
-
-            try {
-                errorDiv.innerHTML = retryCallback 
-                    ? `<span>${message}</span><button onclick="retryInitialization()">重试</button>`
-                    : `<span>${message}</span>`;
-                errorDiv.style.display = 'block';
-            } catch (error) {
-                console.error('[Dashboard] Error showing error message:', error);
-            }
-        }
-
-        function hideError() {
-            const errorDiv = document.getElementById('error-message');
-            if (errorDiv) {
-                errorDiv.style.display = 'none';
-                errorDiv.innerHTML = '';
-            }
-        }
-
-        // 等待 DOM 加载
+        // DOM 加载检查
         function waitForDOM() {
             return new Promise(resolve => {
                 if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', () => {
-                        window.dashboardState.domReady = true;
-                        resolve();
-                    });
+                    document.addEventListener('DOMContentLoaded', resolve);
                 } else {
-                    window.dashboardState.domReady = true;
                     resolve();
                 }
             });
         }
 
-        // 等待 AuthService
-        function waitForAuthService(timeout = 5000) {
-            const startTime = Date.now();
-            
-            return new Promise((resolve, reject) => {
-                function checkService() {
-                    if (window.authService?.isInitialized?.()) {
-                        window.dashboardState.authServiceReady = true;
-                        resolve();
-                        return;
-                    }
-
-                    if (Date.now() - startTime > timeout) {
-                        reject(new Error('Auth service initialization timeout'));
-                        return;
-                    }
-
-                    setTimeout(checkService, 100);
-                }
-
-                checkService();
-            });
+        // DOM 元素检查
+        async function waitForElement(id, maxAttempts = 10) {
+            for (let i = 0; i < maxAttempts; i++) {
+                const element = document.getElementById(id);
+                if (element) return element;
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            throw new Error(`Element #${id} not found after ${maxAttempts} attempts`);
         }
 
-        // Dashboard 初始化
-        async function initializeDashboard() {
-            console.log('[Dashboard] Starting initialization...');
-            
+        // Loading 状态管理
+        async function showLoading(show = true) {
             try {
-                // 1. 等待 DOM 加载完成
-                if (!window.dashboardState.domReady) {
-                    await waitForDOM();
-                }
+                const loadingDiv = await waitForElement('loading-indicator');
+                loadingDiv.style.display = show ? 'flex' : 'none';
+            } catch (error) {
+                console.error('Failed to show/hide loading:', error);
+            }
+        }
+
+        // Error 状态管理
+        async function showError(message) {
+            try {
+                const errorDiv = await waitForElement('error-message');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            } catch (error) {
+                console.error('Failed to show error:', error);
+            }
+        }
+
+        async function hideError() {
+            try {
+                const errorDiv = await waitForElement('error-message');
+                errorDiv.style.display = 'none';
+            } catch (error) {
+                console.error('Failed to hide error:', error);
+            }
+        }
+
+        // 初始化函数
+        async function initializeDashboard() {
+            try {
+                // 等待 DOM 加载完成
+                await waitForDOM();
                 
-                // 2. 验证 DOM 元素
-                const loadingDiv = document.getElementById('loading-indicator');
-                const errorDiv = document.getElementById('error-message');
-                
-                if (!loadingDiv || !errorDiv) {
-                    throw new Error('Required DOM elements not found');
+                // 显示加载状态
+                await showLoading(true);
+                await hideError();
+
+                // 等待 AuthService
+                let attempts = 0;
+                while (!window.authService?.isInitialized?.() && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
                 }
 
-                // 3. 显示加载状态
-                showLoading(true);
-                hideError();
+                if (!window.authService?.isInitialized?.()) {
+                    throw new Error('Auth service initialization timeout');
+                }
 
-                // 4. 等待 AuthService
-                await waitForAuthService();
-                
-                // 5. 验证认证
                 const isAuthenticated = await window.authService.validateToken();
                 if (!isAuthenticated) {
                     window.location.href = '/public/auth/login.html';
                     return;
                 }
 
-                // 6. 加载数据
                 await Promise.all([
                     loadUserData(),
-                    loadStats().catch(err => console.error('[Dashboard] Stats load error:', err)),
-                    loadTasks().catch(err => console.error('[Dashboard] Tasks load error:', err))
+                    loadStats().catch(err => console.error('Stats error:', err)),
+                    loadTasks().catch(err => console.error('Tasks error:', err))
                 ]);
 
-                console.log('[Dashboard] Initialization complete');
             } catch (error) {
-                console.error('[Dashboard] Initialization failed:', error);
-                showError('初始化失败，请重试', true);
+                console.error('Dashboard initialization failed:', error);
+                await showError('初始化失败，请刷新页面重试');
             } finally {
-                showLoading(false);
+                await showLoading(false);
             }
         }
 
-        // 重试初始化
-        window.retryInitialization = () => {
-            console.log('[Dashboard] Retrying initialization...');
-            hideError();
-            initializeDashboard().catch(error => {
-                console.error('[Dashboard] Retry failed:', error);
-            });
-        };
-
-        // 启动初始化流程
-        console.log('[Dashboard] Document ready state:', document.readyState);
-        
-        // 确保在 DOM 加载完成后再初始化
+        // 确保 DOM 加载完成后再初始化
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                window.dashboardState.domReady = true;
-                setTimeout(initializeDashboard, 0);
-            });
+            document.addEventListener('DOMContentLoaded', initializeDashboard);
         } else {
-            window.dashboardState.domReady = true;
-            setTimeout(initializeDashboard, 0);
+            initializeDashboard();
         }
     </script>
-    
-    <!-- Load AuthService after dashboard initialization script -->
+
     <script src="/public/js/authService.js"></script>
 </body>
 </html>
