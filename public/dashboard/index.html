@@ -315,18 +315,22 @@
             });
         }
 
-        async function waitForAuthService(timeoutMs = 5000) {
+        async function waitForAuthService(timeoutMs = 10000) {
             console.log('[Dashboard] Waiting for auth service...');
             try {
                 const startTime = Date.now();
                 while (Date.now() - startTime < timeoutMs) {
-                    if (window.authService && typeof window.authService.getToken === 'function') {
-                        console.log('[Dashboard] Auth service ready');
-                        return true;
+                    // Check if authService exists and is initialized
+                    if (window.authService && window.authService.isInitialized()) {
+                        // Verify getToken method is available
+                        if (typeof window.authService.getToken === 'function') {
+                            console.log('[Dashboard] Auth service ready and verified');
+                            return true;
+                        }
                     }
                     console.log('[Dashboard] Auth service not ready, waiting... Available methods:', 
                         window.authService ? Object.keys(window.authService) : 'No authService');
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
                 throw new Error('Auth service wait timeout');
             } catch (error) {
@@ -338,7 +342,10 @@
         async function checkAuthentication() {
             console.log('[Dashboard] Checking authentication...');
             try {
-                if (!window.authService || typeof window.authService.getToken !== 'function') {
+                // Wait for auth service to be ready
+                await waitForAuthService();
+                
+                if (!window.authService || !window.authService.isInitialized()) {
                     console.error('[Dashboard] Auth service not properly initialized');
                     throw new Error('Auth service not properly initialized');
                 }
@@ -355,9 +362,7 @@
                 return true;
             } catch (error) {
                 console.error('[Dashboard] Authentication check failed:', error);
-                console.error('[Dashboard] Error stack:', error.stack);
-                window.location.href = '/public/auth/login.html';
-                return false;
+                throw error;
             }
         }
 

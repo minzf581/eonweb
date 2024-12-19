@@ -383,53 +383,23 @@
             logInfo('Creating new auth service instance...');
             const instance = new AuthService();
             
-            // Expose all methods explicitly
-            window.authService = {
-                isInitialized: instance.isInitialized.bind(instance),
-                initialize: instance.initialize.bind(instance),
-                login: instance.login.bind(instance),
-                logout: instance.logout.bind(instance),
-                clearAuth: instance.clearAuth.bind(instance),
-                validateToken: instance.validateToken.bind(instance),
-                getUser: instance.getUser.bind(instance),
-                setToken: instance.setToken.bind(instance),
-                register: instance.register.bind(instance),
-                isAdmin: instance.isAdmin.bind(instance),
-                getToken: instance.getToken.bind(instance)
-            };
+            // Initialize the instance first
+            await instance.initialize();
             
-            logInfo('Auth service methods exposed:', Object.keys(window.authService));
+            // Expose the instance directly
+            window.authService = instance;
+            
+            logInfo('Auth service instance exposed with methods:', Object.keys(window.authService));
+            
+            // Verify getToken method is accessible
+            if (typeof window.authService.getToken === 'function') {
+                logInfo('getToken method verified as accessible');
+            } else {
+                logError('Method verification failed', new Error('getToken method not properly exposed'));
+            }
         } else {
             logInfo('Auth service instance already exists');
         }
-        
-        // Initialize on page load with retry mechanism
-        window.addEventListener('load', async () => {
-            logInfo('Page loaded, initializing service');
-            let retryCount = 0;
-            const maxRetries = 3;
-            
-            const initializeWithRetry = async () => {
-                try {
-                    if (!window.authService || typeof window.authService.initialize !== 'function') {
-                        throw new Error('Auth service not properly initialized');
-                    }
-                    await window.authService.initialize();
-                    logInfo('Service initialized successfully');
-                } catch (error) {
-                    logError('Initialization attempt failed', error);
-                    if (retryCount < maxRetries) {
-                        retryCount++;
-                        logInfo(`Retrying initialization (${retryCount}/${maxRetries})...`);
-                        setTimeout(initializeWithRetry, 1000);
-                    } else {
-                        logError('Max retries reached, initialization failed');
-                    }
-                }
-            };
-            
-            await initializeWithRetry();
-        });
 
         logInfo('Auth service setup complete');
     } catch (error) {
