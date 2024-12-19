@@ -282,7 +282,11 @@
                 // Check if user is admin and redirect accordingly
                 const isAdmin = window.authService.isAdmin();
                 const dashboardPath = isAdmin ? '/public/admin/index.html' : '/public/dashboard/index.html';
+                // Ensure redirect URL starts with /public/
                 const redirectUrl = sessionStorage.getItem('auth_redirect') || dashboardPath;
+                if (!redirectUrl.startsWith('/public/')) {
+                    redirectUrl = '/public' + redirectUrl;
+                }
                 sessionStorage.removeItem('auth_redirect');
                 
                 setTimeout(() => {
@@ -322,7 +326,12 @@
                 // Check if already authenticated
                 const isAuthenticated = await window.authService.validateToken();
                 if (isAuthenticated) {
-                    const redirectUrl = sessionStorage.getItem('auth_redirect') || '/public/dashboard/index.html';
+                    const isAdmin = window.authService.isAdmin();
+                    const dashboardPath = isAdmin ? '/public/admin/index.html' : '/public/dashboard/index.html';
+                    const redirectUrl = sessionStorage.getItem('auth_redirect') || dashboardPath;
+                    if (!redirectUrl.startsWith('/public/')) {
+                        redirectUrl = '/public' + redirectUrl;
+                    }
                     sessionStorage.removeItem('auth_redirect');
                     window.location.href = redirectUrl;
                     return;
