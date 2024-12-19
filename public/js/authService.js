@@ -37,7 +37,8 @@
             'validateToken',
             'getUser',
             'setToken',
-            'register'
+            'register',
+            'isAdmin'
         ];
 
         for (const method of requiredMethods) {
@@ -90,6 +91,7 @@
             this.getUser = this.getUser.bind(this);
             this.setToken = this.setToken.bind(this);
             this.register = this.register.bind(this);
+            this.isAdmin = this.isAdmin.bind(this);
 
             logInfo('Auth service instance created');
         }
@@ -170,8 +172,9 @@
 
             try {
                 logInfo(`Login attempt for: ${email}`);
-                // Simulated login success
-                const token = 'simulated_token_' + Date.now();
+                // Simulated login success - generate admin token for admin users
+                const isAdmin = email.includes('admin');
+                const token = isAdmin ? 'simulated_admin_token_' + Date.now() : 'simulated_token_' + Date.now();
                 await this.setToken(token);
                 // Set session validation cache
                 sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
@@ -279,11 +282,25 @@
                 }
                 return {
                     email: 'user@example.com',
-                    name: 'Test User'
+                    name: 'Test User',
+                    role: this._token.includes('admin') ? 'admin' : 'user'
                 };
             } catch (error) {
                 logError('Get user failed', error);
                 throw error;
+            }
+        }
+
+        isAdmin() {
+            try {
+                if (!this._token) {
+                    return false;
+                }
+                // For demo purposes, check if token contains 'admin'
+                return this._token.includes('admin');
+            } catch (error) {
+                logError('isAdmin check failed', error);
+                return false;
             }
         }
 

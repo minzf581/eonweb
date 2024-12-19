@@ -279,8 +279,10 @@
                 await window.authService.login(email, password);
                 showInfo('Login successful, redirecting...');
                 
-                // Check for stored redirect or go to dashboard
-                const redirectUrl = sessionStorage.getItem('auth_redirect') || '/public/dashboard/index.html';
+                // Check if user is admin and redirect accordingly
+                const isAdmin = window.authService.isAdmin();
+                const dashboardPath = isAdmin ? '/public/admin/index.html' : '/public/dashboard/index.html';
+                const redirectUrl = sessionStorage.getItem('auth_redirect') || dashboardPath;
                 sessionStorage.removeItem('auth_redirect');
                 
                 setTimeout(() => {
