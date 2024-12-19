@@ -293,8 +293,9 @@
                 await window.authService.login(email, password);
                 showInfo('Login successful, redirecting...');
                 
-                // Check if user is admin and redirect accordingly
-                const isAdmin = window.authService.isAdmin();
+                // Get user info to determine admin status
+                const user = await window.authService.getUser();
+                const isAdmin = user.role === 'admin';
                 const dashboardPath = isAdmin ? '/admin/index.html' : '/dashboard/index.html';
                 window.location.href = dashboardPath;
             } catch (error) {
@@ -318,7 +319,9 @@
                 // Check if already authenticated
                 const isAuthenticated = await window.authService.validateToken();
                 if (isAuthenticated) {
-                    const isAdmin = window.authService.isAdmin();
+                    // Get user info to determine admin status
+                    const user = await window.authService.getUser();
+                    const isAdmin = user.role === 'admin';
                     const dashboardPath = isAdmin ? '/admin/index.html' : '/dashboard/index.html';
                     window.location.href = dashboardPath;
                     return;
