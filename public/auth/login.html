@@ -84,6 +84,24 @@
             cursor: not-allowed;
         }
 
+        .button-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
         .loading-container {
             position: fixed;
             top: 0;
@@ -104,11 +122,6 @@
             border-top: 4px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .error-message {
@@ -153,7 +166,7 @@
             </div>
             <button type="submit" id="loginButton">
                 <span class="button-text">Login</span>
-                <span class="button-spinner hidden"></span>
+                <div class="button-spinner hidden"></div>
             </button>
         </form>
     </div>
@@ -264,15 +277,16 @@
                 return;
             }
 
-            if (!window.authService) {
-                showError('Authentication service is not available. Please refresh the page.');
-                return;
-            }
-
             setLoading(true);
             clearMessages();
 
             try {
+                // Wait for auth service to be ready
+                const isReady = await waitForAuthService();
+                if (!isReady) {
+                    throw new Error('Authentication service is not available');
+                }
+
                 const email = document.getElementById('email').value.trim();
                 const password = document.getElementById('password').value;
 
@@ -281,17 +295,8 @@
                 
                 // Check if user is admin and redirect accordingly
                 const isAdmin = window.authService.isAdmin();
-                const dashboardPath = isAdmin ? '/public/admin/index.html' : '/public/dashboard/index.html';
-                // Ensure redirect URL starts with /public/
-                const redirectUrl = sessionStorage.getItem('auth_redirect') || dashboardPath;
-                if (!redirectUrl.startsWith('/public/')) {
-                    redirectUrl = '/public' + redirectUrl;
-                }
-                sessionStorage.removeItem('auth_redirect');
-                
-                setTimeout(() => {
-                    window.location.href = redirectUrl;
-                }, 1000);
+                const dashboardPath = isAdmin ? '/admin/index.html' : '/dashboard/index.html';
+                window.location.href = dashboardPath;
             } catch (error) {
                 console.error('[Login] Login failed:', error);
                 showError(error.message || 'Login failed. Please try again.');
@@ -303,51 +308,32 @@
         async function initializeLoginPage() {
             console.log('[Login] Starting initialization...');
             
-            // Show loading overlay immediately
-            setLoading(true);
-
             try {
-                // Check for AuthService availability
-                if (!window.authService) {
-                    throw new Error('Authentication service is not available');
-                }
-
                 // Wait for auth service to be ready
-                const isReady = await waitForAuthService(10000);
+                const isReady = await waitForAuthService();
                 if (!isReady) {
-                    throw new Error('Authentication service failed to initialize');
-                }
-
-                // Initialize auth service if needed
-                if (!window.authService.isInitialized()) {
-                    await window.authService.initialize();
+                    throw new Error('Authentication service is not available');
                 }
 
                 // Check if already authenticated
                 const isAuthenticated = await window.authService.validateToken();
                 if (isAuthenticated) {
                     const isAdmin = window.authService.isAdmin();
-                    const dashboardPath = isAdmin ? '/public/admin/index.html' : '/public/dashboard/index.html';
-                    const redirectUrl = sessionStorage.getItem('auth_redirect') || dashboardPath;
-                    if (!redirectUrl.startsWith('/public/')) {
-                        redirectUrl = '/public' + redirectUrl;
-                    }
-                    sessionStorage.removeItem('auth_redirect');
-                    window.location.href = redirectUrl;
+                    const dashboardPath = isAdmin ? '/admin/index.html' : '/dashboard/index.html';
+                    window.location.href = dashboardPath;
                     return;
                 }
 
                 // Setup form event listener
                 const form = document.getElementById('loginForm');
-                form.addEventListener('submit', handleLogin);
+                if (form) {
+                    form.addEventListener('submit', handleLogin);
+                }
 
-                // Show the form
-                setLoading(false);
                 console.log('[Login] Initialization complete');
             } catch (error) {
                 console.error('[Login] Initialization failed:', error);
-                showError(error.message || 'Failed to initialize login page. Please refresh and try again.');
-                setLoading(false);
+                showError('Failed to initialize login page. Please refresh and try again.');
             }
         }
 
