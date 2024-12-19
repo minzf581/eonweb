@@ -8,6 +8,21 @@ class AuthService {
         this._token = localStorage.getItem('auth_token');
         this._tokenExpiry = localStorage.getItem('auth_token_expiry');
 
+        // Bind all methods to this instance
+        this.logInfo = this.logInfo.bind(this);
+        this.logError = this.logError.bind(this);
+        this.isInitialized = this.isInitialized.bind(this);
+        this.getToken = this.getToken.bind(this);
+        this.initialize = this.initialize.bind(this);
+        this.validateToken = this.validateToken.bind(this);
+        this.clearAuth = this.clearAuth.bind(this);
+        this.logout = this.logout.bind(this);
+        this.login = this.login.bind(this);
+        this.register = this.register.bind(this);
+        this.setToken = this.setToken.bind(this);
+        this.getUser = this.getUser.bind(this);
+        this.isAdmin = this.isAdmin.bind(this);
+
         // Log the instance structure
         console.log('[AuthService] Instance structure:', {
             _initialized: this._initialized,
