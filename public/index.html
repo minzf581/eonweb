@@ -959,7 +959,7 @@ footer p {
             <a href="#solution" class="nav-link">Solution</a>
             <a href="#about" class="nav-link">About</a>
             <a href="#contact" class="nav-link">Contact</a>
-            <a href="/auth/login.html" class="nav-link" style="color: var(--primary-color);">Login</a>
+            <a href="/auth/login.html" class="nav-link" style="color: var(--primary-color);" id="loginLink">Login</a>
         </div>
     </nav>
 
@@ -1218,6 +1218,23 @@ footer p {
             };
 
             updateCounter();
+        });
+
+        // Login functionality
+        document.getElementById('loginLink').addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                // Wait for auth service to be ready
+                if (window.authServiceUtils) {
+                    await window.authServiceUtils.waitForAuthService();
+                }
+                // Redirect to login page
+                window.location.href = '/auth/login.html';
+            } catch (error) {
+                console.error('Failed to handle login:', error);
+                // Fallback to direct navigation
+                window.location.href = '/auth/login.html';
+            }
         });
     </script>
     <!-- 添加Font Awesome图标 -->
