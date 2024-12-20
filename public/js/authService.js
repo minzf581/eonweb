@@ -1,50 +1,29 @@
 // AuthService implementation
 class AuthService {
     constructor() {
-        console.log('[AuthService] Creating new instance');
+        this.logInfo('Creating new instance');
         
         // Private fields
         this._data = {
             initialized: false,
             initializing: false,
-            token: null,  
+            token: null,
             tokenExpiry: null,
             user: null,
-            baseUrl: 'https://eonweb-production.up.railway.app'
+            baseUrl: 'https://eonweb-production.up.railway.app/api/v1'
         };
-        
-        // Log the instance structure
-        console.log('[AuthService] Instance structure:', {
-            initialized: this.initialized,
-            initializing: this.initializing,
-            hasToken: false,
-            tokenExpiry: null,
-            getToken: typeof this.getToken
-        });
 
-        this.logInfo('Auth service instance created');
-        
-        // Initialize immediately
-        this.initialize().then(() => {
-            // 初始化完成后再读取 token
-            this._data.token = localStorage.getItem('auth_token');
-            this._data.tokenExpiry = localStorage.getItem('auth_token_expiry');
-            
-            console.log('[AuthService] Initialization complete, rechecking instance structure:', {
-                initialized: this.initialized,
-                initializing: this.initializing,
-                hasToken: !!this.token,
-                tokenExpiry: this.tokenExpiry,
-                getToken: typeof this.getToken
-            });
-        }).catch(error => {
-            this.logError('Failed to initialize', error);
-        });
+        // Initialize immediately but don't wait
+        this.initialize();
     }
 
     // Getters
     get initialized() {
         return this._data.initialized;
+    }
+
+    get initializing() {
+        return this._data.initializing;
     }
 
     get token() {
@@ -57,45 +36,29 @@ class AuthService {
 
     get getToken() {
         if (!this.initialized) {
-            console.log('[AuthService] getToken called before initialization');
+            this.logInfo('getToken called before initialization');
             return null;
         }
-        
-        console.log('[AuthService] getToken called:', {
-            initialized: this.initialized,
-            hasToken: !!this.token,
-            tokenExpiry: this.tokenExpiry
-        });
-
         return this.token;
     }
 
-    // Methods
-    logInfo(message) {
-        console.log(`[AuthService ${new Date().toISOString()}] ${message}`);
+    // Logging methods
+    logInfo(message, data = null) {
+        const timestamp = new Date().toISOString();
+        if (data) {
+            console.log(`[AuthService] ${message}:`, data);
+        } else {
+            console.log(`[AuthService] ${message}`);
+        }
     }
 
     logError(message, error) {
-        console.error(`[AuthService ${new Date().toISOString()}] ${message}:`, error);
+        console.error(`[AuthService] ${message}:`, error);
     }
 
-    isInitialized() {
-        console.log('[AuthService] Checking initialization status:', {
-            initialized: this.initialized,
-            hasToken: !!this.token,
-            tokenExpiry: this.tokenExpiry
-        });
-        return this.initialized;
-    }
-
+    // Core methods
     async initialize() {
-        console.log('[AuthService] Initialize called:', {
-            initialized: this.initialized,
-            initializing: this.initializing
-        });
-
         if (this.initializing || this.initialized) {
-            console.log('[AuthService] Initialize skipped - already initialized or initializing');
             return;
         }
 
@@ -103,28 +66,20 @@ class AuthService {
         this.logInfo('Starting initialization');
 
         try {
-            if (this.token && this.tokenExpiry) {
-                this.logInfo(`Stored token check: token=${!!this.token}, expiry=${this.tokenExpiry}`);
-                const now = new Date();
-                const expiry = new Date(this.tokenExpiry);
-                this.logInfo(`Token expiry check during init: current=${now.toISOString()}, expiry=${expiry.toISOString()}`);
+            // Load stored token
+            this._data.token = localStorage.getItem('auth_token');
+            this._data.tokenExpiry = localStorage.getItem('auth_token_expiry');
 
-                if (now < expiry) {
-                    this.logInfo('Valid token loaded from storage');
-                    await this.validateToken();
-                } else {
-                    this.logInfo('Token expired, clearing auth');
+            // Validate token if exists
+            if (this._data.token) {
+                const isValid = await this.validateToken();
+                if (!isValid) {
                     this.clearAuth();
                 }
             }
 
             this._data.initialized = true;
-            this.logInfo('Initialization complete');
-            
-            // Log final state after initialization
-            console.log('[AuthService] Final state after initialization:', {
-                initialized: this.initialized,
-                initializing: this.initializing,
+            this.logInfo('Initialization complete', {
                 hasToken: !!this.token,
                 tokenExpiry: this.tokenExpiry
             });
@@ -137,35 +92,32 @@ class AuthService {
     }
 
     async validateToken() {
-        console.log('[AuthService] validateToken called:', {
-            hasToken: !!this.token
-        });
-
         if (!this.token) return false;
 
         try {
-            const response = await fetch(`${this._data.baseUrl}/api/auth/validate`, {
+            const response = await fetch(`${this._data.baseUrl}/auth/validate`, {
                 headers: {
-                    'Authorization': `Bearer ${this.token}`
+                    'Authorization': `Bearer ${this.token}`,
+                    'Accept': 'application/json'
                 }
             });
 
             if (!response.ok) {
-                this.clearAuth();
+                this.logError('Token validation failed', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
                 return false;
             }
 
-            this.logInfo('Token validated from session cache');
             return true;
         } catch (error) {
             this.logError('Token validation failed', error);
-            this.clearAuth();
             return false;
         }
     }
 
     clearAuth() {
-        console.log('[AuthService] clearAuth called');
         this._data.token = null;
         this._data.tokenExpiry = null;
         this._data.user = null;
@@ -174,93 +126,45 @@ class AuthService {
         this.logInfo('Auth cleared');
     }
 
-    async logout() {
-        console.log('[AuthService] logout called');
-        try {
-            await fetch(`${this._data.baseUrl}/api/auth/logout`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-        } catch (error) {
-            this.logError('Logout failed', error);
-        } finally {
-            this.clearAuth();
-            window.location.href = '/';  // 重定向到首页
-        }
-    }
-
     async login(email, password) {
-        console.log('[AuthService] login called');
+        this.logInfo('Attempting login');
         try {
-            const response = await fetch(`${this._data.baseUrl}/api/auth/login`, {
+            const response = await fetch(`${this._data.baseUrl}/auth/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({ email, password })
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Login failed');
+                this.logError('Server response', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    error: errorData
+                });
+                throw new Error(errorData.message || `Login failed: ${response.statusText}`);
             }
 
             const data = await response.json();
             if (!data.token) {
-                throw new Error('Invalid response from server');
+                throw new Error('Invalid response from server: missing token');
             }
 
             this.setToken(data.token);
             this._data.user = data.user || null;
+            this.logInfo('Login successful');
             
             return true;
         } catch (error) {
             this.logError('Login failed', error);
-            throw error; // 重新抛出错误以便上层处理
+            throw error;
         }
-    }
-
-    async register(email, password, referralCode = '') {
-        console.log('[AuthService] register called');
-        try {
-            const response = await fetch(`${this._data.baseUrl}/api/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, password, referralCode })
-            });
-
-            if (!response.ok) {
-                throw new Error('Registration failed');
-            }
-
-            const data = await response.json();
-            this.setToken(data.token);
-            return true;
-        } catch (error) {
-            this.logError('Registration failed', error);
-            return false;
-        }
-    }
-
-    setToken(token) {
-        console.log('[AuthService] setToken called');
-        this._data.token = token;
-        const expiry = new Date();
-        expiry.setHours(expiry.getHours() + 24);
-        this._data.tokenExpiry = expiry.toISOString();
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('auth_token_expiry', this._data.tokenExpiry);
     }
 
     async getUser() {
-        console.log('[AuthService] getUser called:', {
-            hasToken: !!this.token
-        });
-
         if (!this.token) {
             return null;
         }
@@ -270,9 +174,10 @@ class AuthService {
         }
 
         try {
-            const response = await fetch(`${this._data.baseUrl}/api/auth/user`, {
+            const response = await fetch(`${this._data.baseUrl}/auth/user`, {
                 headers: {
-                    'Authorization': `Bearer ${this.token}`
+                    'Authorization': `Bearer ${this.token}`,
+                    'Accept': 'application/json'
                 }
             });
 
@@ -289,10 +194,13 @@ class AuthService {
         }
     }
 
-    async isAdmin() {
-        console.log('[AuthService] isAdmin called');
-        const user = await this.getUser();
-        return user && user.isAdmin;
+    setToken(token) {
+        this._data.token = token;
+        localStorage.setItem('auth_token', token);
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 7); // Token expires in 7 days
+        this._data.tokenExpiry = expiry.toISOString();
+        localStorage.setItem('auth_token_expiry', this._data.tokenExpiry);
     }
 }
 
@@ -302,12 +210,10 @@ const authService = new AuthService();
 
 // Create AuthServiceUtils
 const authServiceUtils = {
-    _instance: null,
     async waitForAuthService(timeoutMs = 5000) {
         const startTime = Date.now();
         while (Date.now() - startTime < timeoutMs) {
             if (authService && authService.initialized) {
-                this._instance = authService;
                 return authService;
             }
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -316,7 +222,7 @@ const authServiceUtils = {
     },
     
     get instance() {
-        return this._instance || authService;
+        return authService;
     }
 };
 
