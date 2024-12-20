@@ -10,7 +10,9 @@ class AuthService {
             token: null,
             tokenExpiry: null,
             user: null,
-            baseUrl: 'https://eonweb-production.up.railway.app/api/v1'
+            baseUrl: 'https://eonweb-production.up.railway.app:8080/api',  // 添加端口号
+            retryDelay: 1000,  // 初始重试延迟（毫秒）
+            maxRetries: 3      // 最大重试次数
         };
 
         // Initialize immediately but don't wait
@@ -56,6 +58,49 @@ class AuthService {
         console.error(`[AuthService] ${message}:`, error);
     }
 
+    // Helper methods
+    async fetchWithRetry(url, options, retries = this._data.maxRetries) {
+        try {
+            this.logInfo(`Making request to: ${url}`);
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // 检查服务器是否正常响应
+            if (response.status === 503 || response.status === 502 || response.status === 504) {
+                throw new Error('Server temporarily unavailable');
+            }
+
+            return response;
+        } catch (error) {
+            this.logError('Request failed', { url, error: error.message });
+            if (retries > 0 && (error.message.includes('Failed to fetch') || 
+                error.message.includes('temporarily unavailable'))) {
+                this.logInfo(`Retrying request, ${retries} attempts remaining`);
+                await new Promise(resolve => setTimeout(resolve, this._data.retryDelay));
+                return this.fetchWithRetry(url, options, retries - 1);
+            }
+            throw error;
+        }
+    }
+
+    async checkServerHealth() {
+        try {
+            const response = await fetch(`${this._data.baseUrl}/health`);
+            const isHealthy = response.ok;
+            this.logInfo(`Server health check: ${isHealthy ? 'OK' : 'Failed'}`);
+            return isHealthy;
+        } catch (error) {
+            this.logError('Server health check failed', error);
+            return false;
+        }
+    }
+
     // Core methods
     async initialize() {
         if (this.initializing || this.initialized) {
@@ -95,7 +140,7 @@ class AuthService {
         if (!this.token) return false;
 
         try {
-            const response = await fetch(`${this._data.baseUrl}/auth/validate`, {
+            const response = await this.fetchWithRetry(`${this._data.baseUrl}/auth/validate`, {
                 headers: {
                     'Authorization': `Bearer ${this.token}`,
                     'Accept': 'application/json'
@@ -129,23 +174,38 @@ class AuthService {
     async login(email, password) {
         this.logInfo('Attempting login');
         try {
-            const response = await fetch(`${this._data.baseUrl}/auth/login`, {
+            // 检查参数
+            if (!email || !password) {
+                throw new Error('Email and password are required');
+            }
+
+            // 先检查服务器健康状况
+            const isHealthy = await this.checkServerHealth();
+            if (!isHealthy) {
+                throw new Error('Server is currently unavailable. Please try again later.');
+            }
+
+            const response = await this.fetchWithRetry(`${this._data.baseUrl}/auth/login`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
                 body: JSON.stringify({ email, password })
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                this.logError('Server response', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    error: errorData
-                });
-                throw new Error(errorData.message || `Login failed: ${response.statusText}`);
+                let errorMessage = 'Login failed';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.error || 'Login failed';
+                } catch (e) {
+                    // 如果无法解析错误响应
+                    if (response.status === 404) {
+                        errorMessage = 'Login service is temporarily unavailable';
+                    } else if (response.status === 401) {
+                        errorMessage = 'Invalid email or password';
+                    } else if (response.status >= 500) {
+                        errorMessage = 'Server error, please try again later';
+                    }
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
@@ -174,10 +234,9 @@ class AuthService {
         }
 
         try {
-            const response = await fetch(`${this._data.baseUrl}/auth/user`, {
+            const response = await this.fetchWithRetry(`${this._data.baseUrl}/auth/user`, {
                 headers: {
-                    'Authorization': `Bearer ${this.token}`,
-                    'Accept': 'application/json'
+                    'Authorization': `Bearer ${this.token}`
                 }
             });
 
