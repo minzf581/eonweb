@@ -10,7 +10,7 @@ class AuthService {
             token: null,
             tokenExpiry: null,
             user: null,
-            baseUrl: 'https://eonweb-production.up.railway.app:8080/api',  // 添加端口号
+            baseUrl: 'https://eonweb-production.up.railway.app/api',  // 移除端口号
             retryDelay: 1000,  // 初始重试延迟（毫秒）
             maxRetries: 3      // 最大重试次数
         };
