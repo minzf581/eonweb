@@ -10,7 +10,9 @@ class AuthService {
             token: null,
             tokenExpiry: null,
             user: null,
-            baseUrl: 'https://eonweb-production.up.railway.app/api',  // 移除端口号
+            baseUrl: window.location.hostname === 'localhost' 
+                ? 'http://localhost:8080/api'
+                : 'https://eonweb-production.up.railway.app/api',
             retryDelay: 1000,  // 初始重试延迟（毫秒）
             maxRetries: 3,      // 最大重试次数
             requestTimeout: 10000  // 10 seconds timeout

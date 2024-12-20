@@ -45,13 +45,15 @@ const config = {
             ? 'mongodb://localhost:27017/eon-protocol'
             : null),
         options: {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
             maxPoolSize: 10,
             minPoolSize: 2,
-            maxIdleTimeMS: 30000
+            maxIdleTimeMS: 30000,
+            connectTimeoutMS: 10000,
+            heartbeatFrequencyMS: 10000,
+            retryWrites: true,
+            w: 'majority'
         }
     }
 };
