@@ -12,7 +12,8 @@ class AuthService {
             user: null,
             baseUrl: 'https://eonweb-production.up.railway.app/api',  // 移除端口号
             retryDelay: 1000,  // 初始重试延迟（毫秒）
-            maxRetries: 3      // 最大重试次数
+            maxRetries: 3,      // 最大重试次数
+            requestTimeout: 10000  // 10 seconds timeout
         };
 
         // Initialize immediately but don't wait
@@ -59,44 +60,105 @@ class AuthService {
     }
 
     // Helper methods
-    async fetchWithRetry(url, options, retries = this._data.maxRetries) {
+    async fetchWithTimeout(url, options = {}) {
+        const { timeout = this._data.requestTimeout } = options;
+        
+        this.logInfo(`Making request to ${url} with timeout ${timeout}ms`);
+        this.logInfo('Request options:', {
+            method: options.method,
+            headers: options.headers,
+            timeout
+        });
+        
+        const controller = new AbortController();
+        const id = setTimeout(() => {
+            controller.abort();
+            this.logError('Request timed out after', timeout, 'ms');
+        }, timeout);
+        
         try {
-            this.logInfo(`Making request to: ${url}`);
             const response = await fetch(url, {
                 ...options,
+                signal: controller.signal,
                 headers: {
                     ...options.headers,
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 }
             });
-
-            // 检查服务器是否正常响应
+            
+            this.logInfo('Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers
+            });
+            
             if (response.status === 503 || response.status === 502 || response.status === 504) {
                 throw new Error('Server temporarily unavailable');
             }
-
+            
             return response;
+        } finally {
+            clearTimeout(id);
+        }
+    }
+
+    async fetchWithRetry(url, options, retries = this._data.maxRetries) {
+        this.logInfo(`Making request to: ${url}`);
+        
+        try {
+            return await this.fetchWithTimeout(url, options);
         } catch (error) {
             this.logError('Request failed', { url, error: error.message });
+            
+            if (error.name === 'AbortError') {
+                throw new Error('Request timeout. Please try again.');
+            }
+            
             if (retries > 0 && (error.message.includes('Failed to fetch') || 
                 error.message.includes('temporarily unavailable'))) {
                 this.logInfo(`Retrying request, ${retries} attempts remaining`);
                 await new Promise(resolve => setTimeout(resolve, this._data.retryDelay));
                 return this.fetchWithRetry(url, options, retries - 1);
             }
+            
             throw error;
         }
     }
 
     async checkServerHealth() {
         try {
-            const response = await fetch(`${this._data.baseUrl}/health`);
-            const isHealthy = response.ok;
-            this.logInfo(`Server health check: ${isHealthy ? 'OK' : 'Failed'}`);
-            return isHealthy;
+            this.logInfo('Checking server health...');
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            
+            try {
+                const response = await fetch(`${this._data.baseUrl}/health`, {
+                    signal: controller.signal
+                });
+                
+                this.logInfo('Health check response:', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.logInfo('Health check data:', data);
+                }
+                
+                const isHealthy = response.ok;
+                this.logInfo(`Server health check: ${isHealthy ? 'OK' : 'Failed'}`);
+                return isHealthy;
+            } finally {
+                clearTimeout(timeout);
+            }
         } catch (error) {
-            this.logError('Server health check failed', error);
+            if (error.name === 'AbortError') {
+                this.logError('Server health check timed out');
+                return false;
+            }
+            this.logError('Server health check failed:', error);
             return false;
         }
     }
@@ -179,24 +241,24 @@ class AuthService {
                 throw new Error('Email and password are required');
             }
 
-            // 先检查服务器健康状况
-            const isHealthy = await this.checkServerHealth();
-            if (!isHealthy) {
-                throw new Error('Server is currently unavailable. Please try again later.');
-            }
-
+            this.logInfo(`Making login request to ${this._data.baseUrl}/auth/login`);
             const response = await this.fetchWithRetry(`${this._data.baseUrl}/auth/login`, {
                 method: 'POST',
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email, password }),
+                timeout: 15000
             });
+
+            this.logInfo('Login response status:', response.status);
+            this.logInfo('Login response headers:', response.headers);
 
             if (!response.ok) {
                 let errorMessage = 'Login failed';
                 try {
                     const errorData = await response.json();
+                    this.logError('Login error response:', errorData);
                     errorMessage = errorData.message || errorData.error || 'Login failed';
                 } catch (e) {
-                    // 如果无法解析错误响应
+                    this.logError('Failed to parse error response:', e);
                     if (response.status === 404) {
                         errorMessage = 'Login service is temporarily unavailable';
                     } else if (response.status === 401) {
@@ -208,7 +270,13 @@ class AuthService {
                 throw new Error(errorMessage);
             }
 
+            this.logInfo('Parsing login response...');
             const data = await response.json();
+            this.logInfo('Login response data:', { 
+                hasToken: !!data.token,
+                hasUser: !!data.user
+            });
+
             if (!data.token) {
                 throw new Error('Invalid response from server: missing token');
             }
@@ -219,7 +287,7 @@ class AuthService {
             
             return true;
         } catch (error) {
-            this.logError('Login failed', error);
+            this.logError('Login failed:', error);
             throw error;
         }
     }

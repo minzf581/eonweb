@@ -282,12 +282,27 @@ if (config.cors.enabled) {
 
 // 请求日志中间件
 app.use((req, res, next) => {
+    const startTime = Date.now();
     console.log('\n=== Incoming Request ===');
     console.log('Time:', new Date().toISOString());
     console.log('Method:', req.method);
     console.log('Path:', req.path);
-    console.log('Origin:', req.headers.origin);
+    console.log('Query:', req.query);
+    console.log('Body:', req.body);
     console.log('Headers:', req.headers);
+    console.log('MongoDB Status:', mongoose.connection.readyState);
+    console.log('Base URL:', req.baseUrl);
+
+    // 添加响应完成后的日志
+    res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        console.log('\n=== Response Completed ===');
+        console.log('Time:', new Date().toISOString());
+        console.log('Duration:', duration, 'ms');
+        console.log('Status:', res.statusCode);
+        console.log('Headers:', res.getHeaders());
+    });
+
     next();
 });
 
@@ -367,9 +382,25 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // MongoDB 连接
+console.log('Connecting to MongoDB...');
+console.log('MongoDB URI:', config.mongodb.uri);
+console.log('MongoDB Options:', JSON.stringify(config.mongodb.options, null, 2));
+
 mongoose.connect(config.mongodb.uri, config.mongodb.options)
     .then(() => {
         console.log('Successfully connected to MongoDB');
+        console.log('Connection state:', mongoose.connection.readyState);
+        console.log('Database name:', mongoose.connection.name);
+        
+        // 测试数据库连接
+        return mongoose.connection.db.admin().ping();
+    })
+    .then(() => {
+        console.log('Database ping successful');
+        return mongoose.connection.db.listCollections().toArray();
+    })
+    .then(collections => {
+        console.log('Available collections:', collections.map(c => c.name));
         
         // 启动服务器
         async function startServer() {
@@ -475,6 +506,15 @@ const userSchema = new mongoose.Schema({
     points: { type: Number, default: 0 }
 });
 
+// 添加模型事件监听器
+userSchema.post('save', function(doc) {
+    console.log('User saved:', doc.email);
+});
+
+userSchema.post('findOne', function(doc) {
+    console.log('User found:', doc ? doc.email : 'not found');
+});
+
 const User = mongoose.model('User', userSchema);
 
 // 任务模型
@@ -501,34 +541,48 @@ const UserTask = mongoose.model('UserTask', userTaskSchema);
 
 // API 路由
 app.post('/api/auth/login', async (req, res) => {
+    console.log('\n=== Login Request ===');
+    console.log('Request Body:', req.body);
+    
     try {
         const { email, password } = req.body;
-        
-        // 查找用户
+
+        // 验证请求数据
+        if (!email || !password) {
+            console.log('Login failed: Missing email or password');
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        console.log('Checking database connection...');
+        if (mongoose.connection.readyState !== 1) {
+            console.error('Database not connected. Current state:', mongoose.connection.readyState);
+            return res.status(503).json({ error: 'Database connection error' });
+        }
+
+        console.log('Finding user with email:', email);
         const user = await User.findOne({ email });
+        
         if (!user) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+            console.log('Login failed: User not found');
+            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // 验证密码
+        console.log('User found, comparing passwords...');
         const validPassword = await bcryptjs.compare(password, user.password);
+        
         if (!validPassword) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+            console.log('Login failed: Invalid password');
+            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // 设置管理员权限
-        if (email === 'info@eon-protocol.com') {
-            user.isAdmin = true;
-            await user.save();
-        }
-
-        // 生成 token
+        console.log('Password valid, generating token...');
         const token = jwt.sign(
             { userId: user._id, email: user.email, isAdmin: user.isAdmin },
             config.jwt.secret,
             { expiresIn: '24h' }
         );
 
+        console.log('Login successful for user:', email);
         res.json({
             token,
             user: {
@@ -538,7 +592,7 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ error: 'Internal server error during login' });
     }
 });
 
