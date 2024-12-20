@@ -321,33 +321,6 @@ const userTaskSchema = new mongoose.Schema({
 
 const UserTask = mongoose.model('UserTask', userTaskSchema);
 
-// 认证中间件
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-
-    jwt.verify(token, config.jwt.secret, (err, user) => {
-        if (err) {
-            console.error('Token verification failed:', err);
-            return res.status(403).json({ error: 'Invalid token' });
-        }
-        req.user = user;
-        next();
-    });
-};
-
-// 管理员中间件
-const isAdmin = (req, res, next) => {
-    if (!req.user || !req.user.isAdmin) {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-    next();
-};
-
 // 认证路由
 authRouter.post('/login', async (req, res) => {
     console.log('\n=== Login Request ===');
