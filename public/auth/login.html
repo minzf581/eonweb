@@ -277,7 +277,7 @@
 
         async function handleLogin(event) {
             event.preventDefault();
-            
+
             if (!validateForm()) {
                 return;
             }
@@ -296,13 +296,18 @@
                 const password = document.getElementById('password').value;
 
                 await window.authService.login(email, password);
+                
+                // Get user info to determine redirect path
+                const user = await window.authService.getUser();
+                if (!user) {
+                    throw new Error('Failed to get user information');
+                }
+
                 showInfo('Login successful, redirecting...');
                 
-                // Get user info to determine admin status
-                const user = await window.authService.getUser();
-                const isAdmin = user.role === 'admin';
-                const dashboardPath = isAdmin ? '/admin/index.html' : '/dashboard/index.html';
-                window.location.href = dashboardPath;
+                // Determine redirect path based on user role
+                const redirectPath = user.role === 'admin' ? '/admin/index.html' : '/dashboard/index.html';
+                window.location.href = redirectPath;
             } catch (error) {
                 console.error('[Login] Login failed:', error);
                 showError(error.message || 'Login failed. Please try again.');

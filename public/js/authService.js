@@ -7,24 +7,29 @@ class AuthService {
         this._data = {
             initialized: false,
             initializing: false,
-            token: localStorage.getItem('auth_token'),
-            tokenExpiry: localStorage.getItem('auth_token_expiry')
+            token: null,  
+            tokenExpiry: null,
+            user: null,
+            baseUrl: 'https://eonweb-production.up.railway.app'
         };
         
         // Log the instance structure
         console.log('[AuthService] Instance structure:', {
             initialized: this.initialized,
             initializing: this.initializing,
-            hasToken: !!this.token,
-            tokenExpiry: this.tokenExpiry,
+            hasToken: false,
+            tokenExpiry: null,
             getToken: typeof this.getToken
         });
 
         this.logInfo('Auth service instance created');
-        this.logInfo('Auth service setup complete');
         
         // Initialize immediately
         this.initialize().then(() => {
+            // 初始化完成后再读取 token
+            this._data.token = localStorage.getItem('auth_token');
+            this._data.tokenExpiry = localStorage.getItem('auth_token_expiry');
+            
             console.log('[AuthService] Initialization complete, rechecking instance structure:', {
                 initialized: this.initialized,
                 initializing: this.initializing,
@@ -32,6 +37,8 @@ class AuthService {
                 tokenExpiry: this.tokenExpiry,
                 getToken: typeof this.getToken
             });
+        }).catch(error => {
+            this.logError('Failed to initialize', error);
         });
     }
 
@@ -49,21 +56,18 @@ class AuthService {
     }
 
     get getToken() {
+        if (!this.initialized) {
+            console.log('[AuthService] getToken called before initialization');
+            return null;
+        }
+        
         console.log('[AuthService] getToken called:', {
             initialized: this.initialized,
             hasToken: !!this.token,
             tokenExpiry: this.tokenExpiry
         });
 
-        try {
-            if (!this.initialized) {
-                throw new Error('AuthService not initialized');
-            }
-            return this.token;
-        } catch (error) {
-            this.logError('Error accessing token', error);
-            return null;
-        }
+        return this.token;
     }
 
     // Methods
@@ -140,7 +144,7 @@ class AuthService {
         if (!this.token) return false;
 
         try {
-            const response = await fetch('/api/auth/validate', {
+            const response = await fetch(`${this._data.baseUrl}/api/auth/validate`, {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
@@ -164,6 +168,7 @@ class AuthService {
         console.log('[AuthService] clearAuth called');
         this._data.token = null;
         this._data.tokenExpiry = null;
+        this._data.user = null;
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_token_expiry');
         this.logInfo('Auth cleared');
@@ -172,7 +177,7 @@ class AuthService {
     async logout() {
         console.log('[AuthService] logout called');
         try {
-            await fetch('/api/auth/logout', {
+            await fetch(`${this._data.baseUrl}/api/auth/logout`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.token}`
@@ -189,7 +194,7 @@ class AuthService {
     async login(email, password) {
         console.log('[AuthService] login called');
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch(`${this._data.baseUrl}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -198,27 +203,29 @@ class AuthService {
             });
 
             if (!response.ok) {
-                throw new Error('Login failed');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Login failed');
             }
 
             const data = await response.json();
+            if (!data.token) {
+                throw new Error('Invalid response from server');
+            }
+
             this.setToken(data.token);
-            
-            // Check if user is admin and redirect accordingly
-            const isAdmin = await this.isAdmin();
-            window.location.href = isAdmin ? '/admin/dashboard' : '/dashboard';
+            this._data.user = data.user || null;
             
             return true;
         } catch (error) {
             this.logError('Login failed', error);
-            return false;
+            throw error; // 重新抛出错误以便上层处理
         }
     }
 
     async register(email, password, referralCode = '') {
         console.log('[AuthService] register called');
         try {
-            const response = await fetch('/api/auth/register', {
+            const response = await fetch(`${this._data.baseUrl}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -254,22 +261,30 @@ class AuthService {
             hasToken: !!this.token
         });
 
-        if (!this.token) return null;
+        if (!this.token) {
+            return null;
+        }
+
+        if (this._data.user) {
+            return this._data.user;
+        }
 
         try {
-            const response = await fetch('/api/auth/user', {
+            const response = await fetch(`${this._data.baseUrl}/api/auth/user`, {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
             });
 
             if (!response.ok) {
-                throw new Error('Failed to get user data');
+                throw new Error('Failed to fetch user data');
             }
 
-            return await response.json();
+            const data = await response.json();
+            this._data.user = data;
+            return data;
         } catch (error) {
-            this.logError('Get user failed', error);
+            this.logError('Failed to get user data', error);
             return null;
         }
     }
