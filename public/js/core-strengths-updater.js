@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
             text-align: center;
             color: var(--text-color);
             font-size: 2.5rem;
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
             position: relative;
         }
 
@@ -44,47 +44,47 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         .strengths-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4rem;
         }
 
         .strength-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 2.5rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .strength-item:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(77, 171, 247, 0.1) 0%, rgba(77, 171, 247, 0) 100%);
+            display: flex;
+            align-items: center;
+            gap: 3rem;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
         }
 
-        .strength-item:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .strength-item:hover:before {
+        .strength-item.visible {
             opacity: 1;
+            transform: translateY(0);
+        }
+
+        .strength-item:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+
+        .strength-content {
+            flex: 1;
+            text-align: left;
+        }
+
+        .strength-item:nth-child(even) .strength-content {
+            text-align: right;
+        }
+
+        .strength-icon-wrapper {
+            flex: 0 0 300px;
+            position: relative;
         }
 
         .strength-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -92,14 +92,34 @@ document.addEventListener('DOMContentLoaded', function() {
             border-radius: 50%;
             position: relative;
             transition: transform 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .strength-icon:before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #357ABD 100%);
+            border-radius: 50%;
+            opacity: 0.3;
+            z-index: -1;
+            transition: all 0.3s ease;
         }
 
         .strength-item:hover .strength-icon {
             transform: scale(1.1);
         }
 
+        .strength-item:hover .strength-icon:before {
+            transform: scale(1.2);
+            opacity: 0.2;
+        }
+
         .strength-icon i {
-            font-size: 2rem;
+            font-size: 3rem;
             color: white;
             transition: transform 0.3s ease;
         }
@@ -110,18 +130,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         .strength-item h3 {
             color: var(--text-color);
-            font-size: 1.5rem;
+            font-size: 2rem;
             margin-bottom: 1rem;
             position: relative;
-            z-index: 1;
         }
 
         .strength-item p {
             color: var(--secondary-color);
-            line-height: 1.6;
+            line-height: 1.8;
+            font-size: 1.1rem;
             margin: 0;
             position: relative;
-            z-index: 1;
             transition: color 0.3s ease;
         }
 
@@ -129,9 +148,36 @@ document.addEventListener('DOMContentLoaded', function() {
             color: var(--text-color);
         }
 
+        .strength-background {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(77, 171, 247, 0.1) 0%, rgba(77, 171, 247, 0) 70%);
+            border-radius: 50%;
+            z-index: -1;
+            transition: all 0.3s ease;
+        }
+
+        .strength-item:hover .strength-background {
+            transform: scale(1.2);
+            opacity: 0.8;
+        }
+
         @media (max-width: 768px) {
-            .strengths-grid {
-                grid-template-columns: 1fr;
+            .strength-item,
+            .strength-item:nth-child(even) {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+            }
+
+            .strength-content,
+            .strength-item:nth-child(even) .strength-content {
+                text-align: center;
+            }
+
+            .strength-icon-wrapper {
+                flex: 0 0 auto;
             }
 
             .core-strengths {
@@ -142,8 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 font-size: 2rem;
             }
 
-            .strength-item {
-                padding: 2rem;
+            .strength-item h3 {
+                font-size: 1.8rem;
             }
         }
     `;
@@ -160,28 +206,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h2>Our Core Strengths</h2>
                 <div class="strengths-grid">
                     <div class="strength-item">
-                        <div class="strength-icon">
-                            <i class="fas fa-shield-alt"></i>
+                        <div class="strength-icon-wrapper">
+                            <div class="strength-background"></div>
+                            <div class="strength-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
                         </div>
-                        <h3>Security First</h3>
-                        <p>Enterprise-grade encryption and secure data handling ensure your information remains protected at all times.</p>
+                        <div class="strength-content">
+                            <h3>Security First</h3>
+                            <p>Enterprise-grade encryption and secure data handling ensure your information remains protected at all times. Our advanced security protocols and continuous monitoring systems provide unmatched protection for your sensitive data.</p>
+                        </div>
                     </div>
                     <div class="strength-item">
-                        <div class="strength-icon">
-                            <i class="fas fa-bolt"></i>
+                        <div class="strength-icon-wrapper">
+                            <div class="strength-background"></div>
+                            <div class="strength-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
                         </div>
-                        <h3>High Performance</h3>
-                        <p>Optimized architecture delivers lightning-fast processing and real-time data collaboration capabilities.</p>
+                        <div class="strength-content">
+                            <h3>High Performance</h3>
+                            <p>Optimized architecture delivers lightning-fast processing and real-time data collaboration capabilities. Experience seamless operations with our cutting-edge infrastructure designed for maximum efficiency and minimal latency.</p>
+                        </div>
                     </div>
                     <div class="strength-item">
-                        <div class="strength-icon">
-                            <i class="fas fa-network-wired"></i>
+                        <div class="strength-icon-wrapper">
+                            <div class="strength-background"></div>
+                            <div class="strength-icon">
+                                <i class="fas fa-network-wired"></i>
+                            </div>
                         </div>
-                        <h3>Scalable Solution</h3>
-                        <p>Built to grow with your needs, our platform seamlessly scales from startups to enterprise-level operations.</p>
+                        <div class="strength-content">
+                            <h3>Scalable Solution</h3>
+                            <p>Built to grow with your needs, our platform seamlessly scales from startups to enterprise-level operations. Our flexible architecture adapts to your requirements, ensuring consistent performance as your business expands.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
+
+        // Add scroll animation
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.3
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.strength-item').forEach(item => {
+            observer.observe(item);
+        });
     }
 });
