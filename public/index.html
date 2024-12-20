@@ -7,8 +7,10 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/core-strengths.css">
-
+    
+    <!-- Core Scripts -->
+    <script src="js/authService.js"></script>
+    
     <style>
         :root {
             --primary-color: #4dabf7;
@@ -1241,8 +1243,6 @@ footer p {
             }
         }
     </style>
-    <script src="js/authService.js"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -1493,9 +1493,7 @@ footer p {
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="js/authService.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/platform-features.js"></script>
     <script>
         particlesJS.load('particles-js', 'js/particles-config.json', function() {
             console.log('callback - particles.js config loaded');
@@ -1528,16 +1526,15 @@ footer p {
 
         // 主题切换
         const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
-
-        function switchTheme(e) {
-            if (e.target.checked) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
+        if (toggleSwitch) {
+            toggleSwitch.addEventListener('change', function(e) {
+                if (e.target.checked) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            }, false);
         }
-
-        toggleSwitch.addEventListener('change', switchTheme, false);
 
         // 数字计数器动画
         const counters = document.querySelectorAll('.counter');
