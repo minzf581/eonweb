@@ -50,10 +50,38 @@ const config = {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
             keepAlive: true,
-            keepAliveInitialDelay: 300000
+            keepAliveInitialDelay: 300000,
+            maxPoolSize: 10,
+            minPoolSize: 2,
+            maxIdleTimeMS: 30000,
+            maxMemoryMB: process.env.NODE_ENV === 'production' ? 256 : 512
         }
     }
 };
+
+// 监控内存使用
+function checkMemoryUsage() {
+    const used = process.memoryUsage();
+    const memoryInfo = {
+        rss: `${Math.round(used.rss / 1024 / 1024)} MB`,
+        heapTotal: `${Math.round(used.heapTotal / 1024 / 1024)} MB`,
+        heapUsed: `${Math.round(used.heapUsed / 1024 / 1024)} MB`,
+        external: `${Math.round(used.external / 1024 / 1024)} MB`
+    };
+    
+    console.log('Memory usage:', memoryInfo);
+    
+    // 如果内存使用超过限制，触发垃圾回收
+    if (used.heapUsed > config.mongodb.options.maxMemoryMB * 1024 * 1024 * 0.9) {
+        console.log('Memory usage high, triggering garbage collection');
+        if (global.gc) {
+            global.gc();
+        }
+    }
+}
+
+// 定期检查内存使用
+setInterval(checkMemoryUsage, 60000); // 每分钟检查一次
 
 // 验证生产环境配置
 if (config.server.env === 'production') {
@@ -75,7 +103,7 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // gracefulShutdown('UNHANDLED_REJECTION');
+    // 不立即关闭，只记录日志
 });
 
 // 优雅关闭函数
@@ -96,12 +124,13 @@ async function gracefulShutdown(signal) {
             process.exit(1);
         }, config.server.shutdownTimeout);
 
+        // 停止接受新的连接
         if (server) {
-            // 停止接受新的连接
-            console.log('Closing HTTP server...');
-            server.headersTimeout = 5000;  // 5 seconds
-            server.keepAliveTimeout = 5000;  // 5 seconds
+            console.log('Stopping new connections...');
+            server.unref();
             
+            // 等待现有连接完成
+            console.log('Closing HTTP server...');
             await new Promise((resolve, reject) => {
                 server.close((err) => {
                     if (err) {
@@ -115,15 +144,22 @@ async function gracefulShutdown(signal) {
             });
         }
 
+        // 关闭数据库连接
         if (mongoose.connection.readyState !== 0) {
-            // 关闭数据库连接
             console.log('Closing MongoDB connection...');
             await mongoose.connection.close(false);
             console.log('MongoDB connection closed successfully');
         }
 
-        // 清除超时
+        // 清理资源
         clearTimeout(shutdownTimeout);
+        
+        // 触发垃圾回收
+        if (global.gc) {
+            console.log('Triggering final garbage collection...');
+            global.gc();
+        }
+        
     } catch (error) {
         console.error('Error during graceful shutdown:', error);
         exitCode = 1;
@@ -173,16 +209,32 @@ app.get('/health', (req, res) => {
 
 // 健康检查端点
 app.get('/api/health', (req, res) => {
+    const used = process.memoryUsage();
     const healthCheck = {
         uptime: process.uptime(),
         status: 'OK',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        memory: {
+            rss: `${Math.round(used.rss / 1024 / 1024)} MB`,
+            heapTotal: `${Math.round(used.heapTotal / 1024 / 1024)} MB`,
+            heapUsed: `${Math.round(used.heapUsed / 1024 / 1024)} MB`
+        },
+        mongodb: {
+            status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+            connections: mongoose.connection.states
+        }
     };
 
     try {
         // 检查数据库连接
         if (mongoose.connection.readyState !== 1) {
             throw new Error('Database not connected');
+        }
+
+        // 检查内存使用
+        if (used.heapUsed > config.mongodb.options.maxMemoryMB * 1024 * 1024 * 0.9) {
+            healthCheck.status = 'WARNING';
+            healthCheck.warning = 'High memory usage';
         }
 
         res.json(healthCheck);
@@ -311,7 +363,7 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // gracefulShutdown('UNHANDLED_REJECTION');
+    // 不立即关闭，只记录日志
 });
 
 // MongoDB 连接
