@@ -10,7 +10,7 @@ class AuthService {
             token: null,
             tokenExpiry: null,
             user: null,
-            baseUrl: window.location.origin,  // 使用当前域名
+            baseUrl: window.location.origin + '/api',  // 添加 /api 前缀
             retryDelay: 1000,
             maxRetries: 3,
             requestTimeout: 10000

@@ -226,19 +226,21 @@ console.log('MongoDB:', 'Connected');
 console.log('JWT:', 'Configured');
 console.log('===========================\n');
 
-// 基础中间件
+// 配置中间件
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+app.use(compression());
 
 // CORS 配置
 app.use(cors({
-    origin: '*',  // 允许所有来源
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
 
-// 请求日志中间件
+// 请求日志
 app.use((req, res, next) => {
     console.log(`\n=== ${new Date().toISOString()} ===`);
     console.log(`${req.method} ${req.path}`);
@@ -248,9 +250,6 @@ app.use((req, res, next) => {
     }
     next();
 });
-
-// 静态文件服务
-app.use(express.static(join(__dirname, 'public')));
 
 // 初始化路由
 const apiRouter = express.Router();
@@ -271,12 +270,6 @@ authRouter.post('/login', async (req, res) => {
         if (!email || !password) {
             console.log('Login failed: Missing email or password');
             return res.status(400).json({ error: 'Email and password are required' });
-        }
-
-        console.log('Checking database connection...');
-        if (mongoose.connection.readyState !== 1) {
-            console.error('Database not connected. Current state:', mongoose.connection.readyState);
-            return res.status(503).json({ error: 'Database connection error' });
         }
 
         console.log('Finding user with email:', email);
@@ -328,187 +321,18 @@ authRouter.post('/login', async (req, res) => {
     }
 });
 
-// 注册路由
-authRouter.post('/register', async (req, res) => {
-    try {
-        const { email, password, referralCode } = req.body;
-
-        // 验证邮箱格式
-        if (!email || !email.includes('@')) {
-            return res.status(400).json({ error: 'Invalid email format' });
-        }
-
-        // 验证密码长度
-        if (!password || password.length < 6) {
-            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
-        }
-
-        // 检查邮箱是否已注册
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ error: 'Email already registered' });
-        }
-
-        // 生成新的推荐码
-        const newReferralCode = generateReferralCode();
-
-        // 创建新用户
-        const hashedPassword = await bcryptjs.hash(password, 10);
-        const user = new User({
-            email,
-            password: hashedPassword,
-            referralCode: newReferralCode,
-            referredBy: referralCode
-        });
-
-        await user.save();
-
-        // 如果有推荐人，更新推荐人的积分
-        if (referralCode) {
-            const referrer = await User.findOne({ referralCode });
-            if (referrer) {
-                referrer.points += 100;  // 奖励100积分
-                await referrer.save();
-            }
-        }
-
-        // 生成 token
-        const token = jwt.sign(
-            { 
-                id: user._id,
-                email: user.email,
-                isAdmin: user.isAdmin
-            },
-            config.jwt.secret,
-            { expiresIn: '24h' }
-        );
-
-        res.status(201).json({
-            token,
-            user: {
-                id: user._id,
-                email: user.email,
-                isAdmin: user.isAdmin,
-                referralCode: user.referralCode
-            }
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ error: 'Internal server error during registration' });
-    }
-});
-
-// 验证 token
-authRouter.get('/verify', authenticateToken, (req, res) => {
-    res.json({ 
-        valid: true,
-        user: {
-            id: req.user.id,
-            email: req.user.email,
-            isAdmin: req.user.isAdmin
-        }
-    });
-});
-
-// 用户路由
-userRouter.get('/me', authenticateToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('-password');
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        res.json(user);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch user information' });
-    }
-});
-
-userRouter.get('/stats', authenticateToken, async (req, res) => {
-    try {
-        const userTasks = await UserTask.find({ userId: req.user.id });
-        const completedTasks = userTasks.filter(t => t.completed).length;
-        const user = await User.findById(req.user.id);
-
-        res.json({
-            totalTasks: userTasks.length,
-            completedTasks,
-            points: user.points
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch user stats' });
-    }
-});
-
-// 任务路由
-taskRouter.get('/', authenticateToken, async (req, res) => {
-    try {
-        const tasks = await Task.find();
-        res.json(tasks);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch tasks' });
-    }
-});
-
-taskRouter.post('/:taskId/start', authenticateToken, async (req, res) => {
-    try {
-        const { taskId } = req.params;
-        const userId = req.user.id;
-        
-        const task = await Task.findById(taskId);
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
-
-        const existingUserTask = await UserTask.findOne({ userId, taskId });
-        if (existingUserTask) {
-            return res.status(400).json({ error: 'Task already started' });
-        }
-
-        const userTask = new UserTask({
-            userId,
-            taskId,
-            startTime: new Date()
-        });
-
-        await userTask.save();
-        res.json(userTask);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to start task' });
-    }
-});
-
-// 管理员路由
-adminRouter.get('/users', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const users = await User.find().select('-password');
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch users' });
-    }
-});
-
-adminRouter.post('/tasks', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const task = new Task(req.body);
-        await task.save();
-        res.status(201).json(task);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create task' });
-    }
-});
-
 // 挂载路由
-apiRouter.use('/auth', authRouter);
-apiRouter.use('/users', userRouter);
-apiRouter.use('/tasks', taskRouter);
-apiRouter.use('/admin', adminRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/users', userRouter);
+app.use('/api/tasks', taskRouter);
+app.use('/api/admin', adminRouter);
 
-// 挂载 API 路由到主应用
-app.use('/api', apiRouter);
+// 静态文件服务
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 前端路由处理
 app.get('*', (req, res) => {
-    res.sendFile(join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // 错误处理中间件
@@ -575,32 +399,29 @@ apiRouter.get('/', (req, res) => {
     });
 });
 
-// 启用压缩
-app.use(compression());
-
 // 处理其他页面路由
 app.get(['/dashboard', '/dashboard/index.html'], (req, res) => {
-    res.sendFile(join(__dirname, 'public/dashboard/index.html'));
+    res.sendFile(path.join(__dirname, 'public/dashboard/index.html'));
 });
 
 app.get(['/auth/login', '/auth/login.html'], (req, res) => {
-    res.sendFile(join(__dirname, 'public/auth/login.html'));
+    res.sendFile(path.join(__dirname, 'public/auth/login.html'));
 });
 
 app.get('/auth/register', (req, res) => {
-    res.sendFile(join(__dirname, 'public/auth/register.html'));
+    res.sendFile(path.join(__dirname, 'public/auth/register.html'));
 });
 
 // 所有其他路由都返回 index.html
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
-        res.sendFile(join(__dirname, 'public/index.html'));
+        res.sendFile(path.join(__dirname, 'public/index.html'));
     }
 });
 
 // 处理 /public 路径下的 404
 app.use('/public/*', (req, res) => {
-    res.status(404).sendFile(join(__dirname, '404.html'));
+    res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
 
 // 404 处理
