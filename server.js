@@ -265,48 +265,43 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 
-// 配置 CORS
-if (config.cors.enabled) {
-    app.use(cors({
-        origin: (origin, callback) => {
-            if (!origin || config.cors.allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-        exposedHeaders: ['Set-Cookie'],
-        maxAge: 86400
-    }));
-}
+// CORS 配置
+app.use(cors({
+    origin: function(origin, callback) {
+        // 允许没有 origin 的请求（比如同源请求）
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+            'http://localhost:8080',
+            'https://eonweb-production.up.railway.app'
+        ];
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+            return callback(new Error('CORS policy violation'), false);
+        }
+        
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // 请求日志中间件
 app.use((req, res, next) => {
-    const startTime = Date.now();
-    console.log('\n=== Incoming Request ===');
-    console.log('Time:', new Date().toISOString());
-    console.log('Method:', req.method);
-    console.log('Path:', req.path);
-    console.log('Query:', req.query);
-    console.log('Body:', req.body);
+    console.log(`\n=== ${new Date().toISOString()} ===`);
+    console.log(`${req.method} ${req.path}`);
     console.log('Headers:', req.headers);
-    console.log('MongoDB Status:', mongoose.connection.readyState);
-    console.log('Base URL:', req.baseUrl);
-
-    // 添加响应完成后的日志
-    res.on('finish', () => {
-        const duration = Date.now() - startTime;
-        console.log('\n=== Response Completed ===');
-        console.log('Time:', new Date().toISOString());
-        console.log('Duration:', duration, 'ms');
-        console.log('Status:', res.statusCode);
-        console.log('Headers:', res.getHeaders());
-    });
-
+    if (req.body && Object.keys(req.body).length > 0) {
+        console.log('Body:', req.body);
+    }
     next();
+});
+
+// 错误处理中间件
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
 });
 
 // 静态文件服务
@@ -346,18 +341,6 @@ app.use('/public/*', (req, res) => {
 app.use((req, res, next) => {
     console.log('404 Not Found:', req.path);
     res.status(404).send('404 Not Found');
-});
-
-// 错误处理中间件
-app.use((err, req, res, next) => {
-    console.error('Global error handler:', err);
-    if (err.name === 'UnauthorizedError') {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-    if (err.name === 'ValidationError') {
-        return res.status(400).json({ error: err.message });
-    }
-    res.status(500).json({ error: 'Internal server error' });
 });
 
 // MongoDB 连接选项

@@ -12,10 +12,10 @@ class AuthService {
             user: null,
             baseUrl: window.location.hostname === 'localhost' 
                 ? 'http://localhost:8080/api'
-                : 'https://eonweb-production.up.railway.app/api',
-            retryDelay: 1000,  // 初始重试延迟（毫秒）
-            maxRetries: 3,      // 最大重试次数
-            requestTimeout: 10000  // 10 seconds timeout
+                : '/api',  // 使用相对路径
+            retryDelay: 1000,
+            maxRetries: 3,
+            requestTimeout: 10000
         };
 
         // Initialize immediately but don't wait
@@ -165,6 +165,61 @@ class AuthService {
         }
     }
 
+    async makeRequest(endpoint, options = {}) {
+        const url = `${this._data.baseUrl}${endpoint}`;
+        this.logInfo('Making request to:', url);
+
+        // 设置默认选项
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            timeout: this._data.requestTimeout
+        };
+
+        // 如果有 token，添加到请求头
+        if (this._data.token) {
+            defaultOptions.headers['Authorization'] = `Bearer ${this._data.token}`;
+        }
+
+        // 合并选项
+        const finalOptions = {
+            ...defaultOptions,
+            ...options,
+            headers: {
+                ...defaultOptions.headers,
+                ...(options.headers || {})
+            }
+        };
+
+        this.logInfo('Request options:', finalOptions);
+
+        try {
+            const response = await this.fetchWithRetry(url, finalOptions);
+            this.logInfo('Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers
+            });
+
+            if (!response.ok) {
+                let errorMessage;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || 'Request failed';
+                } catch (e) {
+                    errorMessage = response.statusText || 'Request failed';
+                }
+                throw new Error(errorMessage);
+            }
+
+            return response;
+        } catch (error) {
+            this.logError('Request failed:', error);
+            throw error;
+        }
+    }
+
     // Core methods
     async initialize() {
         if (this.initializing || this.initialized) {
@@ -204,7 +259,7 @@ class AuthService {
         if (!this.token) return false;
 
         try {
-            const response = await this.fetchWithRetry(`${this._data.baseUrl}/auth/validate`, {
+            const response = await this.makeRequest('/auth/validate', {
                 headers: {
                     'Authorization': `Bearer ${this.token}`,
                     'Accept': 'application/json'
@@ -239,19 +294,17 @@ class AuthService {
         this.logInfo('Attempting login');
         
         try {
-            const response = await this.fetchWithRetry(`${this._data.baseUrl}/auth/login`, {
+            const response = await this.makeRequest('/auth/login', {
                 method: 'POST',
-                body: JSON.stringify({ email, password }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                body: JSON.stringify({ email, password })
             });
 
-            if (!response.ok) {
-                throw new Error('Login failed');
+            const data = await response.json();
+            
+            if (!data.token || !data.user) {
+                throw new Error('Invalid response from server');
             }
 
-            const data = await response.json();
             this._data.token = data.token;
             this._data.user = data.user;
 
@@ -283,7 +336,7 @@ class AuthService {
         }
 
         try {
-            const response = await this.fetchWithRetry(`${this._data.baseUrl}/auth/user`, {
+            const response = await this.makeRequest('/auth/user', {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
