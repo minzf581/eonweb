@@ -277,6 +277,26 @@ const userSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+// 在保存前生成推荐码
+userSchema.pre('save', async function(next) {
+    if (!this.referralCode) {
+        let code;
+        let isUnique = false;
+        
+        // 生成唯一的推荐码
+        while (!isUnique) {
+            code = generateReferralCode();
+            const existingUser = await User.findOne({ referralCode: code });
+            if (!existingUser) {
+                isUnique = true;
+            }
+        }
+        
+        this.referralCode = code;
+    }
+    next();
+});
+
 const User = mongoose.model('User', userSchema);
 
 // 任务模型
@@ -430,10 +450,115 @@ userRouter.get('/me', authenticateToken, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        res.json(user);
+
+        // 获取推荐信息
+        const referrals = await User.find({ referredBy: user.referralCode })
+            .select('email createdAt')
+            .sort('-createdAt');
+
+        res.json({
+            ...user.toObject(),
+            referrals: referrals
+        });
     } catch (error) {
         console.error('Error fetching user:', error);
         res.status(500).json({ error: 'Failed to fetch user information' });
+    }
+});
+
+userRouter.get('/referrals', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const referrals = await User.find({ referredBy: user.referralCode })
+            .select('email createdAt')
+            .sort('-createdAt');
+
+        res.json({
+            referralCode: user.referralCode,
+            referrals: referrals,
+            totalReferrals: referrals.length
+        });
+    } catch (error) {
+        console.error('Error fetching referrals:', error);
+        res.status(500).json({ error: 'Failed to fetch referral information' });
+    }
+});
+
+// 注册路由
+authRouter.post('/register', async (req, res) => {
+    try {
+        const { email, password, referralCode } = req.body;
+
+        // 验证邮箱格式
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // 验证密码长度
+        if (!password || password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+        }
+
+        // 检查邮箱是否已注册
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Email already registered' });
+        }
+
+        // 验证推荐码
+        if (referralCode) {
+            const referrer = await User.findOne({ referralCode });
+            if (!referrer) {
+                return res.status(400).json({ error: 'Invalid referral code' });
+            }
+        }
+
+        // 创建新用户
+        const hashedPassword = await bcryptjs.hash(password, 10);
+        const user = new User({
+            email,
+            password: hashedPassword,
+            referredBy: referralCode
+        });
+
+        await user.save();
+
+        // 如果有推荐人，更新推荐人的积分
+        if (referralCode) {
+            const referrer = await User.findOne({ referralCode });
+            if (referrer) {
+                referrer.points += 100;  // 奖励100积分
+                await referrer.save();
+            }
+        }
+
+        // 生成 token
+        const token = jwt.sign(
+            { 
+                id: user._id,
+                email: user.email,
+                isAdmin: user.isAdmin
+            },
+            config.jwt.secret,
+            { expiresIn: '24h' }
+        );
+
+        res.status(201).json({
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                referralCode: user.referralCode
+            }
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Internal server error during registration' });
     }
 });
 

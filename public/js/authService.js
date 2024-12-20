@@ -230,6 +230,51 @@ class AuthService {
         }
     }
 
+    async getReferralInfo() {
+        try {
+            const response = await this.makeRequest('/api/users/referrals');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            this.logError('Failed to get referral info:', error);
+            throw error;
+        }
+    }
+
+    async register(email, password, referralCode = null) {
+        try {
+            const response = await this.makeRequest('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    referralCode
+                })
+            });
+
+            const data = await response.json();
+            
+            // 保存认证信息
+            this._data.token = data.token;
+            this._data.user = data.user;
+
+            // 存储到 localStorage
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            return {
+                success: true,
+                user: data.user
+            };
+        } catch (error) {
+            this.logError('Registration failed:', error);
+            throw error;
+        }
+    }
+
     // Core methods
     async initialize() {
         if (this._data.initializing || this._data.initialized) {
