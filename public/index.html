@@ -1056,6 +1056,190 @@ footer p {
                 padding: 2rem;
             }
         }
+        /* Core Strengths Styles */
+        .core-strengths {
+            padding: 6rem 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .core-strengths-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .core-strengths h2 {
+            text-align: center;
+            color: var(--text-color);
+            font-size: 2.5rem;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .core-strengths h2:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: var(--primary-color);
+        }
+
+        .strengths-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 4rem;
+        }
+
+        .strength-item {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .strength-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .strength-item:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+
+        .strength-content {
+            flex: 1;
+            text-align: left;
+        }
+
+        .strength-item:nth-child(even) .strength-content {
+            text-align: right;
+        }
+
+        .strength-icon-wrapper {
+            flex: 0 0 300px;
+            position: relative;
+        }
+
+        .strength-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #357ABD 100%);
+            border-radius: 50%;
+            position: relative;
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .strength-icon:before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #357ABD 100%);
+            border-radius: 50%;
+            opacity: 0.3;
+            z-index: -1;
+            transition: all 0.3s ease;
+        }
+
+        .strength-item:hover .strength-icon {
+            transform: scale(1.1);
+        }
+
+        .strength-item:hover .strength-icon:before {
+            transform: scale(1.2);
+            opacity: 0.2;
+        }
+
+        .strength-icon i {
+            font-size: 3rem;
+            color: white;
+            transition: transform 0.3s ease;
+        }
+
+        .strength-item:hover .strength-icon i {
+            transform: scale(1.1);
+        }
+
+        .strength-item h3 {
+            color: var(--text-color);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .strength-item p {
+            color: var(--secondary-color);
+            line-height: 1.8;
+            font-size: 1.1rem;
+            margin: 0;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        .strength-item:hover p {
+            color: var(--text-color);
+        }
+
+        .strength-background {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(77, 171, 247, 0.1) 0%, rgba(77, 171, 247, 0) 70%);
+            border-radius: 50%;
+            z-index: -1;
+            transition: all 0.3s ease;
+        }
+
+        .strength-item:hover .strength-background {
+            transform: scale(1.2);
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .strength-item,
+            .strength-item:nth-child(even) {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+            }
+
+            .strength-content,
+            .strength-item:nth-child(even) .strength-content {
+                text-align: center;
+            }
+
+            .strength-icon-wrapper {
+                flex: 0 0 auto;
+            }
+
+            .core-strengths {
+                padding: 4rem 0;
+            }
+
+            .core-strengths h2 {
+                font-size: 2rem;
+            }
+
+            .strength-item h3 {
+                font-size: 1.8rem;
+            }
+        }
     </style>
     <script src="js/authService.js"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
@@ -1311,11 +1495,35 @@ footer p {
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="js/authService.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/core-strengths-updater.js"></script>
     <script src="js/platform-features.js"></script>
     <script>
         particlesJS.load('particles-js', 'js/particles-config.json', function() {
             console.log('callback - particles.js config loaded');
+        });
+
+        // Core Strengths Animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add scroll animations for strength items
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.3
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all strength items
+            document.querySelectorAll('.strength-item').forEach((item, index) => {
+                setTimeout(() => {
+                    observer.observe(item);
+                }, index * 200);
+            });
         });
 
         // 主题切换
