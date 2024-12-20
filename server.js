@@ -1,21 +1,18 @@
-import express from 'express';
-import cors from 'cors';
-import mongoose from 'mongoose';
-import bcryptjs from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import cookieParser from 'cookie-parser';
-import compression from 'compression';
-import * as dotenv from 'dotenv';
-import crypto from 'crypto';
+// 导入依赖
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const bcryptjs = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const compression = require('compression');
+const crypto = require('crypto');
+const dotenv = require('dotenv');
+const { join } = require('path');
 
 // Initialize dotenv
 dotenv.config();
-
-// ES modules compatibility for __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const app = express();
 let server = null;
