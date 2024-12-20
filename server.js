@@ -14,6 +14,37 @@ const { join } = require('path');
 // Initialize dotenv
 dotenv.config();
 
+// 中间件函数
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    jwt.verify(token, config.jwt.secret, (err, user) => {
+        if (err) {
+            console.error('Token verification failed:', err);
+            return res.status(403).json({ error: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+const isAdmin = (req, res, next) => {
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+};
+
+// 生成推荐码
+function generateReferralCode() {
+    return crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
 const app = express();
 let server = null;
 
@@ -690,32 +721,6 @@ mongoose.connect(config.mongodb.uri, config.mongodb.options)
         process.exit(1);
     });
 
-// 身份验证中间件
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-
-    jwt.verify(token, config.jwt.secret, (err, user) => {
-        if (err) {
-            return res.status(403).json({ error: 'Invalid token' });
-        }
-        req.user = user;
-        next();
-    });
-};
-
-// 管理员权限中间件
-const isAdmin = (req, res, next) => {
-    if (!req.user.isAdmin) {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-    next();
-};
-
 // 用户模型
 const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
@@ -759,8 +764,3 @@ const userTaskSchema = new mongoose.Schema({
 });
 
 const UserTask = mongoose.model('UserTask', userTaskSchema);
-
-// 生成推荐码
-function generateReferralCode() {
-    return crypto.randomBytes(4).toString('hex');
-}
