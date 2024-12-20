@@ -49,12 +49,9 @@ const config = {
             useUnifiedTopology: true,
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
-            keepAlive: true,
-            keepAliveInitialDelay: 300000,
             maxPoolSize: 10,
             minPoolSize: 2,
-            maxIdleTimeMS: 30000,
-            maxMemoryMB: process.env.NODE_ENV === 'production' ? 256 : 512
+            maxIdleTimeMS: 30000
         }
     }
 };
@@ -71,8 +68,9 @@ function checkMemoryUsage() {
     
     console.log('Memory usage:', memoryInfo);
     
-    // 如果内存使用超过限制，触发垃圾回收
-    if (used.heapUsed > config.mongodb.options.maxMemoryMB * 1024 * 1024 * 0.9) {
+    // 如果堆内存使用超过 90%，触发垃圾回收
+    const heapUsedPercent = used.heapUsed / used.heapTotal * 100;
+    if (heapUsedPercent > 90) {
         console.log('Memory usage high, triggering garbage collection');
         if (global.gc) {
             global.gc();
@@ -232,7 +230,8 @@ app.get('/api/health', (req, res) => {
         }
 
         // 检查内存使用
-        if (used.heapUsed > config.mongodb.options.maxMemoryMB * 1024 * 1024 * 0.9) {
+        const heapUsedPercent = used.heapUsed / used.heapTotal * 100;
+        if (heapUsedPercent > 90) {
             healthCheck.status = 'WARNING';
             healthCheck.warning = 'High memory usage';
         }
