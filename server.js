@@ -104,19 +104,8 @@ function checkMemoryUsage() {
 // 定期检查内存使用
 setInterval(checkMemoryUsage, 60000); // 每分钟检查一次
 
-// 进程管理
-process.on('SIGTERM', () => {
-    console.log('Received SIGTERM signal. Starting graceful shutdown...');
-    gracefulShutdown();
-});
-
-process.on('SIGINT', () => {
-    console.log('Received SIGINT signal. Starting graceful shutdown...');
-    gracefulShutdown();
-});
-
 // 优雅关闭函数
-async function gracefulShutdown() {
+async function gracefulShutdown(signal) {
     console.log('Starting graceful shutdown...');
     
     try {
@@ -663,33 +652,6 @@ app.use('/public/*', (req, res) => {
 app.use((req, res, next) => {
     console.log('404 Not Found:', req.path);
     res.status(404).send('404 Not Found');
-});
-
-// 进程错误处理
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-    gracefulShutdown('UNCAUGHT_EXCEPTION');
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // 不立即关闭，只记录日志
-});
-
-// 信号处理
-const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
-let shuttingDown = false;
-
-signals.forEach(signal => {
-    process.on(signal, async () => {
-        // 防止多次触发关闭
-        if (shuttingDown) {
-            console.log('Shutdown already in progress...');
-            return;
-        }
-        shuttingDown = true;
-        await gracefulShutdown(signal);
-    });
 });
 
 // 启动服务器
