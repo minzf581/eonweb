@@ -252,17 +252,27 @@
 
         async function waitForAuthService(timeoutMs = 5000) {
             console.log('[Login] Waiting for AuthService...');
-            try {
+            
+            // Wait for script to load
+            const startTime = Date.now();
+            while (Date.now() - startTime < timeoutMs) {
                 if (window.authServiceUtils) {
-                    await window.authServiceUtils.waitForAuthService(timeoutMs);
-                    return true;
-                } else {
-                    throw new Error('AuthServiceUtils not available');
+                    console.log('[Login] AuthServiceUtils found, waiting for initialization...');
+                    try {
+                        await window.authServiceUtils.waitForAuthService(timeoutMs);
+                        console.log('[Login] AuthService initialized successfully');
+                        return true;
+                    } catch (error) {
+                        console.error('[Login] Error during AuthService initialization:', error);
+                        return false;
+                    }
                 }
-            } catch (error) {
-                console.error('[Login] Error waiting for AuthService:', error);
-                return false;
+                console.log('[Login] Waiting for AuthServiceUtils to become available...');
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
+            
+            console.error('[Login] Timeout waiting for AuthServiceUtils');
+            return false;
         }
 
         async function handleLogin(event) {
@@ -303,30 +313,39 @@
 
         async function initializeLoginPage() {
             console.log('[Login] Starting initialization...');
+            
             try {
+                // Wait for auth service
                 const authServiceReady = await waitForAuthService();
                 if (!authServiceReady) {
                     throw new Error('Authentication service is not available');
                 }
 
                 // Check if user is already logged in
-                const token = window.authService.getToken;
-                if (token) {
-                    // Redirect to dashboard if already logged in
+                if (window.authService && window.authService.getToken) {
+                    console.log('[Login] User already has a token, redirecting to dashboard');
                     window.location.href = '/dashboard';
                     return;
                 }
 
+                console.log('[Login] Enabling login form');
                 // Enable the form
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('email').disabled = false;
-                document.getElementById('password').disabled = false;
-                document.getElementById('loginButton').disabled = false;
-
-                // Setup form event listener
                 const form = document.getElementById('loginForm');
-                if (form) {
+                const email = document.getElementById('email');
+                const password = document.getElementById('password');
+                const loginButton = document.getElementById('loginButton');
+
+                if (form && email && password && loginButton) {
+                    form.style.display = 'block';
+                    email.disabled = false;
+                    password.disabled = false;
+                    loginButton.disabled = false;
+
+                    // Setup form event listener
                     form.addEventListener('submit', handleLogin);
+                    console.log('[Login] Form initialized successfully');
+                } else {
+                    throw new Error('Required form elements not found');
                 }
 
             } catch (error) {

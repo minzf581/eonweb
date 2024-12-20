@@ -305,9 +305,6 @@ const authServiceUtils = {
     }
 };
 
-// Expose both AuthService instance and utils
+// Expose both AuthService instance and utils globally
 window.authService = authService;
 window.authServiceUtils = authServiceUtils;
-
-// For module systems
-export { authService as default, authServiceUtils };
