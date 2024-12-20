@@ -83,6 +83,70 @@ function checkMemoryUsage() {
 // 定期检查内存使用
 setInterval(checkMemoryUsage, 60000); // 每分钟检查一次
 
+// 进程管理
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM signal. Starting graceful shutdown...');
+    gracefulShutdown();
+});
+
+process.on('SIGINT', () => {
+    console.log('Received SIGINT signal. Starting graceful shutdown...');
+    gracefulShutdown();
+});
+
+// 优雅关闭函数
+async function gracefulShutdown() {
+    console.log('Starting graceful shutdown...');
+    
+    try {
+        // 关闭数据库连接
+        if (mongoose.connection.readyState === 1) {
+            console.log('Closing MongoDB connection...');
+            await mongoose.connection.close();
+            console.log('MongoDB connection closed');
+        }
+
+        // 关闭服务器
+        if (server) {
+            console.log('Closing HTTP server...');
+            await new Promise((resolve) => {
+                server.close(resolve);
+            });
+            console.log('HTTP server closed');
+        }
+
+        console.log('Graceful shutdown completed');
+        process.exit(0);
+    } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
+    }
+}
+
+// 内存监控
+const memoryMonitor = setInterval(() => {
+    const used = process.memoryUsage();
+    const usage = {
+        rss: `${Math.round(used.rss / 1024 / 1024)} MB`,
+        heapTotal: `${Math.round(used.heapTotal / 1024 / 1024)} MB`,
+        heapUsed: `${Math.round(used.heapUsed / 1024 / 1024)} MB`,
+        external: `${Math.round(used.external / 1024 / 1024)} MB`
+    };
+
+    // 如果内存使用超过阈值，记录警告
+    if (used.heapUsed > 500 * 1024 * 1024) { // 500MB
+        console.warn('High memory usage detected:', usage);
+        global.gc && global.gc(); // 如果启用了 --expose-gc，触发垃圾回收
+    }
+
+    console.log('Memory usage:', usage);
+}, 60000); // 每分钟检查一次
+
+// 清理定时器
+process.on('exit', () => {
+    clearInterval(memoryMonitor);
+});
+
 // 验证生产环境配置
 if (config.server.env === 'production') {
     const missingVars = [];
@@ -105,69 +169,6 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
     // 不立即关闭，只记录日志
 });
-
-// 优雅关闭函数
-async function gracefulShutdown(signal) {
-    if (shuttingDown) {
-        console.log('Shutdown already in progress');
-        return;
-    }
-    
-    shuttingDown = true;
-    console.log(`\n${signal} received. Starting graceful shutdown...`);
-    let exitCode = 0;
-
-    try {
-        // 设置关闭超时
-        const shutdownTimeout = setTimeout(() => {
-            console.error('Graceful shutdown timed out, forcing exit');
-            process.exit(1);
-        }, config.server.shutdownTimeout);
-
-        // 停止接受新的连接
-        if (server) {
-            console.log('Stopping new connections...');
-            server.unref();
-            
-            // 等待现有连接完成
-            console.log('Closing HTTP server...');
-            await new Promise((resolve, reject) => {
-                server.close((err) => {
-                    if (err) {
-                        console.error('Error closing HTTP server:', err);
-                        reject(err);
-                    } else {
-                        console.log('HTTP server closed successfully');
-                        resolve();
-                    }
-                });
-            });
-        }
-
-        // 关闭数据库连接
-        if (mongoose.connection.readyState !== 0) {
-            console.log('Closing MongoDB connection...');
-            await mongoose.connection.close(false);
-            console.log('MongoDB connection closed successfully');
-        }
-
-        // 清理资源
-        clearTimeout(shutdownTimeout);
-        
-        // 触发垃圾回收
-        if (global.gc) {
-            console.log('Triggering final garbage collection...');
-            global.gc();
-        }
-        
-    } catch (error) {
-        console.error('Error during graceful shutdown:', error);
-        exitCode = 1;
-    } finally {
-        console.log(`Graceful shutdown completed with exit code: ${exitCode}`);
-        process.exit(exitCode);
-    }
-}
 
 // 信号处理
 const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
@@ -196,6 +197,136 @@ console.log('CORS:', {
 console.log('MongoDB:', 'Connected');
 console.log('JWT:', 'Configured');
 console.log('===========================\n');
+
+// 基础中间件
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
+
+// CORS 配置
+app.use(cors({
+    origin: '*',  // 允许所有来源
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 请求日志中间件
+app.use((req, res, next) => {
+    console.log(`\n=== ${new Date().toISOString()} ===`);
+    console.log(`${req.method} ${req.path}`);
+    console.log('Headers:', req.headers);
+    if (req.body && Object.keys(req.body).length > 0) {
+        console.log('Body:', req.body);
+    }
+    next();
+});
+
+// 静态文件服务
+app.use(express.static(join(__dirname, 'public')));
+
+// API 路由配置
+const apiRouter = express.Router();
+
+// 认证路由
+const authRouter = express.Router();
+
+// 登录路由
+authRouter.post('/login', async (req, res) => {
+    console.log('\n=== Login Request ===');
+    console.log('Request Body:', req.body);
+    
+    try {
+        const { email, password } = req.body;
+
+        // 验证请求数据
+        if (!email || !password) {
+            console.log('Login failed: Missing email or password');
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        console.log('Checking database connection...');
+        if (mongoose.connection.readyState !== 1) {
+            console.error('Database not connected. Current state:', mongoose.connection.readyState);
+            return res.status(503).json({ error: 'Database connection error' });
+        }
+
+        console.log('Finding user with email:', email);
+        const user = await User.findOne({ email });
+        
+        if (!user) {
+            console.log('Login failed: User not found');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        console.log('User found, comparing passwords...');
+        const validPassword = await bcryptjs.compare(password, user.password);
+        
+        if (!validPassword) {
+            console.log('Login failed: Invalid password');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // 设置管理员权限
+        const isAdmin = email === 'info@eon-protocol.com';
+        if (isAdmin && !user.isAdmin) {
+            user.isAdmin = true;
+            await user.save();
+        }
+
+        console.log('Password valid, generating token...');
+        const token = jwt.sign(
+            { 
+                id: user._id, 
+                email: user.email,
+                isAdmin: user.isAdmin 
+            },
+            config.jwt.secret,
+            { expiresIn: '24h' }
+        );
+
+        console.log('Login successful for user:', email);
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                isAdmin: user.isAdmin
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error during login' });
+    }
+});
+
+// 验证 token
+authRouter.get('/verify', authenticateToken, (req, res) => {
+    res.json({ 
+        valid: true,
+        user: {
+            id: req.user.id,
+            email: req.user.email,
+            isAdmin: req.user.isAdmin
+        }
+    });
+});
+
+// 挂载认证路由
+apiRouter.use('/auth', authRouter);
+
+// 挂载 API 路由
+app.use('/api', apiRouter);
+
+// 前端路由处理
+app.get('*', (req, res) => {
+    res.sendFile(join(__dirname, 'public', 'index.html'));
+});
+
+// 错误处理中间件
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+});
 
 // 健康检查路由 - 必须在其他中间件之前
 app.get('/health', (req, res) => {
@@ -260,57 +391,116 @@ apiRouter.get('/', (req, res) => {
 // 启用压缩
 app.use(compression());
 
-// 配置 Express
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-app.use(cookieParser());
+// 用户路由
+const userRouter = express.Router();
 
-// CORS 配置
-app.use(cors({
-    origin: function(origin, callback) {
-        // 允许没有 origin 的请求（比如同源请求）
-        if (!origin) return callback(null, true);
-        
-        const allowedOrigins = [
-            'http://localhost:8080',
-            'https://eonweb-production.up.railway.app'
-        ];
-        
-        if (allowedOrigins.indexOf(origin) === -1) {
-            return callback(new Error('CORS policy violation'), false);
+// 获取用户信息
+userRouter.get('/me', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
         }
-        
-        return callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// 请求日志中间件
-app.use((req, res, next) => {
-    console.log(`\n=== ${new Date().toISOString()} ===`);
-    console.log(`${req.method} ${req.path}`);
-    console.log('Headers:', req.headers);
-    if (req.body && Object.keys(req.body).length > 0) {
-        console.log('Body:', req.body);
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch user information' });
     }
-    next();
 });
 
-// 错误处理中间件
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+// 获取用户统计信息
+userRouter.get('/stats', authenticateToken, async (req, res) => {
+    try {
+        const userTasks = await UserTask.find({ userId: req.user.id });
+        const completedTasks = userTasks.filter(t => t.completed).length;
+        const user = await User.findById(req.user.id);
+
+        res.json({
+            totalTasks: userTasks.length,
+            completedTasks,
+            points: user.points
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch user stats' });
+    }
 });
 
-// 静态文件服务
-app.use(express.static(join(__dirname, 'public')));
+// 挂载用户路由
+apiRouter.use('/users', userRouter);
 
-// 首页路由
-app.get('/', (req, res) => {
-    res.sendFile(join(__dirname, 'public/index.html'));
+// 任务路由
+const taskRouter = express.Router();
+
+// 获取任务列表
+taskRouter.get('/', authenticateToken, async (req, res) => {
+    try {
+        const tasks = await Task.find();
+        res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
 });
+
+// 开始任务
+taskRouter.post('/:taskId/start', authenticateToken, async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const userId = req.user.id;
+        
+        // 检查任务是否存在
+        const task = await Task.findById(taskId);
+        if (!task) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        // 检查用户是否已经开始此任务
+        const existingUserTask = await UserTask.findOne({ userId, taskId });
+        if (existingUserTask) {
+            return res.status(400).json({ error: 'Task already started' });
+        }
+
+        // 创建新的用户任务
+        const userTask = new UserTask({
+            userId,
+            taskId,
+            startTime: new Date()
+        });
+
+        await userTask.save();
+        res.json(userTask);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to start task' });
+    }
+});
+
+// 挂载任务路由
+apiRouter.use('/tasks', taskRouter);
+
+// 管理员路由
+const adminRouter = express.Router();
+
+// 获取所有用户
+adminRouter.get('/users', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// 创建新任务
+adminRouter.post('/tasks', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const task = new Task(req.body);
+        await task.save();
+        res.status(201).json(task);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create task' });
+    }
+});
+
+// 挂载管理员路由
+apiRouter.use('/admin', adminRouter);
 
 // 处理其他页面路由
 app.get(['/dashboard', '/dashboard/index.html'], (req, res) => {
@@ -481,78 +671,6 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-// 认证路由
-const authRouter = express.Router();
-
-// 登录路由
-authRouter.post('/login', async (req, res) => {
-    console.log('\n=== Login Request ===');
-    console.log('Request Body:', req.body);
-    
-    try {
-        const { email, password } = req.body;
-
-        // 验证请求数据
-        if (!email || !password) {
-            console.log('Login failed: Missing email or password');
-            return res.status(400).json({ error: 'Email and password are required' });
-        }
-
-        console.log('Checking database connection...');
-        if (mongoose.connection.readyState !== 1) {
-            console.error('Database not connected. Current state:', mongoose.connection.readyState);
-            return res.status(503).json({ error: 'Database connection error' });
-        }
-
-        console.log('Finding user with email:', email);
-        const user = await User.findOne({ email });
-        
-        if (!user) {
-            console.log('Login failed: User not found');
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        console.log('User found, comparing passwords...');
-        const validPassword = await bcryptjs.compare(password, user.password);
-        
-        if (!validPassword) {
-            console.log('Login failed: Invalid password');
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // 设置管理员权限
-        const isAdmin = email === 'info@eon-protocol.com';
-        if (isAdmin && !user.isAdmin) {
-            user.isAdmin = true;
-            await user.save();
-        }
-
-        console.log('Password valid, generating token...');
-        const token = jwt.sign(
-            { 
-                id: user._id, 
-                email: user.email,
-                isAdmin: user.isAdmin 
-            },
-            config.jwt.secret,
-            { expiresIn: '24h' }
-        );
-
-        console.log('Login successful for user:', email);
-        res.json({
-            token,
-            user: {
-                id: user._id,
-                email: user.email,
-                isAdmin: user.isAdmin
-            }
-        });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Internal server error during login' });
-    }
-});
-
 // 注册路由
 authRouter.post('/register', async (req, res) => {
     try {
@@ -606,135 +724,6 @@ authRouter.post('/register', async (req, res) => {
         res.status(500).json({ error: 'Registration failed' });
     }
 });
-
-// 验证 token
-authRouter.get('/verify', authenticateToken, (req, res) => {
-    res.json({ 
-        valid: true,
-        user: {
-            id: req.user.id,
-            email: req.user.email,
-            isAdmin: req.user.isAdmin
-        }
-    });
-});
-
-// 挂载认证路由
-apiRouter.use('/auth', authRouter);
-
-// 用户路由
-const userRouter = express.Router();
-
-// 获取用户信息
-userRouter.get('/me', authenticateToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('-password');
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        res.json(user);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch user information' });
-    }
-});
-
-// 获取用户统计信息
-userRouter.get('/stats', authenticateToken, async (req, res) => {
-    try {
-        const userTasks = await UserTask.find({ userId: req.user.id });
-        const completedTasks = userTasks.filter(t => t.completed).length;
-        const user = await User.findById(req.user.id);
-
-        res.json({
-            totalTasks: userTasks.length,
-            completedTasks,
-            points: user.points
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch user stats' });
-    }
-});
-
-// 挂载用户路由
-apiRouter.use('/users', userRouter);
-
-// 任务路由
-const taskRouter = express.Router();
-
-// 获取任务列表
-taskRouter.get('/', authenticateToken, async (req, res) => {
-    try {
-        const tasks = await Task.find();
-        res.json(tasks);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch tasks' });
-    }
-});
-
-// 开始任务
-taskRouter.post('/:taskId/start', authenticateToken, async (req, res) => {
-    try {
-        const { taskId } = req.params;
-        const userId = req.user.id;
-        
-        // 检查任务是否存在
-        const task = await Task.findById(taskId);
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
-
-        // 检查用户是否已经开始此任务
-        const existingUserTask = await UserTask.findOne({ userId, taskId });
-        if (existingUserTask) {
-            return res.status(400).json({ error: 'Task already started' });
-        }
-
-        // 创建新的用户任务
-        const userTask = new UserTask({
-            userId,
-            taskId,
-            startTime: new Date()
-        });
-
-        await userTask.save();
-        res.json(userTask);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to start task' });
-    }
-});
-
-// 挂载任务路由
-apiRouter.use('/tasks', taskRouter);
-
-// 管理员路由
-const adminRouter = express.Router();
-
-// 获取所有用户
-adminRouter.get('/users', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const users = await User.find().select('-password');
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch users' });
-    }
-});
-
-// 创建新任务
-adminRouter.post('/tasks', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const task = new Task(req.body);
-        await task.save();
-        res.status(201).json(task);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create task' });
-    }
-});
-
-// 挂载管理员路由
-apiRouter.use('/admin', adminRouter);
-
-// 挂载所有 API 路由
-app.use('/api', apiRouter);
 
 // 用户模型
 const userSchema = new mongoose.Schema({

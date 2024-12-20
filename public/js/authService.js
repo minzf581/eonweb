@@ -10,9 +10,7 @@ class AuthService {
             token: null,
             tokenExpiry: null,
             user: null,
-            baseUrl: window.location.hostname === 'localhost' 
-                ? 'http://localhost:8080/api'
-                : '/api',  // 使用相对路径
+            baseUrl: window.location.origin,  // 使用当前域名
             retryDelay: 1000,
             maxRetries: 3,
             requestTimeout: 10000
