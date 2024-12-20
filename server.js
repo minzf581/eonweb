@@ -31,7 +31,9 @@ const config = {
     server: {
         env: process.env.NODE_ENV || 'development',
         port: process.env.PORT || 8080,
-        host: process.env.HOST || '0.0.0.0'
+        host: process.env.HOST || '0.0.0.0',
+        shutdownTimeout: 30000, // 30 seconds
+        keepAliveTimeout: 65000 // slightly higher than ALB's idle timeout
     },
     jwt: {
         secret: process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' 
@@ -41,7 +43,15 @@ const config = {
     mongodb: {
         uri: process.env.MONGODB_URI || (process.env.NODE_ENV !== 'production'
             ? 'mongodb://localhost:27017/eon-protocol'
-            : null)
+            : null),
+        options: {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
+            keepAlive: true,
+            keepAliveInitialDelay: 300000
+        }
     }
 };
 
@@ -65,11 +75,17 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    gracefulShutdown('UNHANDLED_REJECTION');
+    // gracefulShutdown('UNHANDLED_REJECTION');
 });
 
 // 优雅关闭函数
 async function gracefulShutdown(signal) {
+    if (shuttingDown) {
+        console.log('Shutdown already in progress');
+        return;
+    }
+    
+    shuttingDown = true;
     console.log(`\n${signal} received. Starting graceful shutdown...`);
     let exitCode = 0;
 
@@ -78,11 +94,14 @@ async function gracefulShutdown(signal) {
         const shutdownTimeout = setTimeout(() => {
             console.error('Graceful shutdown timed out, forcing exit');
             process.exit(1);
-        }, 15000); // 15 秒超时
+        }, config.server.shutdownTimeout);
 
         if (server) {
             // 停止接受新的连接
             console.log('Closing HTTP server...');
+            server.headersTimeout = 5000;  // 5 seconds
+            server.keepAliveTimeout = 5000;  // 5 seconds
+            
             await new Promise((resolve, reject) => {
                 server.close((err) => {
                     if (err) {
@@ -155,31 +174,28 @@ app.get('/health', (req, res) => {
 // 启用压缩
 app.use(compression());
 
-// 中间件配置
-app.use(cors({
-    origin: function(origin, callback) {
-        // 允许同源请求（没有 origin）
-        if (!origin) {
-            return callback(null, true);
-        }
-        
-        // 检查是否在允许列表中
-        if (config.cors.enabled && config.cors.allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    exposedHeaders: ['Set-Cookie'],
-    maxAge: 86400
-}));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// 配置 Express
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+
+// 配置 CORS
+if (config.cors.enabled) {
+    app.use(cors({
+        origin: (origin, callback) => {
+            if (!origin || config.cors.allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        exposedHeaders: ['Set-Cookie'],
+        maxAge: 86400
+    }));
+}
 
 // 请求日志中间件
 app.use((req, res, next) => {
@@ -233,14 +249,14 @@ app.use((req, res, next) => {
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
+    console.error('Global error handler:', err);
     if (err.name === 'UnauthorizedError') {
-        res.status(401).json({ message: 'Invalid token' });
-    } else if (err.message === 'Not allowed by CORS') {
-        res.status(403).json({ message: 'CORS not allowed' });
-    } else {
-        res.status(500).json({ message: 'Internal server error' });
+        return res.status(401).json({ error: 'Invalid token' });
     }
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: 'Internal server error' });
 });
 
 // MongoDB 连接选项
@@ -264,19 +280,44 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    gracefulShutdown('UNHANDLED_REJECTION');
+    // gracefulShutdown('UNHANDLED_REJECTION');
 });
 
 // MongoDB 连接
-mongoose.connect(config.mongodb.uri, mongooseOptions)
+mongoose.connect(config.mongodb.uri, config.mongodb.options)
     .then(() => {
         console.log('Successfully connected to MongoDB');
         
         // 启动服务器
-        server = app.listen(config.server.port, config.server.host, () => {
-            console.log(`Server is running on http://${config.server.host}:${config.server.port}`);
-            console.log('Server is ready to accept requests');
-        });
+        async function startServer() {
+            try {
+                // 启动 HTTP 服务器
+                server = app.listen(config.server.port, config.server.host, () => {
+                    console.log(`Server is running on http://${config.server.host}:${config.server.port}`);
+                    console.log('Server is ready to accept requests');
+                });
+
+                // 配置服务器超时
+                server.keepAliveTimeout = config.server.keepAliveTimeout;
+                server.headersTimeout = config.server.keepAliveTimeout + 1000;
+
+                // 处理未捕获的异常
+                process.on('uncaughtException', (error) => {
+                    console.error('Uncaught Exception:', error);
+                    gracefulShutdown('UNCAUGHT_EXCEPTION');
+                });
+
+                process.on('unhandledRejection', (reason, promise) => {
+                    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+                });
+
+            } catch (error) {
+                console.error('Failed to start server:', error);
+                process.exit(1);
+            }
+        }
+
+        startServer();
 
         // 处理服务器错误
         server.on('error', (error) => {
@@ -300,7 +341,7 @@ mongoose.connect(config.mongodb.uri, mongooseOptions)
             
             // 尝试重新连接
             setTimeout(() => {
-                mongoose.connect(config.mongodb.uri, mongooseOptions).catch(err => {
+                mongoose.connect(config.mongodb.uri, config.mongodb.options).catch(err => {
                     console.error('MongoDB reconnection failed:', err);
                     if (!server.listening) {
                         gracefulShutdown('MONGODB_RECONNECT_FAILED');
