@@ -290,10 +290,8 @@ authRouter.post('/login', async (req, res) => {
 
         // 设置管理员权限
         const isAdmin = email === 'info@eon-protocol.com';
-        if (isAdmin && !user.isAdmin) {
-            user.isAdmin = true;
-            await user.save();
-        }
+        user.isAdmin = isAdmin; // 更新用户的管理员状态
+        await user.save();
 
         console.log('Password valid, generating token...');
         const token = jwt.sign(
@@ -321,6 +319,48 @@ authRouter.post('/login', async (req, res) => {
     }
 });
 
+// 管理员路由
+adminRouter.get('/users', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+adminRouter.get('/stats', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const totalTasks = await Task.countDocuments();
+        const completedTasks = await UserTask.countDocuments({ completed: true });
+        
+        res.json({
+            totalUsers,
+            totalTasks,
+            completedTasks
+        });
+    } catch (error) {
+        console.error('Error fetching admin stats:', error);
+        res.status(500).json({ error: 'Failed to fetch admin stats' });
+    }
+});
+
+// 用户路由
+userRouter.get('/me', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({ error: 'Failed to fetch user information' });
+    }
+});
+
 // 挂载路由
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
@@ -332,7 +372,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // 前端路由处理
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    if (!req.path.startsWith('/api/')) {
+        res.sendFile(path.join(__dirname, 'public/index.html'));
+    }
 });
 
 // 错误处理中间件

@@ -45,6 +45,10 @@ class AuthService {
         return this.token;
     }
 
+    isInitialized() {
+        return this._data.initialized;
+    }
+
     // Logging methods
     logInfo(message, data = null) {
         const timestamp = new Date().toISOString();
@@ -220,62 +224,61 @@ class AuthService {
 
     // Core methods
     async initialize() {
-        if (this.initializing || this.initialized) {
+        if (this._data.initializing || this._data.initialized) {
             return;
         }
 
-        this._data.initializing = true;
         this.logInfo('Starting initialization');
+        this._data.initializing = true;
 
         try {
-            // Load stored token
-            this._data.token = localStorage.getItem('auth_token');
-            this._data.tokenExpiry = localStorage.getItem('auth_token_expiry');
+            // 从 localStorage 恢复 token
+            const savedToken = localStorage.getItem('authToken');
+            const savedUser = localStorage.getItem('user');
 
-            // Validate token if exists
-            if (this._data.token) {
-                const isValid = await this.validateToken();
-                if (!isValid) {
+            if (savedToken && savedUser) {
+                this._data.token = savedToken;
+                this._data.user = JSON.parse(savedUser);
+                
+                // 验证 token
+                try {
+                    await this.verifyToken();
+                } catch (error) {
+                    this.logError('Token verification failed:', error);
                     this.clearAuth();
                 }
             }
-
-            this._data.initialized = true;
-            this.logInfo('Initialization complete', {
-                hasToken: !!this.token,
-                tokenExpiry: this.tokenExpiry
-            });
         } catch (error) {
-            this.logError('Initialization failed', error);
-            this.clearAuth();
+            this.logError('Initialization error:', error);
         } finally {
+            this._data.initialized = true;
             this._data.initializing = false;
+            this.logInfo('Initialization complete:', {
+                hasToken: !!this._data.token,
+                tokenExpiry: this._data.tokenExpiry
+            });
         }
     }
 
-    async validateToken() {
-        if (!this.token) return false;
+    async verifyToken() {
+        if (!this._data.token) {
+            return false;
+        }
 
         try {
-            const response = await this.makeRequest('/auth/validate', {
-                headers: {
-                    'Authorization': `Bearer ${this.token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                this.logError('Token validation failed', {
-                    status: response.status,
-                    statusText: response.statusText
-                });
-                return false;
+            const response = await this.makeRequest('/auth/verify');
+            const data = await response.json();
+            
+            if (data.valid) {
+                this._data.user = data.user;
+                return true;
             }
-
-            return true;
-        } catch (error) {
-            this.logError('Token validation failed', error);
+            
+            this.clearAuth();
             return false;
+        } catch (error) {
+            this.clearAuth();
+            throw error;
         }
     }
 
@@ -283,8 +286,8 @@ class AuthService {
         this._data.token = null;
         this._data.tokenExpiry = null;
         this._data.user = null;
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_token_expiry');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
         this.logInfo('Auth cleared');
     }
 
@@ -307,7 +310,7 @@ class AuthService {
             this._data.user = data.user;
 
             // 存储登录信息
-            localStorage.setItem('token', data.token);
+            localStorage.setItem('authToken', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
 
             // 根据用户类型重定向
@@ -355,11 +358,11 @@ class AuthService {
 
     setToken(token) {
         this._data.token = token;
-        localStorage.setItem('auth_token', token);
+        localStorage.setItem('authToken', token);
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 7); // Token expires in 7 days
         this._data.tokenExpiry = expiry.toISOString();
-        localStorage.setItem('auth_token_expiry', this._data.tokenExpiry);
+        localStorage.setItem('authTokenExpiry', this._data.tokenExpiry);
     }
 }
 
