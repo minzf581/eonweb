@@ -34,7 +34,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-    if (!req.user.isAdmin) {
+    if (!req.user || !req.user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
     }
     next();
@@ -73,15 +73,8 @@ const config = {
             ? 'mongodb://localhost:27017/eon-protocol'
             : null),
         options: {
-            serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 45000,
-            maxPoolSize: 10,
-            minPoolSize: 2,
-            maxIdleTimeMS: 30000,
-            connectTimeoutMS: 10000,
-            heartbeatFrequencyMS: 10000,
-            retryWrites: true,
-            w: 'majority'
+            useNewUrlParser: true,
+            useUnifiedTopology: true
         }
     }
 };
@@ -258,6 +251,83 @@ const userRouter = express.Router();
 const taskRouter = express.Router();
 const adminRouter = express.Router();
 
+// 数据库连接
+mongoose.connect(config.mongodb.uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('MongoDB connected successfully');
+}).catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+});
+
+mongoose.connection.on('error', err => {
+    console.error('MongoDB error:', err);
+});
+
+// 用户模型
+const userSchema = new mongoose.Schema({
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    isAdmin: { type: Boolean, default: false },
+    points: { type: Number, default: 0 },
+    referralCode: { type: String, unique: true },
+    referredBy: { type: String },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+
+// 任务模型
+const taskSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    description: { type: String },
+    points: { type: Number, default: 0 },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Task = mongoose.model('Task', taskSchema);
+
+// 用户任务模型
+const userTaskSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true },
+    completed: { type: Boolean, default: false },
+    startTime: { type: Date },
+    completionTime: { type: Date },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const UserTask = mongoose.model('UserTask', userTaskSchema);
+
+// 认证中间件
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    jwt.verify(token, config.jwt.secret, (err, user) => {
+        if (err) {
+            console.error('Token verification failed:', err);
+            return res.status(403).json({ error: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// 管理员中间件
+const isAdmin = (req, res, next) => {
+    if (!req.user || !req.user.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+};
+
 // 认证路由
 authRouter.post('/login', async (req, res) => {
     console.log('\n=== Login Request ===');
@@ -289,9 +359,11 @@ authRouter.post('/login', async (req, res) => {
         }
 
         // 设置管理员权限
-        const isAdmin = email === 'info@eon-protocol.com';
-        user.isAdmin = isAdmin; // 更新用户的管理员状态
-        await user.save();
+        if (email === 'info@eon-protocol.com') {
+            user.isAdmin = true;
+            await user.save();
+            console.log('Updated user admin status:', user.isAdmin);
+        }
 
         console.log('Password valid, generating token...');
         const token = jwt.sign(
@@ -304,7 +376,11 @@ authRouter.post('/login', async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        console.log('Login successful for user:', email);
+        console.log('Login successful for user:', {
+            email: user.email,
+            isAdmin: user.isAdmin
+        });
+
         res.json({
             token,
             user: {
@@ -361,6 +437,17 @@ userRouter.get('/me', authenticateToken, async (req, res) => {
     }
 });
 
+// 任务路由
+taskRouter.get('/', authenticateToken, async (req, res) => {
+    try {
+        const tasks = await Task.find();
+        res.json(tasks);
+    } catch (error) {
+        console.error('Error fetching tasks:', error);
+        res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+});
+
 // 挂载路由
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
@@ -371,6 +458,14 @@ app.use('/api/admin', adminRouter);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 前端路由处理
+app.get('/admin/*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/admin/index.html'));
+});
+
+app.get('/dashboard/*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/dashboard/index.html'));
+});
+
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
         res.sendFile(path.join(__dirname, 'public/index.html'));
@@ -472,20 +567,7 @@ app.use((req, res, next) => {
     res.status(404).send('404 Not Found');
 });
 
-// MongoDB 连接选项
-const mongooseOptions = {
-    serverSelectionTimeoutMS: 30000,
-    socketTimeoutMS: 45000,
-    family: 4,
-    maxPoolSize: 10,
-    minPoolSize: 2,
-    connectTimeoutMS: 10000,
-    retryWrites: true,
-    retryReads: true,
-    heartbeatFrequencyMS: 10000
-};
-
-// 处理未捕获的异常和拒绝
+// 进程错误处理
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
     gracefulShutdown('UNCAUGHT_EXCEPTION');
@@ -496,134 +578,80 @@ process.on('unhandledRejection', (reason, promise) => {
     // 不立即关闭，只记录日志
 });
 
-// MongoDB 连接
-console.log('Connecting to MongoDB...');
-console.log('MongoDB URI:', config.mongodb.uri);
-console.log('MongoDB Options:', JSON.stringify(config.mongodb.options, null, 2));
+// 信号处理
+const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
+let shuttingDown = false;
 
-mongoose.connect(config.mongodb.uri, config.mongodb.options)
-    .then(() => {
-        console.log('Successfully connected to MongoDB');
-        console.log('Connection state:', mongoose.connection.readyState);
-        console.log('Database name:', mongoose.connection.name);
-        
-        // 测试数据库连接
-        return mongoose.connection.db.admin().ping();
-    })
-    .then(() => {
-        console.log('Database ping successful');
-        return mongoose.connection.db.listCollections().toArray();
-    })
-    .then(collections => {
-        console.log('Available collections:', collections.map(c => c.name));
-        
-        // 启动服务器
-        async function startServer() {
-            try {
-                // 启动 HTTP 服务器
-                server = app.listen(config.server.port, config.server.host, () => {
-                    console.log(`Server is running on http://${config.server.host}:${config.server.port}`);
-                    console.log('Server is ready to accept requests');
-                });
-
-                // 配置服务器超时
-                server.keepAliveTimeout = config.server.keepAliveTimeout;
-                server.headersTimeout = config.server.keepAliveTimeout + 1000;
-
-                // 处理未捕获的异常
-                process.on('uncaughtException', (error) => {
-                    console.error('Uncaught Exception:', error);
-                    gracefulShutdown('UNCAUGHT_EXCEPTION');
-                });
-
-                process.on('unhandledRejection', (reason, promise) => {
-                    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-                });
-
-            } catch (error) {
-                console.error('Failed to start server:', error);
-                process.exit(1);
-            }
+signals.forEach(signal => {
+    process.on(signal, async () => {
+        // 防止多次触发关闭
+        if (shuttingDown) {
+            console.log('Shutdown already in progress...');
+            return;
         }
-
-        startServer();
-
-        // 处理服务器错误
-        server.on('error', (error) => {
-            console.error('Server error:', error);
-            if (error.code === 'EADDRINUSE') {
-                console.error(`Port ${config.server.port} is already in use`);
-                process.exit(1);
-            }
-        });
-
-        // MongoDB 错误处理
-        mongoose.connection.on('error', (error) => {
-            console.error('MongoDB connection error:', error);
-            if (!server.listening) {
-                process.exit(1);
-            }
-        });
-
-        mongoose.connection.on('disconnected', () => {
-            console.log('MongoDB disconnected. Attempting to reconnect...');
-            
-            // 尝试重新连接
-            setTimeout(() => {
-                mongoose.connect(config.mongodb.uri, config.mongodb.options).catch(err => {
-                    console.error('MongoDB reconnection failed:', err);
-                    if (!server.listening) {
-                        gracefulShutdown('MONGODB_RECONNECT_FAILED');
-                    }
-                });
-            }, 5000); // 5秒后重试
-        });
-    })
-    .catch((error) => {
-        console.error('MongoDB initial connection error:', error);
-        process.exit(1);
+        shuttingDown = true;
+        await gracefulShutdown(signal);
     });
-
-// 用户模型
-const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    isAdmin: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now },
-    referralCode: { type: String, unique: true },
-    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    points: { type: Number, default: 0 }
 });
 
-// 添加模型事件监听器
-userSchema.post('save', function(doc) {
-    console.log('User saved:', doc.email);
+// 启动服务器
+async function startServer() {
+    try {
+        // 启动 HTTP 服务器
+        server = app.listen(config.server.port, config.server.host, () => {
+            console.log(`Server is running on http://${config.server.host}:${config.server.port}`);
+            console.log('Server is ready to accept requests');
+        });
+
+        // 配置服务器超时
+        server.keepAliveTimeout = config.server.keepAliveTimeout;
+        server.headersTimeout = config.server.keepAliveTimeout + 1000;
+
+        // 处理未捕获的异常
+        process.on('uncaughtException', (error) => {
+            console.error('Uncaught Exception:', error);
+            gracefulShutdown('UNCAUGHT_EXCEPTION');
+        });
+
+        process.on('unhandledRejection', (reason, promise) => {
+            console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+        });
+
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+startServer();
+
+// 处理服务器错误
+server.on('error', (error) => {
+    console.error('Server error:', error);
+    if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${config.server.port} is already in use`);
+        process.exit(1);
+    }
 });
 
-userSchema.post('findOne', function(doc) {
-    console.log('User found:', doc ? doc.email : 'not found');
+// MongoDB 错误处理
+mongoose.connection.on('error', (error) => {
+    console.error('MongoDB connection error:', error);
+    if (!server.listening) {
+        process.exit(1);
+    }
 });
 
-const User = mongoose.model('User', userSchema);
-
-// 任务模型
-const taskSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    description: { type: String },
-    points: { type: Number, required: true },
-    type: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now }
+mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected. Attempting to reconnect...');
+    
+    // 尝试重新连接
+    setTimeout(() => {
+        mongoose.connect(config.mongodb.uri, config.mongodb.options).catch(err => {
+            console.error('MongoDB reconnection failed:', err);
+            if (!server.listening) {
+                gracefulShutdown('MONGODB_RECONNECT_FAILED');
+            }
+        });
+    }, 5000); // 5秒后重试
 });
-
-const Task = mongoose.model('Task', taskSchema);
-
-// 用户任务模型
-const userTaskSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true },
-    completed: { type: Boolean, default: false },
-    completedAt: { type: Date },
-    createdAt: { type: Date, default: Date.now }
-});
-
-const UserTask = mongoose.model('UserTask', userTaskSchema);

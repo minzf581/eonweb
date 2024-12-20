@@ -49,6 +49,14 @@ class AuthService {
         return this._data.initialized;
     }
 
+    isAdmin() {
+        return this._data.user && this._data.user.isAdmin;
+    }
+
+    getUser() {
+        return this._data.user;
+    }
+
     // Logging methods
     logInfo(message, data = null) {
         const timestamp = new Date().toISOString();
@@ -242,7 +250,10 @@ class AuthService {
                 
                 // 验证 token
                 try {
-                    await this.verifyToken();
+                    const isValid = await this.verifyToken();
+                    if (!isValid) {
+                        this.clearAuth();
+                    }
                 } catch (error) {
                     this.logError('Token verification failed:', error);
                     this.clearAuth();
@@ -250,12 +261,14 @@ class AuthService {
             }
         } catch (error) {
             this.logError('Initialization error:', error);
+            this.clearAuth();
         } finally {
             this._data.initialized = true;
             this._data.initializing = false;
             this.logInfo('Initialization complete:', {
                 hasToken: !!this._data.token,
-                tokenExpiry: this._data.tokenExpiry
+                tokenExpiry: this._data.tokenExpiry,
+                isAdmin: this.isAdmin()
             });
         }
     }
@@ -293,25 +306,27 @@ class AuthService {
 
     async login(email, password) {
         this.logInfo('Attempting login');
-        
+
         try {
             const response = await this.makeRequest('/auth/login', {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
             
-            if (!data.token || !data.user) {
-                throw new Error('Invalid response from server');
-            }
-
+            // 保存认证信息
             this._data.token = data.token;
             this._data.user = data.user;
 
-            // 存储登录信息
+            // 存储到 localStorage
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
+
+            this.logInfo('Login successful');
 
             // 根据用户类型重定向
             if (data.user.isAdmin) {
@@ -323,7 +338,10 @@ class AuthService {
             return true;
         } catch (error) {
             this.logError('Login failed:', error);
-            throw new Error('Login service is temporarily unavailable');
+            if (error.message === 'Request failed') {
+                throw new Error('Login service is temporarily unavailable');
+            }
+            throw error;
         }
     }
 

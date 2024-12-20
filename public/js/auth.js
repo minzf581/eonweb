@@ -31,6 +31,34 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    const loginForm = document.getElementById('loginForm');
+    if (!loginForm) return;
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorDiv = document.getElementById('error');
+        
+        try {
+            const response = await window.authService.login(email, password);
+            
+            if (response) {
+                const user = window.authService.getUser();
+                if (user && user.isAdmin) {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    window.location.href = '/dashboard';
+                }
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            errorDiv.textContent = error.message || 'Login failed';
+            errorDiv.style.display = 'block';
+        }
+    });
+
     // Check auth status on page load
     try {
         if (window.authServiceUtils) {
