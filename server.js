@@ -70,9 +70,9 @@ function checkMemoryUsage() {
     
     console.log('Memory usage:', memoryInfo);
     
-    // 如果堆内存使用超过 90%，触发垃圾回收
+    // 只在堆内存使用超过 95% 时触发垃圾回收
     const heapUsedPercent = used.heapUsed / used.heapTotal * 100;
-    if (heapUsedPercent > 90) {
+    if (heapUsedPercent > 95) {
         console.log('Memory usage high, triggering garbage collection');
         if (global.gc) {
             global.gc();
@@ -208,7 +208,9 @@ app.get('/health', (req, res) => {
 });
 
 // 健康检查端点
-app.get('/api/health', (req, res) => {
+const apiRouter = express.Router();
+
+apiRouter.get('/health', (req, res) => {
     const used = process.memoryUsage();
     const healthCheck = {
         uptime: process.uptime(),
@@ -233,7 +235,7 @@ app.get('/api/health', (req, res) => {
 
         // 检查内存使用
         const heapUsedPercent = used.heapUsed / used.heapTotal * 100;
-        if (heapUsedPercent > 90) {
+        if (heapUsedPercent > 95) {
             healthCheck.status = 'WARNING';
             healthCheck.warning = 'High memory usage';
         }
@@ -247,7 +249,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // API 根路径处理
-app.get('/api', (req, res) => {
+apiRouter.get('/', (req, res) => {
     res.json({
         message: 'API is running',
         version: '1.0.0',
@@ -470,7 +472,7 @@ mongoose.connect(config.mongodb.uri, config.mongodb.options)
         process.exit(1);
     });
 
-// 身份验证中间件
+// API 路由
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -540,8 +542,8 @@ const userTaskSchema = new mongoose.Schema({
 
 const UserTask = mongoose.model('UserTask', userTaskSchema);
 
-// API 路由
-app.post('/api/auth/login', async (req, res) => {
+// 登录路由
+apiRouter.post('/auth/login', async (req, res) => {
     console.log('\n=== Login Request ===');
     console.log('Request Body:', req.body);
     
@@ -578,7 +580,7 @@ app.post('/api/auth/login', async (req, res) => {
 
         console.log('Password valid, generating token...');
         const token = jwt.sign(
-            { userId: user._id, email: user.email, isAdmin: user.isAdmin },
+            { id: user._id, email: user.email },
             config.jwt.secret,
             { expiresIn: '24h' }
         );
@@ -587,8 +589,8 @@ app.post('/api/auth/login', async (req, res) => {
         res.json({
             token,
             user: {
-                email: user.email,
-                isAdmin: user.isAdmin
+                id: user._id,
+                email: user.email
             }
         });
     } catch (error) {
@@ -597,9 +599,13 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-app.get('/api/user', authenticateToken, async (req, res) => {
+// 挂载 API 路由
+app.use('/api', apiRouter);
+
+// 获取用户信息
+apiRouter.get('/user', authenticateToken, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId).select('-password');
+        const user = await User.findById(req.user.id).select('-password');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -611,9 +617,9 @@ app.get('/api/user', authenticateToken, async (req, res) => {
 });
 
 // 获取用户任务
-app.get('/api/tasks/user', authenticateToken, async (req, res) => {
+apiRouter.get('/tasks/user', authenticateToken, async (req, res) => {
     try {
-        const userTasks = await UserTask.find({ userId: req.user.userId })
+        const userTasks = await UserTask.find({ userId: req.user.id })
             .populate('taskId')
             .exec();
 
@@ -634,11 +640,11 @@ app.get('/api/tasks/user', authenticateToken, async (req, res) => {
 });
 
 // 获取用户统计信息
-app.get('/api/users/stats', authenticateToken, async (req, res) => {
+apiRouter.get('/users/stats', authenticateToken, async (req, res) => {
     try {
-        const userTasks = await UserTask.find({ userId: req.user.userId });
+        const userTasks = await UserTask.find({ userId: req.user.id });
         const completedTasks = userTasks.filter(t => t.completed).length;
-        const user = await User.findById(req.user.userId);
+        const user = await User.findById(req.user.id);
 
         res.json({
             totalTasks: userTasks.length,
@@ -652,9 +658,9 @@ app.get('/api/users/stats', authenticateToken, async (req, res) => {
 });
 
 // 获取推荐信息
-app.get('/api/users/referral-info', authenticateToken, async (req, res) => {
+apiRouter.get('/users/referral-info', authenticateToken, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId);
+        const user = await User.findById(req.user.id);
         const referrals = await User.countDocuments({ referredBy: user._id });
 
         res.json({
@@ -669,11 +675,11 @@ app.get('/api/users/referral-info', authenticateToken, async (req, res) => {
 });
 
 // 验证 token
-app.get('/api/auth/verify', authenticateToken, (req, res) => {
+apiRouter.get('/auth/verify', authenticateToken, (req, res) => {
     res.json({ valid: true });
 });
 
-app.post('/api/auth/register', async (req, res) => {
+apiRouter.post('/auth/register', async (req, res) => {
     try {
         const { email, password, referralCode } = req.body;
 
@@ -709,7 +715,7 @@ app.post('/api/auth/register', async (req, res) => {
 
         // 生成 token
         const token = jwt.sign(
-            { userId: user._id, email: user.email, isAdmin: user.isAdmin },
+            { id: user._id, email: user.email },
             config.jwt.secret,
             { expiresIn: '24h' }
         );
@@ -717,8 +723,8 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(201).json({
             token,
             user: {
+                id: user._id,
                 email: user.email,
-                isAdmin: user.isAdmin,
                 referralCode: user.referralCode
             }
         });
@@ -729,7 +735,7 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // 获取用户的推荐信息
-app.get('/api/referral', authenticateToken, async (req, res) => {
+apiRouter.get('/referral', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         const referralCount = await User.countDocuments({ referredBy: user._id });
@@ -746,7 +752,7 @@ app.get('/api/referral', authenticateToken, async (req, res) => {
 });
 
 // 获取用户的推荐列表
-app.get('/api/referral/list', authenticateToken, async (req, res) => {
+apiRouter.get('/referral/list', authenticateToken, async (req, res) => {
     try {
         const referrals = await User.find({ referredBy: req.user.id })
             .select('email createdAt')
@@ -760,7 +766,7 @@ app.get('/api/referral/list', authenticateToken, async (req, res) => {
 });
 
 // 获取用户统计信息
-app.get('/api/stats', authenticateToken, async (req, res) => {
+apiRouter.get('/stats', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         
@@ -793,7 +799,7 @@ app.get('/api/stats', authenticateToken, async (req, res) => {
 });
 
 // 获取任务列表
-app.get('/api/tasks', authenticateToken, async (req, res) => {
+apiRouter.get('/tasks', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         
@@ -824,7 +830,7 @@ app.get('/api/tasks', authenticateToken, async (req, res) => {
 });
 
 // 开始任务
-app.post('/api/tasks/:taskId/start', authenticateToken, async (req, res) => {
+apiRouter.post('/tasks/:taskId/start', authenticateToken, async (req, res) => {
     try {
         const { taskId } = req.params;
         const userId = req.user.id;
@@ -857,7 +863,7 @@ app.post('/api/tasks/:taskId/start', authenticateToken, async (req, res) => {
 });
 
 // 完成任务
-app.post('/api/tasks/:taskId/complete', authenticateToken, async (req, res) => {
+apiRouter.post('/tasks/:taskId/complete', authenticateToken, async (req, res) => {
     try {
         const { taskId } = req.params;
         const userId = req.user.id;
