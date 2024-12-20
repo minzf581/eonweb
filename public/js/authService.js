@@ -285,19 +285,29 @@ class AuthService {
 console.log('[AuthService] Creating global instance');
 const authService = new AuthService();
 
-// Log the instance and its methods
-console.log('[AuthService] Instance methods check:', {
-    instance: authService,
-    getToken: authService.getToken,
-    isInitialized: authService.isInitialized,
-    methodNames: Object.getOwnPropertyNames(AuthService.prototype)
-});
-
-// Define the window.authService property with a getter
-Object.defineProperty(window, 'authService', {
-    get() {
-        return authService;
+// Create AuthServiceUtils
+const authServiceUtils = {
+    _instance: null,
+    async waitForAuthService(timeoutMs = 5000) {
+        const startTime = Date.now();
+        while (Date.now() - startTime < timeoutMs) {
+            if (authService && authService.initialized) {
+                this._instance = authService;
+                return authService;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        throw new Error('Timeout waiting for AuthService initialization');
     },
-    configurable: false,
-    enumerable: true
-});
+    
+    get instance() {
+        return this._instance || authService;
+    }
+};
+
+// Expose both AuthService instance and utils
+window.authService = authService;
+window.authServiceUtils = authServiceUtils;
+
+// For module systems
+export { authService as default, authServiceUtils };

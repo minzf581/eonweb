@@ -155,16 +155,16 @@
     <div id="loginContainer">
         <h1>Login</h1>
         <div id="messageContainer"></div>
-        <form id="loginForm">
+        <form id="loginForm" style="display: none;">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" required disabled>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" required disabled>
             </div>
-            <button type="submit" id="loginButton">
+            <button type="submit" id="loginButton" disabled>
                 <span class="button-text">Login</span>
                 <div class="button-spinner hidden"></div>
             </button>
@@ -251,21 +251,16 @@
         }
 
         async function waitForAuthService(timeoutMs = 5000) {
-            if (!window.authServiceUtils) {
-                console.error('[Login] AuthServiceUtils not available');
-                return false;
-            }
-
+            console.log('[Login] Waiting for AuthService...');
             try {
-                await Promise.race([
-                    window.authServiceUtils.waitForAuthService(),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs)
-                    )
-                ]);
-                return true;
+                if (window.authServiceUtils) {
+                    await window.authServiceUtils.waitForAuthService(timeoutMs);
+                    return true;
+                } else {
+                    throw new Error('AuthServiceUtils not available');
+                }
             } catch (error) {
-                console.error('[Login] Auth service wait failed:', error);
+                console.error('[Login] Error waiting for AuthService:', error);
                 return false;
             }
         }
@@ -308,24 +303,25 @@
 
         async function initializeLoginPage() {
             console.log('[Login] Starting initialization...');
-            
             try {
-                // Wait for auth service to be ready
-                const isReady = await waitForAuthService();
-                if (!isReady) {
+                const authServiceReady = await waitForAuthService();
+                if (!authServiceReady) {
                     throw new Error('Authentication service is not available');
                 }
 
-                // Check if already authenticated
-                const isAuthenticated = await window.authService.validateToken();
-                if (isAuthenticated) {
-                    // Get user info to determine admin status
-                    const user = await window.authService.getUser();
-                    const isAdmin = user.role === 'admin';
-                    const dashboardPath = isAdmin ? '/admin/index.html' : '/dashboard/index.html';
-                    window.location.href = dashboardPath;
+                // Check if user is already logged in
+                const token = window.authService.getToken;
+                if (token) {
+                    // Redirect to dashboard if already logged in
+                    window.location.href = '/dashboard';
                     return;
                 }
+
+                // Enable the form
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('email').disabled = false;
+                document.getElementById('password').disabled = false;
+                document.getElementById('loginButton').disabled = false;
 
                 // Setup form event listener
                 const form = document.getElementById('loginForm');
@@ -333,7 +329,6 @@
                     form.addEventListener('submit', handleLogin);
                 }
 
-                console.log('[Login] Initialization complete');
             } catch (error) {
                 console.error('[Login] Initialization failed:', error);
                 showError('Failed to initialize login page. Please refresh and try again.');
@@ -341,7 +336,11 @@
         }
 
         // Initialize as soon as DOM is ready
-        document.addEventListener('DOMContentLoaded', initializeLoginPage);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeLoginPage);
+        } else {
+            initializeLoginPage();
+        }
     </script>
 </body>
 </html>
