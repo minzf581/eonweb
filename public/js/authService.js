@@ -237,60 +237,39 @@ class AuthService {
 
     async login(email, password) {
         this.logInfo('Attempting login');
+        
         try {
-            // 检查参数
-            if (!email || !password) {
-                throw new Error('Email and password are required');
-            }
-
-            this.logInfo(`Making login request to ${this._data.baseUrl}/auth/login`);
             const response = await this.fetchWithRetry(`${this._data.baseUrl}/auth/login`, {
                 method: 'POST',
                 body: JSON.stringify({ email, password }),
-                timeout: 15000
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
-
-            this.logInfo('Login response status:', response.status);
-            this.logInfo('Login response headers:', response.headers);
 
             if (!response.ok) {
-                let errorMessage = 'Login failed';
-                try {
-                    const errorData = await response.json();
-                    this.logError('Login error response:', errorData);
-                    errorMessage = errorData.message || errorData.error || 'Login failed';
-                } catch (e) {
-                    this.logError('Failed to parse error response:', e);
-                    if (response.status === 404) {
-                        errorMessage = 'Login service is temporarily unavailable';
-                    } else if (response.status === 401) {
-                        errorMessage = 'Invalid email or password';
-                    } else if (response.status >= 500) {
-                        errorMessage = 'Server error, please try again later';
-                    }
-                }
-                throw new Error(errorMessage);
+                throw new Error('Login failed');
             }
 
-            this.logInfo('Parsing login response...');
             const data = await response.json();
-            this.logInfo('Login response data:', { 
-                hasToken: !!data.token,
-                hasUser: !!data.user
-            });
+            this._data.token = data.token;
+            this._data.user = data.user;
 
-            if (!data.token) {
-                throw new Error('Invalid response from server: missing token');
+            // 存储登录信息
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            // 根据用户类型重定向
+            if (data.user.isAdmin) {
+                window.location.href = '/admin/dashboard';
+            } else {
+                window.location.href = '/dashboard';
             }
 
-            this.setToken(data.token);
-            this._data.user = data.user || null;
-            this.logInfo('Login successful');
-            
             return true;
         } catch (error) {
             this.logError('Login failed:', error);
-            throw error;
+            throw new Error('Login service is temporarily unavailable');
         }
     }
 

@@ -472,18 +472,21 @@ mongoose.connect(config.mongodb.uri, config.mongodb.options)
         process.exit(1);
     });
 
-// API 路由
+// API 路由配置
+const apiRouter = express.Router();
+
+// 身份验证中间件
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ message: 'No token provided' });
+        return res.status(401).json({ error: 'No token provided' });
     }
 
     jwt.verify(token, config.jwt.secret, (err, user) => {
         if (err) {
-            return res.status(403).json({ message: 'Invalid token' });
+            return res.status(403).json({ error: 'Invalid token' });
         }
         req.user = user;
         next();
@@ -492,11 +495,266 @@ const authenticateToken = (req, res, next) => {
 
 // 管理员权限中间件
 const isAdmin = (req, res, next) => {
-    if (!req.user || !req.user.isAdmin) {
-        return res.status(403).json({ message: 'Admin access required' });
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
     }
     next();
 };
+
+// 认证路由
+const authRouter = express.Router();
+
+// 登录路由
+authRouter.post('/login', async (req, res) => {
+    console.log('\n=== Login Request ===');
+    console.log('Request Body:', req.body);
+    
+    try {
+        const { email, password } = req.body;
+
+        // 验证请求数据
+        if (!email || !password) {
+            console.log('Login failed: Missing email or password');
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        console.log('Checking database connection...');
+        if (mongoose.connection.readyState !== 1) {
+            console.error('Database not connected. Current state:', mongoose.connection.readyState);
+            return res.status(503).json({ error: 'Database connection error' });
+        }
+
+        console.log('Finding user with email:', email);
+        const user = await User.findOne({ email });
+        
+        if (!user) {
+            console.log('Login failed: User not found');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        console.log('User found, comparing passwords...');
+        const validPassword = await bcryptjs.compare(password, user.password);
+        
+        if (!validPassword) {
+            console.log('Login failed: Invalid password');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // 设置管理员权限
+        const isAdmin = email === 'info@eon-protocol.com';
+        if (isAdmin && !user.isAdmin) {
+            user.isAdmin = true;
+            await user.save();
+        }
+
+        console.log('Password valid, generating token...');
+        const token = jwt.sign(
+            { 
+                id: user._id, 
+                email: user.email,
+                isAdmin: user.isAdmin 
+            },
+            config.jwt.secret,
+            { expiresIn: '24h' }
+        );
+
+        console.log('Login successful for user:', email);
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                isAdmin: user.isAdmin
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error during login' });
+    }
+});
+
+// 注册路由
+authRouter.post('/register', async (req, res) => {
+    try {
+        const { email, password, referralCode } = req.body;
+
+        // 检查邮箱是否已存在
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Email already exists' });
+        }
+
+        // 创建新用户
+        const user = new User({
+            email,
+            password: await bcryptjs.hash(password, 10),
+            referralCode: generateReferralCode(),
+            isAdmin: email === 'info@eon-protocol.com'
+        });
+
+        // 如果有推荐码，设置推荐人
+        if (referralCode) {
+            const referrer = await User.findOne({ referralCode });
+            if (referrer) {
+                user.referredBy = referrer._id;
+            }
+        }
+
+        await user.save();
+
+        const token = jwt.sign(
+            { 
+                id: user._id, 
+                email: user.email,
+                isAdmin: user.isAdmin 
+            },
+            config.jwt.secret,
+            { expiresIn: '24h' }
+        );
+
+        res.status(201).json({
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                referralCode: user.referralCode
+            }
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
+// 验证 token
+authRouter.get('/verify', authenticateToken, (req, res) => {
+    res.json({ 
+        valid: true,
+        user: {
+            id: req.user.id,
+            email: req.user.email,
+            isAdmin: req.user.isAdmin
+        }
+    });
+});
+
+// 挂载认证路由
+apiRouter.use('/auth', authRouter);
+
+// 用户路由
+const userRouter = express.Router();
+
+// 获取用户信息
+userRouter.get('/me', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch user information' });
+    }
+});
+
+// 获取用户统计信息
+userRouter.get('/stats', authenticateToken, async (req, res) => {
+    try {
+        const userTasks = await UserTask.find({ userId: req.user.id });
+        const completedTasks = userTasks.filter(t => t.completed).length;
+        const user = await User.findById(req.user.id);
+
+        res.json({
+            totalTasks: userTasks.length,
+            completedTasks,
+            points: user.points
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch user stats' });
+    }
+});
+
+// 挂载用户路由
+apiRouter.use('/users', userRouter);
+
+// 任务路由
+const taskRouter = express.Router();
+
+// 获取任务列表
+taskRouter.get('/', authenticateToken, async (req, res) => {
+    try {
+        const tasks = await Task.find();
+        res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+});
+
+// 开始任务
+taskRouter.post('/:taskId/start', authenticateToken, async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const userId = req.user.id;
+        
+        // 检查任务是否存在
+        const task = await Task.findById(taskId);
+        if (!task) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        // 检查用户是否已经开始此任务
+        const existingUserTask = await UserTask.findOne({ userId, taskId });
+        if (existingUserTask) {
+            return res.status(400).json({ error: 'Task already started' });
+        }
+
+        // 创建新的用户任务
+        const userTask = new UserTask({
+            userId,
+            taskId,
+            startTime: new Date()
+        });
+
+        await userTask.save();
+        res.json(userTask);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to start task' });
+    }
+});
+
+// 挂载任务路由
+apiRouter.use('/tasks', taskRouter);
+
+// 管理员路由
+const adminRouter = express.Router();
+
+// 获取所有用户
+adminRouter.get('/users', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// 创建新任务
+adminRouter.post('/tasks', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const task = new Task(req.body);
+        await task.save();
+        res.status(201).json(task);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create task' });
+    }
+});
+
+// 挂载管理员路由
+apiRouter.use('/admin', adminRouter);
+
+// 挂载所有 API 路由
+app.use('/api', apiRouter);
 
 // 用户模型
 const userSchema = new mongoose.Schema({
@@ -542,364 +800,7 @@ const userTaskSchema = new mongoose.Schema({
 
 const UserTask = mongoose.model('UserTask', userTaskSchema);
 
-// 登录路由
-apiRouter.post('/auth/login', async (req, res) => {
-    console.log('\n=== Login Request ===');
-    console.log('Request Body:', req.body);
-    
-    try {
-        const { email, password } = req.body;
-
-        // 验证请求数据
-        if (!email || !password) {
-            console.log('Login failed: Missing email or password');
-            return res.status(400).json({ error: 'Email and password are required' });
-        }
-
-        console.log('Checking database connection...');
-        if (mongoose.connection.readyState !== 1) {
-            console.error('Database not connected. Current state:', mongoose.connection.readyState);
-            return res.status(503).json({ error: 'Database connection error' });
-        }
-
-        console.log('Finding user with email:', email);
-        const user = await User.findOne({ email });
-        
-        if (!user) {
-            console.log('Login failed: User not found');
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        console.log('User found, comparing passwords...');
-        const validPassword = await bcryptjs.compare(password, user.password);
-        
-        if (!validPassword) {
-            console.log('Login failed: Invalid password');
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        console.log('Password valid, generating token...');
-        const token = jwt.sign(
-            { id: user._id, email: user.email },
-            config.jwt.secret,
-            { expiresIn: '24h' }
-        );
-
-        console.log('Login successful for user:', email);
-        res.json({
-            token,
-            user: {
-                id: user._id,
-                email: user.email
-            }
-        });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Internal server error during login' });
-    }
-});
-
-// 挂载 API 路由
-app.use('/api', apiRouter);
-
-// 获取用户信息
-apiRouter.get('/user', authenticateToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('-password');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.json(user);
-    } catch (error) {
-        console.error('Get user error:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 获取用户任务
-apiRouter.get('/tasks/user', authenticateToken, async (req, res) => {
-    try {
-        const userTasks = await UserTask.find({ userId: req.user.id })
-            .populate('taskId')
-            .exec();
-
-        const tasks = userTasks.map(ut => ({
-            id: ut.taskId._id,
-            name: ut.taskId.name,
-            description: ut.taskId.description,
-            points: ut.taskId.points,
-            completed: ut.completed,
-            completedAt: ut.completedAt
-        }));
-
-        res.json({ tasks });
-    } catch (error) {
-        console.error('Error getting user tasks:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 获取用户统计信息
-apiRouter.get('/users/stats', authenticateToken, async (req, res) => {
-    try {
-        const userTasks = await UserTask.find({ userId: req.user.id });
-        const completedTasks = userTasks.filter(t => t.completed).length;
-        const user = await User.findById(req.user.id);
-
-        res.json({
-            totalTasks: userTasks.length,
-            completedTasks,
-            earnedPoints: user.points || 0
-        });
-    } catch (error) {
-        console.error('Error getting user stats:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 获取推荐信息
-apiRouter.get('/users/referral-info', authenticateToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        const referrals = await User.countDocuments({ referredBy: user._id });
-
-        res.json({
-            referralCode: user.referralCode,
-            referralCount: referrals,
-            totalPoints: user.points
-        });
-    } catch (error) {
-        console.error('Error getting referral info:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 验证 token
-apiRouter.get('/auth/verify', authenticateToken, (req, res) => {
-    res.json({ valid: true });
-});
-
-apiRouter.post('/auth/register', async (req, res) => {
-    try {
-        const { email, password, referralCode } = req.body;
-
-        // 检查邮箱是否已存在
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ message: 'Email already exists' });
-        }
-
-        // 生成唯一的推荐码
-        const newReferralCode = crypto.randomBytes(4).toString('hex');
-
-        // 创建新用户
-        const hashedPassword = await bcryptjs.hash(password, 10);
-        const user = new User({
-            email,
-            password: hashedPassword,
-            referralCode: newReferralCode
-        });
-
-        // 如果提供了推荐码，查找推荐人
-        if (referralCode) {
-            const referrer = await User.findOne({ referralCode });
-            if (referrer) {
-                user.referredBy = referrer._id;
-                // 给推荐人加积分
-                referrer.points += 100;
-                await referrer.save();
-            }
-        }
-
-        await user.save();
-
-        // 生成 token
-        const token = jwt.sign(
-            { id: user._id, email: user.email },
-            config.jwt.secret,
-            { expiresIn: '24h' }
-        );
-
-        res.status(201).json({
-            token,
-            user: {
-                id: user._id,
-                email: user.email,
-                referralCode: user.referralCode
-            }
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 获取用户的推荐信息
-apiRouter.get('/referral', authenticateToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        const referralCount = await User.countDocuments({ referredBy: user._id });
-        
-        res.json({
-            referralCode: user.referralCode,
-            referralCount,
-            points: user.points
-        });
-    } catch (error) {
-        console.error('Error fetching referral info:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 获取用户的推荐列表
-apiRouter.get('/referral/list', authenticateToken, async (req, res) => {
-    try {
-        const referrals = await User.find({ referredBy: req.user.id })
-            .select('email createdAt')
-            .sort({ createdAt: -1 });
-        
-        res.json(referrals);
-    } catch (error) {
-        console.error('Error fetching referral list:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 获取用户统计信息
-apiRouter.get('/stats', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        
-        // 获取用户信息
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        
-        // 获取任务统计
-        const completedTasks = await UserTask.countDocuments({ 
-            userId: userId,
-            completed: true 
-        });
-        
-        const activeTasks = await UserTask.countDocuments({ 
-            userId: userId,
-            completed: false 
-        });
-        
-        res.json({
-            points: user.points || 0,
-            completedTasks,
-            activeTasks
-        });
-    } catch (error) {
-        console.error('Error fetching stats:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 获取任务列表
-apiRouter.get('/tasks', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        
-        // 获取所有任务
-        const tasks = await Task.find();
-        
-        // 获取用户的任务状态
-        const userTasks = await UserTask.find({ userId });
-        
-        // 合并任务信息和状态
-        const tasksWithStatus = tasks.map(task => {
-            const userTask = userTasks.find(ut => ut.taskId.toString() === task._id.toString());
-            return {
-                id: task._id,
-                name: task.name,
-                description: task.description,
-                points: task.points,
-                type: task.type,
-                status: userTask ? (userTask.completed ? 'completed' : 'in_progress') : 'available'
-            };
-        });
-        
-        res.json(tasksWithStatus);
-    } catch (error) {
-        console.error('Error fetching tasks:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 开始任务
-apiRouter.post('/tasks/:taskId/start', authenticateToken, async (req, res) => {
-    try {
-        const { taskId } = req.params;
-        const userId = req.user.id;
-        
-        // 检查任务是否存在
-        const task = await Task.findById(taskId);
-        if (!task) {
-            return res.status(404).json({ message: 'Task not found' });
-        }
-        
-        // 检查用户是否已经开始或完成了这个任务
-        let userTask = await UserTask.findOne({ userId, taskId });
-        if (userTask) {
-            return res.status(400).json({ message: 'Task already started or completed' });
-        }
-        
-        // 创建新的用户任务
-        userTask = new UserTask({
-            userId,
-            taskId,
-            completed: false
-        });
-        
-        await userTask.save();
-        res.json({ message: 'Task started successfully' });
-    } catch (error) {
-        console.error('Error starting task:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-// 完成任务
-apiRouter.post('/tasks/:taskId/complete', authenticateToken, async (req, res) => {
-    try {
-        const { taskId } = req.params;
-        const userId = req.user.id;
-        
-        // 检查任务是否存在
-        const task = await Task.findById(taskId);
-        if (!task) {
-            return res.status(404).json({ message: 'Task not found' });
-        }
-        
-        // 检查用户是否已经开始了这个任务
-        const userTask = await UserTask.findOne({ userId, taskId });
-        if (!userTask) {
-            return res.status(400).json({ message: 'Task not started' });
-        }
-        
-        if (userTask.completed) {
-            return res.status(400).json({ message: 'Task already completed' });
-        }
-        
-        // 更新任务状态
-        userTask.completed = true;
-        userTask.completedAt = new Date();
-        await userTask.save();
-        
-        // 更新用户积分
-        const user = await User.findById(userId);
-        user.points += task.points;
-        await user.save();
-        
-        res.json({ 
-            message: 'Task completed successfully',
-            pointsEarned: task.points
-        });
-    } catch (error) {
-        console.error('Error completing task:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
+// 生成推荐码
+function generateReferralCode() {
+    return crypto.randomBytes(4).toString('hex');
+}
