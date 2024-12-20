@@ -472,9 +472,6 @@ mongoose.connect(config.mongodb.uri, config.mongodb.options)
         process.exit(1);
     });
 
-// API 路由配置
-const apiRouter = express.Router();
-
 // 身份验证中间件
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
