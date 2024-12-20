@@ -171,6 +171,37 @@ app.get('/health', (req, res) => {
     });
 });
 
+// 健康检查端点
+app.get('/api/health', (req, res) => {
+    const healthCheck = {
+        uptime: process.uptime(),
+        status: 'OK',
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        // 检查数据库连接
+        if (mongoose.connection.readyState !== 1) {
+            throw new Error('Database not connected');
+        }
+
+        res.json(healthCheck);
+    } catch (error) {
+        healthCheck.status = 'ERROR';
+        healthCheck.error = error.message;
+        res.status(503).json(healthCheck);
+    }
+});
+
+// API 根路径处理
+app.get('/api', (req, res) => {
+    res.json({
+        message: 'API is running',
+        version: '1.0.0',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // 启用压缩
 app.use(compression());
 
@@ -322,22 +353,22 @@ mongoose.connect(config.mongodb.uri, config.mongodb.options)
         // 处理服务器错误
         server.on('error', (error) => {
             console.error('Server error:', error);
-            gracefulShutdown('SERVER_ERROR');
+            if (error.code === 'EADDRINUSE') {
+                console.error(`Port ${config.server.port} is already in use`);
+                process.exit(1);
+            }
         });
 
-        // 处理 MongoDB 连接错误
+        // MongoDB 错误处理
         mongoose.connection.on('error', (error) => {
             console.error('MongoDB connection error:', error);
             if (!server.listening) {
-                gracefulShutdown('MONGODB_ERROR');
+                process.exit(1);
             }
         });
 
         mongoose.connection.on('disconnected', () => {
             console.log('MongoDB disconnected. Attempting to reconnect...');
-            if (!server.listening) {
-                return gracefulShutdown('MONGODB_DISCONNECT');
-            }
             
             // 尝试重新连接
             setTimeout(() => {
@@ -347,7 +378,7 @@ mongoose.connect(config.mongodb.uri, config.mongodb.options)
                         gracefulShutdown('MONGODB_RECONNECT_FAILED');
                     }
                 });
-            }, 5000);
+            }, 5000); // 5秒后重试
         });
     })
     .catch((error) => {
