@@ -553,12 +553,10 @@ footer p {
 .form-control {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid #333;
+  border: 1px solid var(--secondary-color);
   background: #1a1a1a;
   border-radius: 8px;
-  color: #fff;
-  font-size: 1rem;
-  transition: all 0.3s ease;
+  color: var(--text-color);
 }
 
 .form-control:focus {
@@ -1266,11 +1264,39 @@ footer p {
     <!-- Hero Section with Particles -->
     <section id="home" class="hero">
         <div class="hero-content">
-            <h1>AI Meets Secure Distributed Power</h1>
-            <p>Empower AI achieve secure and seamless data collaboration</p>
-        </div>
-        <div class="button-container">
-          <a href="/auth/login.html" class="cta-button">Get started and Earn</a>
+            <h1>Welcome to EON Protocol</h1>
+            <p class="hero-subtitle">Secure, Compliant, and Powerful Distributed AI Computing Platform</p>
+            
+            <!-- User Role Cards -->
+            <div class="user-roles-container">
+                <!-- AI Computing Card -->
+                <div class="role-card">
+                    <i class="fas fa-microchip"></i>
+                    <h3>AI Computing Platform</h3>
+                    <p>Access massive distributed computing power and diverse data sources with enterprise-grade security</p>
+                    <a href="/dashboard/compute" class="role-button">Start Computing</a>
+                    <ul class="role-features">
+                        <li>Powerful distributed computing infrastructure</li>
+                        <li>Access to diverse, high-quality data sources</li>
+                        <li>Enterprise-grade security & compliance</li>
+                        <li>Seamless data integration</li>
+                    </ul>
+                </div>
+
+                <!-- Data Provider Card -->
+                <div class="role-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Data Provider Platform</h3>
+                    <p>Full control over your data assets with enterprise-level security and compliance</p>
+                    <a href="/dashboard/data" class="role-button">Monetize Data</a>
+                    <ul class="role-features">
+                        <li>Complete data ownership & control</li>
+                        <li>Enterprise-grade security measures</li>
+                        <li>Regulatory compliance guaranteed</li>
+                        <li>Flexible monetization options</li>
+                    </ul>
+                </div>
+            </div>
         </div>
         <div id="particles-js" style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh;"></div>
          
@@ -1411,7 +1437,7 @@ footer p {
 
 <!-- 更合作伙部分 -->
 <section class="partners-section">
-  <h2>Our Partners</h2>
+  <h2>Strategic Partners</h2>
   <div class="partners-container">
     <div class="partners-scroll">
       <a href="https://www.antler.co" class="partner-item" target="_blank">
@@ -1443,6 +1469,36 @@ footer p {
   </div>
 </section>
 
+    <!-- Join Community Section -->
+    <section class="join-section">
+        <div class="join-container">
+            <!-- Web3 Community -->
+            <div class="join-card">
+                <i class="fas fa-users"></i>
+                <h3>Join Our Web3 Community</h3>
+                <p>Be part of the future of decentralized AI computing</p>
+                <ul class="join-features">
+                    <li>Participate in community governance</li>
+                    <li>Earn rewards through contribution</li>
+                    <li>Shape the future of AI computing</li>
+                </ul>
+                <a href="/community" class="join-button">Join Community</a>
+            </div>
+
+            <!-- We are Hiring -->
+            <div class="join-card">
+                <i class="fas fa-briefcase"></i>
+                <h3>We're Hiring!</h3>
+                <p>Join our team and help build the future of AI infrastructure</p>
+                <ul class="join-features">
+                    <li>Work with cutting-edge technology</li>
+                    <li>Global remote-first culture</li>
+                    <li>Competitive compensation</li>
+                </ul>
+                <a href="/careers" class="join-button">View Openings</a>
+            </div>
+        </div>
+    </section>
 
     <!-- Contact Section -->
 <section id="contact" class="contact-section">

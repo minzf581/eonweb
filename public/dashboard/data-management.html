@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management - EON Protocol</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Core Scripts -->
+    <script src="../js/authService.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4dabf7;
+            --secondary-color: #adb5bd;
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-menu a {
+            color: var(--text-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 0.8rem;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            padding: 2rem;
+        }
+
+        .content-header {
+            margin-bottom: 2rem;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .upload-dropzone {
+            border: 2px dashed var(--secondary-color);
+            border-radius: 10px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-dropzone.dragover {
+            border-color: var(--primary-color);
+            background: rgba(77, 171, 247, 0.1);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin-top: 1rem;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Data List Section */
+        .data-list {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+        }
+
+        .data-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .data-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .data-item-details {
+            display: none;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            margin-top: 1rem;
+            border-radius: 8px;
+        }
+
+        /* Permission Management */
+        .permission-manager {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .user-list {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .user-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: move;
+        }
+
+        /* Analytics Section */
+        .analytics-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.success {
+            background: var(--success-color);
+        }
+
+        .toast.error {
+            background: var(--danger-color);
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="#"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="#"><i class="fas fa-upload"></i> Upload Data</a></li>
+                <li><a href="#"><i class="fas fa-key"></i> Permissions</a></li>
+                <li><a href="#"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-header">
+                <h1>Data Management</h1>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h2>Upload Data</h2>
+                <div class="upload-dropzone" id="uploadDropzone">
+                    <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                    <p>Drag and drop your files here or click to select</p>
+                    <input type="file" id="fileInput" style="display: none;" multiple>
+                </div>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-bar-fill"></div>
+                </div>
+            </div>
+
+            <!-- Data List -->
+            <div class="data-list">
+                <h2>Your Data</h2>
+                <div id="dataItems">
+                    <!-- Data items will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="analytics-section">
+                <div class="chart-container">
+                    <canvas id="usageChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="accessChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // File Upload Handling
+        const dropzone = document.getElementById('uploadDropzone');
+        const fileInput = document.getElementById('fileInput');
+        const progressBar = document.getElementById('progressBar');
+        const progressBarFill = document.querySelector('.progress-bar-fill');
+        const toast = document.getElementById('toast');
+
+        // Drag and Drop Events
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        dropzone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                uploadFile(file);
+            });
+        }
+
+        function uploadFile(file) {
+            // Show progress bar
+            progressBar.style.display = 'block';
+            
+            // Simulate file upload with encryption
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBarFill.style.width = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    showToast('File uploaded and encrypted successfully!', 'success');
+                    setTimeout(() => {
+                        progressBar.style.display = 'none';
+                        progressBarFill.style.width = '0%';
+                        addDataItem(file.name);
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        function showToast(message, type) {
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function addDataItem(filename) {
+            const dataItems = document.getElementById('dataItems');
+            const item = document.createElement('div');
+            item.className = 'data-item';
+            item.innerHTML = `
+                <i class="fas fa-file-alt"></i>
+                <span style="margin-left: 1rem;">${filename}</span>
+            `;
+            
+            // Add click event to show details
+            item.addEventListener('click', () => {
+                const details = item.querySelector('.data-item-details');
+                if (details) {
+                    details.style.display = details.style.display === 'none' ? 'block' : 'none';
+                } else {
+                    const detailsElement = document.createElement('div');
+                    detailsElement.className = 'data-item-details';
+                    detailsElement.innerHTML = `
+                        <h3>File Details</h3>
+                        <p>Name: ${filename}</p>
+                        <p>Size: 2.4 MB</p>
+                        <p>Uploaded: ${new Date().toLocaleDateString()}</p>
+                        <div class="permission-manager">
+                            <h4>Manage Permissions</h4>
+                            <div class="user-list">
+                                <div class="user-item" draggable="true">User A</div>
+                                <div class="user-item" draggable="true">User B</div>
+                                <div class="user-item" draggable="true">User C</div>
+                            </div>
+                        </div>
+                    `;
+                    item.appendChild(detailsElement);
+                }
+            });
+            
+            dataItems.appendChild(item);
+        }
+
+        // Initialize Charts
+        function initCharts() {
+            // Usage Chart
+            const usageCtx = document.getElementById('usageChart').getContext('2d');
+            new Chart(usageCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Active', 'Archived', 'Pending'],
+                    datasets: [{
+                        data: [12, 19, 3],
+                        backgroundColor: [
+                            'rgba(77, 171, 247, 0.8)',
+                            'rgba(173, 181, 189, 0.8)',
+                            'rgba(255, 193, 7, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Data Usage Distribution',
+                            color: 'white'
+                        }
+                    }
+                }
+            });
+
+            // Access Chart
+            const accessCtx = document.getElementById('accessChart').getContext('2d');
+            new Chart(accessCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    datasets: [{
+                        label: 'Data Access Requests',
+                        data: [65, 59, 80, 81, 56],
+                        backgroundColor: 'rgba(77, 171, 247, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize charts when page loads
+        initCharts();
+    </script>
+</body>
+</html>

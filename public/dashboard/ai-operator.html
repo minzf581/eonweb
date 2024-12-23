@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Operator Dashboard - EON Protocol</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Core Scripts -->
+    <script src="../js/authService.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4dabf7;
+            --secondary-color: #adb5bd;
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --card-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-menu a {
+            color: var(--text-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 0.8rem;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(77, 171, 247, 0.1);
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* Header Section */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .notifications {
+            position: relative;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Dashboard Cards */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+        }
+
+        /* Task List */
+        .task-list {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .task-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+
+        .status-running {
+            background: rgba(77, 171, 247, 0.2);
+            color: var(--primary-color);
+        }
+
+        .status-completed {
+            background: rgba(40, 167, 69, 0.2);
+            color: var(--success-color);
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: var(--warning-color);
+        }
+
+        /* Action Buttons */
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2b8ae2;
+        }
+
+        /* Charts Section */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background: var(--background-color);
+            width: 90%;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 2rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            color: var(--text-color);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Progress Bars */
+        .progress-container {
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        /* Notifications */
+        .notification-list {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 300px;
+            background: var(--background-color);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            display: none;
+            z-index: 100;
+        }
+
+        .notification-item {
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="#"><i class="fas fa-database"></i> Data Requests</a></li>
+                <li><a href="#"><i class="fas fa-tasks"></i> Computing Tasks</a></li>
+                <li><a href="#"><i class="fas fa-chart-line"></i> Results</a></li>
+                <li><a href="#"><i class="fas fa-credit-card"></i> Billing</a></li>
+                <li><a href="#"><i class="fas fa-shield-alt"></i> Security</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>AI Operator Dashboard</h1>
+                <div class="notifications">
+                    <i class="fas fa-bell" style="font-size: 1.5rem; cursor: pointer;"></i>
+                    <span class="notification-badge">3</span>
+                    <div class="notification-list">
+                        <div class="notification-item">
+                            <strong>Task Completed:</strong> Model training finished successfully
+                        </div>
+                        <div class="notification-item">
+                            <strong>Data Access:</strong> New dataset available for processing
+                        </div>
+                        <div class="notification-item">
+                            <strong>System Update:</strong> New features available
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Cards -->
+            <div class="dashboard-cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Active Tasks</h3>
+                        <i class="fas fa-microchip card-icon"></i>
+                    </div>
+                    <h2>12</h2>
+                    <p>Currently running computations</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Data Sets</h3>
+                        <i class="fas fa-database card-icon"></i>
+                    </div>
+                    <h2>8</h2>
+                    <p>Authorized datasets</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Computing Credits</h3>
+                        <i class="fas fa-coins card-icon"></i>
+                    </div>
+                    <h2>5,000</h2>
+                    <p>Available credits</p>
+                </div>
+            </div>
+
+            <!-- Task List -->
+            <div class="task-list">
+                <h2>Recent Tasks</h2>
+                <div class="task-item">
+                    <div>
+                        <h4>Neural Network Training</h4>
+                        <p>Dataset: Financial Records 2023</p>
+                    </div>
+                    <span class="task-status status-running">Running</span>
+                </div>
+                <div class="task-item">
+                    <div>
+                        <h4>Data Analysis Pipeline</h4>
+                        <p>Dataset: Customer Behavior Analysis</p>
+                    </div>
+                    <span class="task-status status-completed">Completed</span>
+                </div>
+                <div class="task-item">
+                    <div>
+                        <h4>Model Optimization</h4>
+                        <p>Dataset: Market Trends 2023</p>
+                    </div>
+                    <span class="task-status status-pending">Pending</span>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Computing Resource Usage</h3>
+                    <canvas id="resourceChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Task Completion Trends</h3>
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Task Modal -->
+    <div class="modal" id="newTaskModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Create New Computing Task</h2>
+            <form id="newTaskForm">
+                <div class="form-group">
+                    <label class="form-label">Task Name</label>
+                    <input type="text" class="form-control" placeholder="Enter task name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Select Dataset</label>
+                    <select class="form-control">
+                        <option>Financial Records 2023</option>
+                        <option>Customer Behavior Analysis</option>
+                        <option>Market Trends 2023</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Computing Resources</label>
+                    <select class="form-control">
+                        <option>Standard - 4 CPU cores</option>
+                        <option>Advanced - 8 CPU cores</option>
+                        <option>Premium - 16 CPU cores</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Priority Level</label>
+                    <select class="form-control">
+                        <option>Normal</option>
+                        <option>High</option>
+                        <option>Urgent</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Task</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Charts
+        function initializeCharts() {
+            // Resource Usage Chart
+            const resourceCtx = document.getElementById('resourceChart').getContext('2d');
+            new Chart(resourceCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'CPU Usage',
+                        data: [65, 59, 80, 81, 56, 55],
+                        borderColor: '#4dabf7',
+                        tension: 0.4
+                    }, {
+                        label: 'Memory Usage',
+                        data: [28, 48, 40, 19, 86, 27],
+                        borderColor: '#28a745',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: 'white' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: { color: 'white' }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: { color: 'white' }
+                        }
+                    }
+                }
+            });
+
+            // Task Completion Trends
+            const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+            new Chart(trendsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Completed Tasks',
+                        data: [12, 19, 3, 5, 2, 3],
+                        backgroundColor: 'rgba(77, 171, 247, 0.5)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: 'white' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: { color: 'white' }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: { color: 'white' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Notification Toggle
+        document.querySelector('.notifications i').addEventListener('click', function() {
+            const notificationList = document.querySelector('.notification-list');
+            notificationList.style.display = notificationList.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Initialize charts when page loads
+        document.addEventListener('DOMContentLoaded', initializeCharts);
+    </script>
+</body>
+</html>
