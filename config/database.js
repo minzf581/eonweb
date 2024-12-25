@@ -3,23 +3,25 @@ const { Sequelize } = require('sequelize');
 let sequelize;
 
 if (process.env.NODE_ENV === 'production') {
-    sequelize = new Sequelize({
-        dialect: 'postgres',
-        host: '/cloudsql/' + process.env.CLOUD_SQL_CONNECTION_NAME,
-        database: process.env.DB_NAME,
-        username: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        dialectOptions: {
-            socketPath: '/cloudsql/' + process.env.CLOUD_SQL_CONNECTION_NAME
-        },
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        },
-        logging: false
-    });
+    sequelize = new Sequelize(
+        process.env.DB_NAME,
+        process.env.DB_USER,
+        process.env.DB_PASSWORD,
+        {
+            dialect: 'postgres',
+            host: process.env.DB_HOST,
+            dialectOptions: {
+                socketPath: process.env.DB_HOST
+            },
+            pool: {
+                max: 5,
+                min: 0,
+                acquire: 30000,
+                idle: 10000
+            },
+            logging: false
+        }
+    );
 } else {
     // 本地开发环境配置
     sequelize = new Sequelize({
