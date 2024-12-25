@@ -4,8 +4,6 @@ let sequelize;
 
 if (process.env.NODE_ENV === 'production') {
     // Cloud SQL configuration for App Engine
-    const dbSocketPath = process.env.DB_HOST;
-
     sequelize = new Sequelize(
         process.env.DB_NAME,
         process.env.DB_USER,
@@ -13,9 +11,8 @@ if (process.env.NODE_ENV === 'production') {
         {
             dialect: 'postgres',
             dialectOptions: {
-                socketPath: dbSocketPath
+                socketPath: process.env.DB_HOST
             },
-            host: '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
             pool: {
                 max: 5,
                 min: 0,
