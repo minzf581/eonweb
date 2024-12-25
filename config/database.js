@@ -3,18 +3,20 @@ const { Sequelize } = require('sequelize');
 let sequelize;
 
 if (process.env.NODE_ENV === 'production') {
-    // Cloud SQL configuration for App Engine
-    const dbSocketPath = process.env.DB_HOST;
+    console.log('Using production configuration');
+    console.log('DB_HOST:', process.env.DB_HOST);
+    console.log('CLOUD_SQL_CONNECTION_NAME:', process.env.CLOUD_SQL_CONNECTION_NAME);
 
+    // Cloud SQL configuration for App Engine
     sequelize = new Sequelize(
         process.env.DB_NAME,
         process.env.DB_USER,
         process.env.DB_PASSWORD,
         {
             dialect: 'postgres',
-            host: dbSocketPath,
             dialectOptions: {
-                socketPath: dbSocketPath
+                // Cloud SQL socket path
+                host: process.env.DB_HOST
             },
             pool: {
                 max: 5,
@@ -26,7 +28,8 @@ if (process.env.NODE_ENV === 'production') {
         }
     );
 } else {
-    // 本地开发环境配置
+    console.log('Using development configuration');
+    // Local development configuration
     sequelize = new Sequelize({
         dialect: 'postgres',
         host: 'localhost',
@@ -43,17 +46,18 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-// 测试连接
+// Test database connection with retry mechanism
 async function connectWithRetry(maxRetries = 5, delay = 5000) {
     for (let i = 0; i < maxRetries; i++) {
         try {
+            console.log('Attempting database connection...');
             await sequelize.authenticate();
             console.log('Database connection has been established successfully.');
             return true;
         } catch (err) {
             console.error('Connection attempt failed:', err);
             if (i < maxRetries - 1) {
-                console.log(`Retrying connection... Attempt ${i + 1} of ${maxRetries}`);
+                console.log(`Retrying connection in ${delay}ms... Attempt ${i + 1} of ${maxRetries}`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
