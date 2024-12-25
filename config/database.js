@@ -3,11 +3,9 @@ const { Sequelize } = require('sequelize');
 let sequelize;
 
 if (process.env.NODE_ENV === 'production') {
-    console.log('Using production configuration');
-    console.log('DB_HOST:', process.env.DB_HOST);
-    console.log('CLOUD_SQL_CONNECTION_NAME:', process.env.CLOUD_SQL_CONNECTION_NAME);
-
     // Cloud SQL configuration for App Engine
+    const dbSocketPath = process.env.DB_HOST;
+
     sequelize = new Sequelize(
         process.env.DB_NAME,
         process.env.DB_USER,
@@ -15,9 +13,9 @@ if (process.env.NODE_ENV === 'production') {
         {
             dialect: 'postgres',
             dialectOptions: {
-                // Cloud SQL socket path
-                host: process.env.DB_HOST
+                socketPath: dbSocketPath
             },
+            host: '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
             pool: {
                 max: 5,
                 min: 0,
@@ -28,8 +26,7 @@ if (process.env.NODE_ENV === 'production') {
         }
     );
 } else {
-    console.log('Using development configuration');
-    // Local development configuration
+    // 本地开发环境配置
     sequelize = new Sequelize({
         dialect: 'postgres',
         host: 'localhost',
@@ -46,18 +43,17 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-// Test database connection with retry mechanism
+// 测试连接
 async function connectWithRetry(maxRetries = 5, delay = 5000) {
     for (let i = 0; i < maxRetries; i++) {
         try {
-            console.log('Attempting database connection...');
             await sequelize.authenticate();
             console.log('Database connection has been established successfully.');
             return true;
         } catch (err) {
             console.error('Connection attempt failed:', err);
             if (i < maxRetries - 1) {
-                console.log(`Retrying connection in ${delay}ms... Attempt ${i + 1} of ${maxRetries}`);
+                console.log(`Retrying connection... Attempt ${i + 1} of ${maxRetries}`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
