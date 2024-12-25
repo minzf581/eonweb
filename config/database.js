@@ -3,15 +3,16 @@ const { Sequelize } = require('sequelize');
 let sequelize;
 
 if (process.env.NODE_ENV === 'production') {
+    // Cloud SQL configuration for App Engine
     sequelize = new Sequelize(
         process.env.DB_NAME,
         process.env.DB_USER,
         process.env.DB_PASSWORD,
         {
             dialect: 'postgres',
-            host: process.env.DB_HOST,
+            host: '/cloudsql/' + process.env.CLOUD_SQL_CONNECTION_NAME,
             dialectOptions: {
-                socketPath: process.env.DB_HOST
+                socketPath: '/cloudsql/' + process.env.CLOUD_SQL_CONNECTION_NAME
             },
             pool: {
                 max: 5,
@@ -19,7 +20,7 @@ if (process.env.NODE_ENV === 'production') {
                 acquire: 30000,
                 idle: 10000
             },
-            logging: false
+            logging: true // 临时开启日志以便调试
         }
     );
 } else {
@@ -41,12 +42,27 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // 测试连接
-sequelize.authenticate()
-    .then(() => {
-        console.log('Database connection has been established successfully.');
-    })
+async function connectWithRetry(maxRetries = 5, delay = 5000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            await sequelize.authenticate();
+            console.log('Database connection has been established successfully.');
+            return;
+        } catch (err) {
+            console.error('Connection attempt failed:', err);
+            if (i < maxRetries - 1) {
+                console.log(`Retrying connection... Attempt ${i + 1} of ${maxRetries}`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+    throw new Error('Failed to connect to database after multiple attempts');
+}
+
+// Initialize connection
+connectWithRetry()
     .catch(err => {
-        console.error('Unable to connect to the database:', err);
+        console.error('Failed to start server:', err);
     });
 
 module.exports = sequelize;
