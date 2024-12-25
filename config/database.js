@@ -4,15 +4,17 @@ let sequelize;
 
 if (process.env.NODE_ENV === 'production') {
     // Cloud SQL configuration for App Engine
+    const dbSocketPath = process.env.DB_HOST;
+
     sequelize = new Sequelize(
         process.env.DB_NAME,
         process.env.DB_USER,
         process.env.DB_PASSWORD,
         {
             dialect: 'postgres',
-            host: '/cloudsql/' + process.env.CLOUD_SQL_CONNECTION_NAME,
+            host: dbSocketPath,
             dialectOptions: {
-                socketPath: '/cloudsql/' + process.env.CLOUD_SQL_CONNECTION_NAME
+                socketPath: dbSocketPath
             },
             pool: {
                 max: 5,
@@ -20,7 +22,7 @@ if (process.env.NODE_ENV === 'production') {
                 acquire: 30000,
                 idle: 10000
             },
-            logging: true // 临时开启日志以便调试
+            logging: console.log
         }
     );
 } else {
@@ -47,7 +49,7 @@ async function connectWithRetry(maxRetries = 5, delay = 5000) {
         try {
             await sequelize.authenticate();
             console.log('Database connection has been established successfully.');
-            return;
+            return true;
         } catch (err) {
             console.error('Connection attempt failed:', err);
             if (i < maxRetries - 1) {
@@ -63,6 +65,7 @@ async function connectWithRetry(maxRetries = 5, delay = 5000) {
 connectWithRetry()
     .catch(err => {
         console.error('Failed to start server:', err);
+        process.exit(1); // Exit if we can't connect to the database
     });
 
 module.exports = sequelize;
