@@ -10,8 +10,9 @@ if (process.env.NODE_ENV === 'production') {
         process.env.DB_PASSWORD,
         {
             dialect: 'postgres',
+            host: '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
             dialectOptions: {
-                socketPath: process.env.DB_HOST
+                // 在这里不需要 socketPath，因为我们在 host 中指定了
             },
             pool: {
                 max: 5,
