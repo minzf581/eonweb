@@ -1,14 +1,18 @@
-const mysql = require('mysql2/promise');
+const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+const sequelize = new Sequelize({
+    dialect: 'postgres',
+    host: process.env.DB_HOST || '/cloudsql/eon-web-445802:asia-southeast1:eon-db',
+    username: process.env.DB_USER || 'eonuser',
+    password: process.env.DB_PASSWORD || 'eon-user-2024',
     database: process.env.DB_NAME || 'eon_protocol',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    logging: false,
+    dialectOptions: {
+        socketPath: process.env.NODE_ENV === 'production'
+            ? `/cloudsql/${process.env.CLOUD_SQL_CONNECTION_NAME}`
+            : null
+    }
 });
 
-module.exports = pool;
+module.exports = sequelize;

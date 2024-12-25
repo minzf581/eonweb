@@ -1,63 +1,59 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
-const userSchema = new mongoose.Schema({
+const User = sequelize.define('User', {
     email: {
-        type: String,
-        required: true,
-        unique: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+            isEmail: true
+        }
     },
     password: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false
     },
     isAdmin: {
-        type: Boolean,
-        default: false
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     },
     points: {
-        type: Number,
-        default: 0
+        type: DataTypes.INTEGER,
+        defaultValue: 0
     },
     referralCode: {
-        type: String,
+        type: DataTypes.STRING,
         unique: true
     },
     referredBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.STRING
     }
-});
-
-// 生成唯一的推荐码
-userSchema.pre('save', async function(next) {
-    if (!this.referralCode) {
-        // 生成6位随机字母数字组合
-        const generateCode = () => {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let code = '';
-            for (let i = 0; i < 6; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
+}, {
+    hooks: {
+        beforeCreate: async (user) => {
+            // Hash password
+            if (user.password) {
+                const salt = await bcrypt.genSalt(10);
+                user.password = await bcrypt.hash(user.password, salt);
             }
-            return code;
-        };
-
-        // 确保推荐码唯一
-        let isUnique = false;
-        let code;
-        while (!isUnique) {
-            code = generateCode();
-            const existingUser = await this.constructor.findOne({ referralCode: code });
-            if (!existingUser) {
-                isUnique = true;
+            
+            // Generate unique referral code
+            if (!user.referralCode) {
+                const generateCode = () => {
+                    return crypto.randomBytes(3).toString('hex').toUpperCase();
+                };
+                user.referralCode = generateCode();
             }
         }
-        this.referralCode = code;
     }
-    next();
 });
 
-module.exports = mongoose.model('User', userSchema);
+// Instance method to compare password
+User.prototype.comparePassword = async function(candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = User;

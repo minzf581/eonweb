@@ -1,28 +1,30 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
-const pointHistorySchema = new mongoose.Schema({
+const PointHistory = sequelize.define('PointHistory', {
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'Users',
+            key: 'id'
+        }
     },
     points: {
-        type: Number,
-        required: true
+        type: DataTypes.INTEGER,
+        allowNull: false
     },
     type: {
-        type: String,
-        enum: ['earned', 'referral', 'bonus', 'deducted'],
-        required: true
+        type: DataTypes.ENUM('earned', 'referral', 'bonus', 'deducted'),
+        allowNull: false
     },
     description: {
-        type: String,
-        required: true
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.STRING,
+        allowNull: false
     }
+}, {
+    timestamps: true,
+    updatedAt: false
 });
 
-module.exports = mongoose.model('PointHistory', pointHistorySchema);
+module.exports = PointHistory;

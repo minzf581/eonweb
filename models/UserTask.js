@@ -1,31 +1,41 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
-const userTaskSchema = new mongoose.Schema({
+const UserTask = sequelize.define('UserTask', {
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'Users',
+            key: 'id'
+        }
     },
     taskId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Task',
-        required: true
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'Tasks',
+            key: 'id'
+        }
     },
     status: {
-        type: String,
-        enum: ['started', 'completed', 'failed'],
-        default: 'started'
+        type: DataTypes.ENUM('started', 'completed', 'failed'),
+        defaultValue: 'started'
     },
     startedAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
     },
     completedAt: {
-        type: Date
+        type: DataTypes.DATE
     }
+}, {
+    indexes: [
+        {
+            unique: true,
+            fields: ['userId', 'taskId']
+        }
+    ]
 });
 
-// 复合索引确保用户不能多次开始同一个任务
-userTaskSchema.index({ userId: 1, taskId: 1 }, { unique: true });
-
-module.exports = mongoose.model('UserTask', userTaskSchema);
+module.exports = UserTask;

@@ -1,41 +1,36 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
-const settingsSchema = new mongoose.Schema({
+const Settings = sequelize.define('Settings', {
     key: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
         unique: true
     },
     value: {
-        type: mongoose.Schema.Types.Mixed,
-        required: true
+        type: DataTypes.JSON,
+        allowNull: false
     },
     description: {
-        type: String
+        type: DataTypes.STRING
     },
     referralPoints: {
-        type: Number,
-        default: 100,  // 有推荐码时的积分奖励
-        required: true
+        type: DataTypes.INTEGER,
+        defaultValue: 100,  // 有推荐码时的积分奖励
+        allowNull: false
     },
     baseReferralPoints: {
-        type: Number,
-        default: 50,   // 无推荐码时的基础积分
-        required: true
+        type: DataTypes.INTEGER,
+        defaultValue: 50,   // 无推荐码时的基础积分
+        allowNull: false
     },
     dailyReferralLimit: {
-        type: Number,
-        default: 10,   // 每日推荐人数限制
-        required: true
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.INTEGER,
+        defaultValue: 10,   // 每日推荐人数限制
+        allowNull: false
     }
+}, {
+    timestamps: true
 });
 
-module.exports = mongoose.model('Settings', settingsSchema);
+module.exports = Settings;

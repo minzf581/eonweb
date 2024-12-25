@@ -1,56 +1,51 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
-const taskSchema = new mongoose.Schema({
+const Task = sequelize.define('Task', {
     title: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false
     },
     description: {
-        type: String,
-        required: true
+        type: DataTypes.TEXT,
+        allowNull: false
     },
     points: {
-        type: Number,
-        required: true,
-        min: 0
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
     },
     type: {
-        type: String,
-        enum: ['daily', 'weekly', 'one-time'],
-        required: true
+        type: DataTypes.ENUM('daily', 'weekly', 'one-time'),
+        allowNull: false
     },
-    requirements: [{
-        type: String
-    }],
+    requirements: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
+        defaultValue: []
+    },
     verificationMethod: {
-        type: String,
-        enum: ['automatic', 'manual'],
-        default: 'automatic'
+        type: DataTypes.ENUM('automatic', 'manual'),
+        defaultValue: 'automatic'
     },
     isActive: {
-        type: Boolean,
-        default: true
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
     },
     status: {
-        type: String,
-        enum: ['Active', 'Coming Soon'],
-        default: 'Coming Soon'
+        type: DataTypes.ENUM('Active', 'Coming Soon'),
+        defaultValue: 'Coming Soon'
     },
     startDate: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
     },
     endDate: {
-        type: Date
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.DATE
     }
+}, {
+    timestamps: true
 });
 
-module.exports = mongoose.model('Task', taskSchema);
+module.exports = Task;
