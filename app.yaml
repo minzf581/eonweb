@@ -1,9 +1,10 @@
 runtime: nodejs18
 env: standard
 
-basic_scaling:
-  max_instances: 1
-  idle_timeout: 10m
+instance_class: B1
+
+manual_scaling:
+  instances: 1
 
 vpc_access_connector:
   name: projects/eon-web-445802/locations/asia-southeast2/connectors/vpc-connector
@@ -11,11 +12,12 @@ vpc_access_connector:
 env_variables:
   NODE_ENV: "production"
   PORT: "8080"
-  DB_HOST: "/cloudsql/eon-web-445802:asia-southeast2:eon-db-jakarta"
-  DB_NAME: "eon_protocol"
+  DB_HOST: "/cloudsql/eonhome-445809:asia-southeast2:eon-db"
   DB_USER: "eonuser"
   DB_PASSWORD: "eon-user-2024"
+  DB_NAME: "eon_protocol"
   JWT_SECRET: "your-secret-key"
+  CLOUD_SQL_CONNECTION_NAME: "eonhome-445809:asia-southeast2:eon-db"
 
 beta_settings:
-  cloud_sql_instances: eon-web-445802:asia-southeast2:eon-db-jakarta
+  cloud_sql_instances: eonhome-445809:asia-southeast2:eon-db
