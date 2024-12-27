@@ -203,13 +203,13 @@ class AuthService {
                 headers: response.headers
             });
 
-            const data = await response.json();
-            this.logInfo('Response data:', data);
-
-            if (!data.success) {
-                throw new Error(data.message || 'Request failed');
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || `Request failed with status ${response.status}`);
             }
 
+            const data = await response.json();
+            this.logInfo('Response data:', data);
             return data;
         } catch (error) {
             this.logError('Request failed:', error);
