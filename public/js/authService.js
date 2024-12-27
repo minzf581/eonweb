@@ -411,14 +411,15 @@ class AuthService {
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
 
-            this.logInfo('Login successful:', { email: data.user.email });
+            this.logInfo('Login successful:', { 
+                email: data.user.email,
+                isAdmin: data.user.isAdmin 
+            });
 
             // 根据用户角色重定向
-            if (data.user.isAdmin) {
-                window.location.href = '/admin/';
-            } else {
-                window.location.href = '/dashboard/';
-            }
+            const redirectPath = data.user.isAdmin ? '/admin/' : '/dashboard/';
+            this.logInfo('Redirecting to:', redirectPath);
+            window.location.href = redirectPath;
 
             return data;
         } catch (error) {

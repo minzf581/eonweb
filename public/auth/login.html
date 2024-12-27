@@ -306,7 +306,7 @@
                 showInfo('Login successful, redirecting...');
                 
                 // Determine redirect path based on user role
-                const redirectPath = user.isAdmin ? '/admin/index.html' : '/dashboard/index.html';
+                const redirectPath = user.isAdmin ? '/admin/' : '/dashboard/';
                 window.location.href = redirectPath;
             } catch (error) {
                 console.error('[Login] Login failed:', error);
@@ -331,8 +331,12 @@
                 if (isAuthenticated) {
                     console.log('[Login] User already authenticated, getting user info');
                     const user = await window.authService.getUser();
-                    const redirectPath = user && user.isAdmin ? '/admin/index.html' : '/dashboard/index.html';
-                    console.log('[Login] Redirecting to:', redirectPath);
+                    const redirectPath = user && user.isAdmin ? '/admin/' : '/dashboard/';
+                    console.log('[Login] Redirecting authenticated user:', {
+                        email: user.email,
+                        isAdmin: user.isAdmin,
+                        path: redirectPath
+                    });
                     window.location.href = redirectPath;
                     return;
                 }
