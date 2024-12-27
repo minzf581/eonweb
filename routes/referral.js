@@ -56,13 +56,13 @@ router.get('/', authenticate, async (req, res) => {
             include: [{
                 model: User,
                 as: 'referred',
-                attributes: ['email', 'createdAt']
+                attributes: ['id', 'email', 'createdAt']
             }],
             order: [['createdAt', 'DESC']]
         });
 
         // 检查是否有数据
-        if (!referrals) {
+        if (!referrals || referrals.length === 0) {
             return res.json({
                 success: true,
                 data: {
