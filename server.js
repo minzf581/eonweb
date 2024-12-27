@@ -93,7 +93,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // 受保护的路由
-app.get('/api/tasks', authenticateToken, async (req, res) => {
+app.get('/api/users/tasks', authenticateToken, async (req, res) => {
     try {
         const tasks = await Task.findAll({
             include: [{

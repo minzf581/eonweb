@@ -52,7 +52,7 @@ class Dashboard {
 
     async loadUserList() {
         try {
-            const response = await fetch('/api/users', {
+            const response = await fetch('/api/users/tasks', {
                 headers: {
                     'Authorization': `Bearer ${this.authService.getToken()}`
                 }
@@ -83,7 +83,7 @@ class Dashboard {
 
     async loadTasks() {
         try {
-            const response = await fetch('/api/tasks', {
+            const response = await fetch('/api/users', {
                 headers: {
                     'Authorization': `Bearer ${this.authService.getToken()}`
                 }
@@ -132,7 +132,7 @@ class Dashboard {
 
     async toggleTaskStatus(taskId) {
         try {
-            const response = await fetch(`/api/tasks/${taskId}/toggle`, {
+            const response = await fetch(`/api/users/tasks/${taskId}/toggle`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.authService.getToken()}`
