@@ -3,11 +3,10 @@ require('dotenv').config();
 
 let sequelize;
 
-// 使用 TCP 连接配置
+// 配置数据库连接
 sequelize = new Sequelize({
     dialect: 'postgres',
-    host: process.env.NODE_ENV === 'production' ? '34.81.168.174' : '127.0.0.1',
-    port: 5432,
+    host: '/cloudsql/eonhome-445809:asia-east2:eon-mysql',
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD,
@@ -16,6 +15,9 @@ sequelize = new Sequelize({
         min: 0,
         acquire: 30000,
         idle: 10000
+    },
+    dialectOptions: {
+        socketPath: '/cloudsql/eonhome-445809:asia-east2:eon-mysql'
     },
     logging: console.log
 });
