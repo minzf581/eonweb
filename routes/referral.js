@@ -15,7 +15,7 @@ function generateReferralCode() {
 }
 
 // 获取推荐数据API
-router.get('/api/users/referral', authenticate, async (req, res) => {
+router.get('/api/referral', authenticate, async (req, res) => {
     try {
         const userId = req.user.id;
         
@@ -47,12 +47,12 @@ router.get('/api/users/referral', authenticate, async (req, res) => {
             where: {
                 referrerId: userId
             }
-        });
+        }) || 0; // 如果没有记录，返回0
         
         res.json({
             referralCode: user.referralCode,
             referralCount,
-            totalPoints: totalPoints || 0
+            totalPoints: totalPoints
         });
         
     } catch (error) {
@@ -62,7 +62,7 @@ router.get('/api/users/referral', authenticate, async (req, res) => {
 });
 
 // 验证推荐码
-router.post('/api/users/referral/verify', async (req, res) => {
+router.post('/api/referral/verify', async (req, res) => {
     const { referralCode } = req.body;
     
     try {
