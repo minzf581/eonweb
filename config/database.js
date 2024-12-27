@@ -24,14 +24,27 @@ const config = {
     logging: console.log
 };
 
-// 在生产环境中使用 Cloud SQL
+// 在生产环境中使用 Cloud SQL Unix socket
 if (process.env.NODE_ENV === 'production') {
+    config.host = process.env.DB_HOST;
     config.dialectOptions = {
         socketPath: process.env.DB_HOST
     };
+    console.log('Using Cloud SQL configuration:', {
+        host: config.host,
+        socketPath: config.dialectOptions.socketPath,
+        database: config.database,
+        username: config.username
+    });
 } else {
-    config.host = process.env.DB_HOST || 'localhost';
+    config.host = 'localhost';
     config.port = process.env.DB_PORT || 5432;
+    console.log('Using local configuration:', {
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        username: config.username
+    });
 }
 
 sequelize = new Sequelize(config);
