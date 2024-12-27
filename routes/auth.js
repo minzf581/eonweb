@@ -177,6 +177,49 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// 获取当前用户信息
+router.get('/me', async (req, res) => {
+    try {
+        // 从请求头获取 token
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: 'No token provided'
+            });
+        }
+
+        // 验证 token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // 获取用户信息
+        const user = await User.findOne({
+            where: { id: decoded.id },
+            attributes: ['id', 'email', 'isAdmin', 'points', 'referralCode']
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            user
+        });
+    } catch (error) {
+        console.error('Error getting user info:', error);
+        res.status(401).json({
+            success: false,
+            message: 'Invalid token'
+        });
+    }
+});
+
 // 验证令牌
 router.get('/verify-token', authenticate, async (req, res) => {
     try {

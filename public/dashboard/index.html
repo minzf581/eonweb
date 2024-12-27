@@ -590,10 +590,12 @@
         }
 
         // Start initialization when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeDashboard().catch(error => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await initializeDashboard();
+            } catch (error) {
                 console.error('Failed to initialize dashboard:', error);
-            });
+            }
         });
     </script>
 </body>

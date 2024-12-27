@@ -54,6 +54,23 @@ class AuthService {
     }
 
     getUser() {
+        if (!this._data.token) {
+            return null;
+        }
+
+        if (!this._data.user) {
+            try {
+                const data = await this.makeRequest('/api/auth/me');
+                if (data && data.user) {
+                    this._data.user = data.user;
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                }
+            } catch (error) {
+                this.logError('Failed to fetch user data:', error);
+                return null;
+            }
+        }
+
         return this._data.user;
     }
 
@@ -403,27 +420,24 @@ class AuthService {
     }
 
     async getUser() {
-        if (!this.token) {
+        if (!this._data.token) {
             return null;
         }
 
-        if (this._data.user) {
-            return this._data.user;
-        }
-
-        try {
-            const data = await this.makeRequest('/api/auth/user', {
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
+        if (!this._data.user) {
+            try {
+                const data = await this.makeRequest('/api/auth/me');
+                if (data && data.user) {
+                    this._data.user = data.user;
+                    localStorage.setItem('user', JSON.stringify(data.user));
                 }
-            });
-
-            this._data.user = data.user;
-            return this._data.user;
-        } catch (error) {
-            this.logError('Failed to fetch user data:', error);
-            throw error;
+            } catch (error) {
+                this.logError('Failed to fetch user data:', error);
+                return null;
+            }
         }
+
+        return this._data.user;
     }
 
     setToken(token) {

@@ -7,47 +7,63 @@ if (process.env.NODE_ENV === 'production') {
     require('dotenv').config();
 }
 
-let sequelize;
-
 // 配置数据库连接
 const config = {
-    dialect: 'postgres',
-    database: process.env.DB_NAME || 'eon_protocol',
-    username: process.env.DB_USER || 'eonuser',
-    password: process.env.DB_PASSWORD || 'eonprotocol',
-    pool: {
-        max: 5,
-        min: 0,
-        acquire: 30000,
-        idle: 10000
+    development: {
+        dialect: 'postgres',
+        database: process.env.DB_NAME || 'eon_protocol',
+        username: process.env.DB_USER || 'eonuser',
+        password: process.env.DB_PASSWORD || 'eonprotocol',
+        host: 'localhost',
+        port: process.env.DB_PORT || 5432,
+        pool: {
+            max: 5,
+            min: 0,
+            acquire: 30000,
+            idle: 10000
+        },
+        logging: console.log
     },
-    logging: console.log
+    production: {
+        dialect: 'postgres',
+        database: process.env.DB_NAME || 'eon_protocol',
+        username: process.env.DB_USER || 'eonuser',
+        password: process.env.DB_PASSWORD || 'eonprotocol',
+        host: process.env.DB_HOST,
+        dialectOptions: {
+            socketPath: process.env.DB_HOST
+        },
+        pool: {
+            max: 5,
+            min: 0,
+            acquire: 30000,
+            idle: 10000
+        },
+        logging: console.log
+    }
 };
 
 // 在生产环境中使用 Cloud SQL Unix socket
-if (process.env.NODE_ENV === 'production') {
-    config.host = process.env.DB_HOST;
-    config.dialectOptions = {
-        socketPath: process.env.DB_HOST
-    };
+const env = process.env.NODE_ENV || 'development';
+const currentConfig = config[env];
+
+if (env === 'production') {
     console.log('Using Cloud SQL configuration:', {
-        host: config.host,
-        socketPath: config.dialectOptions.socketPath,
-        database: config.database,
-        username: config.username
+        host: currentConfig.host,
+        socketPath: currentConfig.dialectOptions.socketPath,
+        database: currentConfig.database,
+        username: currentConfig.username
     });
 } else {
-    config.host = 'localhost';
-    config.port = process.env.DB_PORT || 5432;
     console.log('Using local configuration:', {
-        host: config.host,
-        port: config.port,
-        database: config.database,
-        username: config.username
+        host: currentConfig.host,
+        port: currentConfig.port,
+        database: currentConfig.database,
+        username: currentConfig.username
     });
 }
 
-sequelize = new Sequelize(config);
+const sequelize = new Sequelize(currentConfig);
 
 // 测试连接
 const connectWithRetry = async (maxRetries = 5, delay = 5000) => {
@@ -77,3 +93,4 @@ connectWithRetry()
     });
 
 module.exports = sequelize;
+module.exports.config = config; // 导出配置以供 Sequelize CLI 使用
