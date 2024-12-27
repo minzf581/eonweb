@@ -20,17 +20,21 @@ const authRoutes = require('./routes/auth');
 const app = express();
 
 // 中间件
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(compression());
-app.use(express.static(path.join(__dirname, 'public')));
 
 // 请求日志中间件
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
     if (req.method === 'POST') {
-        console.log('Request body:', req.body);
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
     }
     next();
 });
@@ -59,13 +63,16 @@ const authenticateToken = async (req, res, next) => {
     }
 };
 
+// API 路由
+app.use('/api/auth', authRoutes);
+
+// 静态文件
+app.use(express.static(path.join(__dirname, 'public')));
+
 // 基础路由
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-// API 路由
-app.use('/api/auth', authRoutes);
 
 // 受保护的路由
 app.get('/api/users/tasks', authenticateToken, async (req, res) => {
@@ -96,19 +103,15 @@ app.use((err, req, res, next) => {
     });
 });
 
+// 404 处理
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found' });
+});
+
 // 启动服务器
-const PORT = process.env.PORT || 8080;
 async function startServer() {
     try {
-        console.log('Starting server...');
-        console.log('Environment:', process.env.NODE_ENV);
-        console.log('Database config:', {
-            host: process.env.DB_HOST,
-            database: process.env.DB_NAME,
-            username: process.env.DB_USER
-        });
-        
-        // 等待数据库连接
+        // 连接数据库
         await sequelize.authenticate();
         console.log('Database connection has been established successfully.');
         
@@ -116,15 +119,17 @@ async function startServer() {
         await sequelize.sync();
         console.log('Database synchronized');
         
-        // 执行种子
+        // 创建管理员用户
         await seedAdminUser();
+        console.log('Admin user created successfully');
         
         // 启动服务器
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
+        const port = process.env.PORT || 8080;
+        app.listen(port, () => {
+            console.log(`Server running on port ${port}`);
         });
     } catch (error) {
-        console.error('Failed to start server:', error);
+        console.error('Unable to start server:', error);
         process.exit(1);
     }
 }
@@ -138,7 +143,5 @@ process.on('unhandledRejection', (error) => {
 
 process.on('uncaughtException', (error) => {
     console.error('Uncaught exception:', error);
-    setTimeout(() => {
-        process.exit(1);
-    }, 1000);
+    process.exit(1);
 });

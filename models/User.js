@@ -5,7 +5,12 @@ const crypto = require('crypto');
 
 class User extends Model {
     async comparePassword(password) {
-        return bcrypt.compare(password, this.password);
+        try {
+            return await bcrypt.compare(password, this.password);
+        } catch (error) {
+            console.error('Password comparison error:', error);
+            return false;
+        }
     }
 
     toJSON() {
@@ -31,7 +36,14 @@ User.init({
     },
     password: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        set(value) {
+            // 只在密码发生变化时才进行哈希
+            if (value) {
+                const salt = bcrypt.genSaltSync(10);
+                this.setDataValue('password', bcrypt.hashSync(value, salt));
+            }
+        }
     },
     referralCode: {
         type: DataTypes.STRING,
@@ -57,20 +69,13 @@ User.init({
     modelName: 'User',
     hooks: {
         beforeCreate: async (user) => {
-            if (user.password) {
-                const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(user.password, salt);
-            }
             // 生成唯一的推荐码
             if (!user.referralCode) {
                 user.referralCode = crypto.randomBytes(4).toString('hex');
             }
         },
         beforeUpdate: async (user) => {
-            if (user.changed('password')) {
-                const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(user.password, salt);
-            }
+            // 不需要在这里进行密码哈希，因为已经在 setter 中处理了
         }
     }
 });

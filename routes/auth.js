@@ -9,13 +9,16 @@ const authenticate = require('../middleware/auth');
 
 // 注册
 router.post('/register', async (req, res) => {
-    const { email, password, referralCode } = req.body;
+    const { email, password } = req.body;
     
     try {
+        console.log('Registration attempt for:', email);
+        
         // 检查邮箱是否已存在
         const existingUser = await User.findOne({ where: { email } });
         
         if (existingUser) {
+            console.log('Email already exists:', email);
             return res.status(400).json({ error: 'Email already exists' });
         }
         
@@ -23,28 +26,10 @@ router.post('/register', async (req, res) => {
         const newUser = await User.create({
             email,
             password,
-            referralCode: crypto.randomBytes(4).toString('hex')  // 为新用户生成唯一推荐码
+            referralCode: crypto.randomBytes(4).toString('hex')
         });
         
-        // 如果提供了推荐码，处理推荐关系
-        if (referralCode) {
-            // 查找推荐人
-            const referrer = await User.findOne({ where: { referralCode } });
-            if (referrer) {
-                // 更新被推荐用户的推荐人ID
-                await newUser.update({ referredBy: referrer.id });
-                
-                // 给推荐人增加积分
-                await referrer.increment('points', { by: 100 });  // 推荐人获得100积分
-                
-                // 给新用户增加积分
-                await newUser.increment('points', { by: 50 });   // 新用户获得50积分
-                
-                console.log(`User ${referrer.email} successfully referred ${newUser.email}`);
-            } else {
-                console.warn('Invalid referral code used:', referralCode);
-            }
-        }
+        console.log('User created successfully:', email);
         
         // 生成JWT token
         const token = jwt.sign(
@@ -53,13 +38,17 @@ router.post('/register', async (req, res) => {
             { expiresIn: '24h' }
         );
         
+        // 返回用户信息（不包含密码）
+        const userResponse = newUser.toJSON();
+        
         res.status(201).json({
             message: 'User registered successfully',
             token,
-            user: { id: newUser.id, email: newUser.email }
+            user: userResponse
         });
     } catch (error) {
         console.error('Error in registration:', error);
+        console.error('Stack trace:', error.stack);
         res.status(500).json({ error: 'Registration failed: ' + error.message });
     }
 });
@@ -69,10 +58,18 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     try {
-        console.log('Login attempt for email:', email);
+        console.log('Login attempt for:', email);
+        
+        if (!email || !password) {
+            console.log('Missing credentials');
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
         
         // 查找用户
-        const user = await User.findOne({ where: { email } });
+        const user = await User.findOne({ 
+            where: { email },
+            attributes: ['id', 'email', 'password', 'isAdmin'] // 只选择需要的字段
+        });
         
         if (!user) {
             console.log('User not found:', email);
@@ -82,6 +79,7 @@ router.post('/login', async (req, res) => {
         // 验证密码
         console.log('Verifying password for user:', email);
         const validPassword = await user.comparePassword(password);
+        
         if (!validPassword) {
             console.log('Invalid password for user:', email);
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -96,14 +94,21 @@ router.post('/login', async (req, res) => {
             { expiresIn: '24h' }
         );
         
+        // 返回用户信息（不包含密码）
+        const userResponse = user.toJSON();
+        delete userResponse.password;
+        
         res.json({
             token,
-            user: { id: user.id, email: user.email }
+            user: userResponse
         });
     } catch (error) {
         console.error('Error in login:', error);
         console.error('Stack trace:', error.stack);
-        res.status(500).json({ error: 'Login failed: ' + error.message });
+        res.status(500).json({ 
+            error: 'Login failed',
+            message: error.message
+        });
     }
 });
 
