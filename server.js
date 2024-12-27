@@ -90,8 +90,7 @@ async function startServer() {
         console.log('Starting server...');
         console.log('Environment:', process.env.NODE_ENV);
         console.log('Database config:', {
-            host: process.env.NODE_ENV === 'production' ? '34.81.168.174' : '127.0.0.1',
-            port: 5432,
+            host: process.env.DB_HOST,
             database: process.env.DB_NAME,
             username: process.env.DB_USER
         });
