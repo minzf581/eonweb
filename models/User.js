@@ -51,18 +51,13 @@ User.init({
     modelName: 'User',
     hooks: {
         beforeCreate: async (user) => {
-            // Hash password
             if (user.password) {
                 const salt = await bcrypt.genSalt(10);
                 user.password = await bcrypt.hash(user.password, salt);
             }
-            
-            // Generate unique referral code
+            // 生成唯一的推荐码
             if (!user.referralCode) {
-                const generateCode = () => {
-                    return crypto.randomBytes(3).toString('hex').toUpperCase();
-                };
-                user.referralCode = generateCode();
+                user.referralCode = crypto.randomBytes(4).toString('hex');
             }
         },
         beforeUpdate: async (user) => {
