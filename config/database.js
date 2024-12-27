@@ -3,43 +3,22 @@ require('dotenv').config();
 
 let sequelize;
 
-if (process.env.NODE_ENV === 'production') {
-    // 生产环境使用 Unix socket 连接
-    sequelize = new Sequelize({
-        dialect: 'postgres',
-        host: '/cloudsql/eonhome-445809:asia-east1:eonhome',
-        database: process.env.DB_NAME || 'eon_protocol',
-        username: process.env.DB_USER || 'eonuser',
-        password: process.env.DB_PASSWORD,
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        },
-        dialectOptions: {
-            socketPath: '/cloudsql/eonhome-445809:asia-east1:eonhome'
-        },
-        logging: console.log
-    });
-} else {
-    // 开发环境使用 TCP 连接（通过 Cloud SQL Proxy）
-    sequelize = new Sequelize({
-        dialect: 'postgres',
-        host: '127.0.0.1',
-        port: 5432,
-        database: process.env.DB_NAME || 'eon_protocol',
-        username: process.env.DB_USER || 'eonuser',
-        password: process.env.DB_PASSWORD,
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        },
-        logging: console.log
-    });
-}
+// 使用 TCP 连接配置
+sequelize = new Sequelize({
+    dialect: 'postgres',
+    host: process.env.NODE_ENV === 'production' ? '34.81.168.174' : '127.0.0.1',
+    port: 5432,
+    database: process.env.DB_NAME || 'eon_protocol',
+    username: process.env.DB_USER || 'eonuser',
+    password: process.env.DB_PASSWORD,
+    pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+    },
+    logging: console.log
+});
 
 // 测试连接
 const connectWithRetry = async (maxRetries = 5, delay = 5000) => {
