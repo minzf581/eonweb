@@ -306,7 +306,7 @@
                 showInfo('Login successful, redirecting...');
                 
                 // Determine redirect path based on user role
-                const redirectPath = user.role === 'admin' ? '/admin/index.html' : '/dashboard/index.html';
+                const redirectPath = user.isAdmin ? '/admin/index.html' : '/dashboard/index.html';
                 window.location.href = redirectPath;
             } catch (error) {
                 console.error('[Login] Login failed:', error);
@@ -329,8 +329,11 @@
                 // Check if user is already logged in
                 const isAuthenticated = await window.authService.verifyToken();
                 if (isAuthenticated) {
-                    console.log('[Login] User already authenticated, redirecting to dashboard');
-                    window.location.href = '/dashboard/index.html';
+                    console.log('[Login] User already authenticated, getting user info');
+                    const user = await window.authService.getUser();
+                    const redirectPath = user && user.isAdmin ? '/admin/index.html' : '/dashboard/index.html';
+                    console.log('[Login] Redirecting to:', redirectPath);
+                    window.location.href = redirectPath;
                     return;
                 }
 
