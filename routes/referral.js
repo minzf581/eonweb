@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const { User, PointHistory, Referral } = require('../models');
+const { Op } = require('sequelize');
 const authenticate = require('../middleware/auth');
 
 // 生成推荐码
@@ -19,24 +20,17 @@ router.get('/api/users/referral', authenticate, async (req, res) => {
         const userId = req.user.id;
         
         // 获取用户的推荐码
-        const user = await db.query(
-            'SELECT referral_code FROM users WHERE id = $1',
-            [userId]
-        );
+        let user = await User.findByPk(userId);
         
         // 如果用户没有推荐码，生成一个
-        let referralCode = user.rows[0]?.referral_code;
-        if (!referralCode) {
+        if (!user.referralCode) {
             do {
-                referralCode = generateReferralCode();
+                const code = generateReferralCode();
                 try {
-                    await db.query(
-                        'UPDATE users SET referral_code = $1 WHERE id = $2',
-                        [referralCode, userId]
-                    );
+                    await user.update({ referralCode: code });
                     break;
                 } catch (err) {
-                    if (err.code === '23505') { // 唯一约束冲突
+                    if (err.name === 'SequelizeUniqueConstraintError') {
                         continue; // 重新生成
                     }
                     throw err;
@@ -45,19 +39,22 @@ router.get('/api/users/referral', authenticate, async (req, res) => {
         }
         
         // 获取推荐统计
-        const stats = await db.query(`
-            SELECT 
-                COUNT(DISTINCT referred_id) as referral_count,
-                COALESCE(SUM(points_earned), 0) as total_points
-            FROM referrals 
-            WHERE referrer_id = $1
-        `, [userId]);
+        const referralCount = await Referral.count({
+            where: { referrerId: userId }
+        });
+        
+        const totalPoints = await Referral.sum('pointsEarned', {
+            where: {
+                referrerId: userId
+            }
+        });
         
         res.json({
-            referralCode,
-            referralCount: stats.rows[0].referral_count || 0,
-            referralPoints: stats.rows[0].total_points || 0
+            referralCode: user.referralCode,
+            referralCount,
+            totalPoints: totalPoints || 0
         });
+        
     } catch (error) {
         console.error('Error in /api/users/referral:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -69,12 +66,11 @@ router.post('/api/users/referral/verify', async (req, res) => {
     const { referralCode } = req.body;
     
     try {
-        const referrer = await db.query(
-            'SELECT id, username FROM users WHERE referral_code = $1',
-            [referralCode]
-        );
+        const referrer = await User.findOne({
+            where: { referralCode }
+        });
         
-        if (referrer.rows.length === 0) {
+        if (!referrer) {
             return res.status(404).json({ error: 'Invalid referral code' });
         }
         
@@ -89,16 +85,15 @@ router.post('/api/users/referral/verify', async (req, res) => {
 async function processReferral(userId, referralCode) {
     try {
         // 查找推荐人
-        const referrer = await db.query(
-            'SELECT id FROM users WHERE referral_code = $1',
-            [referralCode]
-        );
+        const referrer = await User.findOne({
+            where: { referralCode }
+        });
         
-        if (referrer.rows.length === 0) {
+        if (!referrer) {
             return false;
         }
 
-        const referrerId = referrer.rows[0].id;
+        const referrerId = referrer.id;
         
         // 确保不能自己推荐自己
         if (referrerId === userId) {
@@ -106,16 +101,14 @@ async function processReferral(userId, referralCode) {
         }
         
         // 添加推荐记录
-        await db.query(
-            'INSERT INTO referrals (referrer_id, referred_id, points_earned) VALUES ($1, $2, $3)',
-            [referrerId, userId, 100] // 每次推荐奖励100积分
-        );
+        await Referral.create({
+            referrerId,
+            referredId: userId,
+            pointsEarned: 100 // 每次推荐奖励100积分
+        });
         
         // 更新推荐人的积分
-        await db.query(
-            'UPDATE users SET points = points + $1 WHERE id = $2',
-            [100, referrerId]
-        );
+        await User.increment('points', { by: 100, where: { id: referrerId } });
         
         return true;
     } catch (error) {

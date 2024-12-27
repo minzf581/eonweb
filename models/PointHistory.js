@@ -1,7 +1,14 @@
-const { DataTypes } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const PointHistory = sequelize.define('PointHistory', {
+class PointHistory extends Model {}
+
+PointHistory.init({
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -15,16 +22,15 @@ const PointHistory = sequelize.define('PointHistory', {
         allowNull: false
     },
     type: {
-        type: DataTypes.ENUM('earned', 'referral', 'bonus', 'deducted'),
+        type: DataTypes.ENUM('referral', 'task', 'bonus'),
         allowNull: false
     },
     description: {
-        type: DataTypes.STRING,
-        allowNull: false
+        type: DataTypes.STRING
     }
 }, {
-    timestamps: true,
-    updatedAt: false
+    sequelize,
+    modelName: 'PointHistory'
 });
 
 module.exports = PointHistory;

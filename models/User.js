@@ -1,9 +1,20 @@
-const { DataTypes } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
-const User = sequelize.define('User', {
+class User extends Model {
+    async comparePassword(password) {
+        return bcrypt.compare(password, this.password);
+    }
+}
+
+User.init({
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     email: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -16,22 +27,28 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: false
     },
-    isAdmin: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    points: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
     referralCode: {
         type: DataTypes.STRING,
         unique: true
     },
     referredBy: {
-        type: DataTypes.STRING
+        type: DataTypes.INTEGER,
+        references: {
+            model: 'Users',
+            key: 'id'
+        }
+    },
+    points: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    isAdmin: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
 }, {
+    sequelize,
+    modelName: 'User',
     hooks: {
         beforeCreate: async (user) => {
             // Hash password
@@ -47,13 +64,14 @@ const User = sequelize.define('User', {
                 };
                 user.referralCode = generateCode();
             }
+        },
+        beforeUpdate: async (user) => {
+            if (user.changed('password')) {
+                const salt = await bcrypt.genSalt(10);
+                user.password = await bcrypt.hash(user.password, salt);
+            }
         }
     }
 });
-
-// Instance method to compare password
-User.prototype.comparePassword = async function(candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
-};
 
 module.exports = User;
