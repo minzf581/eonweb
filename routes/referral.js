@@ -55,15 +55,15 @@ router.get('/', authenticate, async (req, res) => {
             where: { referrerId: userId },
             include: [{
                 model: User,
-                as: 'referred',
+                as: 'referee', // 更新关联名称
                 attributes: ['email', 'createdAt']
             }],
             order: [['createdAt', 'DESC']]
         });
 
         const referredUsers = referrals.map(ref => ({
-            email: ref.referred.email,
-            joinedAt: ref.referred.createdAt,
+            email: ref.referee.email, // 更新关联名称
+            joinedAt: ref.referee.createdAt, // 更新关联名称
             pointsEarned: ref.pointsEarned
         }));
 

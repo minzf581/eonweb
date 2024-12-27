@@ -33,7 +33,7 @@ PointHistory.belongsTo(User, {
 // Referral relationships
 User.hasMany(Referral, {
     foreignKey: 'referrerId',
-    as: 'referrals'
+    as: 'referralsGiven'  
 });
 Referral.belongsTo(User, {
     foreignKey: 'referrerId',
@@ -42,7 +42,7 @@ Referral.belongsTo(User, {
 
 User.hasOne(Referral, {
     foreignKey: 'referredId',
-    as: 'referredBy'
+    as: 'referralReceived'  
 });
 Referral.belongsTo(User, {
     foreignKey: 'referredId',
