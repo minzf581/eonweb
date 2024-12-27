@@ -1,12 +1,18 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
+
+// 加载环境变量
+if (process.env.NODE_ENV === 'production') {
+    require('dotenv').config({ path: '.env.production' });
+} else {
+    require('dotenv').config();
+}
 
 let sequelize;
 
 // 配置数据库连接
 sequelize = new Sequelize({
     dialect: 'postgres',
-    host: '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
+    host: process.env.DB_HOST,
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD,
@@ -17,7 +23,7 @@ sequelize = new Sequelize({
         idle: 10000
     },
     dialectOptions: {
-        socketPath: '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
+        socketPath: process.env.DB_HOST
     },
     logging: console.log
 });
