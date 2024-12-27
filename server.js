@@ -16,6 +16,9 @@ const sequelize = require('./config/database');
 const seedAdminUser = require('./seeders/adminUser');
 const { User, Task, UserTask, PointHistory, Settings } = require('./models');
 const authRoutes = require('./routes/auth');
+const { router: referralRoutes } = require('./routes/referral');
+const tasksRoutes = require('./routes/tasks');
+const statsRoutes = require('./routes/stats');
 
 const app = express();
 
@@ -50,8 +53,8 @@ const authenticateToken = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findByPk(decoded.userId);
-        
+        const user = await User.findByPk(decoded.id);
+
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
         }
@@ -59,89 +62,52 @@ const authenticateToken = async (req, res, next) => {
         req.user = user;
         next();
     } catch (error) {
+        console.error('Authentication error:', error);
         return res.status(401).json({ error: 'Invalid token' });
     }
 };
 
 // API 路由
 app.use('/api/auth', authRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/stats', statsRoutes);
 
 // 静态文件
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 基础路由
-app.get('/', (req, res) => {
+// 处理前端路由
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// 受保护的路由
-app.get('/api/users/tasks', authenticateToken, async (req, res) => {
+// 数据库同步和服务器启动
+const startServer = async () => {
     try {
-        const tasks = await Task.findAll({
-            include: [{
-                model: UserTask,
-                as: 'userTasks',
-                where: { userId: req.user.id },
-                required: false
-            }]
-        });
-        res.json(tasks);
-    } catch (error) {
-        console.error('Error fetching tasks:', error);
-        res.status(500).json({ error: 'Failed to fetch tasks' });
-    }
-});
-
-// 错误处理中间件
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    console.error('Stack:', err.stack);
-    res.status(500).json({
-        error: 'Internal Server Error',
-        message: err.message,
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
-});
-
-// 404 处理
-app.use((req, res) => {
-    res.status(404).json({ error: 'Not Found' });
-});
-
-// 启动服务器
-async function startServer() {
-    try {
-        // 连接数据库
-        await sequelize.authenticate();
-        console.log('Database connection has been established successfully.');
-        
-        // 同步数据库模型
+        // 同步数据库
         await sequelize.sync();
         console.log('Database synchronized');
-        
+
         // 创建管理员用户
         await seedAdminUser();
         console.log('Admin user created successfully');
-        
+
         // 启动服务器
-        const port = process.env.PORT || 8080;
+        const port = process.env.PORT || 8081;
         app.listen(port, () => {
             console.log(`Server running on port ${port}`);
         });
     } catch (error) {
-        console.error('Unable to start server:', error);
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
-}
+};
 
 startServer();
 
 // 错误处理
 process.on('unhandledRejection', (error) => {
-    console.error('Unhandled rejection:', error);
+    console.error('Unhandled promise rejection:', error);
 });
 
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught exception:', error);
-    process.exit(1);
-});
+module.exports = app;
