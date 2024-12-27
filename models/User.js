@@ -85,17 +85,27 @@ User.init({
     sequelize,
     modelName: 'User',
     hooks: {
-        beforeCreate: async (user) => {
-            try {
-                console.log('Before create hook...');
-                if (!user.referralCode) {
-                    user.referralCode = crypto.randomBytes(4).toString('hex');
-                    console.log('Generated referral code:', user.referralCode);
+        async beforeCreate(user) {
+            // Generate a unique referral code
+            const generateReferralCode = () => {
+                // Generate a 8-character random string
+                return crypto.randomBytes(4).toString('hex').toUpperCase();
+            };
+
+            // Keep trying until we get a unique code
+            let referralCode;
+            let isUnique = false;
+            while (!isUnique) {
+                referralCode = generateReferralCode();
+                // Check if this code already exists
+                const existingUser = await User.findOne({ where: { referralCode } });
+                if (!existingUser) {
+                    isUnique = true;
                 }
-            } catch (error) {
-                console.error('Error in beforeCreate hook:', error);
-                throw error;
             }
+
+            // Set the unique referral code
+            user.referralCode = referralCode;
         }
     }
 });

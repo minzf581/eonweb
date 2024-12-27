@@ -55,10 +55,11 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await User.create({
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            referredBy: referralCode // Store the referral code used during registration
         });
 
-        // 处理推荐码
+        // 处理推荐码关系
         if (referralCode) {
             await processReferral(user.id, referralCode);
         }
