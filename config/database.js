@@ -12,14 +12,15 @@ let sequelize;
 // 配置数据库连接
 if (process.env.NODE_ENV === 'production') {
     // App Engine 环境配置
+    const socketPath = '/cloudsql/eonhome-445809:asia-southeast2:eon-db';
     sequelize = new Sequelize({
         dialect: 'postgres',
-        host: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
+        host: socketPath,
         database: process.env.DB_NAME || 'eon_protocol',
         username: process.env.DB_USER || 'eonuser',
         password: process.env.DB_PASSWORD || 'eon-user-2024',
         dialectOptions: {
-            socketPath: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
+            socketPath: socketPath
         },
         pool: {
             max: 5,
