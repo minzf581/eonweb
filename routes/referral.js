@@ -55,15 +55,28 @@ router.get('/', authenticate, async (req, res) => {
             where: { referrerId: userId },
             include: [{
                 model: User,
-                as: 'referee', // 更新关联名称
+                as: 'referred',
                 attributes: ['email', 'createdAt']
             }],
             order: [['createdAt', 'DESC']]
         });
 
+        // 检查是否有数据
+        if (!referrals) {
+            return res.json({
+                success: true,
+                data: {
+                    referralCode: user.referralCode,
+                    referralCount: 0,
+                    totalPoints: 0,
+                    referredUsers: []
+                }
+            });
+        }
+
         const referredUsers = referrals.map(ref => ({
-            email: ref.referee.email, // 更新关联名称
-            joinedAt: ref.referee.createdAt, // 更新关联名称
+            email: ref.referred.email,
+            joinedAt: ref.referred.createdAt,
             pointsEarned: ref.pointsEarned
         }));
 
@@ -89,6 +102,10 @@ router.get('/', authenticate, async (req, res) => {
 // 处理推荐逻辑
 async function processReferral(userId, referralCode) {
     try {
+        if (!referralCode) {
+            throw new Error('Referral code is required');
+        }
+
         // 查找推荐人
         const referrer = await User.findOne({
             where: { referralCode }
@@ -112,13 +129,14 @@ async function processReferral(userId, referralCode) {
         }
 
         // 创建推荐记录
-        await Referral.create({
+        const referral = await Referral.create({
             referrerId: referrer.id,
             referredId: userId,
-            status: 'pending'
+            status: 'pending',
+            pointsEarned: 0 // 初始积分为0，等待完成任务后再奖励
         });
 
-        return true;
+        return referral;
     } catch (error) {
         console.error('Error processing referral:', error);
         throw error;

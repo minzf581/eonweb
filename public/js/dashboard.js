@@ -5,19 +5,23 @@ class Dashboard {
     }
 
     async init() {
-        // 检查用户是否已登录
-        if (!this.authService.isAuthenticated()) {
-            this.authService.handleAuthRedirect();
-            return;
+        try {
+            // 检查用户是否已登录
+            if (!this.authService.isAuthenticated()) {
+                this.authService.handleAuthRedirect();
+                return;
+            }
+            
+            await this.loadUserInfo();
+            await Promise.all([
+                this.loadTasks(),
+                this.loadReferralData()
+            ]);
+            this.setupEventListeners();
+            this.showDashboard();
+        } catch (error) {
+            console.error('Error initializing dashboard:', error);
         }
-        
-        await this.loadUserInfo();
-        if (this.authService.isAdmin()) {
-            await this.loadUserList();
-            await this.loadTasks();
-        }
-        this.setupEventListeners();
-        this.showDashboard();
     }
 
     async loadUserInfo() {
@@ -48,44 +52,31 @@ class Dashboard {
         document.getElementById('userSearch')?.addEventListener('input', (e) => {
             this.filterUsers(e.target.value);
         });
-    }
 
-    async loadUserList() {
-        try {
-            const response = await fetch('/api/users/tasks', {
-                headers: {
-                    'Authorization': `Bearer ${this.authService.getToken()}`
+        // 任务相关事件
+        const taskList = document.getElementById('taskList');
+        if (taskList) {
+            taskList.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.matches('.start-task-btn')) {
+                    const taskId = target.dataset.taskId;
+                    this.startTask(taskId);
                 }
             });
-            
-            if (!response.ok) {
-                throw new Error('Failed to load users');
-            }
-
-            const users = await response.json();
-            const userList = document.getElementById('userList');
-            if (!userList) return;
-
-            userList.innerHTML = users.map(user => `
-                <tr>
-                    <td>${user._id}</td>
-                    <td>${user.email}</td>
-                    <td>${user.points || 0}</td>
-                    <td>${user.referralCode || 'N/A'}</td>
-                    <td>${user.status || 'Active'}</td>
-                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
-                </tr>
-            `).join('');
-        } catch (error) {
-            console.error('Error loading user list:', error);
         }
     }
 
     async loadTasks() {
         try {
-            const response = await fetch('/api/users', {
+            console.log('Loading tasks...');
+            const token = this.authService.getToken();
+            if (!token) {
+                throw new Error('No auth token available');
+            }
+
+            const response = await fetch('/api/tasks', {
                 headers: {
-                    'Authorization': `Bearer ${this.authService.getToken()}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
@@ -93,46 +84,107 @@ class Dashboard {
                 throw new Error('Failed to load tasks');
             }
 
-            const tasks = await response.json();
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to load tasks');
+            }
+
+            const tasks = result.data;
+            console.log('Tasks loaded:', tasks);
+
             const taskList = document.getElementById('taskList');
-            if (!taskList) return;
+            if (!taskList) {
+                console.warn('Task list element not found');
+                return;
+            }
 
             taskList.innerHTML = tasks.map(task => `
-                <tr>
-                    <td>${task.title}</td>
-                    <td>${task.description}</td>
-                    <td>${task.points}</td>
-                    <td>
-                        <span class="status ${task.status.toLowerCase()}">${task.status}</span>
-                    </td>
-                    <td>
-                        <button class="btn-icon" onclick="toggleTaskStatus('${task._id}')">
-                            ${task.status === 'Active' ? '⏸️' : '▶️'}
-                        </button>
-                    </td>
-                </tr>
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <h3>${task.title}</h3>
+                    <p>${task.description}</p>
+                    <div class="task-meta">
+                        <span class="points">🏆 ${task.points} points</span>
+                        <span class="type">${task.type}</span>
+                    </div>
+                    ${task.completed 
+                        ? `<span class="completed-badge">✅ Completed</span>`
+                        : `<button class="start-task-btn" data-task-id="${task.id}">Start Task</button>`
+                    }
+                </div>
             `).join('');
         } catch (error) {
             console.error('Error loading tasks:', error);
+            throw error;
         }
     }
 
-    filterUsers(query) {
-        const userList = document.getElementById('userList');
-        if (!userList) return;
-
-        const rows = userList.getElementsByTagName('tr');
-        query = query.toLowerCase();
-
-        for (const row of rows) {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(query) ? '' : 'none';
-        }
-    }
-
-    async toggleTaskStatus(taskId) {
+    async loadReferralData() {
         try {
-            const response = await fetch(`/api/users/tasks/${taskId}/toggle`, {
+            console.log('Loading referral data...');
+            const token = this.authService.getToken();
+            if (!token) {
+                throw new Error('No auth token available');
+            }
+
+            const response = await fetch('/api/referral', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to load referral data');
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to load referral data');
+            }
+
+            const data = result.data;
+            console.log('Referral data loaded:', data);
+
+            // 更新推荐码显示
+            const referralCodeElement = document.getElementById('referralCode');
+            if (referralCodeElement) {
+                referralCodeElement.textContent = data.referralCode || 'Not available';
+            }
+
+            // 更新推荐统计
+            const statsElement = document.getElementById('referralStats');
+            if (statsElement) {
+                statsElement.innerHTML = `
+                    <div class="stat-item">
+                        <span class="stat-label">Total Referrals</span>
+                        <span class="stat-value">${data.referralCount}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Points</span>
+                        <span class="stat-value">${data.totalPoints}</span>
+                    </div>
+                `;
+            }
+
+            // 更新推荐用户列表
+            const userListElement = document.getElementById('referredUsers');
+            if (userListElement && data.referredUsers) {
+                userListElement.innerHTML = data.referredUsers.map(user => `
+                    <div class="referred-user">
+                        <span class="user-email">${user.email}</span>
+                        <span class="join-date">Joined: ${new Date(user.joinedAt).toLocaleDateString()}</span>
+                        <span class="points-earned">Points: ${user.pointsEarned}</span>
+                    </div>
+                `).join('') || '<p>No referrals yet</p>';
+            }
+        } catch (error) {
+            console.error('Error loading referral data:', error);
+            throw error;
+        }
+    }
+
+    async startTask(taskId) {
+        try {
+            const response = await fetch(`/api/tasks/${taskId}/start`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.authService.getToken()}`
@@ -140,283 +192,23 @@ class Dashboard {
             });
             
             if (!response.ok) {
-                throw new Error('Failed to toggle task status');
+                throw new Error('Failed to start task');
             }
 
-            // 重新加载任务列表
-            await this.loadTasks();
+            const result = await response.json();
+            if (result.success) {
+                // 重新加载任务列表以更新状态
+                await this.loadTasks();
+            } else {
+                throw new Error(result.message || 'Failed to start task');
+            }
         } catch (error) {
-            console.error('Error toggling task status:', error);
+            console.error('Error starting task:', error);
+            // 显示错误消息给用户
+            alert('Failed to start task: ' + error.message);
         }
     }
 }
 
-// Admin action functions
-function openNewTaskModal() {
-    const modalHtml = `
-        <div class="modal" id="newTaskModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Create New Task</h2>
-                    <button class="modal-close" onclick="closeModal('newTaskModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label>Task ID</label>
-                    <input type="number" id="taskId" min="1" placeholder="Enter task ID (positive integer)">
-                    <span class="error-message" id="taskIdError"></span>
-                </div>
-                <div class="form-group">
-                    <label>Task Name</label>
-                    <input type="text" id="taskName" placeholder="Enter task name">
-                    <span class="error-message" id="taskNameError"></span>
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="taskDescription" placeholder="Enter task description"></textarea>
-                    <span class="error-message" id="taskDescriptionError"></span>
-                </div>
-                <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeModal('newTaskModal')">Cancel</button>
-                    <button class="btn-primary" onclick="validateAndSaveTask()">Create Task</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    document.getElementById('newTaskModal').style.display = 'block';
-}
-
-function validateAndSaveTask() {
-    // 重置所有错误消息
-    clearErrors();
-
-    let hasError = false;
-    const taskId = document.getElementById('taskId').value;
-    const taskName = document.getElementById('taskName').value.trim();
-    const taskDescription = document.getElementById('taskDescription').value.trim();
-
-    // 验证 Task ID
-    if (!taskId) {
-        showError('taskIdError', 'Task ID is required');
-        hasError = true;
-    } else if (!Number.isInteger(Number(taskId)) || Number(taskId) <= 0) {
-        showError('taskIdError', 'Task ID must be a positive integer');
-        hasError = true;
-    }
-
-    // 验证 Task Name
-    if (!taskName) {
-        showError('taskNameError', 'Task name is required');
-        hasError = true;
-    }
-
-    // 验证 Description
-    if (!taskDescription) {
-        showError('taskDescriptionError', 'Description is required');
-        hasError = true;
-    }
-
-    // 如果没有错误，保存任务
-    if (!hasError) {
-        saveNewTask();
-    }
-}
-
-function showError(elementId, message) {
-    const errorElement = document.getElementById(elementId);
-    if (errorElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-    }
-}
-
-function clearErrors() {
-    const errorElements = document.querySelectorAll('.error-message');
-    errorElements.forEach(element => {
-        element.textContent = '';
-        element.style.display = 'none';
-    });
-}
-
-function editTask(taskId) {
-    // 编辑任务的模态框
-    const modalHtml = `
-        <div class="modal" id="editTaskModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Edit Task</h2>
-                    <button class="modal-close" onclick="closeModal('editTaskModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label>Task Name</label>
-                    <input type="text" id="editTaskName" value="Bandwidth Sharing">
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="editTaskDescription">Share bandwidth to support AI data collection</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Points Rate</label>
-                    <input type="number" id="editPointsRate" value="10">
-                </div>
-                <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeModal('editTaskModal')">Cancel</button>
-                    <button class="btn-primary" onclick="saveTaskEdit('${taskId}')">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    document.getElementById('editTaskModal').style.display = 'block';
-}
-
-function toggleTaskStatus(taskId) {
-    const statusSpan = event.target.closest('tr').querySelector('.status');
-    if (statusSpan.textContent === 'Active') {
-        statusSpan.textContent = 'Paused';
-        statusSpan.className = 'status paused';
-        event.target.textContent = '▶️';
-    } else {
-        statusSpan.textContent = 'Active';
-        statusSpan.className = 'status active';
-        event.target.textContent = '⏸️';
-    }
-}
-
-function deleteTask(taskId) {
-    if (confirm('Are you sure you want to delete this task?')) {
-        event.target.closest('tr').remove();
-    }
-}
-
-function editUser(userId) {
-    const modalHtml = `
-        <div class="modal" id="editUserModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Edit User</h2>
-                    <button class="modal-close" onclick="closeModal('editUserModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" id="editUserName" value="John Doe">
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="editUserEmail" value="john@example.com">
-                </div>
-                <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeModal('editUserModal')">Cancel</button>
-                    <button class="btn-primary" onclick="saveUserEdit('${userId}')">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    document.getElementById('editUserModal').style.display = 'block';
-}
-
-function adjustPoints(userId) {
-    const modalHtml = `
-        <div class="modal" id="adjustPointsModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Adjust Points</h2>
-                    <button class="modal-close" onclick="closeModal('adjustPointsModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label>Points Adjustment</label>
-                    <input type="number" id="pointsAdjustment" placeholder="Enter points (positive or negative)">
-                </div>
-                <div class="form-group">
-                    <label>Reason</label>
-                    <textarea id="adjustmentReason" placeholder="Enter reason for adjustment"></textarea>
-                </div>
-                <div class="form-actions">
-                    <button class="btn-secondary" onclick="closeModal('adjustPointsModal')">Cancel</button>
-                    <button class="btn-primary" onclick="savePointsAdjustment('${userId}')">Save</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    document.getElementById('adjustPointsModal').style.display = 'block';
-}
-
-// Helper functions
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    modal.remove();
-}
-
-function saveNewTask() {
-    const id = document.getElementById('taskId').value;
-    const name = document.getElementById('taskName').value.trim();
-    const description = document.getElementById('taskDescription').value.trim();
-
-    const newRow = `
-        <tr>
-            <td>${id}</td>
-            <td>${name}</td>
-            <td>${description}</td>
-            <td>0</td>
-            <td><span class="status active">Active</span></td>
-            <td>
-                <button class="btn-icon" onclick="editTask('${id}')">✏️</button>
-                <button class="btn-icon" onclick="toggleTaskStatus('${id}')">⏸️</button>
-                <button class="btn-icon" onclick="deleteTask('${id}')">🗑️</button>
-            </td>
-        </tr>
-    `;
-    document.getElementById('taskManagementList').insertAdjacentHTML('beforeend', newRow);
-    closeModal('newTaskModal');
-}
-
-// Logout function
-function logout() {
-    window.authService.logout();
-}
-
 // Initialize dashboard
 const dashboard = new Dashboard();
-
-// Add these functions for user dashboard functionality
-function startTask(taskId) {
-    const button = event.target;
-    const statusSpan = button.closest('tr').querySelector('.status');
-    
-    if (statusSpan.textContent === 'Not Started') {
-        statusSpan.textContent = 'Running';
-        statusSpan.className = 'status active';
-        button.textContent = 'Stop Task';
-        
-        // Add points history entry
-        addPointsHistoryEntry(taskId, 'Bandwidth Sharing', 'Running');
-    } else {
-        statusSpan.textContent = 'Not Started';
-        statusSpan.className = 'status inactive';
-        button.textContent = 'Start Task';
-        
-        // Add points history entry
-        addPointsHistoryEntry(taskId, 'Bandwidth Sharing', 'Stopped');
-    }
-}
-
-function addPointsHistoryEntry(taskId, taskName, status) {
-    const now = new Date();
-    const dateStr = now.toLocaleString();
-    const points = status === 'Running' ? '+0' : '0';
-    
-    const newRow = `
-        <tr>
-            <td>${dateStr}</td>
-            <td>${taskId}</td>
-            <td>${taskName}</td>
-            <td>${points}</td>
-            <td><span class="status ${status.toLowerCase()}">${status}</span></td>
-        </tr>
-    `;
-    
-    const historyList = document.getElementById('pointsHistoryList');
-    historyList.insertAdjacentHTML('afterbegin', newRow);
-}
