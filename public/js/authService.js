@@ -203,21 +203,14 @@ class AuthService {
                 headers: response.headers
             });
 
-            let responseData;
-            try {
-                responseData = await response.json();
-            } catch (e) {
-                responseData = null;
+            const data = await response.json();
+            this.logInfo('Response data:', data);
+
+            if (!data.success) {
+                throw new Error(data.message || 'Request failed');
             }
 
-            if (!response.ok) {
-                const error = new Error(responseData?.error || response.statusText || 'Request failed');
-                error.status = response.status;
-                error.data = responseData;
-                throw error;
-            }
-
-            return responseData;
+            return data;
         } catch (error) {
             this.logError('Request failed:', error);
             throw error;
@@ -379,7 +372,7 @@ class AuthService {
                 body: JSON.stringify({ email, password })
             });
             
-            if (!data || !data.token || !data.user) {
+            if (!data.token || !data.user) {
                 throw new Error('Invalid response from server');
             }
 

@@ -73,7 +73,14 @@ router.post('/register', async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Registration successful',
-            token
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                points: user.points,
+                referralCode: user.referralCode
+            }
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -150,7 +157,14 @@ router.post('/login', async (req, res) => {
         res.json({
             success: true,
             message: 'Login successful',
-            token
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                points: user.points,
+                referralCode: user.referralCode
+            }
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -178,7 +192,9 @@ router.get('/verify-token', authenticate, async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                isAdmin: user.isAdmin
+                isAdmin: user.isAdmin,
+                points: user.points,
+                referralCode: user.referralCode
             }
         });
     } catch (error) {
