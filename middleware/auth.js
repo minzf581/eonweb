@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const { User } = require('../models');
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
     const authHeader = req.headers.authorization;
     
     if (!authHeader) {
@@ -11,7 +12,14 @@ function authenticate(req, res, next) {
     
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        req.user = decoded;
+        
+        // 从数据库获取用户信息
+        const user = await User.findByPk(decoded.id);
+        if (!user) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+        
+        req.user = user;
         next();
     } catch (error) {
         return res.status(401).json({ error: 'Invalid token' });

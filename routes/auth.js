@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');  
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');  
 const { processReferral } = require('./referral');
+const authenticate = require('../middleware/auth');
 
 // 注册
 router.post('/register', async (req, res) => {
