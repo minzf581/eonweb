@@ -10,7 +10,7 @@ class AuthService {
             token: null,
             tokenExpiry: null,
             user: null,
-            baseUrl: window.location.origin,  // 移除多余的 /api 前缀
+            baseUrl: 'https://eonhome-445809.et.r.appspot.com',  // 使用 App Engine URL
             retryDelay: 1000,
             maxRetries: 3,
             requestTimeout: 10000
