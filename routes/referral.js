@@ -18,6 +18,7 @@ function generateReferralCode() {
 router.get('/api/referral', authenticate, async (req, res) => {
     try {
         const userId = req.user.id;
+        console.log('Fetching referral data for user:', userId);
         
         // 获取用户的推荐码
         let user = await User.findByPk(userId);
@@ -49,71 +50,87 @@ router.get('/api/referral', authenticate, async (req, res) => {
             }
         }) || 0; // 如果没有记录，返回0
         
-        res.json({
+        // 获取最近的推荐历史
+        const recentReferrals = await Referral.findAll({
+            where: { referrerId: userId },
+            include: [{
+                model: User,
+                as: 'referred',
+                attributes: ['email']
+            }],
+            order: [['createdAt', 'DESC']],
+            limit: 5
+        });
+
+        const referralHistory = recentReferrals.map(ref => ({
+            email: ref.referred.email,
+            pointsEarned: ref.pointsEarned,
+            date: ref.createdAt
+        }));
+
+        console.log('Referral data:', {
             referralCode: user.referralCode,
             referralCount,
-            totalPoints: totalPoints
+            totalPoints,
+            referralHistory
         });
-        
+
+        res.json({
+            success: true,
+            data: {
+                referralCode: user.referralCode,
+                referralCount,
+                totalPoints,
+                referralHistory
+            }
+        });
     } catch (error) {
-        console.error('Error in /api/users/referral:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error in referral data endpoint:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch referral data',
+            error: error.message
+        });
     }
 });
 
-// 验证推荐码
-router.post('/api/referral/verify', async (req, res) => {
-    const { referralCode } = req.body;
-    
-    try {
-        const referrer = await User.findOne({
-            where: { referralCode }
-        });
-        
-        if (!referrer) {
-            return res.status(404).json({ error: 'Invalid referral code' });
-        }
-        
-        res.json({ valid: true });
-    } catch (error) {
-        console.error('Error verifying referral code:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// 使用推荐码（在注册时调用）
+// 处理推荐逻辑
 async function processReferral(userId, referralCode) {
+    if (!referralCode) return null;
+
     try {
         // 查找推荐人
         const referrer = await User.findOne({
             where: { referralCode }
         });
-        
-        if (!referrer) {
-            return false;
-        }
 
-        const referrerId = referrer.id;
-        
-        // 确保不能自己推荐自己
-        if (referrerId === userId) {
-            return false;
-        }
-        
-        // 添加推荐记录
-        await Referral.create({
-            referrerId,
+        if (!referrer) return null;
+
+        // 创建推荐记录
+        const referral = await Referral.create({
+            referrerId: referrer.id,
             referredId: userId,
-            pointsEarned: 100 // 每次推荐奖励100积分
+            pointsEarned: 100 // 默认奖励积分
         });
-        
+
         // 更新推荐人的积分
-        await User.increment('points', { by: 100, where: { id: referrerId } });
-        
-        return true;
+        await User.increment('points', {
+            by: referral.pointsEarned,
+            where: { id: referrer.id }
+        });
+
+        // 创建积分历史记录
+        await PointHistory.create({
+            userId: referrer.id,
+            points: referral.pointsEarned,
+            type: 'REFERRAL',
+            description: `Referral bonus for user ${userId}`
+        });
+
+        return referral;
     } catch (error) {
         console.error('Error processing referral:', error);
-        return false;
+        return null;
     }
 }
 

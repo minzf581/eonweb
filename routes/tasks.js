@@ -4,7 +4,7 @@ const authenticate = require('../middleware/auth');
 const { Task, UserTask } = require('../models');
 
 // 获取任务列表
-router.get('/api/tasks', authenticate, async (req, res) => {
+router.get('/tasks', authenticate, async (req, res) => {
     try {
         const userId = req.user.id;
         console.log('Fetching tasks for user:', userId);

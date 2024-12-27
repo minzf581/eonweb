@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto'); // 导入 crypto 模块
+const crypto = require('crypto'); 
 const { User } = require('../models');  
 const { processReferral } = require('./referral');
 const authenticate = require('../middleware/auth');
 
 // 注册
-router.post('/register', async (req, res) => {
+router.post('/api/auth/register', async (req, res) => {
     try {
         console.log('Registration request received:', {
             body: req.body,
@@ -129,7 +129,7 @@ router.post('/register', async (req, res) => {
 });
 
 // 登录
-router.post('/login', async (req, res) => {
+router.post('/api/auth/login', async (req, res) => {
     try {
         console.log('Login request received:', {
             body: req.body,
@@ -226,7 +226,7 @@ router.post('/login', async (req, res) => {
 });
 
 // 验证Token
-router.get('/verify-token', authenticate, (req, res) => {
+router.get('/api/auth/verify-token', authenticate, (req, res) => {
     res.json({ valid: true, user: req.user });
 });
 

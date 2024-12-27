@@ -22,11 +22,14 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 静态文件服务
+app.use(express.static('public'));
+
 // 路由
-app.use('/api/auth', authRoutes);
-app.use('/', referralRoutes);
-app.use('/', tasksRoutes);
-app.use('/', statsRoutes);
+app.use('/', authRoutes);  // authRoutes 已经包含了 /api/auth 前缀
+app.use('/', referralRoutes);  // referralRoutes 已经包含了 /api/referral 前缀
+app.use('/', tasksRoutes);  // tasksRoutes 已经包含了 /api/tasks 前缀
+app.use('/', statsRoutes);  // statsRoutes 已经包含了 /api/stats 前缀
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
