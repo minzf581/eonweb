@@ -11,8 +11,7 @@ async function seedAdminUser() {
 
         if (!existingAdmin) {
             // 创建管理员用户
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash('vijTo9-kehmet-cessis', salt);
+            const hashedPassword = await bcrypt.hash('vijTo9-kehmet-cessis', 10);
             
             await User.create({
                 email: 'info@eon-protocol.com',
