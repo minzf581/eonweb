@@ -412,6 +412,14 @@ class AuthService {
             localStorage.setItem('user', JSON.stringify(data.user));
 
             this.logInfo('Login successful:', { email: data.user.email });
+
+            // 根据用户角色重定向
+            if (data.user.isAdmin) {
+                window.location.href = '/admin/';
+            } else {
+                window.location.href = '/dashboard/';
+            }
+
             return data;
         } catch (error) {
             this.logError('Login failed:', error);
