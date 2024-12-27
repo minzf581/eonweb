@@ -19,7 +19,7 @@ env_variables:
   PORT: "8080"
   DB_HOST: "/cloudsql/eonhome-445809:asia-southeast2:eon-db"
   DB_USER: "eonuser"
-  DB_PASSWORD: "eon-user-2024"
+  DB_PASSWORD: "eonprotocol"
   DB_NAME: "eon_protocol"
   JWT_SECRET: "your-secret-key"
   CLOUD_SQL_CONNECTION_NAME: "eonhome-445809:asia-southeast2:eon-db"
