@@ -13,6 +13,7 @@ const compression = require('compression');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sequelize = require('./config/database');
+const seedAdminUser = require('./seeders/adminUser');
 const { User, Task, UserTask, PointHistory, Settings } = require('./models');
 const authRoutes = require('./routes/auth');
 
@@ -102,12 +103,18 @@ async function startServer() {
             username: process.env.DB_USER
         });
         
+        // 等待数据库连接
         await sequelize.authenticate();
-        console.log('Database connection established');
+        console.log('Database connection has been established successfully.');
         
+        // 同步数据库模型
         await sequelize.sync();
-        console.log('Database synced');
-
+        console.log('Database synchronized');
+        
+        // 执行种子
+        await seedAdminUser();
+        
+        // 启动服务器
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });

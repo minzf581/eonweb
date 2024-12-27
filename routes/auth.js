@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto'); // 导入 crypto 模块
 const { User } = require('../models');  
 const { processReferral } = require('./referral');
 const authenticate = require('../middleware/auth');
@@ -21,14 +22,26 @@ router.post('/register', async (req, res) => {
         // 创建新用户
         const newUser = await User.create({
             email,
-            password,  
-            referralCode: referralCode || undefined
+            password,
+            referralCode: crypto.randomBytes(4).toString('hex')  // 为新用户生成唯一推荐码
         });
         
         // 如果提供了推荐码，处理推荐关系
         if (referralCode) {
-            const referralSuccess = await processReferral(newUser.id, referralCode);
-            if (!referralSuccess) {
+            // 查找推荐人
+            const referrer = await User.findOne({ where: { referralCode } });
+            if (referrer) {
+                // 更新被推荐用户的推荐人ID
+                await newUser.update({ referredBy: referrer.id });
+                
+                // 给推荐人增加积分
+                await referrer.increment('points', { by: 100 });  // 推荐人获得100积分
+                
+                // 给新用户增加积分
+                await newUser.increment('points', { by: 50 });   // 新用户获得50积分
+                
+                console.log(`User ${referrer.email} successfully referred ${newUser.email}`);
+            } else {
                 console.warn('Invalid referral code used:', referralCode);
             }
         }
