@@ -96,7 +96,7 @@
                 }
 
                 // 检查是否已经登录
-                const isAuthenticated = await window.authService.validateToken();
+                const isAuthenticated = await window.authService.verifyToken();
                 if (isAuthenticated) {
                     window.location.href = '/dashboard/index.html';
                     return;

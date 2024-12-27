@@ -57,6 +57,25 @@ class AuthService {
         return this._data.user;
     }
 
+    // Logout method
+    async logout() {
+        try {
+            // Clear token from localStorage
+            localStorage.removeItem('authToken');
+            
+            // Reset service state
+            this._data.token = null;
+            this._data.tokenExpiry = null;
+            this._data.user = null;
+            
+            // Redirect to login page
+            window.location.href = '/auth/login.html';
+        } catch (error) {
+            this.logError('Error during logout', error);
+            throw error;
+        }
+    }
+
     // Logging methods
     logInfo(message, data = null) {
         const timestamp = new Date().toISOString();
@@ -323,17 +342,21 @@ class AuthService {
     }
 
     async validateToken() {
-        if (!this._data.token) {
-            this.logInfo('No token to validate');
-            return false;
-        }
-
         try {
-            const data = await this.makeRequest('/api/auth/validate', {
-                method: 'GET'
+            this.logInfo('Making request to:', `${this._data.baseUrl}/api/auth/verify-token`);
+            const response = await this.makeRequest(`${this._data.baseUrl}/api/auth/verify-token`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this._data.token}`
+                }
             });
 
-            this.logInfo('Token validation successful:', data);
+            if (!response || !response.success) {
+                throw new Error('Token validation failed');
+            }
+
+            this._data.user = response.user;
+            this.logInfo('Token validation successful:', response);
             return true;
         } catch (error) {
             this.logError('Token validation error:', error);

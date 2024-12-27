@@ -535,6 +535,27 @@
             }
         }
 
+        // Copy referral code to clipboard
+        async function copyReferralCode() {
+            const referralCode = document.getElementById('referralCode').textContent;
+            try {
+                await navigator.clipboard.writeText(referralCode);
+                const copyButton = document.querySelector('.copy-button');
+                const originalText = copyButton.textContent;
+                copyButton.textContent = 'Copied!';
+                copyButton.style.backgroundColor = '#059669'; // Success green color
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    copyButton.textContent = originalText;
+                    copyButton.style.backgroundColor = '#4f46e5';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy referral code:', err);
+                alert('Failed to copy referral code. Please try again.');
+            }
+        }
+
         // Initialize dashboard with retry logic
         async function initializeDashboard(attempt = 1, maxAttempts = 3) {
             console.log('[Dashboard] Initializing dashboard...');

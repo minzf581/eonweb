@@ -327,9 +327,10 @@
                 }
 
                 // Check if user is already logged in
-                if (window.authService && window.authService.getToken) {
-                    console.log('[Login] User already has a token, redirecting to dashboard');
-                    window.location.href = '/dashboard';
+                const isAuthenticated = await window.authService.verifyToken();
+                if (isAuthenticated) {
+                    console.log('[Login] User already authenticated, redirecting to dashboard');
+                    window.location.href = '/dashboard/index.html';
                     return;
                 }
 
