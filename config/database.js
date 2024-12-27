@@ -6,7 +6,7 @@ let sequelize;
 // 配置数据库连接
 sequelize = new Sequelize({
     dialect: 'postgres',
-    host: '/cloudsql/eonhome-445809:asia-east2:eon-mysql',
+    host: '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD,
@@ -17,7 +17,7 @@ sequelize = new Sequelize({
         idle: 10000
     },
     dialectOptions: {
-        socketPath: '/cloudsql/eonhome-445809:asia-east2:eon-mysql'
+        socketPath: '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
     },
     logging: console.log
 });

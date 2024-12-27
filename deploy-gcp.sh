@@ -20,7 +20,7 @@ gcloud run deploy eon-protocol \
     --platform managed \
     --region $REGION \
     --allow-unauthenticated \
-    --set-env-vars="NODE_ENV=production,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:$REGION:eon-mysql" \
+    --set-env-vars="NODE_ENV=production,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:$REGION:eon-db" \
     --vpc-connector projects/$PROJECT_ID/locations/$REGION/connectors/vpc-connector
 
 echo "部署完成！"
