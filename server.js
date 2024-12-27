@@ -18,6 +18,12 @@ app.use(cookieParser());
 app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 请求日志中间件
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+    next();
+});
+
 // 认证中间件
 const authenticateToken = async (req, res, next) => {
     try {
@@ -81,6 +87,15 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 8080;
 async function startServer() {
     try {
+        console.log('Starting server...');
+        console.log('Environment:', process.env.NODE_ENV);
+        console.log('Database config:', {
+            host: process.env.NODE_ENV === 'production' ? '34.81.168.174' : '127.0.0.1',
+            port: 5432,
+            database: process.env.DB_NAME,
+            username: process.env.DB_USER
+        });
+        
         await sequelize.authenticate();
         console.log('Database connection established');
         
