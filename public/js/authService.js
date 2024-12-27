@@ -340,6 +340,31 @@ class AuthService {
         }
     }
 
+    async validateToken() {
+        if (!this._data.token) {
+            this.logInfo('No token to validate');
+            return false;
+        }
+
+        try {
+            const response = await this.makeRequest('/auth/validate', {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.logInfo('Token validation successful:', data);
+                return true;
+            } else {
+                this.logInfo('Token validation failed');
+                return false;
+            }
+        } catch (error) {
+            this.logError('Token validation error:', error);
+            return false;
+        }
+    }
+
     clearAuth() {
         this._data.token = null;
         this._data.tokenExpiry = null;
