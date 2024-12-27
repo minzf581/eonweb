@@ -6,7 +6,7 @@ const { User } = require('../models');
 const { processReferral } = require('./referral');
 
 // 注册
-router.post('/api/auth/register', async (req, res) => {
+router.post('/register', async (req, res) => {
     const { email, password, referralCode } = req.body;
     
     try {
@@ -51,7 +51,7 @@ router.post('/api/auth/register', async (req, res) => {
 });
 
 // 登录
-router.post('/api/auth/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     try {
@@ -86,7 +86,7 @@ router.post('/api/auth/login', async (req, res) => {
 });
 
 // 验证Token
-router.get('/api/auth/verify-token', authenticate, (req, res) => {
+router.get('/verify-token', authenticate, (req, res) => {
     res.json({ valid: true, user: req.user });
 });
 

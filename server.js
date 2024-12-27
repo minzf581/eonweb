@@ -7,6 +7,7 @@ const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sequelize = require('./config/database');
 const { User, Task, UserTask, PointHistory, Settings } = require('./models');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -47,50 +48,7 @@ app.get('/', (req, res) => {
 });
 
 // API 路由
-app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { email, password, referralCode } = req.body;
-        
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ error: 'Email already registered' });
-        }
-
-        const user = await User.create({
-            email,
-            password, // 密码会通过模型的钩子自动加密
-            referralCode: referralCode || null
-        });
-
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
-        res.json({ token });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ error: 'Registration failed' });
-    }
-});
-
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        
-        const user = await User.findOne({ where: { email } });
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const isValid = await bcryptjs.compare(password, user.password);
-        if (!isValid) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
-        res.json({ token });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
-    }
-});
+app.use('/api/auth', authRoutes);
 
 // 受保护的路由
 app.get('/api/users/tasks', authenticateToken, async (req, res) => {

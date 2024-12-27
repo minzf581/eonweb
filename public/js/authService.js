@@ -324,19 +324,21 @@ class AuthService {
         }
 
         try {
-            const response = await this.makeRequest('/auth/verify');
-            const data = await response.json();
-            
-            if (data.valid) {
-                this._data.user = data.user;
+            const response = await this.makeRequest('/api/auth/verify-token', {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.logInfo('Token validation successful:', data);
                 return true;
+            } else {
+                this.logInfo('Token validation failed');
+                return false;
             }
-            
-            this.clearAuth();
-            return false;
         } catch (error) {
-            this.clearAuth();
-            throw error;
+            this.logError('Token validation error:', error);
+            return false;
         }
     }
 
@@ -347,7 +349,7 @@ class AuthService {
         }
 
         try {
-            const response = await this.makeRequest('/auth/validate', {
+            const response = await this.makeRequest('/api/auth/validate', {
                 method: 'GET'
             });
 
@@ -378,7 +380,7 @@ class AuthService {
         this.logInfo('Attempting login');
 
         try {
-            const response = await this.makeRequest('/auth/login', {
+            const response = await this.makeRequest('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -425,7 +427,7 @@ class AuthService {
         }
 
         try {
-            const response = await this.makeRequest('/auth/user', {
+            const response = await this.makeRequest('/api/auth/user', {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
