@@ -8,11 +8,9 @@ manual_scaling:
 
 handlers:
   - url: /.*
+    secure: always
+    redirect_http_response_code: 301
     script: auto
-    http_headers:
-      Access-Control-Allow-Origin: '*'
-      Access-Control-Allow-Methods: 'GET, POST, PUT, DELETE, OPTIONS'
-      Access-Control-Allow-Headers: 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
 
 env_variables:
   NODE_ENV: "production"
