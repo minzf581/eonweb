@@ -219,7 +219,7 @@ class AuthService {
 
     async getReferralInfo() {
         try {
-            const data = await this.makeRequest('/api/users/referrals');
+            const data = await this.makeRequest('/api/referral');
             return data;
         } catch (error) {
             this.logError('Failed to get referral info:', error);
