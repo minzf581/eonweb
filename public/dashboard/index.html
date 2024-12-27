@@ -334,6 +334,7 @@
                             <p id="referralPoints">0</p>
                         </div>
                     </div>
+                    <div id="referredUsers"></div>
                 </div>
             </main>
         </div>
@@ -503,9 +504,27 @@
                 const data = await response.json();
                 console.log('[Dashboard] Referral data loaded successfully');
                 
-                document.getElementById('referralCode').textContent = data.referralCode || 'N/A';
-                document.getElementById('referralCount').textContent = data.referralCount || 0;
-                document.getElementById('referralPoints').textContent = data.referralPoints || 0;
+                if (!data.success || !data.data) {
+                    throw new Error('Invalid referral data response');
+                }
+
+                document.getElementById('referralCode').textContent = data.data.referralCode || 'N/A';
+                document.getElementById('referralCount').textContent = data.data.referralCount || 0;
+                document.getElementById('referralPoints').textContent = data.data.totalPoints || 0;
+
+                // Update referred users list if the element exists
+                const referredUsersElement = document.getElementById('referredUsers');
+                if (referredUsersElement && data.data.referredUsers) {
+                    referredUsersElement.innerHTML = data.data.referredUsers.length > 0 
+                        ? data.data.referredUsers.map(user => `
+                            <div class="referred-user">
+                                <span class="user-email">${user.email}</span>
+                                <span class="join-date">${new Date(user.joinedAt).toLocaleDateString()}</span>
+                                <span class="points">${user.pointsEarned} points</span>
+                            </div>
+                        `).join('')
+                        : '<p>No referred users yet</p>';
+                }
             } catch (error) {
                 console.error('[Dashboard] Error loading referral data:', error);
                 if (attempt < maxAttempts) {
