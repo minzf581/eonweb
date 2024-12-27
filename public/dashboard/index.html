@@ -564,6 +564,14 @@
                 // Wait for AuthService to be ready
                 await waitForAuthService();
 
+                // Update user info
+                const user = await window.authService.getUser();
+                if (user && user.email) {
+                    document.getElementById('userName').textContent = user.email;
+                } else {
+                    throw new Error('Failed to get user information');
+                }
+
                 // Load all data concurrently
                 await Promise.all([
                     loadStats(),

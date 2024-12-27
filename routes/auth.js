@@ -155,9 +155,9 @@ router.post('/login', async (req, res) => {
 
         console.log('Login successful for user:', email);
 
-        res.json({
+        // 返回用户信息和 token
+        return res.json({
             success: true,
-            message: 'Login successful',
             token,
             user: {
                 id: user.id,

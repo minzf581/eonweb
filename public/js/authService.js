@@ -394,7 +394,7 @@ class AuthService {
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
 
-            this.logInfo('Login successful');
+            this.logInfo('Login successful:', { email: data.user.email });
             return data;
         } catch (error) {
             this.logError('Login failed:', error);
