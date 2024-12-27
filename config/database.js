@@ -16,7 +16,7 @@ sequelize = new Sequelize({
     port: 5432,
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
-    password: process.env.DB_PASSWORD,
+    password: process.env.DB_PASSWORD || 'eonprotocol',
     pool: {
         max: 5,
         min: 0,
