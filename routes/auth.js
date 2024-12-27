@@ -69,18 +69,25 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     try {
+        console.log('Login attempt for email:', email);
+        
         // 查找用户
         const user = await User.findOne({ where: { email } });
         
         if (!user) {
+            console.log('User not found:', email);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
         
         // 验证密码
+        console.log('Verifying password for user:', email);
         const validPassword = await user.comparePassword(password);
         if (!validPassword) {
+            console.log('Invalid password for user:', email);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
+        
+        console.log('Login successful for user:', email);
         
         // 生成JWT token
         const token = jwt.sign(
@@ -95,6 +102,7 @@ router.post('/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Error in login:', error);
+        console.error('Stack trace:', error.stack);
         res.status(500).json({ error: 'Login failed: ' + error.message });
     }
 });

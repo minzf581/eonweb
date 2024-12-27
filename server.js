@@ -29,6 +29,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // 请求日志中间件
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+    if (req.method === 'POST') {
+        console.log('Request body:', req.body);
+    }
     next();
 });
 
@@ -85,9 +88,11 @@ app.get('/api/users/tasks', authenticateToken, async (req, res) => {
 // 错误处理中间件
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    res.status(500).json({ 
+    console.error('Stack:', err.stack);
+    res.status(500).json({
         error: 'Internal Server Error',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+        message: err.message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
 

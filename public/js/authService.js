@@ -179,28 +179,19 @@ class AuthService {
         const url = `${this._data.baseUrl}${endpoint}`;
         this.logInfo('Making request to:', url);
 
-        // 设置默认选项
-        const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            timeout: this._data.requestTimeout
-        };
-
-        // 如果有 token，添加到请求头
-        if (this._data.token) {
-            defaultOptions.headers['Authorization'] = `Bearer ${this._data.token}`;
-        }
-
-        // 合并选项
         const finalOptions = {
-            ...defaultOptions,
             ...options,
+            timeout: this._data.requestTimeout,
             headers: {
-                ...defaultOptions.headers,
-                ...(options.headers || {})
+                ...options.headers,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             }
         };
+
+        if (this._data.token) {
+            finalOptions.headers['Authorization'] = `Bearer ${this._data.token}`;
+        }
 
         this.logInfo('Request options:', finalOptions);
 
@@ -212,18 +203,21 @@ class AuthService {
                 headers: response.headers
             });
 
-            if (!response.ok) {
-                let errorMessage;
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.error || 'Request failed';
-                } catch (e) {
-                    errorMessage = response.statusText || 'Request failed';
-                }
-                throw new Error(errorMessage);
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch (e) {
+                responseData = null;
             }
 
-            return response;
+            if (!response.ok) {
+                const error = new Error(responseData?.error || response.statusText || 'Request failed');
+                error.status = response.status;
+                error.data = responseData;
+                throw error;
+            }
+
+            return responseData;
         } catch (error) {
             this.logError('Request failed:', error);
             throw error;
@@ -380,16 +374,15 @@ class AuthService {
         this.logInfo('Attempting login');
 
         try {
-            const response = await this.makeRequest('/api/auth/login', {
+            const data = await this.makeRequest('/api/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify({ email, password })
             });
-
-            const data = await response.json();
             
+            if (!data || !data.token || !data.user) {
+                throw new Error('Invalid response from server');
+            }
+
             // 保存认证信息
             this._data.token = data.token;
             this._data.user = data.user;
@@ -399,20 +392,9 @@ class AuthService {
             localStorage.setItem('user', JSON.stringify(data.user));
 
             this.logInfo('Login successful');
-
-            // 根据用户类型重定向
-            if (data.user.isAdmin) {
-                window.location.href = '/admin/dashboard';
-            } else {
-                window.location.href = '/dashboard';
-            }
-
-            return true;
+            return data;
         } catch (error) {
             this.logError('Login failed:', error);
-            if (error.message === 'Request failed') {
-                throw new Error('Login service is temporarily unavailable');
-            }
             throw error;
         }
     }
