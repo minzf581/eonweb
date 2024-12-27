@@ -25,16 +25,16 @@ router.get('/', authenticate, async (req, res) => {
         
         // 如果用户没有推荐码，生成一个
         if (!user.referralCode) {
+            let code;
             do {
-                const code = generateReferralCode();
-                try {
+                code = generateReferralCode();
+                // Check if code already exists
+                const existingUser = await User.findOne({ where: { referralCode: code } });
+                if (!existingUser) {
                     await user.update({ referralCode: code });
+                    // Refresh user data
+                    user = await User.findByPk(userId);
                     break;
-                } catch (err) {
-                    if (err.name === 'SequelizeUniqueConstraintError') {
-                        continue; // 重新生成
-                    }
-                    throw err;
                 }
             } while (true);
         }

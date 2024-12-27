@@ -444,22 +444,22 @@
                 const tasksContainer = document.getElementById('tasksContainer');
                 tasksContainer.innerHTML = '';
 
-                if (data.length === 0) {
+                if (!data.success || !data.data || data.data.length === 0) {
                     tasksContainer.innerHTML = '<p>No available tasks</p>';
                     return;
                 }
 
-                tasksContainer.innerHTML = data.map(task => `
-                    <div class="task-card ${task.status === 'completed' ? 'completed' : ''}">
+                tasksContainer.innerHTML = data.data.map(task => `
+                    <div class="task-card ${task.completed ? 'completed' : ''}">
                         <div class="task-header">
                             <h3>${task.title}</h3>
-                            <span class="task-reward">${task.reward} Points</span>
+                            <span class="task-reward">${task.points} Points</span>
                         </div>
                         <p class="task-description">${task.description}</p>
                         <div class="task-footer">
-                            <span class="task-status">${task.status === 'completed' ? 'Completed' : 'Not Started'}</span>
-                            ${task.status !== 'completed' ? 
-                                `<button onclick="startTask('${task._id}')" class="task-action start-task">
+                            <span class="task-status">${task.completed ? 'Completed' : 'Not Started'}</span>
+                            ${!task.completed ? 
+                                `<button onclick="startTask('${task.id}')" class="task-action start-task">
                                     Start Task
                                 </button>` : 
                                 ''
