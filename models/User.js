@@ -6,10 +6,18 @@ const crypto = require('crypto');
 class User extends Model {
     async comparePassword(password) {
         try {
-            return await bcrypt.compare(password, this.password);
+            console.log('Comparing passwords...');
+            console.log('Stored password hash:', this.password);
+            const isMatch = await bcrypt.compare(password, this.password);
+            console.log('Password match result:', isMatch);
+            return isMatch;
         } catch (error) {
             console.error('Password comparison error:', error);
-            return false;
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack
+            });
+            throw error;
         }
     }
 
@@ -38,19 +46,28 @@ User.init({
         type: DataTypes.STRING,
         allowNull: false,
         set(value) {
-            // 只在密码发生变化时才进行哈希
-            if (value) {
-                const salt = bcrypt.genSaltSync(10);
-                this.setDataValue('password', bcrypt.hashSync(value, salt));
+            try {
+                if (value) {
+                    console.log('Hashing password...');
+                    const salt = bcrypt.genSaltSync(10);
+                    const hashedPassword = bcrypt.hashSync(value, salt);
+                    console.log('Password hashed successfully');
+                    this.setDataValue('password', hashedPassword);
+                }
+            } catch (error) {
+                console.error('Error hashing password:', error);
+                throw error;
             }
         }
     },
     referralCode: {
         type: DataTypes.STRING,
-        unique: true
+        unique: true,
+        allowNull: true
     },
     referredBy: {
         type: DataTypes.INTEGER,
+        allowNull: true,
         references: {
             model: 'Users',
             key: 'id'
@@ -69,13 +86,16 @@ User.init({
     modelName: 'User',
     hooks: {
         beforeCreate: async (user) => {
-            // 生成唯一的推荐码
-            if (!user.referralCode) {
-                user.referralCode = crypto.randomBytes(4).toString('hex');
+            try {
+                console.log('Before create hook...');
+                if (!user.referralCode) {
+                    user.referralCode = crypto.randomBytes(4).toString('hex');
+                    console.log('Generated referral code:', user.referralCode);
+                }
+            } catch (error) {
+                console.error('Error in beforeCreate hook:', error);
+                throw error;
             }
-        },
-        beforeUpdate: async (user) => {
-            // 不需要在这里进行密码哈希，因为已经在 setter 中处理了
         }
     }
 });
