@@ -15,7 +15,7 @@ function generateReferralCode() {
 }
 
 // 获取推荐数据API
-router.get('/api/referral', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
     try {
         const userId = req.user.id;
         console.log('Fetching referral data for user:', userId);
@@ -134,4 +134,4 @@ async function processReferral(userId, referralCode) {
     }
 }
 
-module.exports = { router, processReferral };
+module.exports = router;

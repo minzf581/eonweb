@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto'); 
+const crypto = require('crypto');
 const { User } = require('../models');  
 const { processReferral } = require('./referral');
 const authenticate = require('../middleware/auth');
 
 // 注册
-router.post('/api/auth/register', async (req, res) => {
+router.post('/register', async (req, res) => {
     try {
         console.log('Registration request received:', {
             body: req.body,
@@ -19,117 +19,74 @@ router.post('/api/auth/register', async (req, res) => {
         
         // 检查必需字段
         if (!email || !password) {
-            console.log('Missing required fields');
-            return res.status(400).json({ error: 'Email and password are required' });
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
         }
-        
+
+        // 检查邮箱格式
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email format'
+            });
+        }
+
+        // 检查密码长度
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 6 characters long'
+            });
+        }
+
         // 检查邮箱是否已存在
-        console.log('Checking if email exists:', email);
         const existingUser = await User.findOne({ where: { email } });
-        
         if (existingUser) {
-            console.log('Email already exists:', email);
-            return res.status(400).json({ error: 'Email already exists' });
+            return res.status(400).json({
+                success: false,
+                message: 'Email already registered'
+            });
         }
-        
-        // 生成唯一的推荐码
-        const generatedReferralCode = crypto.randomBytes(4).toString('hex');
-        console.log('Generated referral code:', generatedReferralCode);
-        
+
         // 创建新用户
-        console.log('Creating new user:', {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await User.create({
             email,
-            hasPassword: !!password,
-            referralCode: referralCode || generatedReferralCode
+            password: hashedPassword
         });
 
-        const userData = {
-            email,
-            password,
-            referralCode: referralCode || generatedReferralCode
-        };
-
-        // 如果提供了推荐码，验证它
-        if (referralCode && referralCode.trim() !== '') {
-            console.log('Checking referral code:', referralCode);
-            const referrer = await User.findOne({ where: { referralCode } });
-            if (referrer) {
-                userData.referredBy = referrer.id;
-            } else {
-                console.log('Invalid referral code:', referralCode);
-                return res.status(400).json({ error: 'Invalid referral code' });
-            }
+        // 处理推荐码
+        if (referralCode) {
+            await processReferral(user.id, referralCode);
         }
 
-        const newUser = await User.create(userData);
-        
-        console.log('User created successfully:', {
-            id: newUser.id,
-            email: newUser.email,
-            referralCode: newUser.referralCode,
-            referredBy: newUser.referredBy
-        });
-        
-        // 生成JWT token
+        // 生成 JWT
         const token = jwt.sign(
-            { 
-                id: newUser.id, 
-                email: newUser.email,
-                isAdmin: newUser.isAdmin
-            },
-            process.env.JWT_SECRET || 'your-secret-key',
+            { id: user.id, email: user.email },
+            process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
-        
-        // 返回用户信息（不包含密码）
-        const userResponse = newUser.toJSON();
-        
-        console.log('Registration completed successfully');
-        
+
         res.status(201).json({
-            message: 'User registered successfully',
-            token,
-            user: userResponse
+            success: true,
+            message: 'Registration successful',
+            token
         });
     } catch (error) {
-        console.error('Error in registration:', {
-            error: error.message,
-            stack: error.stack,
-            name: error.name,
-            code: error.code
-        });
-        
-        // 根据错误类型返回适当的错误消息
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            return res.status(400).json({ 
-                error: 'Email or referral code already exists',
-                details: error.errors.map(e => e.message)
-            });
-        }
-        
-        if (error.name === 'SequelizeValidationError') {
-            return res.status(400).json({ 
-                error: 'Validation error',
-                details: error.errors.map(e => e.message)
-            });
-        }
-        
-        if (error.name === 'SequelizeConnectionError') {
-            return res.status(500).json({ 
-                error: 'Database connection error',
-                message: 'Unable to connect to the database'
-            });
-        }
-        
-        res.status(500).json({ 
-            error: 'Registration failed',
-            message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred during registration'
+        console.error('Registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Registration failed',
+            error: error.message
         });
     }
 });
 
 // 登录
-router.post('/api/auth/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         console.log('Login request received:', {
             body: req.body,
@@ -137,97 +94,101 @@ router.post('/api/auth/login', async (req, res) => {
         });
 
         const { email, password } = req.body;
-        
+
+        // 检查必需字段
         if (!email || !password) {
-            console.log('Missing credentials');
-            return res.status(400).json({ error: 'Email and password are required' });
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
         }
-        
-        // 查找用户
+
         console.log('Finding user with email:', email);
-        const user = await User.findOne({ 
-            where: { email }
-        });
-        
+        const user = await User.findOne({ where: { email } });
+
         if (!user) {
             console.log('User not found:', email);
-            return res.status(401).json({ error: 'Invalid credentials' });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
-        
+
         console.log('User found:', {
             id: user.id,
             email: user.email,
             hasPassword: !!user.password
         });
-        
+
         // 验证密码
         console.log('Verifying password for user:', email);
-        try {
-            const validPassword = await user.comparePassword(password);
-            console.log('Password validation result:', validPassword);
-            
-            if (!validPassword) {
-                console.log('Invalid password for user:', email);
-                return res.status(401).json({ error: 'Invalid credentials' });
-            }
-        } catch (passwordError) {
-            console.error('Error comparing passwords:', passwordError);
-            throw passwordError;
+        console.log('Comparing passwords...');
+        console.log('Stored password hash:', user.password);
+
+        const validPassword = await bcrypt.compare(password, user.password);
+        console.log('Password match result:', validPassword);
+
+        if (!validPassword) {
+            console.log('Password validation failed for user:', email);
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
-        
-        console.log('Login successful for user:', email);
-        
-        // 生成JWT token
+
+        console.log('Password validation result:', validPassword);
+
+        // 生成 JWT
         const token = jwt.sign(
-            { 
-                id: user.id, 
-                email: user.email,
-                isAdmin: user.isAdmin
-            },
-            process.env.JWT_SECRET || 'your-secret-key',
+            { id: user.id, email: user.email },
+            process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
-        
-        // 返回用户信息（不包含密码）
-        const userResponse = user.toJSON();
-        
+
+        console.log('Login successful for user:', email);
+
         res.json({
-            token,
-            user: userResponse
+            success: true,
+            message: 'Login successful',
+            token
         });
     } catch (error) {
-        console.error('Error in login:', {
-            error: error.message,
-            stack: error.stack,
-            name: error.name,
-            code: error.code
-        });
-        
-        // 根据错误类型返回适当的错误消息
-        if (error.name === 'SequelizeConnectionError') {
-            return res.status(500).json({ 
-                error: 'Database connection error',
-                message: 'Unable to connect to the database'
-            });
-        }
-        
-        if (error.name === 'SequelizeValidationError') {
-            return res.status(400).json({ 
-                error: 'Validation error',
-                details: error.errors.map(e => e.message)
-            });
-        }
-        
-        res.status(500).json({ 
-            error: 'Login failed',
-            message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred during login'
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Login failed',
+            error: error.message
         });
     }
 });
 
-// 验证Token
-router.get('/api/auth/verify-token', authenticate, (req, res) => {
-    res.json({ valid: true, user: req.user });
+// 验证令牌
+router.get('/verify-token', authenticate, async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                isAdmin: user.isAdmin
+            }
+        });
+    } catch (error) {
+        console.error('Token verification error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Token verification failed',
+            error: error.message
+        });
+    }
 });
 
-module.exports = router;
+export default router;

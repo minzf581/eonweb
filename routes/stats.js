@@ -4,7 +4,7 @@ const authenticate = require('../middleware/auth');
 const { User, Task, UserTask } = require('../models');
 
 // 获取用户统计数据
-router.get('/stats', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
     try {
         const userId = req.user.id;
         console.log('Fetching stats for user:', userId);

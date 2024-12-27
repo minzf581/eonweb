@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const { router: authRoutes } = require('./routes/auth');
-const { router: referralRoutes } = require('./routes/referral');
+const authRoutes = require('./routes/auth');
+const referralRoutes = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
 
@@ -26,10 +26,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 // 路由
-app.use('/', authRoutes);  // authRoutes 已经包含了 /api/auth 前缀
-app.use('/', referralRoutes);  // referralRoutes 已经包含了 /api/referral 前缀
-app.use('/', tasksRoutes);  // tasksRoutes 已经包含了 /api/tasks 前缀
-app.use('/', statsRoutes);  // statsRoutes 已经包含了 /api/stats 前缀
+app.use('/api/auth', authRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/stats', statsRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
