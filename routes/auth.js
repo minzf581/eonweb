@@ -191,4 +191,4 @@ router.get('/verify-token', authenticate, async (req, res) => {
     }
 });
 
-export default router;
+module.exports = router;

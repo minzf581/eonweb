@@ -134,4 +134,4 @@ async function processReferral(userId, referralCode) {
     }
 }
 
-module.exports = router;
+module.exports = { router, processReferral };

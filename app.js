@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const authRoutes = require('./routes/auth');
-const referralRoutes = require('./routes/referral');
+const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
 
