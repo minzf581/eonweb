@@ -49,31 +49,23 @@ router.get('/', authenticate, async (req, res) => {
                 referrerId: userId
             }
         }) || 0; // 如果没有记录，返回0
-        
-        // 获取最近的推荐历史
-        const recentReferrals = await Referral.findAll({
+
+        // 获取被推荐用户列表
+        const referrals = await Referral.findAll({
             where: { referrerId: userId },
             include: [{
                 model: User,
                 as: 'referred',
-                attributes: ['email']
+                attributes: ['email', 'createdAt']
             }],
-            order: [['createdAt', 'DESC']],
-            limit: 5
+            order: [['createdAt', 'DESC']]
         });
 
-        const referralHistory = recentReferrals.map(ref => ({
+        const referredUsers = referrals.map(ref => ({
             email: ref.referred.email,
-            pointsEarned: ref.pointsEarned,
-            date: ref.createdAt
+            joinedAt: ref.referred.createdAt,
+            pointsEarned: ref.pointsEarned
         }));
-
-        console.log('Referral data:', {
-            referralCode: user.referralCode,
-            referralCount,
-            totalPoints,
-            referralHistory
-        });
 
         res.json({
             success: true,
@@ -81,7 +73,7 @@ router.get('/', authenticate, async (req, res) => {
                 referralCode: user.referralCode,
                 referralCount,
                 totalPoints,
-                referralHistory
+                referredUsers
             }
         });
     } catch (error) {
@@ -96,41 +88,40 @@ router.get('/', authenticate, async (req, res) => {
 
 // 处理推荐逻辑
 async function processReferral(userId, referralCode) {
-    if (!referralCode) return null;
-
     try {
         // 查找推荐人
         const referrer = await User.findOne({
             where: { referralCode }
         });
 
-        if (!referrer) return null;
+        if (!referrer) {
+            throw new Error('Invalid referral code');
+        }
+
+        if (referrer.id === userId) {
+            throw new Error('Cannot use own referral code');
+        }
+
+        // 检查是否已经被推荐
+        const existingReferral = await Referral.findOne({
+            where: { referredId: userId }
+        });
+
+        if (existingReferral) {
+            throw new Error('User already referred');
+        }
 
         // 创建推荐记录
-        const referral = await Referral.create({
+        await Referral.create({
             referrerId: referrer.id,
             referredId: userId,
-            pointsEarned: 100 // 默认奖励积分
+            status: 'pending'
         });
 
-        // 更新推荐人的积分
-        await User.increment('points', {
-            by: referral.pointsEarned,
-            where: { id: referrer.id }
-        });
-
-        // 创建积分历史记录
-        await PointHistory.create({
-            userId: referrer.id,
-            points: referral.pointsEarned,
-            type: 'REFERRAL',
-            description: `Referral bonus for user ${userId}`
-        });
-
-        return referral;
+        return true;
     } catch (error) {
         console.error('Error processing referral:', error);
-        return null;
+        throw error;
     }
 }
 

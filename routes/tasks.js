@@ -13,6 +13,7 @@ router.get('/', authenticate, async (req, res) => {
         const tasks = await Task.findAll({
             include: [{
                 model: UserTask,
+                as: 'userTasks',
                 where: { userId },
                 required: false
             }]
@@ -24,8 +25,8 @@ router.get('/', authenticate, async (req, res) => {
             description: task.description,
             points: task.points,
             type: task.type,
-            completed: task.UserTasks && task.UserTasks.length > 0,
-            completedAt: task.UserTasks && task.UserTasks.length > 0 ? task.UserTasks[0].completedAt : null
+            completed: task.userTasks && task.userTasks.length > 0,
+            completedAt: task.userTasks && task.userTasks.length > 0 ? task.userTasks[0].completedAt : null
         }));
 
         console.log('Tasks data:', formattedTasks);

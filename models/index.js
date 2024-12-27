@@ -3,6 +3,7 @@ const Task = require('./Task');
 const UserTask = require('./UserTask');
 const PointHistory = require('./PointHistory');
 const Settings = require('./Settings');
+const Referral = require('./Referral');
 
 // Define relationships
 User.hasMany(UserTask, {
@@ -29,10 +30,30 @@ PointHistory.belongsTo(User, {
     foreignKey: 'userId'
 });
 
+// Referral relationships
+User.hasMany(Referral, {
+    foreignKey: 'referrerId',
+    as: 'referrals'
+});
+Referral.belongsTo(User, {
+    foreignKey: 'referrerId',
+    as: 'referrer'
+});
+
+User.hasOne(Referral, {
+    foreignKey: 'referredId',
+    as: 'referredBy'
+});
+Referral.belongsTo(User, {
+    foreignKey: 'referredId',
+    as: 'referred'
+});
+
 module.exports = {
     User,
     Task,
     UserTask,
     PointHistory,
-    Settings
+    Settings,
+    Referral
 };
