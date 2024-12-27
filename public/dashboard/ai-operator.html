@@ -322,6 +322,265 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Task Management Styles */
+        .task-management {
+            margin-top: 2rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-select, .search-input {
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-details {
+            display: flex;
+            gap: 2rem;
+            margin-top: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-sm {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        /* Models Styles */
+        .models-container {
+            margin-top: 2rem;
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .model-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .model-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .model-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+
+        .model-status.active {
+            background: rgba(40, 167, 69, 0.2);
+            color: var(--success-color);
+        }
+
+        .model-info {
+            margin-bottom: 1rem;
+        }
+
+        .model-info p {
+            margin: 0.5rem 0;
+            color: var(--secondary-color);
+        }
+
+        .model-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat span {
+            display: block;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 1.2rem;
+            margin-top: 0.3rem;
+        }
+
+        /* Analytics Styles */
+        .date-range {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .date-input {
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .statistics-container {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stats-table {
+            width: 100%;
+            margin-top: 1rem;
+            border-collapse: collapse;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-table th {
+            color: var(--secondary-color);
+        }
+
+        /* Settings Styles */
+        .settings-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .settings-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .settings-form input,
+        .settings-form select {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+        }
+
+        .api-key-display {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        .toggle-switch input:checked + .slider:before {
+            transform: translateX(26px);
+        }
     </style>
 </head>
 <body>
@@ -329,103 +588,371 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <ul class="sidebar-menu">
-                <li><a href="#" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="#"><i class="fas fa-database"></i> Data Requests</a></li>
-                <li><a href="#"><i class="fas fa-tasks"></i> Computing Tasks</a></li>
-                <li><a href="#"><i class="fas fa-chart-line"></i> Results</a></li>
-                <li><a href="#"><i class="fas fa-credit-card"></i> Billing</a></li>
-                <li><a href="#"><i class="fas fa-shield-alt"></i> Security</a></li>
-                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="#dashboard" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="#tasks"><i class="fas fa-tasks"></i> Computing Tasks</a></li>
+                <li><a href="#models"><i class="fas fa-brain"></i> AI Models</a></li>
+                <li><a href="#analytics"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                <li><a href="#settings"><i class="fas fa-cog"></i> Settings</a></li>
             </ul>
         </div>
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Header -->
-            <div class="header">
-                <h1>AI Operator Dashboard</h1>
-                <div class="notifications">
-                    <i class="fas fa-bell" style="font-size: 1.5rem; cursor: pointer;"></i>
-                    <span class="notification-badge">3</span>
-                    <div class="notification-list">
-                        <div class="notification-item">
-                            <strong>Task Completed:</strong> Model training finished successfully
-                        </div>
-                        <div class="notification-item">
-                            <strong>Data Access:</strong> New dataset available for processing
-                        </div>
-                        <div class="notification-item">
-                            <strong>System Update:</strong> New features available
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <div class="header">
+                    <h1>AI Operator Dashboard</h1>
+                    <div class="notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                        <div class="notification-list">
+                            <div class="notification-item">New task completed</div>
+                            <div class="notification-item">System update available</div>
+                            <div class="notification-item">Resource usage alert</div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Dashboard Cards -->
-            <div class="dashboard-cards">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Active Tasks</h3>
-                        <i class="fas fa-microchip card-icon"></i>
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Active Tasks</h3>
+                            <i class="fas fa-microchip card-icon"></i>
+                        </div>
+                        <h2>12</h2>
+                        <p>Currently running computations</p>
                     </div>
-                    <h2>12</h2>
-                    <p>Currently running computations</p>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Data Sets</h3>
-                        <i class="fas fa-database card-icon"></i>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Data Sets</h3>
+                            <i class="fas fa-database card-icon"></i>
+                        </div>
+                        <h2>8</h2>
+                        <p>Authorized datasets</p>
                     </div>
-                    <h2>8</h2>
-                    <p>Authorized datasets</p>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Computing Credits</h3>
-                        <i class="fas fa-coins card-icon"></i>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Computing Credits</h3>
+                            <i class="fas fa-coins card-icon"></i>
+                        </div>
+                        <h2>5,000</h2>
+                        <p>Available credits</p>
                     </div>
-                    <h2>5,000</h2>
-                    <p>Available credits</p>
                 </div>
-            </div>
 
-            <!-- Task List -->
-            <div class="task-list">
-                <h2>Recent Tasks</h2>
-                <div class="task-item">
-                    <div>
-                        <h4>Neural Network Training</h4>
-                        <p>Dataset: Financial Records 2023</p>
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <h3>Computing Resource Usage</h3>
+                        <canvas id="resourceChart"></canvas>
                     </div>
-                    <span class="task-status status-running">Running</span>
-                </div>
-                <div class="task-item">
-                    <div>
-                        <h4>Data Analysis Pipeline</h4>
-                        <p>Dataset: Customer Behavior Analysis</p>
+                    <div class="chart-card">
+                        <h3>Task Completion Trends</h3>
+                        <canvas id="trendsChart"></canvas>
                     </div>
-                    <span class="task-status status-completed">Completed</span>
                 </div>
-                <div class="task-item">
-                    <div>
-                        <h4>Model Optimization</h4>
-                        <p>Dataset: Market Trends 2023</p>
-                    </div>
-                    <span class="task-status status-pending">Pending</span>
-                </div>
-            </div>
+            </section>
 
-            <!-- Charts -->
-            <div class="charts-container">
-                <div class="chart-card">
-                    <h3>Computing Resource Usage</h3>
-                    <canvas id="resourceChart"></canvas>
+            <!-- Tasks Section -->
+            <section id="tasks" class="section">
+                <div class="header">
+                    <h1>Computing Tasks</h1>
+                    <button class="btn btn-primary" id="newTaskBtn">
+                        <i class="fas fa-plus"></i> New Task
+                    </button>
                 </div>
-                <div class="chart-card">
-                    <h3>Task Completion Trends</h3>
-                    <canvas id="trendsChart"></canvas>
+                <div class="task-management">
+                    <!-- Task Filters -->
+                    <div class="filters">
+                        <select class="filter-select">
+                            <option value="all">All Tasks</option>
+                            <option value="running">Running</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                        <input type="text" placeholder="Search tasks..." class="search-input">
+                    </div>
+
+                    <!-- Task List -->
+                    <div class="task-list">
+                        <div class="task-item">
+                            <div class="task-info">
+                                <h4>Financial Data Analysis</h4>
+                                <p>Dataset: Encrypted Financial Records 2023</p>
+                                <div class="task-details">
+                                    <span><i class="fas fa-clock"></i> Started: 2023-12-26 09:00</span>
+                                    <span><i class="fas fa-microchip"></i> Resources: 4 GPUs</span>
+                                    <span><i class="fas fa-lock"></i> FHE Enabled</span>
+                                </div>
+                            </div>
+                            <div class="task-actions">
+                                <span class="task-status status-running">Running</span>
+                                <button class="btn btn-sm btn-primary">View Logs</button>
+                                <button class="btn btn-sm btn-danger">Stop</button>
+                            </div>
+                        </div>
+
+                        <div class="task-item">
+                            <div class="task-info">
+                                <h4>Medical Data Processing</h4>
+                                <p>Dataset: Encrypted Patient Records</p>
+                                <div class="task-details">
+                                    <span><i class="fas fa-clock"></i> Started: 2023-12-25 15:30</span>
+                                    <span><i class="fas fa-microchip"></i> Resources: 2 GPUs</span>
+                                    <span><i class="fas fa-lock"></i> FHE Enabled</span>
+                                </div>
+                            </div>
+                            <div class="task-actions">
+                                <span class="task-status status-completed">Completed</span>
+                                <button class="btn btn-sm btn-primary">View Results</button>
+                                <button class="btn btn-sm btn-secondary">Download Report</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- Models Section -->
+            <section id="models" class="section">
+                <div class="header">
+                    <h1>AI Models</h1>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Deploy New Model
+                    </button>
+                </div>
+                <div class="models-container">
+                    <!-- Model Filters -->
+                    <div class="filters">
+                        <select class="filter-select">
+                            <option value="all">All Models</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <input type="text" placeholder="Search models..." class="search-input">
+                    </div>
+
+                    <!-- Models Grid -->
+                    <div class="models-grid">
+                        <div class="model-card">
+                            <div class="model-header">
+                                <h3>FHE-Enhanced Neural Network</h3>
+                                <span class="model-status active">Active</span>
+                            </div>
+                            <div class="model-info">
+                                <p><i class="fas fa-code-branch"></i> Version: 2.1.0</p>
+                                <p><i class="fas fa-microchip"></i> Framework: PyTorch + FHE</p>
+                                <p><i class="fas fa-shield-alt"></i> Security Level: High</p>
+                            </div>
+                            <div class="model-stats">
+                                <div class="stat">
+                                    <span>Accuracy</span>
+                                    <strong>94.5%</strong>
+                                </div>
+                                <div class="stat">
+                                    <span>Tasks</span>
+                                    <strong>156</strong>
+                                </div>
+                                <div class="stat">
+                                    <span>Uptime</span>
+                                    <strong>99.9%</strong>
+                                </div>
+                            </div>
+                            <div class="model-actions">
+                                <button class="btn btn-sm btn-primary">Configure</button>
+                                <button class="btn btn-sm btn-secondary">View Logs</button>
+                                <button class="btn btn-sm btn-danger">Stop</button>
+                            </div>
+                        </div>
+
+                        <div class="model-card">
+                            <div class="model-header">
+                                <h3>Secure Transformer Model</h3>
+                                <span class="model-status active">Active</span>
+                            </div>
+                            <div class="model-info">
+                                <p><i class="fas fa-code-branch"></i> Version: 1.5.2</p>
+                                <p><i class="fas fa-microchip"></i> Framework: TensorFlow + FHE</p>
+                                <p><i class="fas fa-shield-alt"></i> Security Level: High</p>
+                            </div>
+                            <div class="model-stats">
+                                <div class="stat">
+                                    <span>Accuracy</span>
+                                    <strong>92.8%</strong>
+                                </div>
+                                <div class="stat">
+                                    <span>Tasks</span>
+                                    <strong>89</strong>
+                                </div>
+                                <div class="stat">
+                                    <span>Uptime</span>
+                                    <strong>99.7%</strong>
+                                </div>
+                            </div>
+                            <div class="model-actions">
+                                <button class="btn btn-sm btn-primary">Configure</button>
+                                <button class="btn btn-sm btn-secondary">View Logs</button>
+                                <button class="btn btn-sm btn-danger">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="section">
+                <div class="header">
+                    <h1>Analytics</h1>
+                    <div class="date-range">
+                        <input type="date" class="date-input">
+                        <span>to</span>
+                        <input type="date" class="date-input">
+                        <button class="btn btn-primary">Apply</button>
+                    </div>
+                </div>
+                <div class="analytics-container">
+                    <!-- Performance Metrics -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3>Computing Performance</h3>
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Resource Utilization</h3>
+                            <canvas id="resourceUtilizationChart"></canvas>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Task Success Rate</h3>
+                            <canvas id="successRateChart"></canvas>
+                        </div>
+                        <div class="metric-card">
+                            <h3>FHE Operations</h3>
+                            <canvas id="fheOperationsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Statistics -->
+                    <div class="statistics-container">
+                        <h3>Detailed Statistics</h3>
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Last 24h</th>
+                                    <th>Last Week</th>
+                                    <th>Last Month</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Total Tasks Processed</td>
+                                    <td>245</td>
+                                    <td>1,678</td>
+                                    <td>6,892</td>
+                                </tr>
+                                <tr>
+                                    <td>Average Processing Time</td>
+                                    <td>45.2s</td>
+                                    <td>42.8s</td>
+                                    <td>43.5s</td>
+                                </tr>
+                                <tr>
+                                    <td>FHE Operations</td>
+                                    <td>12,456</td>
+                                    <td>85,234</td>
+                                    <td>342,567</td>
+                                </tr>
+                                <tr>
+                                    <td>Resource Usage</td>
+                                    <td>78%</td>
+                                    <td>82%</td>
+                                    <td>80%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="section">
+                <div class="header">
+                    <h1>Settings</h1>
+                </div>
+                <div class="settings-container">
+                    <!-- System Settings -->
+                    <div class="settings-card">
+                        <h3>System Configuration</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>Maximum Concurrent Tasks</label>
+                                <input type="number" value="10" min="1" max="50">
+                            </div>
+                            <div class="form-group">
+                                <label>Resource Allocation Strategy</label>
+                                <select>
+                                    <option>Balanced</option>
+                                    <option>Performance Priority</option>
+                                    <option>Energy Efficient</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>FHE Security Level</label>
+                                <select>
+                                    <option>High (128-bit)</option>
+                                    <option>Very High (256-bit)</option>
+                                    <option>Maximum (512-bit)</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- API Configuration -->
+                    <div class="settings-card">
+                        <h3>API Configuration</h3>
+                        <div class="api-settings">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <div class="api-key-display">
+                                    <input type="text" value="••••••••••••••••" readonly>
+                                    <button class="btn btn-sm btn-secondary">Show</button>
+                                    <button class="btn btn-sm btn-primary">Regenerate</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Webhook URL</label>
+                                <input type="url" placeholder="https://your-webhook-url.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notification Preferences -->
+                    <div class="settings-card">
+                        <h3>Notification Preferences</h3>
+                        <div class="notification-settings">
+                            <div class="setting-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                                <span>Task Completion Alerts</span>
+                            </div>
+                            <div class="setting-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                                <span>Error Notifications</span>
+                            </div>
+                            <div class="setting-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                                <span>System Updates</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -558,6 +1085,42 @@
         document.querySelector('.notifications i').addEventListener('click', function() {
             const notificationList = document.querySelector('.notification-list');
             notificationList.style.display = notificationList.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Navigation Handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuLinks = document.querySelectorAll('.sidebar-menu a');
+            const sections = document.querySelectorAll('.section');
+
+            // Hide all sections except the first one
+            sections.forEach((section, index) => {
+                if (index !== 0) {
+                    section.style.display = 'none';
+                }
+            });
+
+            menuLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    // Remove active class from all links
+                    menuLinks.forEach(l => l.classList.remove('active'));
+                    // Add active class to clicked link
+                    this.classList.add('active');
+
+                    // Hide all sections
+                    sections.forEach(section => {
+                        section.style.display = 'none';
+                    });
+
+                    // Show the selected section
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.style.display = 'block';
+                    }
+                });
+            });
         });
 
         // Initialize charts when page loads

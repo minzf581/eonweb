@@ -49,30 +49,36 @@
             border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .sidebar-menu {
-            list-style: none;
+        .logo {
+            margin-bottom: 2rem;
         }
 
-        .sidebar-menu li {
-            margin-bottom: 1rem;
+        .logo img {
+            width: 100%;
+            height: 50px;
+            object-fit: contain;
         }
 
-        .sidebar-menu a {
+        nav {
+            margin-top: 2rem;
+        }
+
+        nav a {
+            display: block;
+            padding: 1rem;
+            border-radius: 8px;
             color: var(--text-color);
             text-decoration: none;
-            display: flex;
-            align-items: center;
-            padding: 0.8rem;
-            border-radius: 8px;
             transition: background 0.3s;
         }
 
-        .sidebar-menu a:hover {
+        nav a:hover {
             background: rgba(255, 255, 255, 0.1);
         }
 
-        .sidebar-menu i {
-            margin-right: 10px;
+        nav a.active {
+            background: var(--primary-color);
+            color: #fff;
         }
 
         /* Main Content Styles */
@@ -80,111 +86,307 @@
             padding: 2rem;
         }
 
-        .content-header {
-            margin-bottom: 2rem;
+        section {
+            display: none;
+        }
+
+        section.active-section {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .stat-card i {
+            font-size: 24px;
+            margin-bottom: 1rem;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .chart {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
         }
 
         /* Upload Section */
-        .upload-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
+        .upload-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
         }
 
-        .upload-dropzone {
-            border: 2px dashed var(--secondary-color);
+        .upload-area {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
             border-radius: 10px;
-            padding: 3rem;
-            text-align: center;
+            border: 2px dashed var(--secondary-color);
             cursor: pointer;
             transition: all 0.3s;
         }
 
-        .upload-dropzone.dragover {
+        .upload-area:hover {
             border-color: var(--primary-color);
             background: rgba(77, 171, 247, 0.1);
         }
 
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            margin-top: 1rem;
-            overflow: hidden;
-            display: none;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
+        .upload-btn {
             background: var(--primary-color);
-            width: 0%;
-            transition: width 0.3s;
-        }
-
-        /* Data List Section */
-        .data-list {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 2rem;
-        }
-
-        .data-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
             cursor: pointer;
-            transition: background 0.3s;
         }
 
-        .data-item:hover {
+        .upload-list {
             background: rgba(255, 255, 255, 0.05);
-        }
-
-        .data-item-details {
-            display: none;
             padding: 1rem;
-            background: rgba(0, 0, 0, 0.2);
-            margin-top: 1rem;
-            border-radius: 8px;
+            border-radius: 10px;
         }
 
-        /* Permission Management */
-        .permission-manager {
-            margin-top: 1rem;
+        .data-preview {
+            background: rgba(255, 255, 255, 0.05);
             padding: 1rem;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
+            border-radius: 10px;
+            margin-top: 1rem;
         }
 
-        .user-list {
-            display: flex;
+        /* Encryption Section */
+        .encryption-status {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
             gap: 1rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
         }
 
-        .user-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            cursor: move;
+        .status-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .encryption-logs {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        /* Permissions Section */
+        .permissions-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .permission-rules {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .add-rule-btn {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .permission-requests {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        /* Storage Section */
+        .storage-overview {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .storage-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .storage-details {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
         }
 
         /* Analytics Section */
-        .analytics-section {
+        .analytics-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
         }
 
-        .chart-container {
+        .usage-chart {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 1.5rem;
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .access-logs {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        /* Settings Section */
+        .settings-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .settings-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input[type="text"], .form-group input[type="email"] {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .form-group input[type="text"]:focus, .form-group input[type="email"]:focus {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-settings {
+            margin-top: 1rem;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .api-keys {
+            margin-top: 1rem;
+        }
+
+        .api-key-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .api-key-item input[type="text"] {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .copy-btn, .regenerate-btn {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .generate-key-btn {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 1rem;
         }
 
         /* Toast Notifications */
@@ -216,63 +418,248 @@
     <div class="dashboard-container">
         <!-- Sidebar -->
         <div class="sidebar">
-            <ul class="sidebar-menu">
-                <li><a href="#"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="#"><i class="fas fa-upload"></i> Upload Data</a></li>
-                <li><a href="#"><i class="fas fa-key"></i> Permissions</a></li>
-                <li><a href="#"><i class="fas fa-chart-bar"></i> Analytics</a></li>
-                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
-            </ul>
+            <div class="logo">
+                <img src="../images/enologo.jpg" alt="EON Protocol Logo" style="height: 50px;">
+            </div>
+            <nav>
+                <a href="#overview" class="active"><i class="fas fa-home"></i> Overview</a>
+                <a href="#upload"><i class="fas fa-upload"></i> Data Upload</a>
+                <a href="#encryption"><i class="fas fa-lock"></i> Encryption</a>
+                <a href="#permissions"><i class="fas fa-key"></i> Permissions</a>
+                <a href="#storage"><i class="fas fa-database"></i> Storage</a>
+                <a href="#tracking"><i class="fas fa-chart-line"></i> Analytics</a>
+                <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+            </nav>
         </div>
 
         <!-- Main Content -->
         <div class="main-content">
-            <div class="content-header">
-                <h1>Data Management</h1>
-            </div>
+            <!-- Overview Section -->
+            <section id="overview" class="active-section">
+                <h2>Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-database"></i>
+                        <h3>Total Data</h3>
+                        <p>0 GB</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-lock"></i>
+                        <h3>Encrypted Data</h3>
+                        <p>0 GB</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3>Active Users</h3>
+                        <p>0</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-key"></i>
+                        <h3>Active Permissions</h3>
+                        <p>0</p>
+                    </div>
+                </div>
+                <div class="charts-container">
+                    <div class="chart">
+                        <canvas id="accessChart"></canvas>
+                    </div>
+                    <div class="chart">
+                        <canvas id="storageChart"></canvas>
+                    </div>
+                </div>
+            </section>
 
             <!-- Upload Section -->
-            <div class="upload-section">
-                <h2>Upload Data</h2>
-                <div class="upload-dropzone" id="uploadDropzone">
-                    <i class="fas fa-cloud-upload-alt fa-3x"></i>
-                    <p>Drag and drop your files here or click to select</p>
-                    <input type="file" id="fileInput" style="display: none;" multiple>
+            <section id="upload">
+                <h2>Data Upload</h2>
+                <div class="upload-container">
+                    <div class="upload-area" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag and drop files here or</p>
+                        <button class="upload-btn">Choose Files</button>
+                        <input type="file" id="fileInput" multiple hidden>
+                    </div>
+                    <div class="upload-list">
+                        <h3>Upload Queue</h3>
+                        <div id="uploadQueue"></div>
+                    </div>
                 </div>
-                <div class="progress-bar" id="progressBar">
-                    <div class="progress-bar-fill"></div>
+                <div class="data-preview">
+                    <h3>Data Preview</h3>
+                    <div id="previewContent"></div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Data List -->
-            <div class="data-list">
-                <h2>Your Data</h2>
-                <div id="dataItems">
-                    <!-- Data items will be dynamically added here -->
+            <!-- Encryption Section -->
+            <section id="encryption">
+                <h2>Data Encryption</h2>
+                <div class="encryption-status">
+                    <div class="status-card">
+                        <h3>Encryption Status</h3>
+                        <div class="status-list" id="encryptionStatus">
+                            <!-- Encryption status items will be added here -->
+                        </div>
+                    </div>
+                    <div class="encryption-logs">
+                        <h3>Encryption Logs</h3>
+                        <div class="log-list" id="encryptionLogs">
+                            <!-- Encryption logs will be added here -->
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- Permissions Section -->
+            <section id="permissions">
+                <h2>Data Permissions</h2>
+                <div class="permissions-container">
+                    <div class="permission-rules">
+                        <h3>Permission Rules</h3>
+                        <button class="add-rule-btn"><i class="fas fa-plus"></i> Add New Rule</button>
+                        <div class="rules-list" id="permissionRules">
+                            <!-- Permission rules will be added here -->
+                        </div>
+                    </div>
+                    <div class="permission-requests">
+                        <h3>Access Requests</h3>
+                        <div class="requests-list" id="accessRequests">
+                            <!-- Access requests will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Storage Section -->
+            <section id="storage">
+                <h2>Data Storage</h2>
+                <div class="storage-overview">
+                    <div class="storage-card">
+                        <h3>Storage Usage</h3>
+                        <canvas id="storageUsageChart"></canvas>
+                    </div>
+                    <div class="storage-details">
+                        <h3>Data Files</h3>
+                        <div class="data-list" id="dataFiles">
+                            <!-- Data files will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- Analytics Section -->
-            <div class="analytics-section">
-                <div class="chart-container">
-                    <canvas id="usageChart"></canvas>
+            <section id="tracking">
+                <h2>Usage Analytics</h2>
+                <div class="analytics-container">
+                    <div class="usage-chart">
+                        <canvas id="usageChart"></canvas>
+                    </div>
+                    <div class="access-logs">
+                        <h3>Access Logs</h3>
+                        <div class="log-list" id="accessLogs">
+                            <!-- Access logs will be added here -->
+                        </div>
+                    </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="accessChart"></canvas>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings">
+                <h2>System Settings</h2>
+                <div class="settings-container">
+                    <div class="settings-card">
+                        <h3>Account Settings</h3>
+                        <form id="accountForm">
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" name="username" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" name="email">
+                            </div>
+                            <button type="submit">Update Account</button>
+                        </form>
+                    </div>
+                    <div class="settings-card">
+                        <h3>Notification Settings</h3>
+                        <div class="notification-settings">
+                            <label class="switch">
+                                <input type="checkbox" id="emailNotifications">
+                                <span class="slider"></span>
+                                Email Notifications
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="smsNotifications">
+                                <span class="slider"></span>
+                                SMS Notifications
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <h3>API Settings</h3>
+                        <div class="api-keys">
+                            <div class="api-key-item">
+                                <input type="text" readonly value="••••••••••••••••">
+                                <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                                <button class="regenerate-btn"><i class="fas fa-sync"></i></button>
+                            </div>
+                            <button class="generate-key-btn">Generate New API Key</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast"></div>
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
 
     <script>
+        // Navigation Handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all navigation links
+            const navLinks = document.querySelectorAll('nav a');
+            
+            // Add click event to each link
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Get the section id from href
+                    const sectionId = this.getAttribute('href').substring(1);
+                    
+                    // Hide all sections
+                    document.querySelectorAll('section').forEach(section => {
+                        section.style.display = 'none';
+                        section.classList.remove('active-section');
+                    });
+                    
+                    // Show the selected section
+                    const targetSection = document.getElementById(sectionId);
+                    if (targetSection) {
+                        targetSection.style.display = 'block';
+                        targetSection.classList.add('active-section');
+                    }
+                });
+            });
+
+            // Initialize first section as visible
+            const firstSection = document.querySelector('section');
+            if (firstSection) {
+                firstSection.style.display = 'block';
+                firstSection.classList.add('active-section');
+            }
+        });
+
         // File Upload Handling
-        const dropzone = document.getElementById('uploadDropzone');
+        const dropzone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
-        const progressBar = document.getElementById('progressBar');
-        const progressBarFill = document.querySelector('.progress-bar-fill');
         const toast = document.getElementById('toast');
 
         // Drag and Drop Events
@@ -306,21 +693,15 @@
         }
 
         function uploadFile(file) {
-            // Show progress bar
-            progressBar.style.display = 'block';
-            
             // Simulate file upload with encryption
             let progress = 0;
             const interval = setInterval(() => {
                 progress += 5;
-                progressBarFill.style.width = progress + '%';
                 
                 if (progress >= 100) {
                     clearInterval(interval);
                     showToast('File uploaded and encrypted successfully!', 'success');
                     setTimeout(() => {
-                        progressBar.style.display = 'none';
-                        progressBarFill.style.width = '0%';
                         addDataItem(file.name);
                     }, 1000);
                 }
@@ -336,7 +717,7 @@
         }
 
         function addDataItem(filename) {
-            const dataItems = document.getElementById('dataItems');
+            const dataItems = document.getElementById('dataFiles');
             const item = document.createElement('div');
             item.className = 'data-item';
             item.innerHTML = `
@@ -446,6 +827,81 @@
                             labels: {
                                 color: 'white'
                             }
+                        }
+                    }
+                }
+            });
+
+            // Storage Chart
+            const storageCtx = document.getElementById('storageChart').getContext('2d');
+            new Chart(storageCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    datasets: [{
+                        label: 'Storage Usage',
+                        data: [65, 59, 80, 81, 56],
+                        backgroundColor: 'rgba(77, 171, 247, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Storage Usage Chart
+            const storageUsageCtx = document.getElementById('storageUsageChart').getContext('2d');
+            new Chart(storageUsageCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Used', 'Available'],
+                    datasets: [{
+                        data: [30, 70],
+                        backgroundColor: [
+                            'rgba(77, 171, 247, 0.8)',
+                            'rgba(173, 181, 189, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Storage Usage',
+                            color: 'white'
                         }
                     }
                 }
