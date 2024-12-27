@@ -9,14 +9,13 @@ const authenticate = require('../middleware/auth');
 
 // 注册
 router.post('/register', async (req, res) => {
-    const { email, password, referralCode } = req.body;
-    
     try {
-        console.log('Registration attempt:', {
-            email,
-            hasPassword: !!password,
-            referralCode
+        console.log('Registration request received:', {
+            body: req.body,
+            headers: req.headers
         });
+
+        const { email, password, referralCode } = req.body;
         
         // 检查必需字段
         if (!email || !password) {
@@ -38,33 +37,46 @@ router.post('/register', async (req, res) => {
         console.log('Generated referral code:', generatedReferralCode);
         
         // 创建新用户
-        console.log('Creating new user with email:', email);
-        const newUser = await User.create({
+        console.log('Creating new user:', {
+            email,
+            hasPassword: !!password,
+            referralCode: referralCode || generatedReferralCode
+        });
+
+        const userData = {
             email,
             password,
             referralCode: referralCode || generatedReferralCode
-        });
+        };
+
+        // 如果提供了推荐码，验证它
+        if (referralCode && referralCode.trim() !== '') {
+            console.log('Checking referral code:', referralCode);
+            const referrer = await User.findOne({ where: { referralCode } });
+            if (referrer) {
+                userData.referredBy = referrer.id;
+            } else {
+                console.log('Invalid referral code:', referralCode);
+                return res.status(400).json({ error: 'Invalid referral code' });
+            }
+        }
+
+        const newUser = await User.create(userData);
         
         console.log('User created successfully:', {
             id: newUser.id,
             email: newUser.email,
-            referralCode: newUser.referralCode
+            referralCode: newUser.referralCode,
+            referredBy: newUser.referredBy
         });
-        
-        // 如果有推荐码，处理推荐关系
-        if (referralCode) {
-            try {
-                await processReferral(newUser, referralCode);
-                console.log('Referral processed successfully');
-            } catch (referralError) {
-                console.error('Error processing referral:', referralError);
-                // 继续执行，不影响用户注册
-            }
-        }
         
         // 生成JWT token
         const token = jwt.sign(
-            { id: newUser.id, email: newUser.email },
+            { 
+                id: newUser.id, 
+                email: newUser.email,
+                isAdmin: newUser.isAdmin
+            },
             process.env.JWT_SECRET || 'your-secret-key',
             { expiresIn: '24h' }
         );
@@ -80,9 +92,8 @@ router.post('/register', async (req, res) => {
             user: userResponse
         });
     } catch (error) {
-        console.error('Error in registration:', error);
-        console.error('Full error details:', {
-            message: error.message,
+        console.error('Error in registration:', {
+            error: error.message,
             stack: error.stack,
             name: error.name,
             code: error.code
@@ -103,21 +114,29 @@ router.post('/register', async (req, res) => {
             });
         }
         
+        if (error.name === 'SequelizeConnectionError') {
+            return res.status(500).json({ 
+                error: 'Database connection error',
+                message: 'Unable to connect to the database'
+            });
+        }
+        
         res.status(500).json({ 
             error: 'Registration failed',
-            message: error.message,
-            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred during registration'
         });
     }
 });
 
 // 登录
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-    
     try {
-        console.log('Login attempt for:', email);
-        console.log('Request body:', JSON.stringify(req.body));
+        console.log('Login request received:', {
+            body: req.body,
+            headers: req.headers
+        });
+
+        const { email, password } = req.body;
         
         if (!email || !password) {
             console.log('Missing credentials');
@@ -127,8 +146,7 @@ router.post('/login', async (req, res) => {
         // 查找用户
         console.log('Finding user with email:', email);
         const user = await User.findOne({ 
-            where: { email },
-            attributes: ['id', 'email', 'password', 'isAdmin'] // 只选择需要的字段
+            where: { email }
         });
         
         if (!user) {
@@ -136,42 +154,73 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
         
-        console.log('User found:', user.email);
+        console.log('User found:', {
+            id: user.id,
+            email: user.email,
+            hasPassword: !!user.password
+        });
         
         // 验证密码
         console.log('Verifying password for user:', email);
-        const validPassword = await user.comparePassword(password);
-        console.log('Password validation result:', validPassword);
-        
-        if (!validPassword) {
-            console.log('Invalid password for user:', email);
-            return res.status(401).json({ error: 'Invalid credentials' });
+        try {
+            const validPassword = await user.comparePassword(password);
+            console.log('Password validation result:', validPassword);
+            
+            if (!validPassword) {
+                console.log('Invalid password for user:', email);
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
+        } catch (passwordError) {
+            console.error('Error comparing passwords:', passwordError);
+            throw passwordError;
         }
         
         console.log('Login successful for user:', email);
         
         // 生成JWT token
         const token = jwt.sign(
-            { id: user.id, email: user.email },
+            { 
+                id: user.id, 
+                email: user.email,
+                isAdmin: user.isAdmin
+            },
             process.env.JWT_SECRET || 'your-secret-key',
             { expiresIn: '24h' }
         );
         
         // 返回用户信息（不包含密码）
         const userResponse = user.toJSON();
-        delete userResponse.password;
         
         res.json({
             token,
             user: userResponse
         });
     } catch (error) {
-        console.error('Error in login:', error);
-        console.error('Stack trace:', error.stack);
+        console.error('Error in login:', {
+            error: error.message,
+            stack: error.stack,
+            name: error.name,
+            code: error.code
+        });
+        
+        // 根据错误类型返回适当的错误消息
+        if (error.name === 'SequelizeConnectionError') {
+            return res.status(500).json({ 
+                error: 'Database connection error',
+                message: 'Unable to connect to the database'
+            });
+        }
+        
+        if (error.name === 'SequelizeValidationError') {
+            return res.status(400).json({ 
+                error: 'Validation error',
+                details: error.errors.map(e => e.message)
+            });
+        }
+        
         res.status(500).json({ 
             error: 'Login failed',
-            message: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred during login'
         });
     }
 });

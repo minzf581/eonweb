@@ -10,10 +10,8 @@ if (process.env.NODE_ENV === 'production') {
 let sequelize;
 
 // 配置数据库连接
-sequelize = new Sequelize({
+const config = {
     dialect: 'postgres',
-    host: 'localhost',
-    port: 5432,
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD || 'eonprotocol',
@@ -24,7 +22,19 @@ sequelize = new Sequelize({
         idle: 10000
     },
     logging: console.log
-});
+};
+
+// 在生产环境中使用 Cloud SQL
+if (process.env.NODE_ENV === 'production') {
+    config.dialectOptions = {
+        socketPath: process.env.DB_HOST
+    };
+} else {
+    config.host = process.env.DB_HOST || 'localhost';
+    config.port = process.env.DB_PORT || 5432;
+}
+
+sequelize = new Sequelize(config);
 
 // 测试连接
 const connectWithRetry = async (maxRetries = 5, delay = 5000) => {
