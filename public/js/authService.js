@@ -140,12 +140,13 @@ class AuthService {
 
     async checkServerHealth() {
         try {
-            this.logInfo('Checking server health...');
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 5000);
-            
+            const timeout = setTimeout(() => {
+                controller.abort();
+            }, this._data.requestTimeout);
+
             try {
-                const response = await fetch(`${this._data.baseUrl}/health`, {
+                const response = await fetch(`${this._data.baseUrl}/api/health`, {
                     signal: controller.signal
                 });
                 
@@ -153,11 +154,6 @@ class AuthService {
                     status: response.status,
                     statusText: response.statusText
                 });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    this.logInfo('Health check data:', data);
-                }
                 
                 const isHealthy = response.ok;
                 this.logInfo(`Server health check: ${isHealthy ? 'OK' : 'Failed'}`);
@@ -204,8 +200,14 @@ class AuthService {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `Request failed with status ${response.status}`);
+                let errorMessage;
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message;
+                } catch (e) {
+                    errorMessage = `Request failed with status ${response.status}`;
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
@@ -240,20 +242,18 @@ class AuthService {
                     referralCode
                 })
             });
-
-            const data = await response.json();
             
             // 保存认证信息
-            this._data.token = data.token;
-            this._data.user = data.user;
+            this._data.token = response.token;
+            this._data.user = response.user;
 
             // 存储到 localStorage
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.setItem('authToken', response.token);
+            localStorage.setItem('user', JSON.stringify(response.user));
 
             return {
                 success: true,
-                user: data.user
+                user: response.user
             };
         } catch (error) {
             this.logError('Registration failed:', error);
@@ -310,18 +310,12 @@ class AuthService {
         }
 
         try {
-            const response = await this.makeRequest('/api/auth/verify-token', {
+            const data = await this.makeRequest('/api/auth/verify-token', {
                 method: 'GET'
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                this.logInfo('Token validation successful:', data);
-                return true;
-            } else {
-                this.logInfo('Token validation failed');
-                return false;
-            }
+            this.logInfo('Token validation successful:', data);
+            return true;
         } catch (error) {
             this.logError('Token validation error:', error);
             return false;
@@ -335,18 +329,12 @@ class AuthService {
         }
 
         try {
-            const response = await this.makeRequest('/api/auth/validate', {
+            const data = await this.makeRequest('/api/auth/validate', {
                 method: 'GET'
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                this.logInfo('Token validation successful:', data);
-                return true;
-            } else {
-                this.logInfo('Token validation failed');
-                return false;
-            }
+            this.logInfo('Token validation successful:', data);
+            return true;
         } catch (error) {
             this.logError('Token validation error:', error);
             return false;
@@ -401,22 +389,17 @@ class AuthService {
         }
 
         try {
-            const response = await this.makeRequest('/api/auth/user', {
+            const data = await this.makeRequest('/api/auth/user', {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch user data');
-            }
-
-            const data = await response.json();
-            this._data.user = data;
-            return data;
+            this._data.user = data.user;
+            return this._data.user;
         } catch (error) {
-            this.logError('Failed to get user data', error);
-            return null;
+            this.logError('Failed to fetch user data:', error);
+            throw error;
         }
     }
 
