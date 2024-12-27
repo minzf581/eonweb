@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node --max-old-space-size=512 server.js",
-    "dev": "kill -9 $(netstat -tulpn 2>/dev/null | grep ':8080' | awk '{print $7}' | cut -d'/' -f1) 2>/dev/null || true && nodemon server.js",
+    "dev": "kill -9 $(netstat -tulpn 2>/dev/null | grep ':8080' | awk '{split($7,a,\"/\"); print a[1]}') 2>/dev/null || true && nodemon server.js",
     "test": "jest"
   },
   "dependencies": {
