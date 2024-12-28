@@ -4,26 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EON Protocol Admin</title>
-    <link rel="stylesheet" href="css/admin.css">
+    
+    <!-- Load AuthService first -->
     <script src="/js/authService.js"></script>
-    <script>
-        // 检查管理员访问权限
-        async function checkAdminAccess() {
-            const auth = window._authService;
-            if (!auth) {
-                window.location.replace('/auth/login.html');
-                return;
-            }
-
-            const user = await auth.getUser();
-            if (!user || !user.isAdmin) {
-                window.location.replace('/auth/login.html');
-            }
-        }
-
-        // 页面加载时检查权限
-        checkAdminAccess();
-    </script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .admin-section {
             padding: 2rem;
@@ -298,27 +285,86 @@
             border: 1px solid #555;
             border-radius: 4px;
         }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background-color: #444;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .stat-card h3 {
+            margin-top: 0;
+            color: #fff;
+        }
+        
+        .editable-field {
+            padding: 0.5rem;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #444;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <img src="images/enologo.jpg" alt="EON Protocol">
-            <h1>管理后台</h1>
-        </div>
-        <div class="user-info">
-            <span id="adminEmail" class="username"></span>
-            <button onclick="logout()" class="secondary">退出登录</button>
-        </div>
-    </header>
-
     <div class="container">
-        <!-- 用户管理部分 -->
+        <!-- Top Bar -->
+        <header>
+            <div class="logo">
+                <img src="images/enologo.jpg" alt="EON Protocol">
+                <h1>管理后台</h1>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <span id="adminEmail" class="username"></span>
+                <button onclick="logout()" class="secondary">退出登录</button>
+            </div>
+        </header>
+
+        <!-- Stats Overview -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2 class="section-title">数据概览</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>总用户数</h3>
+                    <p id="totalUsers">加载中...</p>
+                </div>
+                <div class="stat-card">
+                    <h3>今日活跃用户</h3>
+                    <p id="activeUsers">加载中...</p>
+                </div>
+                <div class="stat-card">
+                    <h3>总任务数</h3>
+                    <p id="totalTasks">加载中...</p>
+                </div>
+                <div class="stat-card">
+                    <h3>已完成任务</h3>
+                    <p id="completedTasks">加载中...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- User Management -->
         <section class="admin-section">
             <div class="section-header">
                 <h2 class="section-title">用户管理</h2>
                 <div class="actions">
-                    <button onclick="refreshUsers()">刷新</button>
+                    <button onclick="addUser()" class="secondary">
+                        <i class="fas fa-user-plus"></i> 添加用户
+                    </button>
+                    <button onclick="refreshUsers()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
                 </div>
             </div>
             <div class="table-container">
@@ -327,6 +373,7 @@
                         <tr>
                             <th>ID</th>
                             <th>邮箱</th>
+                            <th>密码</th>
                             <th>积分</th>
                             <th>推荐码</th>
                             <th>注册时间</th>
@@ -335,20 +382,23 @@
                     </thead>
                     <tbody id="userList">
                         <tr>
-                            <td colspan="6" class="loading">加载中...</td>
+                            <td colspan="7" class="loading">
+                                <i class="fas fa-spinner fa-spin"></i> 加载中...
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- 任务管理部分 -->
+        <!-- Task Management -->
         <section class="admin-section">
             <div class="section-header">
                 <h2 class="section-title">任务管理</h2>
                 <div class="actions">
-                    <button onclick="createTask()" class="secondary">新建任务</button>
-                    <button onclick="refreshTasks()">刷新</button>
+                    <button onclick="refreshTasks()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
                 </div>
             </div>
             <div class="table-container">
@@ -364,19 +414,23 @@
                     </thead>
                     <tbody id="taskList">
                         <tr>
-                            <td colspan="5" class="loading">加载中...</td>
+                            <td colspan="5" class="loading">
+                                <i class="fas fa-spinner fa-spin"></i> 加载中...
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- 系统设置部分 -->
+        <!-- System Settings -->
         <section class="admin-section">
             <div class="section-header">
                 <h2 class="section-title">系统设置</h2>
                 <div class="actions">
-                    <button onclick="saveSettings()">保存设置</button>
+                    <button onclick="saveSettings()">
+                        <i class="fas fa-save"></i> 保存设置
+                    </button>
                 </div>
             </div>
             <div class="settings-form">
@@ -397,38 +451,8 @@
             console.log('[Admin] Initializing admin page...');
             
             try {
-                // 等待 AuthService 初始化
-                const auth = window._authService;
-                if (!auth) {
-                    console.error('[Admin] AuthService not available');
-                    window.location.replace('/auth/login.html');
-                    return;
-                }
-
-                // 检查用户是否已登录
-                const user = await auth.getUser();
-                if (!user) {
-                    console.log('[Admin] No user found, redirecting to login...');
-                    window.location.replace('/auth/login.html');
-                    return;
-                }
-
-                // 检查是否是管理员
-                if (!user.isAdmin) {
-                    console.log('[Admin] User is not admin, redirecting to dashboard...');
-                    window.location.replace('/dashboard/');
-                    return;
-                }
-
-                console.log('[Admin] Admin user verified:', {
-                    email: user.email,
-                    isAdmin: user.isAdmin
-                });
-
-                // 更新用户信息显示
-                document.getElementById('adminEmail').textContent = user.email;
-
-                // 初始化管理员功能
+                await waitForAuthService();
+                await checkAdminAccess();
                 await loadAdminData();
             } catch (error) {
                 console.error('[Admin] Error initializing admin page:', error);
@@ -436,15 +460,73 @@
             }
         }
 
+        async function waitForAuthService() {
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            while (!window._authService && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+
+            if (!window._authService) {
+                throw new Error('AuthService not available');
+            }
+        }
+
+        async function checkAdminAccess() {
+            const auth = window._authService;
+            const user = await auth.getUser();
+
+            if (!user || !user.isAdmin) {
+                throw new Error('Unauthorized access');
+            }
+
+            console.log('[Admin] Admin user verified:', {
+                email: user.email,
+                isAdmin: user.isAdmin
+            });
+
+            document.getElementById('adminEmail').textContent = user.email;
+        }
+
         async function loadAdminData() {
             try {
                 await Promise.all([
+                    loadStats(),
                     loadUsers(),
                     loadTasks(),
                     loadSettings()
                 ]);
             } catch (error) {
                 console.error('[Admin] Error loading admin data:', error);
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load stats');
+                }
+
+                const stats = await response.json();
+                
+                document.getElementById('totalUsers').textContent = stats.totalUsers || '0';
+                document.getElementById('activeUsers').textContent = stats.activeUsers || '0';
+                document.getElementById('totalTasks').textContent = stats.totalTasks || '0';
+                document.getElementById('completedTasks').textContent = stats.completedTasks || '0';
+            } catch (error) {
+                console.error('[Admin] Error loading stats:', error);
+                const stats = ['totalUsers', 'activeUsers', 'totalTasks', 'completedTasks'];
+                stats.forEach(id => {
+                    document.getElementById(id).textContent = '加载失败';
+                });
             }
         }
 
@@ -464,25 +546,40 @@
                 const users = await response.json();
                 
                 if (users.length === 0) {
-                    userList.innerHTML = '<tr><td colspan="6" class="empty-state">暂无用户数据</td></tr>';
+                    userList.innerHTML = '<tr><td colspan="7" class="empty-state">暂无用户数据</td></tr>';
                     return;
                 }
 
                 userList.innerHTML = users.map(user => `
                     <tr>
                         <td>${user.id}</td>
-                        <td>${user.email}</td>
-                        <td>${user.points}</td>
+                        <td>
+                            <input type="text" value="${user.email}" 
+                                onchange="updateUser(${user.id}, 'email', this.value)"
+                                class="editable-field">
+                        </td>
+                        <td>
+                            <input type="password" placeholder="点击修改密码"
+                                onchange="updateUser(${user.id}, 'password', this.value)"
+                                class="editable-field">
+                        </td>
+                        <td>
+                            <input type="number" value="${user.points}" 
+                                onchange="updateUser(${user.id}, 'points', this.value)"
+                                class="editable-field">
+                        </td>
                         <td>${user.referralCode}</td>
                         <td>${new Date(user.createdAt).toLocaleString()}</td>
                         <td>
-                            <button onclick="editUser(${user.id})" class="secondary">编辑</button>
+                            <button onclick="deleteUser(${user.id})" class="danger">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
                         </td>
                     </tr>
                 `).join('');
             } catch (error) {
                 console.error('[Admin] Error loading users:', error);
-                userList.innerHTML = '<tr><td colspan="6" class="empty-state">加载失败</td></tr>';
+                userList.innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>';
             }
         }
 
@@ -509,7 +606,10 @@
                 taskList.innerHTML = tasks.map(task => `
                     <tr>
                         <td>${task.title}</td>
-                        <td>${task.description}</td>
+                        <td>
+                            <textarea onchange="updateTask(${task.id}, 'description', this.value)"
+                                    class="editable-field">${task.description}</textarea>
+                        </td>
                         <td>${task.points}</td>
                         <td>
                             <span class="status-badge ${task.isActive ? 'status-active' : 'status-inactive'}">
@@ -517,8 +617,10 @@
                             </span>
                         </td>
                         <td>
-                            <button onclick="editTask(${task.id})" class="secondary">编辑</button>
-                            <button onclick="toggleTask(${task.id})">${task.isActive ? '暂停' : '启用'}</button>
+                            <button onclick="toggleTask(${task.id})" class="${task.isActive ? 'warning' : 'success'}">
+                                <i class="fas fa-${task.isActive ? 'pause' : 'play'}"></i>
+                                ${task.isActive ? '暂停' : '启用'}
+                            </button>
                         </td>
                     </tr>
                 `).join('');
@@ -550,30 +652,178 @@
         }
 
         async function refreshUsers() {
-            const button = event.target;
+            const button = event.target.closest('button');
             button.disabled = true;
             await loadUsers();
             button.disabled = false;
         }
 
         async function refreshTasks() {
-            const button = event.target;
+            const button = event.target.closest('button');
             button.disabled = true;
             await loadTasks();
             button.disabled = false;
         }
 
+        async function saveSettings() {
+            const button = event.target.closest('button');
+            button.disabled = true;
+
+            try {
+                const settings = {
+                    referralPoints: parseInt(document.getElementById('referralPoints').value),
+                    dailyCheckInPoints: parseInt(document.getElementById('dailyCheckInPoints').value)
+                };
+
+                const response = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save settings');
+                }
+
+                alert('设置已保存');
+            } catch (error) {
+                console.error('[Admin] Error saving settings:', error);
+                alert('保存设置失败');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
         async function logout() {
             try {
-                const auth = window._authService;
-                if (auth) {
-                    await auth.logout();
-                } else {
-                    window.location.replace('/auth/login.html');
-                }
+                await window._authService.logout();
             } catch (error) {
                 console.error('[Admin] Logout error:', error);
                 window.location.replace('/auth/login.html');
+            }
+        }
+
+        async function addUser() {
+            const email = prompt('请输入用户邮箱：');
+            if (!email) return;
+
+            const password = prompt('请输入用户密码：');
+            if (!password) return;
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add user');
+                }
+
+                alert('用户添加成功');
+                await loadUsers();
+            } catch (error) {
+                console.error('[Admin] Error adding user:', error);
+                alert('添加用户失败');
+            }
+        }
+
+        async function updateUser(userId, field, value) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    },
+                    body: JSON.stringify({ [field]: value })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update user');
+                }
+
+                // 如果更新成功，不需要刷新整个列表
+                console.log(`[Admin] Updated user ${userId} ${field}`);
+            } catch (error) {
+                console.error('[Admin] Error updating user:', error);
+                alert('更新用户失败');
+                await loadUsers(); // 重新加载以恢复原始数据
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除该用户吗？此操作不可恢复。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete user');
+                }
+
+                alert('用户已删除');
+                await loadUsers();
+            } catch (error) {
+                console.error('[Admin] Error deleting user:', error);
+                alert('删除用户失败');
+            }
+        }
+
+        async function updateTask(taskId, field, value) {
+            try {
+                const response = await fetch(`/api/admin/tasks/${taskId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    },
+                    body: JSON.stringify({ [field]: value })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update task');
+                }
+
+                console.log(`[Admin] Updated task ${taskId} ${field}`);
+            } catch (error) {
+                console.error('[Admin] Error updating task:', error);
+                alert('更新任务失败');
+                await loadTasks(); // 重新加载以恢复原始数据
+            }
+        }
+
+        async function toggleTask(taskId) {
+            try {
+                const response = await fetch(`/api/admin/tasks/${taskId}/toggle`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to toggle task');
+                }
+
+                await loadTasks();
+            } catch (error) {
+                console.error('[Admin] Error toggling task:', error);
+                alert('切换任务状态失败');
             }
         }
 
