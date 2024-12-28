@@ -1,9 +1,8 @@
-// 加载环境变量
-if (process.env.NODE_ENV === 'production') {
-    require('dotenv').config({ path: '.env.production' });
-} else {
-    require('dotenv').config();
-}
+// Load environment variables based on NODE_ENV
+const dotenv = require('dotenv');
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+dotenv.config({ path: envFile });
+console.log('Loading environment from:', envFile);
 
 const express = require('express');
 const cors = require('cors');
@@ -84,10 +83,18 @@ app.get('/_ah/stop', async (req, res) => {
         }, 1000);
     } catch (error) {
         console.error('Error handling stop request:', error);
-        // Don't send error response since we already sent OK
         process.exit(1);
     }
 });
+
+// Apply authentication only to API routes
+app.use('/api', authenticateToken);
+
+// API routes (must come before the catch-all route)
+app.use('/api/auth', authRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Public routes (no authentication required)
 app.get('/', (req, res) => {
@@ -98,17 +105,14 @@ app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
 });
 
-// Apply authentication only to API routes
-app.use('/api', authenticateToken);
-
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/referral', referralRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/stats', statsRoutes);
-
 // Handle frontend routing (no authentication required)
+// This must be the last route
 app.get('*', (req, res) => {
+    // Don't handle API routes here
+    if (req.path.startsWith('/api/')) {
+        res.status(404).json({ error: 'API endpoint not found' });
+        return;
+    }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -129,6 +133,9 @@ async function startServer() {
 
         // Start server
         const port = process.env.PORT || 8080;
+        console.log('Environment:', process.env.NODE_ENV);
+        console.log('Using port:', port, 'from environment:', process.env.PORT);
+        
         server = app.listen(port, () => {
             console.log(`Server running on port ${port}`);
         });

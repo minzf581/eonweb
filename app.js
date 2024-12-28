@@ -35,15 +35,11 @@ app.use('/api/admin', adminRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(err.status || 500).json({
-        error: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error'
+    console.error(err.stack);
+    res.status(500).json({
+        message: 'Something broke!',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
-});
-
-const port = process.env.PORT || 8080;
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
 });
 
 module.exports = app;
