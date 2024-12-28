@@ -30,7 +30,17 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Health check endpoints for App Engine
+app.use(express.json());
+app.use(cookieParser());
+app.use(compression());
+
+// Serve static files and public routes first (no authentication required)
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Health check endpoints for App Engine (no authentication required)
 app.get('/_ah/start', (req, res) => {
     res.status(200).send('OK');
 });
@@ -38,8 +48,6 @@ app.get('/_ah/start', (req, res) => {
 app.get('/_ah/health', (req, res) => {
     res.status(200).send('OK');
 });
-
-let server;
 
 app.get('/_ah/stop', async (req, res) => {
     console.log('Received stop request');
@@ -66,11 +74,7 @@ app.get('/_ah/stop', async (req, res) => {
     }, 1000);
 });
 
-app.use(express.json());
-app.use(cookieParser());
-app.use(compression());
-
-// 请求日志中间件
+// Request logging middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
     if (req.method === 'POST') {
@@ -79,22 +83,16 @@ app.use((req, res, next) => {
     next();
 });
 
-// 认证中间件
-app.use(authenticateToken);
+// Apply authentication only to API routes
+app.use('/api', authenticateToken);
 
-// API 路由
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 
-// Serve static files and root path without authentication
-app.use(express.static(path.join(__dirname, 'public')));
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// 处理前端路由
+// Handle frontend routing (no authentication required)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -115,7 +113,7 @@ async function startServer() {
         console.log('Admin user created successfully');
 
         // Start server
-        const port = process.env.PORT || 8080;
+        const port = parseInt(process.env.PORT || '8080', 10);
         server = app.listen(port, () => {
             console.log(`Server running on port ${port}`);
         });
