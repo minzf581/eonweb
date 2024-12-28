@@ -154,6 +154,15 @@ router.post('/login', async (req, res) => {
         );
 
         console.log('Login successful for user:', email);
+        
+        // Debug: 打印完整的用户数据
+        console.log('Full user data:', {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            points: user.points,
+            referralCode: user.referralCode
+        });
 
         // 返回用户信息和 token
         return res.json({
@@ -230,6 +239,13 @@ router.get('/verify-token', authenticate, async (req, res) => {
                 message: 'User not found'
             });
         }
+
+        // Debug: 打印用户验证数据
+        console.log('Token verification successful for user:', {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin
+        });
 
         res.json({
             success: true,

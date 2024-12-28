@@ -53,7 +53,7 @@ class AuthService {
         return this._data.user && this._data.user.isAdmin;
     }
 
-    getUser() {
+    async getUser() {
         if (!this._data.token) {
             return null;
         }
@@ -62,6 +62,11 @@ class AuthService {
             try {
                 const data = await this.makeRequest('/api/auth/me');
                 if (data && data.user) {
+                    this.logInfo('Received user data from server:', {
+                        id: data.user.id,
+                        email: data.user.email,
+                        isAdmin: data.user.isAdmin
+                    });
                     this._data.user = data.user;
                     localStorage.setItem('user', JSON.stringify(data.user));
                 }
@@ -69,6 +74,12 @@ class AuthService {
                 this.logError('Failed to fetch user data:', error);
                 return null;
             }
+        } else {
+            this.logInfo('Using cached user data:', {
+                id: this._data.user.id,
+                email: this._data.user.email,
+                isAdmin: this._data.user.isAdmin
+            });
         }
 
         return this._data.user;
@@ -403,6 +414,15 @@ class AuthService {
                 throw new Error('Invalid response from server');
             }
 
+            this.logInfo('Login response:', {
+                token: !!data.token,
+                user: {
+                    id: data.user.id,
+                    email: data.user.email,
+                    isAdmin: data.user.isAdmin
+                }
+            });
+
             // 保存认证信息
             this._data.token = data.token;
             this._data.user = data.user;
@@ -426,27 +446,6 @@ class AuthService {
             this.logError('Login failed:', error);
             throw error;
         }
-    }
-
-    async getUser() {
-        if (!this._data.token) {
-            return null;
-        }
-
-        if (!this._data.user) {
-            try {
-                const data = await this.makeRequest('/api/auth/me');
-                if (data && data.user) {
-                    this._data.user = data.user;
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                }
-            } catch (error) {
-                this.logError('Failed to fetch user data:', error);
-                return null;
-            }
-        }
-
-        return this._data.user;
     }
 
     setToken(token) {
