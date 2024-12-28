@@ -80,6 +80,10 @@ User.init({
     isAdmin: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+    isAdmin: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
 }, {
     sequelize,

@@ -26,4 +26,21 @@ async function authenticate(req, res, next) {
     }
 }
 
-module.exports = authenticate;
+// 管理员认证中间件
+const isAdmin = async (req, res, next) => {
+    try {
+        // 检查用户是否为管理员
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+        }
+        next();
+    } catch (error) {
+        console.error('Error in admin authentication:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+module.exports = {
+    authenticateToken: authenticate,
+    isAdmin
+};
