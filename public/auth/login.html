@@ -201,18 +201,13 @@
 
                 try {
                     const response = await auth.login(emailInput.value, passwordInput.value);
-                    console.log('Login response:', response);
-
-                    if (response && response.user) {
-                        console.log('Login successful:', {
+                    console.log('Login response:', {
+                        success: response.success,
+                        user: {
                             email: response.user.email,
                             isAdmin: response.user.isAdmin
-                        });
-                        // 根据用户角色重定向
-                        window.location.href = response.user.isAdmin ? '/admin/' : '/dashboard/';
-                    } else {
-                        showError('登录失败，请检查您的邮箱和密码');
-                    }
+                        }
+                    });
                 } catch (error) {
                     console.error('Login error:', error);
                     showError('登录时发生错误，请稍后重试');

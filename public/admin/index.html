@@ -174,7 +174,7 @@
                 <img src="images/enologo.jpg" alt="EON Protocol">
             </div>
             <div class="user-info">
-                <span class="username"></span>
+                <span id="adminEmail" class="username"></span>
                 <button onclick="logout()">Logout</button>
             </div>
         </header>
@@ -229,6 +229,38 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const auth = new AuthService();
+            
+            try {
+                // 检查用户是否已登录
+                const user = await auth.getUser();
+                if (!user) {
+                    console.log('[Admin] No user found, redirecting to login...');
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
+
+                // 检查是否是管理员
+                if (!user.isAdmin) {
+                    console.log('[Admin] User is not admin, redirecting to dashboard...');
+                    window.location.href = '/dashboard/';
+                    return;
+                }
+
+                console.log('[Admin] Admin user verified:', {
+                    email: user.email,
+                    isAdmin: user.isAdmin
+                });
+
+                // 更新用户信息显示
+                document.getElementById('adminEmail').textContent = user.email;
+            } catch (error) {
+                console.error('[Admin] Error initializing admin page:', error);
+                window.location.href = '/auth/login.html';
+            }
+        });
+
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', () => {
             // Check authentication

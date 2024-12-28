@@ -68,18 +68,16 @@ class AuthService {
 
         if (!this._data.user) {
             try {
-                const data = await this.makeRequest('/api/auth/me');
-                if (data && data.user) {
-                    this.logInfo('[AuthService] Received user data from server:', {
-                        id: data.user.id,
-                        email: data.user.email,
-                        isAdmin: data.user.isAdmin
-                    });
-                    this._data.user = data.user;
-                    localStorage.setItem('user', JSON.stringify(data.user));
+                // 验证 token 并获取最新的用户信息
+                const isValid = await this.verifyToken();
+                if (!isValid) {
+                    this.logInfo('[AuthService] Token invalid, clearing auth data');
+                    this.clearAuth();
+                    return null;
                 }
             } catch (error) {
                 this.logError('[AuthService] Failed to fetch user data:', error);
+                this.clearAuth();
                 return null;
             }
         } else {
@@ -465,6 +463,11 @@ class AuthService {
                 email: data.user.email,
                 isAdmin: data.user.isAdmin 
             });
+
+            // 根据用户角色重定向
+            const redirectPath = data.user.isAdmin ? '/admin/' : '/dashboard/';
+            this.logInfo('[AuthService] Redirecting to:', redirectPath);
+            window.location.href = redirectPath;
 
             return data;
         } catch (error) {

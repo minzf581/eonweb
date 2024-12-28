@@ -566,10 +566,19 @@
 
                 // Update user info
                 const user = await window.authService.getUser();
-                if (user && user.email) {
+                console.log('[Dashboard] User info:', user);
+
+                if (!user) {
+                    console.log('[Dashboard] No user found, redirecting to login...');
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
+
+                if (user.email) {
                     document.getElementById('userName').textContent = user.email;
                 } else {
-                    throw new Error('Failed to get user information');
+                    console.error('[Dashboard] User found but no email:', user);
+                    throw new Error('Invalid user information');
                 }
 
                 // Load all data concurrently
@@ -581,7 +590,17 @@
 
             } catch (error) {
                 console.error('[Dashboard] Dashboard initialization failed (attempt ' + attempt + '/' + maxAttempts + '):', error);
+                
+                // If we get a 401 or user is null, redirect to login
+                if (error.message.includes('401') || error.message.includes('unauthorized') || 
+                    error.message.includes('Invalid token') || error.message.includes('Failed to get user information')) {
+                    console.log('[Dashboard] Authentication error, redirecting to login...');
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
+
                 if (attempt < maxAttempts) {
+                    console.log('[Dashboard] Retrying initialization...');
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     return initializeDashboard(attempt + 1, maxAttempts);
                 }
@@ -594,7 +613,9 @@
             try {
                 await initializeDashboard();
             } catch (error) {
-                console.error('Failed to initialize dashboard:', error);
+                console.error('[Dashboard] Failed to initialize dashboard:', error);
+                // Final fallback - redirect to login if all else fails
+                window.location.href = '/auth/login.html';
             }
         });
     </script>
