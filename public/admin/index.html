@@ -9,323 +9,206 @@
     <script src="/js/authService.js"></script>
     
     <!-- Styles -->
-    <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .admin-section {
-            padding: 2rem;
-            background: #2a2a2a;
-            border-radius: 8px;
-            margin: 2rem 0;
-        }
-
-        .admin-controls {
-            display: flex;
-            gap: 2rem;
-            align-items: stretch;
-        }
-
-        .control-card {
-            background: #333;
-            padding: 1.5rem;
-            border-radius: 8px;
-            flex: 1;
-        }
-
-        .control-card h3 {
-            margin-top: 0;
-            color: var(--primary-color);
-        }
-
-        .task-list {
-            list-style: none;
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
-        .task-item {
-            background: #444;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 4px;
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            line-height: 1.5;
         }
 
-        .task-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .button-group button {
-            flex: 1;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-        }
-
-        .modal-content {
-            position: relative;
-            background: #333;
-            margin: 10% auto;
-            padding: 2rem;
-            width: 80%;
-            max-width: 600px;
-            border-radius: 8px;
-        }
-
-        .close-modal {
-            position: absolute;
-            right: 1rem;
-            top: 1rem;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #fff;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #fff;
-        }
-
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #555;
-            border-radius: 4px;
-            background: #444;
-            color: #fff;
-        }
-
-        .error-message {
-            color: #ff4444;
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .task-toggle-btn {
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            border: none;
-            font-weight: bold;
-        }
-
-        .task-toggle-btn.active {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .task-toggle-btn.inactive {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .task-status {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-
-        .status-active {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .status-inactive {
-            background-color: #dc3545;
-            color: white;
-        }
-        
-        header {
-            background-color: #333;
-            color: #fff;
-            padding: 1rem;
-            text-align: center;
-        }
-
-        header .logo {
-            margin-bottom: 1rem;
-        }
-
-        header .logo img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-        }
-
-        header .user-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        header .user-info .username {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        header .user-info button {
-            background-color: #444;
-            color: #fff;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
+        /* Layout */
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1rem;
         }
 
-        .admin-section {
-            background-color: #333;
-            padding: 2rem;
-            border-radius: 8px;
+        /* Top Bar */
+        .top-bar {
+            background-color: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem;
             margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        .admin-section h2 {
-            margin-top: 0;
-        }
-
-        .section-header {
+        .top-bar-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .section-header .section-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .section-header .actions {
+        .user-info {
             display: flex;
+            align-items: center;
             gap: 1rem;
         }
 
-        .section-header .actions button {
-            background-color: #444;
-            color: #fff;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
+        .user-email {
+            font-weight: 500;
         }
 
+        /* Admin Sections */
+        .admin-section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #111827;
+            margin: 0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Tables */
         .table-container {
             overflow-x: auto;
         }
 
-        .table-container table {
+        table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .table-container th, .table-container td {
-            border: 1px solid #555;
-            padding: 0.5rem;
-            text-align: left;
-        }
-
-        .table-container th {
-            background-color: #444;
-            color: #fff;
-        }
-
-        .loading {
-            text-align: center;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: #666;
-        }
-
-        .settings-form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .settings-form .form-group {
-            flex: 1;
-        }
-
-        .settings-form label {
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-
-        .settings-form input[type="number"] {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #555;
-            border-radius: 4px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-        }
-
-        .stat-card {
-            background-color: #444;
+        th, td {
             padding: 1rem;
-            border-radius: 8px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .stat-card h3 {
-            margin-top: 0;
-            color: #fff;
+        th {
+            background-color: #f9fafb;
+            font-weight: 500;
+            color: #4b5563;
         }
-        
-        .editable-field {
-            padding: 0.5rem;
-            border: 1px solid #555;
-            border-radius: 4px;
-            background: #444;
-            color: #fff;
+
+        tr:hover {
+            background-color: #f9fafb;
+        }
+
+        /* Buttons */
+        button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+            cursor: pointer;
+            background-color: #4f46e5;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #4338ca;
+        }
+
+        button.secondary {
+            background-color: white;
+            border-color: #d1d5db;
+            color: #4b5563;
+        }
+
+        button.secondary:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        /* Loading and Empty States */
+        .loading, .empty-state {
+            padding: 2rem;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .loading i {
+            margin-right: 0.5rem;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            th, td {
+                padding: 0.75rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Top Bar -->
-        <header>
-            <div class="logo">
-                <img src="images/enologo.jpg" alt="EON Protocol">
-                <h1>管理后台</h1>
-            </div>
-            <div class="user-info">
-                <div class="user-avatar">
-                    <i class="fas fa-user"></i>
+        <header class="top-bar">
+            <div class="top-bar-content">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span id="adminEmail" class="user-email"></span>
+                    <button onclick="logout()" class="secondary">
+                        <i class="fas fa-sign-out-alt"></i> 退出登录
+                    </button>
                 </div>
-                <span id="adminEmail" class="username"></span>
-                <button onclick="logout()" class="secondary">退出登录</button>
             </div>
         </header>
 
