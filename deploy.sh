@@ -11,7 +11,7 @@ fi
 
 # 部署新版本
 echo "Deploying new version..."
-gcloud app deploy
+gcloud app deploy --quiet
 
 # 如果部署成功
 if [ $? -eq 0 ]; then
