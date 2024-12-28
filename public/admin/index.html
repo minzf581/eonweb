@@ -425,12 +425,19 @@
 
         async function initializeAdmin() {
             try {
-                // Get auth token and user
-                const token = window._authService.getToken();
-                const user = await window._authService.getUser();
+                console.log('[Admin] Initializing admin page');
+                
+                // Verify token and get user data
+                const isValid = await window._authService.verifyToken();
+                if (!isValid) {
+                    console.error('[Admin] Token verification failed');
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
 
-                if (!token || !user) {
-                    console.error('[Admin] No authentication token or user found');
+                const user = window._authService.getUser();
+                if (!user) {
+                    console.error('[Admin] No user data available');
                     window.location.href = '/auth/login.html';
                     return;
                 }
@@ -441,11 +448,14 @@
                     return;
                 }
 
-                console.log('[Admin] Admin user verified:', user);
+                console.log('[Admin] Admin user verified:', {
+                    email: user.email,
+                    isAdmin: user.isAdmin
+                });
 
                 // Set up authorization headers for API calls
                 const headers = {
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': `Bearer ${window._authService.getToken()}`,
                     'Content-Type': 'application/json'
                 };
 

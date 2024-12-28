@@ -28,6 +28,8 @@ class AuthService {
                     email: this._data.user.email,
                     isAdmin: this._data.user.isAdmin
                 });
+            } else {
+                this.logInfo('No auth data in storage');
             }
         } catch (error) {
             this.logError('Error initializing from storage:', error);
@@ -55,6 +57,15 @@ class AuthService {
                 body: JSON.stringify({ email, password })
             });
 
+            if (!response.ok) {
+                const error = await response.json();
+                this.logError('Login failed:', error.message);
+                return {
+                    success: false,
+                    error: error.message || 'Login failed'
+                };
+            }
+
             const data = await response.json();
             
             if (data.success && data.token && data.user) {
@@ -73,10 +84,16 @@ class AuthService {
 
                 return {
                     success: true,
-                    user: data.user
+                    user: {
+                        id: data.user.id,
+                        email: data.user.email,
+                        isAdmin: data.user.isAdmin,
+                        points: data.user.points,
+                        referralCode: data.user.referralCode
+                    }
                 };
             } else {
-                this.logError('Login failed:', data.message);
+                this.logError('Login failed:', data.message || 'Invalid response');
                 return {
                     success: false,
                     error: data.message || 'Login failed'
@@ -86,12 +103,17 @@ class AuthService {
             this.logError('Login error:', error);
             return {
                 success: false,
-                error: 'Login failed'
+                error: 'Network error'
             };
         }
     }
 
     async verifyToken() {
+        if (!this._data.token) {
+            this.logInfo('No token available for verification');
+            return false;
+        }
+
         this.logInfo('Verifying token');
 
         try {
@@ -103,6 +125,7 @@ class AuthService {
 
             if (!response.ok) {
                 this.logError('Token verification failed:', response.status);
+                this.clearAuth();
                 return false;
             }
 
@@ -120,56 +143,28 @@ class AuthService {
             }
 
             this.logError('Token verification failed: Invalid response');
+            this.clearAuth();
             return false;
         } catch (error) {
             this.logError('Token verification error:', error);
+            this.clearAuth();
             return false;
         }
     }
 
     getToken() {
         if (!this._data.token) {
-            this.logInfo('No token in memory, checking localStorage');
-            const token = localStorage.getItem('authToken');
-            if (token) {
-                this.logInfo('Token found in localStorage');
-                this._data.token = token;
-            }
+            this.logInfo('No token available');
+            return null;
         }
         return this._data.token;
     }
 
-    async getUser() {
+    getUser() {
         if (!this._data.user) {
-            this.logInfo('No user in memory, checking localStorage');
-            const userData = localStorage.getItem('user');
-            if (userData) {
-                try {
-                    this._data.user = JSON.parse(userData);
-                    this.logInfo('User found in localStorage:', {
-                        email: this._data.user.email,
-                        isAdmin: this._data.user.isAdmin
-                    });
-                } catch (error) {
-                    this.logError('Error parsing user data:', error);
-                    return null;
-                }
-            }
-        }
-
-        if (!this._data.token || !this._data.user) {
-            this.logInfo('No token or user available');
+            this.logInfo('No user data available');
             return null;
         }
-
-        // Verify token and refresh user data
-        const isValid = await this.verifyToken();
-        if (!isValid) {
-            this.logInfo('Token invalid, clearing auth data');
-            this.clearAuth();
-            return null;
-        }
-
         return this._data.user;
     }
 
@@ -178,7 +173,7 @@ class AuthService {
     }
 
     isAdmin() {
-        return this._data.user && this._data.user.isAdmin;
+        return this._data.user && this._data.user.isAdmin === true;
     }
 
     logout() {

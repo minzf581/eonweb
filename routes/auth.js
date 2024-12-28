@@ -10,9 +10,8 @@ const { authenticateToken } = require('../middleware/auth');
 // 注册
 router.post('/register', async (req, res) => {
     try {
-        console.log('Registration request received:', {
-            body: req.body,
-            headers: req.headers
+        console.log('[Auth] Registration request received:', {
+            email: req.body.email
         });
 
         const { email, password, referralCode } = req.body;
@@ -56,7 +55,10 @@ router.post('/register', async (req, res) => {
         const user = await User.create({
             email,
             password: hashedPassword,
-            referredBy: referralCode // Store the referral code used during registration
+            referredBy: referralCode, // Store the referral code used during registration
+            referralCode: crypto.randomBytes(4).toString('hex'),
+            points: 0,
+            isAdmin: false
         });
 
         // 处理推荐码关系
@@ -75,7 +77,7 @@ router.post('/register', async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        console.log('Generated token payload:', {
+        console.log('[Auth] Registration successful:', {
             id: user.id,
             email: user.email,
             isAdmin: user.isAdmin
@@ -94,7 +96,7 @@ router.post('/register', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('[Auth] Registration error:', error);
         res.status(500).json({
             success: false,
             message: 'Registration failed',
@@ -105,12 +107,11 @@ router.post('/register', async (req, res) => {
 
 // 登录
 router.post('/login', async (req, res) => {
-    console.log('Login request received:', {
-        body: req.body,
-        headers: req.headers
-    });
-
     try {
+        console.log('[Auth] Login request received:', {
+            email: req.body.email
+        });
+
         const { email, password } = req.body;
 
         // 验证必需字段
@@ -122,8 +123,13 @@ router.post('/login', async (req, res) => {
         }
 
         // 查找用户
-        const user = await User.findOne({ where: { email } });
+        const user = await User.findOne({ 
+            where: { email },
+            attributes: ['id', 'email', 'password', 'isAdmin', 'points', 'referralCode']
+        });
+
         if (!user) {
+            console.log('[Auth] Login failed: User not found:', { email });
             return res.status(401).json({
                 success: false,
                 message: 'Invalid email or password'
@@ -133,31 +139,30 @@ router.post('/login', async (req, res) => {
         // 验证密码
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
+            console.log('[Auth] Login failed: Invalid password:', { email });
             return res.status(401).json({
                 success: false,
                 message: 'Invalid email or password'
             });
         }
 
-        // 生成 JWT，包含 isAdmin 状态
+        // 生成 JWT
+        const tokenPayload = {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin
+        };
+
+        console.log('[Auth] Generated token payload:', tokenPayload);
+
         const token = jwt.sign(
-            { 
-                id: user.id, 
-                email: user.email,
-                isAdmin: user.isAdmin 
-            },
+            tokenPayload,
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        console.log('Generated token payload:', {
-            id: user.id,
-            email: user.email,
-            isAdmin: user.isAdmin
-        });
-
-        // 返回用户信息和 token
-        res.json({
+        // Create response payload
+        const responsePayload = {
             success: true,
             message: 'Login successful',
             token,
@@ -168,9 +173,17 @@ router.post('/login', async (req, res) => {
                 points: user.points,
                 referralCode: user.referralCode
             }
+        };
+
+        console.log('[Auth] Login successful:', {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin
         });
+
+        res.json(responsePayload);
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('[Auth] Login error:', error);
         res.status(500).json({
             success: false,
             message: 'Login failed',
@@ -182,11 +195,14 @@ router.post('/login', async (req, res) => {
 // 获取当前用户信息
 router.get('/me', async (req, res) => {
     try {
+        console.log('[Auth] Getting current user info');
+        
         // 从请求头获取 token
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
 
         if (!token) {
+            console.log('[Auth] No token provided');
             return res.status(401).json({
                 success: false,
                 message: 'No token provided'
@@ -195,6 +211,11 @@ router.get('/me', async (req, res) => {
 
         // 验证 token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('[Auth] Token decoded:', {
+            id: decoded.id,
+            email: decoded.email,
+            isAdmin: decoded.isAdmin
+        });
         
         // 获取用户信息
         const user = await User.findOne({
@@ -203,18 +224,25 @@ router.get('/me', async (req, res) => {
         });
 
         if (!user) {
+            console.log('[Auth] User not found:', { id: decoded.id });
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
 
+        console.log('[Auth] User info retrieved:', {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin
+        });
+
         res.json({
             success: true,
             user
         });
     } catch (error) {
-        console.error('Error getting user info:', error);
+        console.error('[Auth] Error getting user info:', error);
         res.status(401).json({
             success: false,
             message: 'Invalid token'
@@ -225,11 +253,15 @@ router.get('/me', async (req, res) => {
 // 验证令牌
 router.get('/verify-token', authenticateToken, async (req, res) => {
     try {
+        console.log('[Auth] Verifying token');
+        
         // 验证 token
         const token = req.headers['authorization'].split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('Token decoded:', {
+        console.log('[Auth] Token decoded:', {
             id: decoded.id,
+            email: decoded.email,
+            isAdmin: decoded.isAdmin,
             exp: new Date(decoded.exp * 1000).toISOString()
         });
         
@@ -240,19 +272,17 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
         });
 
         if (!user) {
-            console.log('User not found for token:', decoded.id);
+            console.log('[Auth] User not found:', { id: decoded.id });
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
 
-        // Debug: 打印用户验证数据
-        console.log('Token verification successful for user:', {
+        console.log('[Auth] Token verification successful:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin,
-            points: user.points
+            isAdmin: user.isAdmin
         });
 
         return res.json({
@@ -266,7 +296,7 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Token verification failed:', error);
+        console.error('[Auth] Token verification failed:', error);
         return res.status(401).json({
             success: false,
             message: 'Invalid token'
