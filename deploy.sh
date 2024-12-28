@@ -36,6 +36,14 @@ if [ $? -eq 0 ]; then
     fi
     
     echo "Deployment and cleanup completed."
+    
+    # 等待5秒让应用完全启动
+    echo "Waiting for application to start..."
+    sleep 5
+    
+    # 显示日志
+    echo "Showing application logs..."
+    gcloud app logs tail
 else
     echo "Deployment failed."
 fi
