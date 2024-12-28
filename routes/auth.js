@@ -140,6 +140,12 @@ router.post('/login', async (req, res) => {
             { expiresIn: '24h' }
         );
 
+        console.log('Generated token payload:', {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin
+        });
+
         // 返回用户信息和 token
         res.json({
             success: true,

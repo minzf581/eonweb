@@ -468,17 +468,29 @@
 
         async function loadAdminData(headers) {
             try {
-                await Promise.all([
+                // Show loading state
+                document.getElementById('userList').innerHTML = '<tr><td colspan="7" class="empty-state">加载中...</td></tr>';
+                document.getElementById('taskList').innerHTML = '<tr><td colspan="5" class="empty-state">加载中...</td></tr>';
+                
+                // Load data
+                const results = await Promise.allSettled([
                     loadStats(headers),
                     loadUsers(headers),
                     loadTasks(headers),
                     loadSettings(headers)
                 ]);
+
+                // Handle results
+                results.forEach((result, index) => {
+                    if (result.status === 'rejected') {
+                        console.error(`Failed to load data for index ${index}:`, result.reason);
+                    }
+                });
             } catch (error) {
                 console.error('[Admin] Error loading admin data:', error);
-                if (error.status === 403) {
-                    window.location.href = '/auth/login.html';
-                }
+                // Show error state
+                document.getElementById('userList').innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>';
+                document.getElementById('taskList').innerHTML = '<tr><td colspan="5" class="empty-state">加载失败</td></tr>';
             }
         }
 
@@ -486,13 +498,19 @@
             try {
                 const response = await fetch('/api/admin/stats', { headers });
                 if (!response.ok) {
-                    throw new Error('Failed to load stats');
+                    throw new Error(`Failed to load stats: ${response.status}`);
                 }
                 const stats = await response.json();
                 updateStats(stats);
             } catch (error) {
                 console.error('[Admin] Error loading stats:', error);
-                throw error;
+                // Show error state in stats
+                updateStats({
+                    totalUsers: '-',
+                    activeUsers: '-',
+                    totalTasks: '-',
+                    completedTasks: '-'
+                });
             }
         }
 
@@ -500,13 +518,14 @@
             try {
                 const response = await fetch('/api/admin/users', { headers });
                 if (!response.ok) {
-                    throw new Error('Failed to load users');
+                    throw new Error(`Failed to load users: ${response.status}`);
                 }
                 const users = await response.json();
                 updateUsers(users);
             } catch (error) {
                 console.error('[Admin] Error loading users:', error);
-                throw error;
+                document.getElementById('userList').innerHTML = 
+                    '<tr><td colspan="7" class="empty-state">加载用户数据失败</td></tr>';
             }
         }
 
@@ -514,13 +533,14 @@
             try {
                 const response = await fetch('/api/admin/tasks', { headers });
                 if (!response.ok) {
-                    throw new Error('Failed to load tasks');
+                    throw new Error(`Failed to load tasks: ${response.status}`);
                 }
                 const tasks = await response.json();
                 updateTasks(tasks);
             } catch (error) {
                 console.error('[Admin] Error loading tasks:', error);
-                throw error;
+                document.getElementById('taskList').innerHTML = 
+                    '<tr><td colspan="5" class="empty-state">加载任务数据失败</td></tr>';
             }
         }
 
@@ -528,28 +548,48 @@
             try {
                 const response = await fetch('/api/admin/settings', { headers });
                 if (!response.ok) {
-                    throw new Error('Failed to load settings');
+                    throw new Error(`Failed to load settings: ${response.status}`);
                 }
                 const settings = await response.json();
                 updateSettings(settings);
             } catch (error) {
                 console.error('[Admin] Error loading settings:', error);
-                throw error;
+                // Show error state in settings
+                document.getElementById('referralPoints').value = '';
+                document.getElementById('dailyCheckInPoints').value = '';
             }
         }
 
         async function refreshUsers() {
             const button = event.target.closest('button');
             button.disabled = true;
-            await loadUsers();
-            button.disabled = false;
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${window._authService.getToken()}`,
+                    'Content-Type': 'application/json'
+                };
+                await loadUsers(headers);
+            } catch (error) {
+                console.error('[Admin] Error refreshing users:', error);
+            } finally {
+                button.disabled = false;
+            }
         }
 
         async function refreshTasks() {
             const button = event.target.closest('button');
             button.disabled = true;
-            await loadTasks();
-            button.disabled = false;
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${window._authService.getToken()}`,
+                    'Content-Type': 'application/json'
+                };
+                await loadTasks(headers);
+            } catch (error) {
+                console.error('[Admin] Error refreshing tasks:', error);
+            } finally {
+                button.disabled = false;
+            }
         }
 
         async function saveSettings() {

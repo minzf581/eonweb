@@ -49,41 +49,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static files and public routes first (no authentication required)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Health check endpoints for App Engine (no authentication required)
-app.get('/_ah/start', (req, res) => {
-    console.log('Received start request');
-    res.status(200).send('OK');
-});
-
-app.get('/_ah/health', (req, res) => {
-    console.log('Received health check request');
-    res.status(200).send('OK');
-});
-
-app.get('/_ah/stop', async (req, res) => {
-    console.log('Received stop request');
-    try {
-        const server = app.get('server');
-        if (!server) {
-            throw new Error('Server reference not found');
-        }
-
-        await new Promise(resolve => {
-            server.close(() => {
-                console.log('Server closed');
-                resolve();
-            });
-        });
-        res.status(200).send('Server stopped');
-    } catch (error) {
-        console.error('Error during shutdown:', error);
-        res.status(500).send('Error during shutdown');
-    }
-});
-
 // Public routes (no authentication required)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -93,17 +58,19 @@ app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
 });
 
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
+
 // API routes (must come before the catch-all route)
 app.use('/api/auth', authRoutes);
 
-// Protected API routes
+// Protected API routes with authentication
 app.use('/api', authenticateToken);
-app.use('/api/referral', referralRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/stats', statsRoutes);
 
-// Admin API routes
-app.get('/api/admin/stats', isAdmin, async (req, res) => {
+// Admin routes with admin check
+const adminRouter = express.Router();
+
+adminRouter.get('/stats', async (req, res) => {
     try {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
@@ -142,7 +109,7 @@ app.get('/api/admin/stats', isAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/users', isAdmin, async (req, res) => {
+adminRouter.get('/users', async (req, res) => {
     try {
         const users = await User.findAll({
             attributes: ['id', 'email', 'referralCode', 'points', 'isAdmin', 'createdAt', 'updatedAt'],
@@ -155,7 +122,7 @@ app.get('/api/admin/users', isAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/tasks', isAdmin, async (req, res) => {
+adminRouter.get('/tasks', async (req, res) => {
     try {
         const tasks = await Task.findAll({
             order: [['createdAt', 'DESC']]
@@ -167,7 +134,7 @@ app.get('/api/admin/tasks', isAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/settings', isAdmin, async (req, res) => {
+adminRouter.get('/settings', async (req, res) => {
     try {
         const settings = await Settings.findAll();
         res.json(settings);
@@ -177,21 +144,44 @@ app.get('/api/admin/settings', isAdmin, async (req, res) => {
     }
 });
 
-app.put('/api/admin/settings/:id', isAdmin, async (req, res) => {
+// Apply admin middleware to all admin routes
+app.use('/api/admin', authenticateToken, isAdmin, adminRouter);
+
+// Other protected routes
+app.use('/api/referral', referralRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/stats', statsRoutes);
+
+// Health check endpoints for App Engine (no authentication required)
+app.get('/_ah/start', (req, res) => {
+    console.log('Received start request');
+    res.status(200).send('OK');
+});
+
+app.get('/_ah/health', (req, res) => {
+    console.log('Received health check request');
+    res.status(200).send('OK');
+});
+
+app.get('/_ah/stop', async (req, res) => {
+    console.log('Received stop request');
     try {
-        const { id } = req.params;
-        const { value } = req.body;
-
-        const setting = await Settings.findByPk(id);
-        if (!setting) {
-            return res.status(404).json({ error: 'Setting not found' });
+        const server = app.get('server');
+        if (server) {
+            server.close(() => {
+                console.log('Server closed');
+                res.status(200).send('Server stopped');
+                process.exit(0);
+            });
+        } else {
+            console.log('No server instance found');
+            res.status(200).send('No server instance found');
+            process.exit(0);
         }
-
-        await setting.update({ value });
-        res.json(setting);
     } catch (error) {
-        console.error('Error updating setting:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error during shutdown:', error);
+        res.status(500).send('Error during shutdown');
+        process.exit(1);
     }
 });
 
@@ -209,36 +199,44 @@ app.get('*', (req, res) => {
 // 数据库同步和服务器启动
 async function startServer() {
     try {
-        // Test database connection
-        await sequelize.authenticate();
-        console.log('Database connection has been established successfully.');
-
-        // Sync database
+        // 同步数据库模型
         await sequelize.sync();
         console.log('Database synchronized');
 
-        // Create admin user
+        // 创建默认管理员用户
         await seedAdminUser();
         console.log('Admin user created successfully');
 
-        // Port configuration
-        const PORT = process.env.PORT || 8081;
-
-        // Start server
-        const server = app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
+        // 启动服务器
+        const server = app.listen(process.env.PORT || 8081, () => {
+            console.log(`Server running on port ${process.env.PORT || 8081}`);
         });
 
-        // Store server reference for graceful shutdown
+        // Store server instance
         app.set('server', server);
 
-        return server;
+        // Handle shutdown
+        process.on('SIGTERM', () => {
+            console.log('SIGTERM signal received');
+            const server = app.get('server');
+            if (server) {
+                server.close(() => {
+                    console.log('Server closed');
+                    process.exit(0);
+                });
+            } else {
+                console.log('No server instance found');
+                process.exit(0);
+            }
+        });
+
     } catch (error) {
-        console.error('Unable to start server:', error);
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
 }
 
+// Start the server
 startServer();
 
 // 错误处理
