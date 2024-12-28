@@ -18,7 +18,7 @@ const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
-const { authenticateToken } = require('./middleware/auth');
+const { authenticateToken, isAdmin } = require('./middleware/auth');
 
 const app = express();
 
@@ -98,18 +98,11 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 
 // Admin API routes
-app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
-        // Verify admin status
-        if (!req.user || !req.user.isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
-        const Op = sequelize.Sequelize.Op; 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
 
-        // Get stats
         const [
             totalUsers,
             activeUsers,
@@ -144,13 +137,8 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/admin/users', authenticateToken, async (req, res) => {
+app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     try {
-        // Verify admin status
-        if (!req.user || !req.user.isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
         const users = await User.findAll({
             attributes: ['id', 'email', 'referralCode', 'points', 'isAdmin', 'createdAt', 'updatedAt'],
             order: [['createdAt', 'DESC']]
@@ -163,13 +151,8 @@ app.get('/api/admin/users', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/admin/tasks', authenticateToken, async (req, res) => {
+app.get('/api/admin/tasks', authenticateToken, isAdmin, async (req, res) => {
     try {
-        // Verify admin status
-        if (!req.user || !req.user.isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
         const tasks = await Task.findAll({
             order: [['createdAt', 'DESC']]
         });
@@ -181,13 +164,8 @@ app.get('/api/admin/tasks', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/admin/settings', authenticateToken, async (req, res) => {
+app.get('/api/admin/settings', authenticateToken, isAdmin, async (req, res) => {
     try {
-        // Verify admin status
-        if (!req.user || !req.user.isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
         const settings = await Settings.findAll();
         res.json(settings);
     } catch (error) {
@@ -225,26 +203,20 @@ async function startServer() {
         // Port configuration
         const PORT = process.env.PORT || 8080;
 
-        // Start server
-        const server = app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
+        let server;
+        process.on('SIGTERM', () => {
+            console.log('SIGTERM signal received');
+            if (server) {
+                server.close(() => {
+                    console.log('Server closed');
+                    process.exit(0);
+                });
+            }
         });
 
-        // Handle SIGTERM signal
-        process.on('SIGTERM', async () => {
-            console.log('SIGTERM signal received');
-            try {
-                await new Promise(resolve => {
-                    server.close(() => {
-                        console.log('Server closed');
-                        resolve();
-                    });
-                });
-                process.exit(0);
-            } catch (error) {
-                console.error('Error during shutdown:', error);
-                process.exit(1);
-            }
+        // Start server
+        server = app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
         });
     } catch (error) {
         console.error('Unable to start server:', error);

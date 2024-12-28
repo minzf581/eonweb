@@ -424,87 +424,61 @@
             : '';
 
         async function initializeAdmin() {
-            console.log('[Admin] Initializing admin page...');
-            
             try {
-                await waitForAuthService();
-                const user = await checkAdminAccess();
-                if (!user || !user.isAdmin) {
-                    throw new Error('Unauthorized access');
-                }
-                await loadAdminData();
-            } catch (error) {
-                console.error('[Admin] Error initializing admin page:', error);
-                window.location.replace('/auth/login.html');
-            }
-        }
-
-        async function waitForAuthService() {
-            let attempts = 0;
-            const maxAttempts = 20;
-            
-            while (!window._authService && attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-
-            if (!window._authService) {
-                throw new Error('AuthService not available');
-            }
-
-            // 确保 AuthService 完全初始化
-            while (!window._authService._data.initialized && attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-
-            if (!window._authService._data.initialized) {
-                throw new Error('AuthService not initialized');
-            }
-        }
-
-        async function checkAdminAccess() {
-            const auth = window._authService;
-            const user = await auth.getUser();
-
-            if (!user || !user.isAdmin) {
-                throw new Error('Unauthorized access');
-            }
-
-            console.log('[Admin] Admin user verified:', {
-                email: user.email,
-                isAdmin: user.isAdmin
-            });
-
-            document.getElementById('adminEmail').textContent = user.email;
-            return user;
-        }
-
-        async function loadAdminData() {
-            try {
-                // Get auth token
-                const token = window._authService.getToken();
-                if (!token) {
-                    throw new Error('No auth token found');
+                // Get auth service
+                const authService = window._authService;
+                if (!authService) {
+                    console.error('[Admin] AuthService not initialized');
+                    window.location.href = '/auth/login.html';
+                    return;
                 }
 
-                // Headers for API calls
+                // Get auth token and user
+                const token = authService.getToken();
+                const user = await authService.getUser();
+                
+                if (!token || !user) {
+                    console.log('[Admin] No authentication found');
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
+
+                // Verify admin status
+                if (!user.isAdmin) {
+                    console.log('[Admin] User is not an admin');
+                    window.location.href = '/';
+                    return;
+                }
+
+                console.log('[Admin] Admin user verified:', user);
+
+                // Set up authorization headers for API calls
                 const headers = {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 };
 
-                // Load all data in parallel
+                // Load admin data
+                await loadAdminData(headers);
+            } catch (error) {
+                console.error('[Admin] Error initializing admin page:', error);
+                window.location.href = '/auth/login.html';
+            }
+        }
+
+        async function loadAdminData(headers) {
+            try {
                 await Promise.all([
                     loadStats(headers),
                     loadUsers(headers),
                     loadTasks(headers),
                     loadSettings(headers)
                 ]);
-
             } catch (error) {
                 console.error('[Admin] Error loading admin data:', error);
-                showError('Failed to load admin data. Please try again.');
+                if (error.status === 403) {
+                    window.location.href = '/auth/login.html';
+                }
             }
         }
 
@@ -737,6 +711,86 @@
             } catch (error) {
                 console.error('[Admin] Error toggling task:', error);
                 alert('切换任务状态失败');
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('totalUsers').textContent = stats.totalUsers || '0';
+            document.getElementById('activeUsers').textContent = stats.activeUsers || '0';
+            document.getElementById('totalTasks').textContent = stats.totalTasks || '0';
+            document.getElementById('completedTasks').textContent = stats.completedTasks || '0';
+        }
+
+        function updateUsers(users) {
+            const userList = document.getElementById('userList');
+            if (users.length === 0) {
+                userList.innerHTML = '<tr><td colspan="7" class="empty-state">暂无用户数据</td></tr>';
+                return;
+            }
+
+            userList.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>
+                        <input type="text" value="${user.email}" 
+                            onchange="updateUser(${user.id}, 'email', this.value)"
+                            class="editable-field">
+                    </td>
+                    <td>
+                        <input type="password" placeholder="点击修改密码"
+                            onchange="updateUser(${user.id}, 'password', this.value)"
+                            class="editable-field">
+                    </td>
+                    <td>
+                        <input type="number" value="${user.points}" 
+                            onchange="updateUser(${user.id}, 'points', this.value)"
+                            class="editable-field">
+                    </td>
+                    <td>${user.referralCode}</td>
+                    <td>${new Date(user.createdAt).toLocaleString()}</td>
+                    <td>
+                        <button onclick="deleteUser(${user.id})" class="delete-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateTasks(tasks) {
+            const taskList = document.getElementById('taskList');
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<tr><td colspan="5" class="empty-state">暂无任务数据</td></tr>';
+                return;
+            }
+
+            taskList.innerHTML = tasks.map(task => `
+                <tr>
+                    <td>${task.title}</td>
+                    <td>
+                        <textarea onchange="updateTask(${task.id}, 'description', this.value)"
+                                class="editable-field">${task.description}</textarea>
+                    </td>
+                    <td>${task.points}</td>
+                    <td>
+                        <span class="status-badge ${task.isActive ? 'status-active' : 'status-inactive'}">
+                            ${task.isActive ? '进行中' : '已暂停'}
+                        </span>
+                    </td>
+                    <td>
+                        <button onclick="toggleTask(${task.id})" class="${task.isActive ? 'warning' : 'success'}">
+                            <i class="fas fa-${task.isActive ? 'pause' : 'play'}"></i>
+                            ${task.isActive ? '暂停' : '启用'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateSettings(settings) {
+            if (settings && settings.length > 0) {
+                document.getElementById('referralPoints').value = settings[0].referralPoints || 100;
+                document.getElementById('dailyCheckInPoints').value = settings[0].dailyCheckInPoints || 10;
             }
         }
 
