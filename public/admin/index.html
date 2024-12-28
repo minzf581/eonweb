@@ -330,6 +330,11 @@
     </div>
 
     <script>
+        // API Configuration
+        const API_BASE_URL = window.location.hostname.includes('appspot.com')
+            ? 'https://eonhome-445809.et.r.appspot.com'
+            : '';
+
         async function initializeAdmin() {
             console.log('[Admin] Initializing admin page...');
             
@@ -388,7 +393,7 @@
 
         async function loadStats() {
             try {
-                const response = await fetch('/api/admin/stats', {
+                const response = await fetch(`${API_BASE_URL}/api/admin/stats`, {
                     headers: {
                         'Authorization': `Bearer ${window._authService.getToken()}`
                     }
@@ -416,7 +421,7 @@
         async function loadUsers() {
             const userList = document.getElementById('userList');
             try {
-                const response = await fetch('/api/admin/users', {
+                const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
                     headers: {
                         'Authorization': `Bearer ${window._authService.getToken()}`
                     }
@@ -454,22 +459,22 @@
                         <td>${user.referralCode}</td>
                         <td>${new Date(user.createdAt).toLocaleString()}</td>
                         <td>
-                            <button onclick="deleteUser(${user.id})" class="danger">
-                                <i class="fas fa-trash"></i> 删除
+                            <button onclick="deleteUser(${user.id})" class="delete-btn">
+                                <i class="fas fa-trash"></i>
                             </button>
                         </td>
                     </tr>
                 `).join('');
             } catch (error) {
                 console.error('[Admin] Error loading users:', error);
-                userList.innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>';
+                userList.innerHTML = '<tr><td colspan="7" class="error-state">加载失败</td></tr>';
             }
         }
 
         async function loadTasks() {
             const taskList = document.getElementById('taskList');
             try {
-                const response = await fetch('/api/admin/tasks', {
+                const response = await fetch(`${API_BASE_URL}/api/admin/tasks`, {
                     headers: {
                         'Authorization': `Bearer ${window._authService.getToken()}`
                     }
@@ -509,13 +514,13 @@
                 `).join('');
             } catch (error) {
                 console.error('[Admin] Error loading tasks:', error);
-                taskList.innerHTML = '<tr><td colspan="5" class="empty-state">加载失败</td></tr>';
+                taskList.innerHTML = '<tr><td colspan="5" class="error-state">加载失败</td></tr>';
             }
         }
 
         async function loadSettings() {
             try {
-                const response = await fetch('/api/admin/settings', {
+                const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
                     headers: {
                         'Authorization': `Bearer ${window._authService.getToken()}`
                     }
@@ -558,7 +563,7 @@
                     dailyCheckInPoints: parseInt(document.getElementById('dailyCheckInPoints').value)
                 };
 
-                const response = await fetch('/api/admin/settings', {
+                const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -597,7 +602,7 @@
             if (!password) return;
 
             try {
-                const response = await fetch('/api/admin/users', {
+                const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -620,7 +625,7 @@
 
         async function updateUser(userId, field, value) {
             try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -648,7 +653,7 @@
             }
 
             try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${window._authService.getToken()}`
@@ -669,7 +674,7 @@
 
         async function updateTask(taskId, field, value) {
             try {
-                const response = await fetch(`/api/admin/tasks/${taskId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/tasks/${taskId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -692,7 +697,7 @@
 
         async function toggleTask(taskId) {
             try {
-                const response = await fetch(`/api/admin/tasks/${taskId}/toggle`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/tasks/${taskId}/toggle`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${window._authService.getToken()}`

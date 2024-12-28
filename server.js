@@ -23,11 +23,18 @@ const { authenticateToken } = require('./middleware/auth');
 const app = express();
 
 // 中间件
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+const corsOptions = {
+    origin: [
+        'http://localhost:8080',
+        'http://localhost:3000',
+        'https://eonhome-445809.et.r.appspot.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -59,31 +66,16 @@ app.get('/_ah/health', (req, res) => {
 app.get('/_ah/stop', async (req, res) => {
     console.log('Received stop request');
     try {
-        // Send response immediately
-        res.status(200).send('OK');
-        
-        // Give time for the response to be sent
-        setTimeout(async () => {
-            console.log('Shutting down server...');
-            if (server) {
-                try {
-                    await new Promise((resolve) => {
-                        server.close(resolve);
-                    });
-                    console.log('Server shut down successfully');
-                    process.exit(0);
-                } catch (error) {
-                    console.error('Error shutting down server:', error);
-                    process.exit(1);
-                }
-            } else {
-                console.log('No server instance found');
-                process.exit(0);
-            }
-        }, 1000);
+        await new Promise(resolve => {
+            server.close(() => {
+                console.log('Server closed');
+                resolve();
+            });
+        });
+        res.status(200).send('Server stopped');
     } catch (error) {
-        console.error('Error handling stop request:', error);
-        process.exit(1);
+        console.error('Error during shutdown:', error);
+        res.status(500).send('Error during shutdown');
     }
 });
 
@@ -106,13 +98,8 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 
 // Admin API routes
-app.get('/api/admin/stats', async (req, res) => {
+app.get('/api/admin/stats', authenticateToken, async (req, res) => {
     try {
-        // Verify admin status
-        if (!req.user || !req.user.isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
         // Get stats
         const [
             totalUsers,
@@ -148,7 +135,7 @@ app.get('/api/admin/stats', async (req, res) => {
     }
 });
 
-app.get('/api/admin/users', async (req, res) => {
+app.get('/api/admin/users', authenticateToken, async (req, res) => {
     try {
         // Verify admin status
         if (!req.user || !req.user.isAdmin) {
@@ -167,7 +154,7 @@ app.get('/api/admin/users', async (req, res) => {
     }
 });
 
-app.get('/api/admin/tasks', async (req, res) => {
+app.get('/api/admin/tasks', authenticateToken, async (req, res) => {
     try {
         // Verify admin status
         if (!req.user || !req.user.isAdmin) {
@@ -185,7 +172,7 @@ app.get('/api/admin/tasks', async (req, res) => {
     }
 });
 
-app.get('/api/admin/settings', async (req, res) => {
+app.get('/api/admin/settings', authenticateToken, async (req, res) => {
     try {
         // Verify admin status
         if (!req.user || !req.user.isAdmin) {
@@ -226,26 +213,28 @@ async function startServer() {
         await seedAdminUser();
         console.log('Admin user created successfully');
 
+        // Port configuration
+        const PORT = process.env.PORT || 8080;
+
         // Start server
-        // Force port 8080 for App Engine
-        const port = 8080;
-        console.log('Environment:', process.env.NODE_ENV);
-        console.log('Using port:', port);
-        
-        server = app.listen(port, () => {
-            console.log(`Server running on port ${port}`);
+        const server = app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
         });
 
-        // Handle graceful shutdown
-        process.on('SIGTERM', () => {
+        // Handle SIGTERM signal
+        process.on('SIGTERM', async () => {
             console.log('SIGTERM signal received');
-            if (server) {
-                server.close(() => {
-                    console.log('Server closed');
-                    process.exit(0);
+            try {
+                await new Promise(resolve => {
+                    server.close(() => {
+                        console.log('Server closed');
+                        resolve();
+                    });
                 });
-            } else {
                 process.exit(0);
+            } catch (error) {
+                console.error('Error during shutdown:', error);
+                process.exit(1);
             }
         });
     } catch (error) {
