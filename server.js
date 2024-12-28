@@ -87,6 +87,15 @@ app.get('/_ah/stop', async (req, res) => {
     }
 });
 
+// Public routes (no authentication required)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
+});
+
 // Apply authentication only to API routes
 app.use('/api', authenticateToken);
 
@@ -96,13 +105,99 @@ app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 
-// Public routes (no authentication required)
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Admin API routes
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        // Get stats
+        const [
+            totalUsers,
+            activeUsers,
+            totalTasks,
+            completedTasks
+        ] = await Promise.all([
+            User.count(),
+            User.count({
+                where: {
+                    updatedAt: {
+                        [sequelize.Op.gte]: new Date(new Date() - 24 * 60 * 60 * 1000)
+                    }
+                }
+            }),
+            Task.count(),
+            Task.count({
+                where: {
+                    status: 'completed'
+                }
+            })
+        ]);
+
+        res.json({
+            totalUsers,
+            activeUsers,
+            totalTasks,
+            completedTasks
+        });
+    } catch (error) {
+        console.error('Error getting admin stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-app.get('/favicon.ico', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const users = await User.findAll({
+            attributes: ['id', 'email', 'referralCode', 'points', 'isAdmin', 'createdAt', 'updatedAt'],
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.json(users);
+    } catch (error) {
+        console.error('Error getting users:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/admin/tasks', async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const tasks = await Task.findAll({
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.json(tasks);
+    } catch (error) {
+        console.error('Error getting tasks:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/admin/settings', async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const settings = await Settings.findAll();
+        res.json(settings);
+    } catch (error) {
+        console.error('Error getting settings:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Handle frontend routing (no authentication required)
