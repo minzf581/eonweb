@@ -41,19 +41,26 @@ app.get('/_ah/health', (req, res) => {
 
 let server;
 
-app.get('/_ah/stop', (req, res) => {
+app.get('/_ah/stop', async (req, res) => {
     console.log('Received stop request');
     res.status(200).send('OK');
     
-    // 给一些时间让响应发送完成
-    setTimeout(() => {
+    // Give time for the response to be sent
+    setTimeout(async () => {
         console.log('Shutting down server...');
         if (server) {
-            server.close(() => {
-                console.log('Server shutdown complete');
+            try {
+                await new Promise((resolve) => {
+                    server.close(resolve);
+                });
+                console.log('Server shut down successfully');
                 process.exit(0);
-            });
+            } catch (error) {
+                console.error('Error shutting down server:', error);
+                process.exit(1);
+            }
         } else {
+            console.log('No server instance found');
             process.exit(0);
         }
     }, 1000);
@@ -81,10 +88,8 @@ app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 
-// Serve static files without authentication
-app.use(express.static('public'));
-
-// Add a public route for the root path
+// Serve static files and root path without authentication
+app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -95,29 +100,30 @@ app.get('*', (req, res) => {
 });
 
 // 数据库同步和服务器启动
-const startServer = async () => {
+async function startServer() {
     try {
-        // 同步数据库
+        // Test database connection
         await sequelize.authenticate();
         console.log('Database connection has been established successfully.');
-        
+
+        // Sync database
         await sequelize.sync();
         console.log('Database synchronized');
-        
-        // 创建管理员用户
+
+        // Create admin user
         await seedAdminUser();
         console.log('Admin user created successfully');
 
-        // 启动服务器
-        const PORT = process.env.PORT || 8080;
-        server = app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
+        // Start server
+        const port = process.env.PORT || 8080;
+        server = app.listen(port, () => {
+            console.log(`Server running on port ${port}`);
         });
     } catch (error) {
-        console.error('Failed to start server:', error);
+        console.error('Unable to start server:', error);
         process.exit(1);
     }
-};
+}
 
 startServer();
 
