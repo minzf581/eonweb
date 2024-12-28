@@ -100,6 +100,15 @@ app.use('/api/stats', statsRoutes);
 // Admin API routes
 app.get('/api/admin/stats', authenticateToken, async (req, res) => {
     try {
+        // Verify admin status
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const Op = sequelize.Sequelize.Op; 
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
         // Get stats
         const [
             totalUsers,
@@ -111,7 +120,7 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
             User.count({
                 where: {
                     updatedAt: {
-                        [sequelize.Op.gte]: new Date(new Date() - 24 * 60 * 60 * 1000)
+                        [Op.gte]: yesterday
                     }
                 }
             }),

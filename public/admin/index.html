@@ -88,30 +88,118 @@
             gap: 0.5rem;
         }
 
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card h3 {
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .stat-card p {
+            color: #111827;
+            font-size: 1.875rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
         /* Tables */
         .table-container {
+            background: #fff;
+            border-radius: 10px;
+            padding: 1px;
+            margin-top: 20px;
             overflow-x: auto;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
-        th, td {
-            padding: 1rem;
+        th {
+            background: #f9fafb;
+            padding: 12px 16px;
+            font-weight: 500;
+            color: #374151;
             text-align: left;
             border-bottom: 1px solid #e5e7eb;
         }
 
-        th {
-            background-color: #f9fafb;
-            font-weight: 500;
-            color: #4b5563;
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #1f2937;
         }
 
-        tr:hover {
-            background-color: #f9fafb;
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .editable-field {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+
+        .editable-field:hover {
+            border-color: #d1d5db;
+        }
+
+        .editable-field:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .delete-btn {
+            padding: 6px;
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .delete-btn:hover {
+            color: #dc2626;
+        }
+
+        .error-state {
+            color: #ef4444;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .empty-state {
+            color: #6b7280;
+            text-align: center;
+            padding: 20px;
         }
 
         /* Buttons */
@@ -340,7 +428,10 @@
             
             try {
                 await waitForAuthService();
-                await checkAdminAccess();
+                const user = await checkAdminAccess();
+                if (!user || !user.isAdmin) {
+                    throw new Error('Unauthorized access');
+                }
                 await loadAdminData();
             } catch (error) {
                 console.error('[Admin] Error initializing admin page:', error);
@@ -350,7 +441,7 @@
 
         async function waitForAuthService() {
             let attempts = 0;
-            const maxAttempts = 10;
+            const maxAttempts = 20;
             
             while (!window._authService && attempts < maxAttempts) {
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -359,6 +450,16 @@
 
             if (!window._authService) {
                 throw new Error('AuthService not available');
+            }
+
+            // 确保 AuthService 完全初始化
+            while (!window._authService._data.initialized && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+
+            if (!window._authService._data.initialized) {
+                throw new Error('AuthService not initialized');
             }
         }
 
@@ -376,166 +477,90 @@
             });
 
             document.getElementById('adminEmail').textContent = user.email;
+            return user;
         }
 
         async function loadAdminData() {
             try {
+                // Get auth token
+                const token = window._authService.getToken();
+                if (!token) {
+                    throw new Error('No auth token found');
+                }
+
+                // Headers for API calls
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // Load all data in parallel
                 await Promise.all([
-                    loadStats(),
-                    loadUsers(),
-                    loadTasks(),
-                    loadSettings()
+                    loadStats(headers),
+                    loadUsers(headers),
+                    loadTasks(headers),
+                    loadSettings(headers)
                 ]);
+
             } catch (error) {
                 console.error('[Admin] Error loading admin data:', error);
+                showError('Failed to load admin data. Please try again.');
             }
         }
 
-        async function loadStats() {
+        async function loadStats(headers) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/stats`, {
-                    headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    }
-                });
-
+                const response = await fetch('/api/admin/stats', { headers });
                 if (!response.ok) {
                     throw new Error('Failed to load stats');
                 }
-
                 const stats = await response.json();
-                
-                document.getElementById('totalUsers').textContent = stats.totalUsers || '0';
-                document.getElementById('activeUsers').textContent = stats.activeUsers || '0';
-                document.getElementById('totalTasks').textContent = stats.totalTasks || '0';
-                document.getElementById('completedTasks').textContent = stats.completedTasks || '0';
+                updateStats(stats);
             } catch (error) {
                 console.error('[Admin] Error loading stats:', error);
-                const stats = ['totalUsers', 'activeUsers', 'totalTasks', 'completedTasks'];
-                stats.forEach(id => {
-                    document.getElementById(id).textContent = '加载失败';
-                });
+                throw error;
             }
         }
 
-        async function loadUsers() {
-            const userList = document.getElementById('userList');
+        async function loadUsers(headers) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
-                    headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    }
-                });
-
+                const response = await fetch('/api/admin/users', { headers });
                 if (!response.ok) {
                     throw new Error('Failed to load users');
                 }
-
                 const users = await response.json();
-                
-                if (users.length === 0) {
-                    userList.innerHTML = '<tr><td colspan="7" class="empty-state">暂无用户数据</td></tr>';
-                    return;
-                }
-
-                userList.innerHTML = users.map(user => `
-                    <tr>
-                        <td>${user.id}</td>
-                        <td>
-                            <input type="text" value="${user.email}" 
-                                onchange="updateUser(${user.id}, 'email', this.value)"
-                                class="editable-field">
-                        </td>
-                        <td>
-                            <input type="password" placeholder="点击修改密码"
-                                onchange="updateUser(${user.id}, 'password', this.value)"
-                                class="editable-field">
-                        </td>
-                        <td>
-                            <input type="number" value="${user.points}" 
-                                onchange="updateUser(${user.id}, 'points', this.value)"
-                                class="editable-field">
-                        </td>
-                        <td>${user.referralCode}</td>
-                        <td>${new Date(user.createdAt).toLocaleString()}</td>
-                        <td>
-                            <button onclick="deleteUser(${user.id})" class="delete-btn">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                updateUsers(users);
             } catch (error) {
                 console.error('[Admin] Error loading users:', error);
-                userList.innerHTML = '<tr><td colspan="7" class="error-state">加载失败</td></tr>';
+                throw error;
             }
         }
 
-        async function loadTasks() {
-            const taskList = document.getElementById('taskList');
+        async function loadTasks(headers) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/tasks`, {
-                    headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    }
-                });
-
+                const response = await fetch('/api/admin/tasks', { headers });
                 if (!response.ok) {
                     throw new Error('Failed to load tasks');
                 }
-
                 const tasks = await response.json();
-                
-                if (tasks.length === 0) {
-                    taskList.innerHTML = '<tr><td colspan="5" class="empty-state">暂无任务数据</td></tr>';
-                    return;
-                }
-
-                taskList.innerHTML = tasks.map(task => `
-                    <tr>
-                        <td>${task.title}</td>
-                        <td>
-                            <textarea onchange="updateTask(${task.id}, 'description', this.value)"
-                                    class="editable-field">${task.description}</textarea>
-                        </td>
-                        <td>${task.points}</td>
-                        <td>
-                            <span class="status-badge ${task.isActive ? 'status-active' : 'status-inactive'}">
-                                ${task.isActive ? '进行中' : '已暂停'}
-                            </span>
-                        </td>
-                        <td>
-                            <button onclick="toggleTask(${task.id})" class="${task.isActive ? 'warning' : 'success'}">
-                                <i class="fas fa-${task.isActive ? 'pause' : 'play'}"></i>
-                                ${task.isActive ? '暂停' : '启用'}
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                updateTasks(tasks);
             } catch (error) {
                 console.error('[Admin] Error loading tasks:', error);
-                taskList.innerHTML = '<tr><td colspan="5" class="error-state">加载失败</td></tr>';
+                throw error;
             }
         }
 
-        async function loadSettings() {
+        async function loadSettings(headers) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
-                    headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    }
-                });
-
+                const response = await fetch('/api/admin/settings', { headers });
                 if (!response.ok) {
                     throw new Error('Failed to load settings');
                 }
-
                 const settings = await response.json();
-                
-                document.getElementById('referralPoints').value = settings.referralPoints || 100;
-                document.getElementById('dailyCheckInPoints').value = settings.dailyCheckInPoints || 10;
+                updateSettings(settings);
             } catch (error) {
                 console.error('[Admin] Error loading settings:', error);
+                throw error;
             }
         }
 
@@ -563,7 +588,7 @@
                     dailyCheckInPoints: parseInt(document.getElementById('dailyCheckInPoints').value)
                 };
 
-                const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
+                const response = await fetch('/api/admin/settings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -602,7 +627,7 @@
             if (!password) return;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+                const response = await fetch('/api/admin/users', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -625,7 +650,7 @@
 
         async function updateUser(userId, field, value) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+                const response = await fetch(`/api/admin/users/${userId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -653,7 +678,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+                const response = await fetch(`/api/admin/users/${userId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${window._authService.getToken()}`
@@ -674,7 +699,7 @@
 
         async function updateTask(taskId, field, value) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/tasks/${taskId}`, {
+                const response = await fetch(`/api/admin/tasks/${taskId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -697,7 +722,7 @@
 
         async function toggleTask(taskId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/tasks/${taskId}/toggle`, {
+                const response = await fetch(`/api/admin/tasks/${taskId}/toggle`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${window._authService.getToken()}`
