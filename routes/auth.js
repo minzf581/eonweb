@@ -102,54 +102,48 @@ router.post('/login', async (req, res) => {
 
     try {
         const { email, password } = req.body;
-        console.log('Finding user with email:', email);
+
+        // 验证必需字段
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
+        }
 
         // 查找用户
         const user = await User.findOne({ where: { email } });
-        
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: '用户不存在'
+                message: 'Invalid email or password'
             });
         }
-
-        console.log('User found:', { 
-            id: user.id, 
-            email: user.email,
-            hasPassword: !!user.password 
-        });
 
         // 验证密码
-        console.log('Verifying password for user:', email);
-        console.log('Comparing passwords...');
-        console.log('Stored password hash:', user.password);
-
-        const isValid = await bcrypt.compare(password, user.password);
-        console.log('Password match result:', isValid);
-        console.log('Password validation result:', isValid);
-
-        if (!isValid) {
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
             return res.status(401).json({
                 success: false,
-                message: '密码错误'
+                message: 'Invalid email or password'
             });
         }
 
-        // 生成 JWT token
+        // 生成 JWT，包含 isAdmin 状态
         const token = jwt.sign(
             { 
-                id: user.id,
+                id: user.id, 
                 email: user.email,
-                isAdmin: user.isAdmin
+                isAdmin: user.isAdmin 
             },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '24h' }
         );
 
-        // 准备响应数据
-        const response = {
+        // 返回用户信息和 token
+        res.json({
             success: true,
+            message: 'Login successful',
             token,
             user: {
                 id: user.id,
@@ -158,20 +152,13 @@ router.post('/login', async (req, res) => {
                 points: user.points,
                 referralCode: user.referralCode
             }
-        };
-
-        console.log('Sending login response:', {
-            success: true,
-            token: 'present',
-            user: response.user
         });
-
-        res.json(response);
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({
             success: false,
-            message: '服务器错误，请稍后重试'
+            message: 'Login failed',
+            error: error.message
         });
     }
 });

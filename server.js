@@ -66,6 +66,11 @@ app.get('/_ah/health', (req, res) => {
 app.get('/_ah/stop', async (req, res) => {
     console.log('Received stop request');
     try {
+        const server = app.get('server');
+        if (!server) {
+            throw new Error('Server reference not found');
+        }
+
         await new Promise(resolve => {
             server.close(() => {
                 console.log('Server closed');
@@ -88,17 +93,17 @@ app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
 });
 
-// Apply authentication only to API routes
-app.use('/api', authenticateToken);
-
 // API routes (must come before the catch-all route)
 app.use('/api/auth', authRoutes);
+
+// Protected API routes
+app.use('/api', authenticateToken);
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 
 // Admin API routes
-app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/stats', isAdmin, async (req, res) => {
     try {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
@@ -137,13 +142,12 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/users', isAdmin, async (req, res) => {
     try {
         const users = await User.findAll({
             attributes: ['id', 'email', 'referralCode', 'points', 'isAdmin', 'createdAt', 'updatedAt'],
             order: [['createdAt', 'DESC']]
         });
-
         res.json(users);
     } catch (error) {
         console.error('Error getting users:', error);
@@ -151,12 +155,11 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/tasks', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/tasks', isAdmin, async (req, res) => {
     try {
         const tasks = await Task.findAll({
             order: [['createdAt', 'DESC']]
         });
-
         res.json(tasks);
     } catch (error) {
         console.error('Error getting tasks:', error);
@@ -164,12 +167,30 @@ app.get('/api/admin/tasks', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/settings', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/settings', isAdmin, async (req, res) => {
     try {
         const settings = await Settings.findAll();
         res.json(settings);
     } catch (error) {
         console.error('Error getting settings:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/admin/settings/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { value } = req.body;
+
+        const setting = await Settings.findByPk(id);
+        if (!setting) {
+            return res.status(404).json({ error: 'Setting not found' });
+        }
+
+        await setting.update({ value });
+        res.json(setting);
+    } catch (error) {
+        console.error('Error updating setting:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -201,23 +222,17 @@ async function startServer() {
         console.log('Admin user created successfully');
 
         // Port configuration
-        const PORT = process.env.PORT || 8080;
-
-        let server;
-        process.on('SIGTERM', () => {
-            console.log('SIGTERM signal received');
-            if (server) {
-                server.close(() => {
-                    console.log('Server closed');
-                    process.exit(0);
-                });
-            }
-        });
+        const PORT = process.env.PORT || 8081;
 
         // Start server
-        server = app.listen(PORT, () => {
+        const server = app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
+
+        // Store server reference for graceful shutdown
+        app.set('server', server);
+
+        return server;
     } catch (error) {
         console.error('Unable to start server:', error);
         process.exit(1);
