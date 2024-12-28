@@ -30,12 +30,16 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// App Engine 健康检查路由
+// Health check endpoints for App Engine
 app.get('/_ah/start', (req, res) => {
     res.status(200).send('OK');
 });
 
 app.get('/_ah/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
+app.get('/_ah/stop', (req, res) => {
     res.status(200).send('OK');
 });
 
@@ -61,8 +65,13 @@ app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 
-// 静态文件
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files without authentication
+app.use(express.static('public'));
+
+// Add a public route for the root path
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // 处理前端路由
 app.get('*', (req, res) => {
@@ -81,9 +90,9 @@ const startServer = async () => {
         console.log('Admin user created successfully');
 
         // 启动服务器
-        const port = process.env.PORT || 8081;
-        app.listen(port, () => {
-            console.log(`Server running on port ${port}`);
+        const PORT = process.env.PORT || 8080;
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);
