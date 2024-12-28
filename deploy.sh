@@ -9,28 +9,33 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 获取当前正在服务的版本
+SERVING_VERSION=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT>0" --format="value(version.id)" | head -n 1)
+echo "Current serving version: $SERVING_VERSION"
+
+# 删除所有非服务版本
+echo "Cleaning up old versions..."
+OLD_VERSIONS=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT=0" --format="value(version.id)")
+if [ ! -z "$OLD_VERSIONS" ]; then
+    echo "Deleting versions: $OLD_VERSIONS"
+    gcloud app versions delete $OLD_VERSIONS --quiet
+fi
+
 # 部署新版本
 echo "Deploying new version..."
 gcloud app deploy --quiet
 
 # 如果部署成功
 if [ $? -eq 0 ]; then
-    echo "Deployment successful. Cleaning up old versions..."
+    echo "Deployment successful."
     
-    # 获取当前服务的版本列表（按时间倒序排序，跳过正在服务的版本）
-    VERSIONS=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT=0" --format="value(version.id)")
+    # 如果之前的服务版本存在，删除它
+    if [ ! -z "$SERVING_VERSION" ]; then
+        echo "Cleaning up previous serving version: $SERVING_VERSION"
+        gcloud app versions delete $SERVING_VERSION --quiet
+    fi
     
-    # 保留最新的3个版本，删除其他版本
-    COUNT=0
-    for VERSION in $VERSIONS; do
-        COUNT=$((COUNT+1))
-        if [ $COUNT -gt 3 ]; then
-            echo "Deleting version $VERSION..."
-            gcloud app versions delete $VERSION --quiet
-        fi
-    done
-    
-    echo "Cleanup completed."
+    echo "Deployment and cleanup completed."
 else
-    echo "Deployment failed. No cleanup needed."
+    echo "Deployment failed."
 fi
