@@ -95,37 +95,29 @@ router.post('/register', async (req, res) => {
 
 // 登录
 router.post('/login', async (req, res) => {
+    console.log('Login request received:', {
+        body: req.body,
+        headers: req.headers
+    });
+
     try {
-        console.log('Login request received:', {
-            body: req.body,
-            headers: req.headers
-        });
-
         const { email, password } = req.body;
-
-        // 检查必需字段
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email and password are required'
-            });
-        }
-
         console.log('Finding user with email:', email);
-        const user = await User.findOne({ where: { email } });
 
+        // 查找用户
+        const user = await User.findOne({ where: { email } });
+        
         if (!user) {
-            console.log('User not found:', email);
             return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials'
+                message: '用户不存在'
             });
         }
 
-        console.log('User found:', {
-            id: user.id,
+        console.log('User found:', { 
+            id: user.id, 
             email: user.email,
-            hasPassword: !!user.password
+            hasPassword: !!user.password 
         });
 
         // 验证密码
@@ -133,40 +125,30 @@ router.post('/login', async (req, res) => {
         console.log('Comparing passwords...');
         console.log('Stored password hash:', user.password);
 
-        const validPassword = await bcrypt.compare(password, user.password);
-        console.log('Password match result:', validPassword);
+        const isValid = await bcrypt.compare(password, user.password);
+        console.log('Password match result:', isValid);
+        console.log('Password validation result:', isValid);
 
-        if (!validPassword) {
-            console.log('Password validation failed for user:', email);
+        if (!isValid) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials'
+                message: '密码错误'
             });
         }
 
-        console.log('Password validation result:', validPassword);
-
-        // 生成 JWT
+        // 生成 JWT token
         const token = jwt.sign(
-            { id: user.id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        // Debug: 打印登录响应数据
-        console.log('Sending login response:', {
-            success: true,
-            token: token ? 'present' : 'missing',
-            user: {
+            { 
                 id: user.id,
                 email: user.email,
-                isAdmin: user.isAdmin,
-                points: user.points,
-                referralCode: user.referralCode
-            }
-        });
+                isAdmin: user.isAdmin
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
 
-        res.json({
+        // 准备响应数据
+        const response = {
             success: true,
             token,
             user: {
@@ -176,13 +158,20 @@ router.post('/login', async (req, res) => {
                 points: user.points,
                 referralCode: user.referralCode
             }
+        };
+
+        console.log('Sending login response:', {
+            success: true,
+            token: 'present',
+            user: response.user
         });
+
+        res.json(response);
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({
             success: false,
-            message: 'Login failed',
-            error: error.message
+            message: '服务器错误，请稍后重试'
         });
     }
 });

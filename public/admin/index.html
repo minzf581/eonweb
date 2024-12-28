@@ -3,23 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - EON Protocol</title>
+    <title>EON Protocol Admin</title>
     <link rel="stylesheet" href="css/admin.css">
     <script src="/js/authService.js"></script>
     <script>
-        // 检查用户权限
+        // 检查管理员访问权限
         async function checkAdminAccess() {
-            await authServiceUtils.waitForAuthService();
-            const user = await authService.getUser();
-            
-            if (!user || !user.isAdmin) {
-                window.location.href = '/dashboard/';
+            const auth = window._authService;
+            if (!auth) {
+                window.location.replace('/auth/login.html');
                 return;
+            }
+
+            const user = await auth.getUser();
+            if (!user || !user.isAdmin) {
+                window.location.replace('/auth/login.html');
             }
         }
 
         // 页面加载时检查权限
-        window.addEventListener('load', checkAdminAccess);
+        checkAdminAccess();
     </script>
     <style>
         .admin-section {
@@ -164,68 +167,229 @@
             background-color: #dc3545;
             color: white;
         }
+        
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        header .logo {
+            margin-bottom: 1rem;
+        }
+
+        header .logo img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+        }
+
+        header .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header .user-info .username {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        header .user-info button {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .admin-section {
+            background-color: #333;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .admin-section h2 {
+            margin-top: 0;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .section-header .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .section-header .actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .section-header .actions button {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-container th, .table-container td {
+            border: 1px solid #555;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .table-container th {
+            background-color: #444;
+            color: #fff;
+        }
+
+        .loading {
+            text-align: center;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+        }
+
+        .settings-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .settings-form .form-group {
+            flex: 1;
+        }
+
+        .settings-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .settings-form input[type="number"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
+    <header>
+        <div class="logo">
+            <img src="images/enologo.jpg" alt="EON Protocol">
+            <h1>管理后台</h1>
+        </div>
+        <div class="user-info">
+            <span id="adminEmail" class="username"></span>
+            <button onclick="logout()" class="secondary">退出登录</button>
+        </div>
+    </header>
+
     <div class="container">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <div class="logo">
-                <img src="images/enologo.jpg" alt="EON Protocol">
+        <!-- 用户管理部分 -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2 class="section-title">用户管理</h2>
+                <div class="actions">
+                    <button onclick="refreshUsers()">刷新</button>
+                </div>
             </div>
-            <div class="user-info">
-                <span id="adminEmail" class="username"></span>
-                <button onclick="logout()">Logout</button>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>邮箱</th>
+                            <th>积分</th>
+                            <th>推荐码</th>
+                            <th>注册时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userList">
+                        <tr>
+                            <td colspan="6" class="loading">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </header>
+        </section>
 
-        <!-- Main Content -->
-        <main>
-            <!-- User Management Section -->
-            <section class="admin-section">
-                <h2>User Management</h2>
-                <div class="search-box">
-                    <input type="text" id="userSearch" placeholder="Search users...">
+        <!-- 任务管理部分 -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2 class="section-title">任务管理</h2>
+                <div class="actions">
+                    <button onclick="createTask()" class="secondary">新建任务</button>
+                    <button onclick="refreshTasks()">刷新</button>
                 </div>
-                <div class="user-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>User ID</th>
-                                <th>Email</th>
-                                <th>Points</th>
-                                <th>Referral Code</th>
-                                <th>Status</th>
-                                <th>Joined Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="userList">
-                            <!-- User list will be dynamically populated -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>任务名称</th>
+                            <th>描述</th>
+                            <th>积分</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taskList">
+                        <tr>
+                            <td colspan="5" class="loading">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-            <!-- Task Management Section -->
-            <section class="admin-section">
-                <div class="tasks-section">
-                    <table id="tasksTable" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Task</th>
-                                <th>Description</th>
-                                <th>Points</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Tasks will be loaded here -->
-                        </tbody>
-                    </table>
+        <!-- 系统设置部分 -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2 class="section-title">系统设置</h2>
+                <div class="actions">
+                    <button onclick="saveSettings()">保存设置</button>
                 </div>
-            </section>
-        </main>
+            </div>
+            <div class="settings-form">
+                <div class="form-group">
+                    <label>推荐奖励积分</label>
+                    <input type="number" id="referralPoints" min="0" value="100">
+                </div>
+                <div class="form-group">
+                    <label>每日签到积分</label>
+                    <input type="number" id="dailyCheckInPoints" min="0" value="10">
+                </div>
+            </div>
+        </section>
     </div>
 
     <script>
@@ -274,11 +438,129 @@
 
         async function loadAdminData() {
             try {
-                // 这里添加加载管理员数据的代码
-                console.log('[Admin] Loading admin data...');
+                await Promise.all([
+                    loadUsers(),
+                    loadTasks(),
+                    loadSettings()
+                ]);
             } catch (error) {
                 console.error('[Admin] Error loading admin data:', error);
             }
+        }
+
+        async function loadUsers() {
+            const userList = document.getElementById('userList');
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: {
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load users');
+                }
+
+                const users = await response.json();
+                
+                if (users.length === 0) {
+                    userList.innerHTML = '<tr><td colspan="6" class="empty-state">暂无用户数据</td></tr>';
+                    return;
+                }
+
+                userList.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.email}</td>
+                        <td>${user.points}</td>
+                        <td>${user.referralCode}</td>
+                        <td>${new Date(user.createdAt).toLocaleString()}</td>
+                        <td>
+                            <button onclick="editUser(${user.id})" class="secondary">编辑</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('[Admin] Error loading users:', error);
+                userList.innerHTML = '<tr><td colspan="6" class="empty-state">加载失败</td></tr>';
+            }
+        }
+
+        async function loadTasks() {
+            const taskList = document.getElementById('taskList');
+            try {
+                const response = await fetch('/api/admin/tasks', {
+                    headers: {
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load tasks');
+                }
+
+                const tasks = await response.json();
+                
+                if (tasks.length === 0) {
+                    taskList.innerHTML = '<tr><td colspan="5" class="empty-state">暂无任务数据</td></tr>';
+                    return;
+                }
+
+                taskList.innerHTML = tasks.map(task => `
+                    <tr>
+                        <td>${task.title}</td>
+                        <td>${task.description}</td>
+                        <td>${task.points}</td>
+                        <td>
+                            <span class="status-badge ${task.isActive ? 'status-active' : 'status-inactive'}">
+                                ${task.isActive ? '进行中' : '已暂停'}
+                            </span>
+                        </td>
+                        <td>
+                            <button onclick="editTask(${task.id})" class="secondary">编辑</button>
+                            <button onclick="toggleTask(${task.id})">${task.isActive ? '暂停' : '启用'}</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('[Admin] Error loading tasks:', error);
+                taskList.innerHTML = '<tr><td colspan="5" class="empty-state">加载失败</td></tr>';
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    headers: {
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load settings');
+                }
+
+                const settings = await response.json();
+                
+                document.getElementById('referralPoints').value = settings.referralPoints || 100;
+                document.getElementById('dailyCheckInPoints').value = settings.dailyCheckInPoints || 10;
+            } catch (error) {
+                console.error('[Admin] Error loading settings:', error);
+            }
+        }
+
+        async function refreshUsers() {
+            const button = event.target;
+            button.disabled = true;
+            await loadUsers();
+            button.disabled = false;
+        }
+
+        async function refreshTasks() {
+            const button = event.target;
+            button.disabled = true;
+            await loadTasks();
+            button.disabled = false;
         }
 
         async function logout() {
