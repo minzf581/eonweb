@@ -148,24 +148,25 @@ router.post('/login', async (req, res) => {
 
         // 生成 JWT
         const token = jwt.sign(
-            { id: user.id, email: user.email },
+            { id: user.id },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        console.log('Login successful for user:', email);
-        
-        // Debug: 打印完整的用户数据
-        console.log('Full user data:', {
-            id: user.id,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            points: user.points,
-            referralCode: user.referralCode
+        // Debug: 打印登录响应数据
+        console.log('Sending login response:', {
+            success: true,
+            token: token ? 'present' : 'missing',
+            user: {
+                id: user.id,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                points: user.points,
+                referralCode: user.referralCode
+            }
         });
 
-        // 返回用户信息和 token
-        return res.json({
+        res.json({
             success: true,
             token,
             user: {

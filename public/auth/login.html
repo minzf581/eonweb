@@ -172,207 +172,58 @@
     </div>
 
     <script>
-        // Utility functions
-        function showError(message, field = null) {
-            const container = document.getElementById('messageContainer');
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
+        document.addEventListener('DOMContentLoaded', async function() {
+            const auth = new AuthService();
             
-            // Clear existing messages
-            container.innerHTML = '';
-            container.appendChild(errorDiv);
-
-            if (field) {
-                const inputField = document.getElementById(field);
-                if (inputField) {
-                    inputField.focus();
-                    inputField.classList.add('error');
-                }
-            }
-        }
-
-        function showInfo(message) {
-            const container = document.getElementById('messageContainer');
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'info-message';
-            infoDiv.textContent = message;
-            
-            container.innerHTML = '';
-            container.appendChild(infoDiv);
-        }
-
-        function clearMessages() {
-            const container = document.getElementById('messageContainer');
-            container.innerHTML = '';
-            
-            // Clear field errors
-            document.querySelectorAll('.error').forEach(field => {
-                field.classList.remove('error');
-            });
-        }
-
-        function setLoading(isLoading) {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const loginButton = document.getElementById('loginButton');
-            const buttonText = loginButton.querySelector('.button-text');
-            const buttonSpinner = loginButton.querySelector('.button-spinner');
-
-            if (isLoading) {
-                loadingOverlay.classList.remove('hidden');
-                loginButton.disabled = true;
-                buttonText.classList.add('hidden');
-                buttonSpinner.classList.remove('hidden');
-            } else {
-                loadingOverlay.classList.add('hidden');
-                loginButton.disabled = false;
-                buttonText.classList.remove('hidden');
-                buttonSpinner.classList.add('hidden');
-            }
-        }
-
-        function validateForm() {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            
-            clearMessages();
-
-            if (!email) {
-                showError('Email is required', 'email');
-                return false;
-            }
-
-            if (!password) {
-                showError('Password is required', 'password');
-                return false;
-            }
-
-            return true;
-        }
-
-        async function waitForAuthService(timeoutMs = 5000) {
-            console.log('[Login] Waiting for AuthService...');
-            
-            // Wait for script to load
-            const startTime = Date.now();
-            while (Date.now() - startTime < timeoutMs) {
-                if (window.authServiceUtils) {
-                    console.log('[Login] AuthServiceUtils found, waiting for initialization...');
-                    try {
-                        await window.authServiceUtils.waitForAuthService(timeoutMs);
-                        console.log('[Login] AuthService initialized successfully');
-                        return true;
-                    } catch (error) {
-                        console.error('[Login] Error during AuthService initialization:', error);
-                        return false;
-                    }
-                }
-                console.log('[Login] Waiting for AuthServiceUtils to become available...');
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            console.error('[Login] Timeout waiting for AuthServiceUtils');
-            return false;
-        }
-
-        async function handleLogin(event) {
-            event.preventDefault();
-
-            if (!validateForm()) {
+            // 检查是否已经登录
+            const user = await auth.getUser();
+            if (user) {
+                console.log('User already logged in:', {
+                    email: user.email,
+                    isAdmin: user.isAdmin
+                });
+                // 根据用户角色重定向
+                window.location.href = user.isAdmin ? '/admin/' : '/dashboard/';
                 return;
             }
 
-            setLoading(true);
-            clearMessages();
+            const form = document.getElementById('loginForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const errorText = document.getElementById('errorText');
 
-            try {
-                // Wait for auth service to be ready
-                const isReady = await waitForAuthService();
-                if (!isReady) {
-                    throw new Error('Authentication service is not available');
-                }
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                errorText.textContent = '';
 
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-
-                await window.authService.login(email, password);
-                
-                // Get user info to determine redirect path
-                const user = await window.authService.getUser();
-                if (!user) {
-                    throw new Error('Failed to get user information');
-                }
-
-                showInfo('Login successful, redirecting...');
-                
-                // Determine redirect path based on user role
-                const redirectPath = user.isAdmin ? '/admin/' : '/dashboard/';
-                window.location.href = redirectPath;
-            } catch (error) {
-                console.error('[Login] Login failed:', error);
-                showError(error.message || 'Login failed. Please try again.');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        async function initializeLoginPage() {
-            console.log('[Login] Starting initialization...');
-            
-            try {
-                // Wait for auth service
-                const authServiceReady = await waitForAuthService();
-                if (!authServiceReady) {
-                    throw new Error('Authentication service is not available');
-                }
-
-                // Check if user is already logged in
-                const isAuthenticated = await window.authService.verifyToken();
-                if (isAuthenticated) {
-                    console.log('[Login] User already authenticated, getting user info');
-                    const user = await window.authService.getUser();
-                    const redirectPath = user && user.isAdmin ? '/admin/' : '/dashboard/';
-                    console.log('[Login] Redirecting authenticated user:', {
-                        email: user.email,
-                        isAdmin: user.isAdmin,
-                        path: redirectPath
+                try {
+                    const response = await auth.login(emailInput.value, passwordInput.value);
+                    console.log('Login response:', {
+                        success: response.success,
+                        user: {
+                            email: response.user.email,
+                            isAdmin: response.user.isAdmin
+                        }
                     });
-                    window.location.href = redirectPath;
-                    return;
+
+                    if (response.success) {
+                        // 根据用户角色重定向
+                        window.location.href = response.user.isAdmin ? '/admin/' : '/dashboard/';
+                    } else {
+                        errorText.textContent = '登录失败，请检查您的邮箱和密码';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorText.textContent = '登录时发生错误，请稍后重试';
                 }
+            });
 
-                console.log('[Login] Enabling login form');
-                // Enable the form
-                const form = document.getElementById('loginForm');
-                const email = document.getElementById('email');
-                const password = document.getElementById('password');
-                const loginButton = document.getElementById('loginButton');
-
-                if (form && email && password && loginButton) {
-                    form.style.display = 'block';
-                    email.disabled = false;
-                    password.disabled = false;
-                    loginButton.disabled = false;
-
-                    // Setup form event listener
-                    form.addEventListener('submit', handleLogin);
-                    console.log('[Login] Form initialized successfully');
-                } else {
-                    throw new Error('Required form elements not found');
-                }
-
-            } catch (error) {
-                console.error('[Login] Initialization failed:', error);
-                showError('Failed to initialize login page. Please refresh and try again.');
-            }
-        }
-
-        // Initialize as soon as DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeLoginPage);
-        } else {
-            initializeLoginPage();
-        }
+            // Enable the form
+            form.style.display = 'block';
+            emailInput.disabled = false;
+            passwordInput.disabled = false;
+            document.getElementById('loginButton').disabled = false;
+        });
     </script>
 </body>
 </html>
