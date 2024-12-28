@@ -11,6 +11,7 @@ const cookieParser = require('cookie-parser');
 const compression = require('compression');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const sequelize = require('./config/database');
 const seedAdminUser = require('./seeders/adminUser');
 const { User, Task, UserTask, PointHistory, Settings } = require('./models');
@@ -18,6 +19,7 @@ const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
+const adminRoutes = require('./routes/admin');
 const { authenticateToken, isAdmin } = require('./middleware/auth');
 
 const app = express();
@@ -42,12 +44,19 @@ app.use(compression());
 
 // Request logging middleware
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+    const timestamp = new Date().toISOString();
+    console.log(`${timestamp} ${req.method} ${req.url}`);
     if (req.method === 'POST') {
         console.log('Request body:', JSON.stringify(req.body, null, 2));
     }
+    if (req.headers.authorization) {
+        console.log('Authorization header present');
+    }
     next();
 });
+
+// Serve static files first
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Public routes (no authentication required)
 app.get('/', (req, res) => {
@@ -58,99 +67,17 @@ app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
 });
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
-
-// API routes (must come before the catch-all route)
+// API routes
 app.use('/api/auth', authRoutes);
 
 // Protected API routes with authentication
 app.use('/api', authenticateToken);
-
-// Admin routes with admin check
-const adminRouter = express.Router();
-
-adminRouter.get('/stats', async (req, res) => {
-    try {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        const [
-            totalUsers,
-            activeUsers,
-            totalTasks,
-            completedTasks
-        ] = await Promise.all([
-            User.count(),
-            User.count({
-                where: {
-                    updatedAt: {
-                        [Op.gte]: yesterday
-                    }
-                }
-            }),
-            Task.count(),
-            Task.count({
-                where: {
-                    status: 'completed'
-                }
-            })
-        ]);
-
-        res.json({
-            totalUsers,
-            activeUsers,
-            totalTasks,
-            completedTasks
-        });
-    } catch (error) {
-        console.error('Error getting admin stats:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-adminRouter.get('/users', async (req, res) => {
-    try {
-        const users = await User.findAll({
-            attributes: ['id', 'email', 'referralCode', 'points', 'isAdmin', 'createdAt', 'updatedAt'],
-            order: [['createdAt', 'DESC']]
-        });
-        res.json(users);
-    } catch (error) {
-        console.error('Error getting users:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-adminRouter.get('/tasks', async (req, res) => {
-    try {
-        const tasks = await Task.findAll({
-            order: [['createdAt', 'DESC']]
-        });
-        res.json(tasks);
-    } catch (error) {
-        console.error('Error getting tasks:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-adminRouter.get('/settings', async (req, res) => {
-    try {
-        const settings = await Settings.findAll();
-        res.json(settings);
-    } catch (error) {
-        console.error('Error getting settings:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Apply admin middleware to all admin routes
-app.use('/api/admin', authenticateToken, isAdmin, adminRouter);
-
-// Other protected routes
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
+
+// Admin routes with both authentication and admin check
+app.use('/api/admin', authenticateToken, isAdmin, adminRoutes);
 
 // Health check endpoints for App Engine (no authentication required)
 app.get('/_ah/start', (req, res) => {

@@ -55,22 +55,46 @@ class AuthService {
     }
 
     getToken() {
+        if (!this._data.token) {
+            this.logInfo('No token in memory, checking localStorage');
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                this.logInfo('Token found in localStorage');
+                this._data.token = token;
+            }
+        }
         return this._data.token;
     }
 
     async getUser() {
-        if (!this._data.token) {
-            this.logInfo('No token available');
+        if (!this._data.user) {
+            this.logInfo('No user in memory, checking localStorage');
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                try {
+                    this._data.user = JSON.parse(userData);
+                    this.logInfo('User found in localStorage:', {
+                        email: this._data.user.email,
+                        isAdmin: this._data.user.isAdmin
+                    });
+                } catch (error) {
+                    this.logError('Error parsing user data:', error);
+                    return null;
+                }
+            }
+        }
+
+        if (!this._data.token || !this._data.user) {
+            this.logInfo('No token or user available');
             return null;
         }
 
-        if (!this._data.user) {
-            const isValid = await this.verifyToken();
-            if (!isValid) {
-                this.logInfo('Token invalid, clearing auth data');
-                this.clearAuth();
-                return null;
-            }
+        // Verify token and refresh user data
+        const isValid = await this.verifyToken();
+        if (!isValid) {
+            this.logInfo('Token invalid, clearing auth data');
+            this.clearAuth();
+            return null;
         }
 
         return this._data.user;
@@ -91,35 +115,36 @@ class AuthService {
             const data = await response.json();
             
             if (data.success && data.token && data.user) {
-                this.logInfo('Login successful: ' + JSON.stringify({
+                this.logInfo('Login successful:', {
                     email: data.user.email,
                     isAdmin: data.user.isAdmin
-                }));
+                });
 
-                // 保存认证数据
+                // Store auth data
                 this._data.token = data.token;
                 this._data.user = data.user;
-                
-                // 保存到 localStorage
+
+                // Save to localStorage
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
 
-                this.logInfo('Auth data saved');
-
-                // 根据用户角色重定向
-                const redirectUrl = data.user.isAdmin ? '/admin/' : '/dashboard/';
-                this.logInfo('Redirecting to: ' + redirectUrl);
-                window.location.replace(redirectUrl);
-
-                return data;
+                return {
+                    success: true,
+                    user: data.user
+                };
             } else {
-                const message = data.message || '登录失败，请检查您的邮箱和密码';
-                this.logError('Login failed', message);
-                throw new Error(message);
+                this.logError('Login failed:', data.message);
+                return {
+                    success: false,
+                    error: data.message || 'Login failed'
+                };
             }
         } catch (error) {
-            this.logError('Login error', error);
-            throw error;
+            this.logError('Login error:', error);
+            return {
+                success: false,
+                error: 'Login failed'
+            };
         }
     }
 
@@ -130,40 +155,37 @@ class AuthService {
     }
 
     async verifyToken() {
-        const token = this.getToken();
-        if (!token) {
-            this.logInfo('No token to verify');
-            return false;
-        }
+        this.logInfo('Verifying token');
 
         try {
-            const response = await fetch('/api/auth/verify-token', {
+            const response = await fetch('/api/auth/me', {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${this._data.token}`
                 }
             });
 
             if (!response.ok) {
-                this.logError('Token verification failed', response.status);
+                this.logError('Token verification failed:', response.status);
                 return false;
             }
 
             const data = await response.json();
-            if (!data.success) {
-                this.logError('Token invalid', data.message);
-                return false;
-            }
+            if (data.success && data.user) {
+                this.logInfo('Token verified, user:', {
+                    email: data.user.email,
+                    isAdmin: data.user.isAdmin
+                });
 
-            // 更新用户数据
-            if (data.user) {
+                // Update user data
                 this._data.user = data.user;
                 localStorage.setItem('user', JSON.stringify(data.user));
-                this.logInfo('User data updated from token verification');
+                return true;
             }
 
-            return true;
+            this.logError('Token verification failed: Invalid response');
+            return false;
         } catch (error) {
-            this.logError('Token verification error', error);
+            this.logError('Token verification error:', error);
             return false;
         }
     }
