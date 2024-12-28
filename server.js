@@ -30,6 +30,15 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// App Engine 健康检查路由
+app.get('/_ah/start', (req, res) => {
+    res.status(200).send('OK');
+});
+
+app.get('/_ah/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(compression());
