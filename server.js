@@ -48,16 +48,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check endpoints for App Engine (no authentication required)
 app.get('/_ah/start', (req, res) => {
+    console.log('Received start request');
     res.status(200).send('OK');
 });
 
 app.get('/_ah/health', (req, res) => {
+    console.log('Received health check request');
     res.status(200).send('OK');
 });
 
 app.get('/_ah/stop', async (req, res) => {
     console.log('Received stop request');
     try {
+        // Send response immediately
         res.status(200).send('OK');
         
         // Give time for the response to be sent
@@ -81,7 +84,8 @@ app.get('/_ah/stop', async (req, res) => {
         }, 1000);
     } catch (error) {
         console.error('Error handling stop request:', error);
-        res.status(500).send('Error during shutdown');
+        // Don't send error response since we already sent OK
+        process.exit(1);
     }
 });
 
@@ -124,7 +128,7 @@ async function startServer() {
         console.log('Admin user created successfully');
 
         // Start server
-        const port = parseInt(process.env.PORT || '8080', 10);
+        const port = process.env.PORT || 8080;
         server = app.listen(port, () => {
             console.log(`Server running on port ${port}`);
         });
