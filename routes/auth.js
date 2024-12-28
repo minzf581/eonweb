@@ -233,8 +233,22 @@ router.get('/me', async (req, res) => {
 // 验证令牌
 router.get('/verify-token', authenticate, async (req, res) => {
     try {
-        const user = await User.findByPk(req.user.id);
+        // 验证 token
+        const token = req.headers['authorization'].split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('Token decoded:', {
+            id: decoded.id,
+            exp: new Date(decoded.exp * 1000).toISOString()
+        });
+        
+        // 获取用户信息
+        const user = await User.findOne({
+            where: { id: decoded.id },
+            attributes: ['id', 'email', 'isAdmin', 'points', 'referralCode']
+        });
+
         if (!user) {
+            console.log('User not found for token:', decoded.id);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -245,10 +259,11 @@ router.get('/verify-token', authenticate, async (req, res) => {
         console.log('Token verification successful for user:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isAdmin: user.isAdmin,
+            points: user.points
         });
 
-        res.json({
+        return res.json({
             success: true,
             user: {
                 id: user.id,
@@ -259,11 +274,10 @@ router.get('/verify-token', authenticate, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Token verification error:', error);
-        res.status(500).json({
+        console.error('Token verification failed:', error);
+        return res.status(401).json({
             success: false,
-            message: 'Token verification failed',
-            error: error.message
+            message: 'Invalid token'
         });
     }
 });

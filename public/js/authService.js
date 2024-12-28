@@ -1,7 +1,7 @@
 // AuthService implementation
 class AuthService {
     constructor() {
-        this.logInfo('Creating new instance');
+        this.logInfo('[AuthService] Creating new instance');
         
         // Private fields
         this._data = {
@@ -39,7 +39,7 @@ class AuthService {
 
     get getToken() {
         if (!this.initialized) {
-            this.logInfo('getToken called before initialization');
+            this.logInfo('[AuthService] getToken called before initialization');
             return null;
         }
         return this.token;
@@ -50,11 +50,19 @@ class AuthService {
     }
 
     isAdmin() {
-        return this._data.user && this._data.user.isAdmin;
+        const result = this._data.user && this._data.user.isAdmin;
+        this.logInfo('[AuthService] Checking isAdmin:', {
+            hasUser: !!this._data.user,
+            isAdmin: result
+        });
+        return result;
     }
 
     async getUser() {
+        this.logInfo('[AuthService] Getting user data');
+
         if (!this._data.token) {
+            this.logInfo('[AuthService] No token available');
             return null;
         }
 
@@ -62,7 +70,7 @@ class AuthService {
             try {
                 const data = await this.makeRequest('/api/auth/me');
                 if (data && data.user) {
-                    this.logInfo('Received user data from server:', {
+                    this.logInfo('[AuthService] Received user data from server:', {
                         id: data.user.id,
                         email: data.user.email,
                         isAdmin: data.user.isAdmin
@@ -71,11 +79,11 @@ class AuthService {
                     localStorage.setItem('user', JSON.stringify(data.user));
                 }
             } catch (error) {
-                this.logError('Failed to fetch user data:', error);
+                this.logError('[AuthService] Failed to fetch user data:', error);
                 return null;
             }
         } else {
-            this.logInfo('Using cached user data:', {
+            this.logInfo('[AuthService] Using cached user data:', {
                 id: this._data.user.id,
                 email: this._data.user.email,
                 isAdmin: this._data.user.isAdmin
@@ -99,7 +107,7 @@ class AuthService {
             // Redirect to login page
             window.location.href = '/auth/login.html';
         } catch (error) {
-            this.logError('Error during logout', error);
+            this.logError('[AuthService] Error during logout', error);
             throw error;
         }
     }
@@ -122,7 +130,7 @@ class AuthService {
     async fetchWithTimeout(url, options = {}) {
         const { timeout = this._data.requestTimeout } = options;
         
-        this.logInfo(`Making request to ${url} with timeout ${timeout}ms`);
+        this.logInfo(`[AuthService] Making request to ${url} with timeout ${timeout}ms`);
         this.logInfo('Request options:', {
             method: options.method,
             headers: options.headers,
@@ -132,7 +140,7 @@ class AuthService {
         const controller = new AbortController();
         const id = setTimeout(() => {
             controller.abort();
-            this.logError('Request timed out after', timeout, 'ms');
+            this.logError('[AuthService] Request timed out after', timeout, 'ms');
         }, timeout);
         
         try {
@@ -146,7 +154,7 @@ class AuthService {
                 }
             });
             
-            this.logInfo('Response received:', {
+            this.logInfo('[AuthService] Response received:', {
                 status: response.status,
                 statusText: response.statusText,
                 headers: response.headers
@@ -163,12 +171,12 @@ class AuthService {
     }
 
     async fetchWithRetry(url, options, retries = this._data.maxRetries) {
-        this.logInfo(`Making request to: ${url}`);
+        this.logInfo(`[AuthService] Making request to: ${url}`);
         
         try {
             return await this.fetchWithTimeout(url, options);
         } catch (error) {
-            this.logError('Request failed', { url, error: error.message });
+            this.logError('[AuthService] Request failed', { url, error: error.message });
             
             if (error.name === 'AbortError') {
                 throw new Error('Request timeout. Please try again.');
@@ -176,7 +184,7 @@ class AuthService {
             
             if (retries > 0 && (error.message.includes('Failed to fetch') || 
                 error.message.includes('temporarily unavailable'))) {
-                this.logInfo(`Retrying request, ${retries} attempts remaining`);
+                this.logInfo(`[AuthService] Retrying request, ${retries} attempts remaining`);
                 await new Promise(resolve => setTimeout(resolve, this._data.retryDelay));
                 return this.fetchWithRetry(url, options, retries - 1);
             }
@@ -197,30 +205,30 @@ class AuthService {
                     signal: controller.signal
                 });
                 
-                this.logInfo('Health check response:', {
+                this.logInfo('[AuthService] Health check response:', {
                     status: response.status,
                     statusText: response.statusText
                 });
                 
                 const isHealthy = response.ok;
-                this.logInfo(`Server health check: ${isHealthy ? 'OK' : 'Failed'}`);
+                this.logInfo(`[AuthService] Server health check: ${isHealthy ? 'OK' : 'Failed'}`);
                 return isHealthy;
             } finally {
                 clearTimeout(timeout);
             }
         } catch (error) {
             if (error.name === 'AbortError') {
-                this.logError('Server health check timed out');
+                this.logError('[AuthService] Server health check timed out');
                 return false;
             }
-            this.logError('Server health check failed:', error);
+            this.logError('[AuthService] Server health check failed:', error);
             return false;
         }
     }
 
     async makeRequest(endpoint, options = {}) {
         const url = `${this._data.baseUrl}${endpoint}`;
-        this.logInfo('Making request to:', url);
+        this.logInfo('[AuthService] Making request to:', url);
 
         const finalOptions = {
             ...options,
@@ -236,11 +244,11 @@ class AuthService {
             finalOptions.headers['Authorization'] = `Bearer ${this._data.token}`;
         }
 
-        this.logInfo('Request options:', finalOptions);
+        this.logInfo('[AuthService] Request options:', finalOptions);
 
         try {
             const response = await this.fetchWithRetry(url, finalOptions);
-            this.logInfo('Response received:', {
+            this.logInfo('[AuthService] Response received:', {
                 status: response.status,
                 statusText: response.statusText,
                 headers: response.headers
@@ -258,10 +266,10 @@ class AuthService {
             }
 
             const data = await response.json();
-            this.logInfo('Response data:', data);
+            this.logInfo('[AuthService] Response data:', data);
             return data;
         } catch (error) {
-            this.logError('Request failed:', error);
+            this.logError('[AuthService] Request failed:', error);
             throw error;
         }
     }
@@ -271,7 +279,7 @@ class AuthService {
             const data = await this.makeRequest('/api/referral');
             return data;
         } catch (error) {
-            this.logError('Failed to get referral info:', error);
+            this.logError('[AuthService] Failed to get referral info:', error);
             throw error;
         }
     }
@@ -303,7 +311,7 @@ class AuthService {
                 user: response.user
             };
         } catch (error) {
-            this.logError('Registration failed:', error);
+            this.logError('[AuthService] Registration failed:', error);
             throw error;
         }
     }
@@ -314,7 +322,7 @@ class AuthService {
             return;
         }
 
-        this.logInfo('Starting initialization');
+        this.logInfo('[AuthService] Starting initialization');
         this._data.initializing = true;
 
         try {
@@ -333,17 +341,17 @@ class AuthService {
                         this.clearAuth();
                     }
                 } catch (error) {
-                    this.logError('Token verification failed:', error);
+                    this.logError('[AuthService] Token verification failed:', error);
                     this.clearAuth();
                 }
             }
         } catch (error) {
-            this.logError('Initialization error:', error);
+            this.logError('[AuthService] Initialization error:', error);
             this.clearAuth();
         } finally {
             this._data.initialized = true;
             this._data.initializing = false;
-            this.logInfo('Initialization complete:', {
+            this.logInfo('[AuthService] Initialization complete:', {
                 hasToken: !!this._data.token,
                 tokenExpiry: this._data.tokenExpiry,
                 isAdmin: this.isAdmin()
@@ -352,26 +360,43 @@ class AuthService {
     }
 
     async verifyToken() {
-        if (!this._data.token) {
+        const token = this.getToken();
+        
+        if (!token) {
+            this.logInfo('[AuthService] No token found');
             return false;
         }
 
         try {
-            const data = await this.makeRequest('/api/auth/verify-token', {
-                method: 'GET'
+            const response = await this.makeRequest('/api/auth/verify-token');
+            
+            if (!response.success || !response.user) {
+                this.logError('[AuthService] Token verification failed:', {
+                    success: response.success,
+                    hasUser: !!response.user
+                });
+                return false;
+            }
+
+            this.logInfo('[AuthService] Token verified successfully:', {
+                email: response.user.email,
+                isAdmin: response.user.isAdmin
             });
 
-            this.logInfo('Token validation successful:', data);
+            // 更新用户数据
+            this._data.user = response.user;
+            localStorage.setItem('user', JSON.stringify(response.user));
+
             return true;
         } catch (error) {
-            this.logError('Token validation error:', error);
+            this.logError('[AuthService] Token verification error:', error);
             return false;
         }
     }
 
     async validateToken() {
         try {
-            this.logInfo('Making request to:', `${this._data.baseUrl}/api/auth/verify-token`);
+            this.logInfo('[AuthService] Making request to:', `${this._data.baseUrl}/api/auth/verify-token`);
             const response = await this.makeRequest(`${this._data.baseUrl}/api/auth/verify-token`, {
                 method: 'GET',
                 headers: {
@@ -384,10 +409,10 @@ class AuthService {
             }
 
             this._data.user = response.user;
-            this.logInfo('Token validation successful:', response);
+            this.logInfo('[AuthService] Token validation successful:', response);
             return true;
         } catch (error) {
-            this.logError('Token validation error:', error);
+            this.logError('[AuthService] Token validation error:', error);
             return false;
         }
     }
@@ -398,11 +423,11 @@ class AuthService {
         this._data.user = null;
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
-        this.logInfo('Auth cleared');
+        this.logInfo('[AuthService] Auth cleared');
     }
 
     async login(email, password) {
-        this.logInfo('Attempting login');
+        this.logInfo('[AuthService] Login attempt for:', email);
 
         try {
             const data = await this.makeRequest('/api/auth/login', {
@@ -411,15 +436,20 @@ class AuthService {
             });
             
             if (!data.token || !data.user) {
+                this.logError('[AuthService] Invalid login response:', { 
+                    hasToken: !!data.token, 
+                    hasUser: !!data.user 
+                });
                 throw new Error('Invalid response from server');
             }
 
-            this.logInfo('Login response:', {
+            this.logInfo('[AuthService] Login response:', {
                 token: !!data.token,
                 user: {
                     id: data.user.id,
                     email: data.user.email,
-                    isAdmin: data.user.isAdmin
+                    isAdmin: data.user.isAdmin,
+                    points: data.user.points
                 }
             });
 
@@ -431,19 +461,14 @@ class AuthService {
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
 
-            this.logInfo('Login successful:', { 
+            this.logInfo('[AuthService] Stored auth data:', { 
                 email: data.user.email,
                 isAdmin: data.user.isAdmin 
             });
 
-            // 根据用户角色重定向
-            const redirectPath = data.user.isAdmin ? '/admin/' : '/dashboard/';
-            this.logInfo('Redirecting to:', redirectPath);
-            window.location.href = redirectPath;
-
             return data;
         } catch (error) {
-            this.logError('Login failed:', error);
+            this.logError('[AuthService] Login failed:', error);
             throw error;
         }
     }
