@@ -49,23 +49,13 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 1rem;
-            transition: border-color 0.3s;
+            box-sizing: border-box;
         }
 
-        input:focus {
-            outline: none;
-            border-color: #4A90E2;
-        }
-
-        input:disabled {
-            background-color: #f5f5f5;
-            cursor: not-allowed;
-        }
-
-        button {
+        .submit-button {
             width: 100%;
             padding: 0.75rem;
-            background-color: #4A90E2;
+            background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
@@ -75,26 +65,27 @@
             position: relative;
         }
 
-        button:hover:not(:disabled) {
-            background-color: #357ABD;
+        .submit-button:hover {
+            background-color: #45a049;
         }
 
-        button:disabled {
-            background-color: #ccc;
+        .submit-button:disabled {
+            background-color: #cccccc;
             cursor: not-allowed;
         }
 
         .button-spinner {
+            display: none;
             width: 20px;
             height: 20px;
-            border: 2px solid #ffffff;
-            border-top: 2px solid transparent;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ffffff;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
             position: absolute;
-            left: 50%;
             top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
+            animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
@@ -124,22 +115,11 @@
             animation: spin 1s linear infinite;
         }
 
-        .error-message {
-            background-color: #ff4444;
-            color: white;
-            padding: 1rem;
-            border-radius: 4px;
+        .error-text {
+            color: #ff0000;
             margin-bottom: 1rem;
             text-align: center;
-        }
-
-        .info-message {
-            background-color: #4CAF50;
-            color: white;
-            padding: 1rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            text-align: center;
+            display: none;
         }
 
         .hidden {
@@ -154,7 +134,6 @@
 
     <div id="loginContainer">
         <h1>Login</h1>
-        <div id="messageContainer"></div>
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email</label>
@@ -164,10 +143,10 @@
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <div id="errorText" class="error-message" style="display: none;"></div>
+            <div id="errorText" class="error-text"></div>
             <button type="submit" id="loginButton" class="submit-button">
                 <span class="button-text">Login</span>
-                <span class="button-spinner hidden"></span>
+                <div class="button-spinner"></div>
             </button>
         </form>
     </div>
@@ -175,6 +154,13 @@
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             const auth = new AuthService();
+            const form = document.getElementById('loginForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const errorText = document.getElementById('errorText');
+            const loginButton = document.getElementById('loginButton');
+            const buttonText = loginButton.querySelector('.button-text');
+            const buttonSpinner = loginButton.querySelector('.button-spinner');
             
             // 检查是否已经登录
             const user = await auth.getUser();
@@ -188,26 +174,24 @@
                 return;
             }
 
-            const form = document.getElementById('loginForm');
-            const emailInput = document.getElementById('email');
-            const passwordInput = document.getElementById('password');
-            const errorText = document.getElementById('errorText');
-            const loginButton = document.getElementById('loginButton');
-
             function showError(message) {
-                errorText.textContent = message;
-                errorText.style.display = 'block';
+                if (errorText) {
+                    errorText.textContent = message;
+                    errorText.style.display = 'block';
+                }
             }
 
             function hideError() {
-                errorText.textContent = '';
-                errorText.style.display = 'none';
+                if (errorText) {
+                    errorText.textContent = '';
+                    errorText.style.display = 'none';
+                }
             }
 
             function setLoading(isLoading) {
                 loginButton.disabled = isLoading;
-                loginButton.querySelector('.button-text').style.display = isLoading ? 'none' : 'block';
-                loginButton.querySelector('.button-spinner').style.display = isLoading ? 'block' : 'none';
+                buttonText.style.display = isLoading ? 'none' : 'block';
+                buttonSpinner.style.display = isLoading ? 'block' : 'none';
             }
 
             form.addEventListener('submit', async function(e) {
@@ -217,15 +201,13 @@
 
                 try {
                     const response = await auth.login(emailInput.value, passwordInput.value);
-                    console.log('Login response:', {
-                        success: response.success,
-                        user: {
+                    console.log('Login response:', response);
+
+                    if (response && response.user) {
+                        console.log('Login successful:', {
                             email: response.user.email,
                             isAdmin: response.user.isAdmin
-                        }
-                    });
-
-                    if (response.success) {
+                        });
                         // 根据用户角色重定向
                         window.location.href = response.user.isAdmin ? '/admin/' : '/dashboard/';
                     } else {
@@ -238,12 +220,6 @@
                     setLoading(false);
                 }
             });
-
-            // Enable the form
-            form.style.display = 'block';
-            emailInput.disabled = false;
-            passwordInput.disabled = false;
-            loginButton.disabled = false;
         });
     </script>
 </body>
