@@ -132,9 +132,10 @@ async function startServer() {
         console.log('Admin user created successfully');
 
         // Start server
-        const port = process.env.PORT || 8080;
+        // Force port 8080 for App Engine
+        const port = 8080;
         console.log('Environment:', process.env.NODE_ENV);
-        console.log('Using port:', port, 'from environment:', process.env.PORT);
+        console.log('Using port:', port);
         
         server = app.listen(port, () => {
             console.log(`Server running on port ${port}`);
