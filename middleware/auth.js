@@ -1,30 +1,22 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
 
-async function authenticate(req, res, next) {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    
+const authenticateToken = async (req, res, next) => {
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        
-        // 从数据库获取用户信息
-        const user = await User.findByPk(decoded.id);
-        if (!user) {
-            return res.status(401).json({ error: 'User not found' });
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
         }
-        
-        req.user = user;
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
         next();
     } catch (error) {
-        return res.status(401).json({ error: 'Invalid token' });
+        console.error('Authentication error:', error);
+        res.status(403).json({ error: 'Invalid token' });
     }
-}
+};
 
 // 管理员认证中间件
 const isAdmin = async (req, res, next) => {
@@ -41,6 +33,6 @@ const isAdmin = async (req, res, next) => {
 };
 
 module.exports = {
-    authenticateToken: authenticate,
+    authenticateToken,
     isAdmin
 };

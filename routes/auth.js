@@ -4,8 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { User } = require('../models');  
-const referralModule = require('./referral');
-const authenticate = require('../middleware/auth');
+const { router: referralRouter, processReferral } = require('./referral');
+const { authenticateToken } = require('../middleware/auth');
 
 // 注册
 router.post('/register', async (req, res) => {
@@ -61,7 +61,7 @@ router.post('/register', async (req, res) => {
 
         // 处理推荐码关系
         if (referralCode) {
-            await referralModule.processReferral(user.id, referralCode);
+            await processReferral(user.id, referralCode);
         }
 
         // 生成 JWT
@@ -220,7 +220,7 @@ router.get('/me', async (req, res) => {
 });
 
 // 验证令牌
-router.get('/verify-token', authenticate, async (req, res) => {
+router.get('/verify-token', authenticateToken, async (req, res) => {
     try {
         // 验证 token
         const token = req.headers['authorization'].split(' ')[1];

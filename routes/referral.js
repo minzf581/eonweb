@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { User, PointHistory, Referral } = require('../models');
 const { Op } = require('sequelize');
-const authenticate = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // 生成推荐码
 function generateReferralCode() {
@@ -15,7 +15,7 @@ function generateReferralCode() {
 }
 
 // 获取推荐数据API
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         console.log('Fetching referral data for user:', userId);
