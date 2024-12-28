@@ -330,35 +330,57 @@
             <div class="section-header">
                 <h2 class="section-title">用户管理</h2>
                 <div class="actions">
-                    <button onclick="addUser()" class="secondary">
-                        <i class="fas fa-user-plus"></i> 添加用户
-                    </button>
                     <button onclick="refreshUsers()">
                         <i class="fas fa-sync-alt"></i> 刷新
                     </button>
                 </div>
             </div>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>邮箱</th>
-                            <th>密码</th>
-                            <th>积分</th>
-                            <th>推荐码</th>
-                            <th>注册时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="userList">
-                        <tr>
-                            <td colspan="7" class="loading">
-                                <i class="fas fa-spinner fa-spin"></i> 加载中...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">User Management</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Add User Form -->
+                    <form id="addUserForm" class="mb-4">
+                        <h6 class="mb-3">Add New User</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <input type="email" class="form-control" id="newUserEmail" placeholder="Email" required>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="password" class="form-control" id="newUserPassword" placeholder="Password" required>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="newUserRole">
+                                    <option value="false">Regular User</option>
+                                    <option value="true">Admin User</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">Add User</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Users Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Points</th>
+                                    <th>Referral Code</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- User rows will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -857,6 +879,121 @@
             if (settings && settings.length > 0) {
                 document.getElementById('referralPoints').value = settings[0].referralPoints || 100;
                 document.getElementById('dailyCheckInPoints').value = settings[0].dailyCheckInPoints || 10;
+            }
+        }
+
+        // Add user form submission
+        document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('newUserEmail').value;
+            const password = document.getElementById('newUserPassword').value;
+            const isAdmin = document.getElementById('newUserRole').value === 'true';
+            
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    },
+                    body: JSON.stringify({ email, password, isAdmin })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to add user');
+                }
+                
+                const data = await response.json();
+                console.log('[Admin] User added:', data.user);
+                
+                // Clear form
+                document.getElementById('newUserEmail').value = '';
+                document.getElementById('newUserPassword').value = '';
+                document.getElementById('newUserRole').value = 'false';
+                
+                // Reload users
+                await loadUsers();
+                
+                showToast('Success', 'User added successfully');
+            } catch (error) {
+                console.error('[Admin] Error adding user:', error);
+                showToast('Error', error.message);
+            }
+        });
+
+        // Function to load and display users
+        async function loadUsers() {
+            try {
+                console.log('[Admin] Loading users with headers:', {
+                    'Authorization': `Bearer ${window._authService.getToken()}`,
+                    'Content-Type': 'application/json'
+                });
+                
+                const response = await fetch('/api/admin/users', {
+                    headers: {
+                        'Authorization': `Bearer ${window._authService.getToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load users');
+                }
+                
+                const users = await response.json();
+                console.log('[Admin] Users loaded:', users);
+                
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+                
+                users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${user.email}</td>
+                        <td><span class="badge ${user.isAdmin ? 'bg-primary' : 'bg-secondary'}">${user.isAdmin ? 'Admin' : 'User'}</span></td>
+                        <td>${user.points}</td>
+                        <td><code>${user.referralCode}</code></td>
+                        <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                        <td>
+                            ${user.id !== window._authService.getUser().id ? `
+                                <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">Delete</button>
+                            ` : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('[Admin] Error loading users:', error);
+                showToast('Error', error.message);
+            }
+        }
+
+        // Function to delete a user
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete user');
+                }
+                
+                await loadUsers();
+                showToast('Success', 'User deleted successfully');
+            } catch (error) {
+                console.error('[Admin] Error deleting user:', error);
+                showToast('Error', error.message);
             }
         }
 

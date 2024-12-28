@@ -81,7 +81,81 @@ router.get('/users', async (req, res) => {
         res.json(users);
     } catch (error) {
         console.error('[Admin API] Error getting users:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to load users',
+            details: error.message 
+        });
+    }
+});
+
+// 添加新用户
+router.post('/users', async (req, res) => {
+    try {
+        console.log('[Admin API] Adding user, admin:', {
+            id: req.user.id,
+            email: req.user.email,
+            isAdmin: req.user.isAdmin
+        });
+
+        const { email, password, isAdmin } = req.body;
+
+        // Validate required fields
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email and password are required'
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                error: 'User already exists'
+            });
+        }
+
+        // Generate referral code
+        const referralCode = crypto.randomBytes(4).toString('hex');
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user
+        const user = await User.create({
+            email,
+            password: hashedPassword,
+            referralCode,
+            isAdmin: !!isAdmin,
+            points: 0
+        });
+
+        console.log('[Admin API] User created:', {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin
+        });
+
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                points: user.points,
+                referralCode: user.referralCode,
+                createdAt: user.createdAt
+            }
+        });
+    } catch (error) {
+        console.error('[Admin API] Error creating user:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create user',
+            details: error.message
+        });
     }
 });
 
@@ -152,51 +226,47 @@ router.post('/settings', async (req, res) => {
     }
 });
 
-// 添加用户
-router.post('/users', async (req, res) => {
+// 删除用户
+router.delete('/users/:id', async (req, res) => {
     try {
-        console.log('[Admin API] Adding user, admin:', {
+        console.log('[Admin API] Deleting user, admin:', {
             id: req.user.id,
             email: req.user.email,
             isAdmin: req.user.isAdmin
         });
 
-        const { email, password } = req.body;
-        
-        // Check if user exists
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ error: 'User already exists' });
+        const userId = req.params.id;
+
+        // Prevent self-deletion
+        if (userId === req.user.id.toString()) {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot delete your own account'
+            });
         }
-        
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        
-        // Create user
-        const user = await User.create({
-            email,
-            password: hashedPassword,
-            referralCode: crypto.randomBytes(4).toString('hex'),
-            points: 0,
-            isAdmin: false
-        });
-        
+
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        await user.destroy();
+        console.log('[Admin API] User deleted:', { id: userId });
+
         res.json({
             success: true,
-            user: {
-                id: user.id,
-                email: user.email,
-                points: user.points,
-                referralCode: user.referralCode,
-                isAdmin: user.isAdmin,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt
-            }
+            message: 'User deleted successfully'
         });
     } catch (error) {
-        console.error('[Admin API] Error adding user:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('[Admin API] Error deleting user:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete user',
+            details: error.message
+        });
     }
 });
 
@@ -236,30 +306,6 @@ router.patch('/users/:id', async (req, res) => {
         });
     } catch (error) {
         console.error('[Admin API] Error updating user:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// 删除用户
-router.delete('/users/:id', async (req, res) => {
-    try {
-        console.log('[Admin API] Deleting user, admin:', {
-            id: req.user.id,
-            email: req.user.email,
-            isAdmin: req.user.isAdmin
-        });
-
-        const userId = req.params.id;
-        
-        const user = await User.findByPk(userId);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        
-        await user.destroy();
-        res.json({ success: true });
-    } catch (error) {
-        console.error('[Admin API] Error deleting user:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
