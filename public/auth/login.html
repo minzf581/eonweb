@@ -155,18 +155,19 @@
     <div id="loginContainer">
         <h1>Login</h1>
         <div id="messageContainer"></div>
-        <form id="loginForm" style="display: none;">
+        <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" required disabled>
+                <input type="email" id="email" name="email" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required disabled>
+                <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit" id="loginButton" disabled>
+            <div id="errorText" class="error-message" style="display: none;"></div>
+            <button type="submit" id="loginButton" class="submit-button">
                 <span class="button-text">Login</span>
-                <div class="button-spinner hidden"></div>
+                <span class="button-spinner hidden"></span>
             </button>
         </form>
     </div>
@@ -191,10 +192,28 @@
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             const errorText = document.getElementById('errorText');
+            const loginButton = document.getElementById('loginButton');
+
+            function showError(message) {
+                errorText.textContent = message;
+                errorText.style.display = 'block';
+            }
+
+            function hideError() {
+                errorText.textContent = '';
+                errorText.style.display = 'none';
+            }
+
+            function setLoading(isLoading) {
+                loginButton.disabled = isLoading;
+                loginButton.querySelector('.button-text').style.display = isLoading ? 'none' : 'block';
+                loginButton.querySelector('.button-spinner').style.display = isLoading ? 'block' : 'none';
+            }
 
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                errorText.textContent = '';
+                hideError();
+                setLoading(true);
 
                 try {
                     const response = await auth.login(emailInput.value, passwordInput.value);
@@ -210,11 +229,13 @@
                         // 根据用户角色重定向
                         window.location.href = response.user.isAdmin ? '/admin/' : '/dashboard/';
                     } else {
-                        errorText.textContent = '登录失败，请检查您的邮箱和密码';
+                        showError('登录失败，请检查您的邮箱和密码');
                     }
                 } catch (error) {
                     console.error('Login error:', error);
-                    errorText.textContent = '登录时发生错误，请稍后重试';
+                    showError('登录时发生错误，请稍后重试');
+                } finally {
+                    setLoading(false);
                 }
             });
 
@@ -222,7 +243,7 @@
             form.style.display = 'block';
             emailInput.disabled = false;
             passwordInput.disabled = false;
-            document.getElementById('loginButton').disabled = false;
+            loginButton.disabled = false;
         });
     </script>
 </body>
