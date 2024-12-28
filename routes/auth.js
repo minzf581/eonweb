@@ -66,10 +66,20 @@ router.post('/register', async (req, res) => {
 
         // 生成 JWT
         const token = jwt.sign(
-            { id: user.id, email: user.email },
+            { 
+                id: user.id, 
+                email: user.email,
+                isAdmin: user.isAdmin 
+            },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
+
+        console.log('Generated token payload:', {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin
+        });
 
         res.status(201).json({
             success: true,
