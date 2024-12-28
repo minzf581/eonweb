@@ -19,6 +19,7 @@ const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
+const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
 
@@ -43,29 +44,7 @@ app.use((req, res, next) => {
 });
 
 // 认证中间件
-const authenticateToken = async (req, res, next) => {
-    try {
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-
-        if (!token) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findByPk(decoded.id);
-
-        if (!user) {
-            return res.status(401).json({ error: 'User not found' });
-        }
-
-        req.user = user;
-        next();
-    } catch (error) {
-        console.error('Authentication error:', error);
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-};
+app.use(authenticateToken);
 
 // API 路由
 app.use('/api/auth', authRoutes);
