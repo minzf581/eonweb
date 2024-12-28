@@ -143,4 +143,6 @@ async function processReferral(userId, referralCode) {
     }
 }
 
-module.exports = { router, processReferral };
+// 导出路由和处理函数
+exports.router = router;
+exports.processReferral = processReferral;
