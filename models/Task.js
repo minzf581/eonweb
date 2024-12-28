@@ -34,8 +34,8 @@ const Task = sequelize.define('Task', {
         defaultValue: true
     },
     status: {
-        type: DataTypes.ENUM('Active', 'Coming Soon'),
-        defaultValue: 'Coming Soon'
+        type: DataTypes.ENUM('active', 'completed', 'coming_soon'),
+        defaultValue: 'coming_soon'
     },
     startDate: {
         type: DataTypes.DATE,

@@ -18,7 +18,7 @@ router.get('/stats', async (req, res) => {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
 
-        const [totalUsers, activeUsers, totalTasks, completedTasks] = await Promise.all([
+        const [totalUsers, activeUsers, totalTasks, currentTasks] = await Promise.all([
             User.count(),
             User.count({
                 where: {
@@ -27,10 +27,17 @@ router.get('/stats', async (req, res) => {
                     }
                 }
             }),
-            Task.count(),
             Task.count({
                 where: {
-                    status: 'completed'
+                    status: {
+                        [Op.in]: ['active', 'completed']
+                    }
+                }
+            }),
+            Task.count({
+                where: {
+                    status: 'active',
+                    isActive: true
                 }
             })
         ]);
@@ -39,14 +46,20 @@ router.get('/stats', async (req, res) => {
             totalUsers,
             activeUsers,
             totalTasks,
-            completedTasks
+            currentTasks,
+            currentTaskPercentage: totalTasks > 0 ? (currentTasks / totalTasks * 100).toFixed(1) : 0,
+            userParticipationRate: totalUsers > 0 ? (activeUsers / totalUsers * 100).toFixed(1) : 0
         };
 
         console.log('[Admin API] Stats:', stats);
         res.json(stats);
     } catch (error) {
         console.error('[Admin API] Error getting stats:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to load stats',
+            details: error.message 
+        });
     }
 });
 

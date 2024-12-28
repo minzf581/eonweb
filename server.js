@@ -14,6 +14,7 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const sequelize = require('./config/database');
 const seedAdminUser = require('./seeders/adminUser');
+const seedTasks = require('./seeders/tasks');
 const { User, Task, UserTask, PointHistory, Settings } = require('./models');
 const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
@@ -130,9 +131,11 @@ async function startServer() {
         await sequelize.sync();
         console.log('Database synchronized');
 
-        // 创建默认管理员用户
+        // 创建管理员用户
         await seedAdminUser();
-        console.log('Admin user created successfully');
+        
+        // Seed tasks
+        await seedTasks();
 
         // 启动服务器
         const server = app.listen(process.env.PORT || 8081, () => {
