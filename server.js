@@ -39,8 +39,24 @@ app.get('/_ah/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+let server;
+
 app.get('/_ah/stop', (req, res) => {
+    console.log('Received stop request');
     res.status(200).send('OK');
+    
+    // 给一些时间让响应发送完成
+    setTimeout(() => {
+        console.log('Shutting down server...');
+        if (server) {
+            server.close(() => {
+                console.log('Server shutdown complete');
+                process.exit(0);
+            });
+        } else {
+            process.exit(0);
+        }
+    }, 1000);
 });
 
 app.use(express.json());
@@ -82,16 +98,19 @@ app.get('*', (req, res) => {
 const startServer = async () => {
     try {
         // 同步数据库
+        await sequelize.authenticate();
+        console.log('Database connection has been established successfully.');
+        
         await sequelize.sync();
         console.log('Database synchronized');
-
+        
         // 创建管理员用户
         await seedAdminUser();
         console.log('Admin user created successfully');
 
         // 启动服务器
         const PORT = process.env.PORT || 8080;
-        app.listen(PORT, () => {
+        server = app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
     } catch (error) {
