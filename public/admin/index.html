@@ -430,6 +430,27 @@
         .btn-secondary:hover {
             background-color: #e8e8e8;
         }
+
+        /* Horizontal Form */
+        .horizontal-form .form-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .horizontal-form .form-group {
+            flex: 1;
+            margin: 0;
+        }
+
+        .form-actions {
+            margin-top: 20px;
+            text-align: right;
+        }
+
+        .form-actions button {
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -511,25 +532,27 @@
                     <span class="close" onclick="hideAddUserModal()">&times;</span>
                 </div>
                 <div class="modal-body">
-                    <form id="addUserForm" class="form-grid">
-                        <div class="form-group">
-                            <label for="newUserEmail">邮箱</label>
-                            <input type="email" id="newUserEmail" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="newUserPassword">密码</label>
-                            <input type="password" id="newUserPassword" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="newUserRole">用户角色</label>
-                            <select id="newUserRole" class="form-control">
-                                <option value="false">普通用户</option>
-                                <option value="true">管理员</option>
-                            </select>
+                    <form id="addUserForm" onsubmit="handleAddUser(event)" class="horizontal-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="email">邮箱</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="password">密码</label>
+                                <input type="password" id="password" name="password" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="role">角色</label>
+                                <select id="role" name="role" required>
+                                    <option value="user">普通用户</option>
+                                    <option value="admin">管理员</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn-primary">确认添加</button>
-                            <button type="button" class="btn-secondary" onclick="hideAddUserModal()">取消</button>
+                            <button type="submit" class="primary">添加</button>
+                            <button type="button" onclick="hideAddUserModal()">取消</button>
                         </div>
                     </form>
                 </div>
@@ -599,483 +622,26 @@
 
         async function initializeAdmin() {
             try {
-                console.log('[Admin] Initializing admin page');
-                
-                // Verify token and get user data
-                const isValid = await window._authService.verifyToken();
-                if (!isValid) {
-                    console.error('[Admin] Token verification failed');
-                    window.location.href = '/auth/login.html';
-                    return;
-                }
-
-                const user = window._authService.getUser();
-                if (!user) {
-                    console.error('[Admin] No user data available');
-                    window.location.href = '/auth/login.html';
-                    return;
-                }
-
-                if (!user.isAdmin) {
-                    console.error('[Admin] User is not an admin');
-                    window.location.href = '/auth/login.html';
-                    return;
-                }
-
-                console.log('[Admin] Admin user verified:', {
-                    email: user.email,
-                    isAdmin: user.isAdmin
-                });
-
-                // Set up authorization headers for API calls
-                const headers = {
-                    'Authorization': `Bearer ${window._authService.getToken()}`,
-                    'Content-Type': 'application/json'
-                };
-
-                // Load admin data
-                await loadAdminData(headers);
-            } catch (error) {
-                console.error('[Admin] Error initializing admin page:', error);
-                window.location.href = '/auth/login.html';
-            }
-        }
-
-        async function loadAdminData(headers) {
-            try {
-                // Show loading state
-                document.getElementById('userList').innerHTML = '<tr><td colspan="7" class="empty-state">加载中...</td></tr>';
-                document.getElementById('taskList').innerHTML = '<tr><td colspan="5" class="empty-state">加载中...</td></tr>';
-
-                // Load data with proper error handling
-                const results = await Promise.allSettled([
-                    loadStats(headers),
-                    loadUsers(headers),
-                    loadTasks(headers),
-                    loadSettings(headers)
-                ]);
-
-                // Handle results
-                results.forEach((result, index) => {
-                    if (result.status === 'rejected') {
-                        console.error(`[Admin] Failed to load data for index ${index}:`, result.reason);
-                        if (result.reason.status === 403) {
-                            window.location.href = '/auth/login.html';
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('[Admin] Error loading admin data:', error);
-                if (error.status === 403) {
-                    window.location.href = '/auth/login.html';
-                }
-            }
-        }
-
-        async function loadStats(headers) {
-            try {
-                console.log('[Admin] Loading stats with headers:', headers);
-                const response = await fetch('/api/admin/stats', { 
-                    method: 'GET',
-                    headers: headers
-                });
-
-                if (!response.ok) {
-                    console.error('[Admin] Stats response not ok:', response.status);
-                    throw new Error(`Failed to load stats: ${response.status}`);
-                }
-
-                const stats = await response.json();
-                console.log('[Admin] Stats loaded:', stats);
-                updateStats(stats);
-            } catch (error) {
-                console.error('[Admin] Error loading stats:', error);
-                throw error;
-            }
-        }
-
-        async function loadUsers(headers) {
-            try {
-                console.log('[Admin] Loading users with headers:', headers);
-                const response = await fetch('/api/admin/users', { 
-                    method: 'GET',
-                    headers: headers
-                });
-
-                if (!response.ok) {
-                    console.error('[Admin] Users response not ok:', response.status);
-                    throw new Error(`Failed to load users: ${response.status}`);
-                }
-
-                const users = await response.json();
-                console.log('[Admin] Users loaded:', users);
-                updateUsers(users);
-            } catch (error) {
-                console.error('[Admin] Error loading users:', error);
-                throw error;
-            }
-        }
-
-        async function loadTasks(headers) {
-            try {
-                console.log('[Admin] Loading tasks with headers:', headers);
-                const response = await fetch('/api/admin/tasks', { 
-                    method: 'GET',
-                    headers: headers
-                });
-
-                if (!response.ok) {
-                    console.error('[Admin] Tasks response not ok:', response.status);
-                    throw new Error(`Failed to load tasks: ${response.status}`);
-                }
-
-                const tasks = await response.json();
-                console.log('[Admin] Tasks loaded:', tasks);
-                updateTasks(tasks);
-            } catch (error) {
-                console.error('[Admin] Error loading tasks:', error);
-                throw error;
-            }
-        }
-
-        async function loadSettings(headers) {
-            try {
-                console.log('[Admin] Loading settings with headers:', headers);
-                const response = await fetch('/api/admin/settings', { 
-                    method: 'GET',
-                    headers: headers
-                });
-
-                if (!response.ok) {
-                    console.error('[Admin] Settings response not ok:', response.status);
-                    throw new Error(`Failed to load settings: ${response.status}`);
-                }
-
-                const settings = await response.json();
-                console.log('[Admin] Settings loaded:', settings);
-                updateSettings(settings);
-            } catch (error) {
-                console.error('[Admin] Error loading settings:', error);
-                throw error;
-            }
-        }
-
-        async function refreshUsers() {
-            const button = event.target.closest('button');
-            button.disabled = true;
-            try {
-                const headers = {
-                    'Authorization': `Bearer ${window._authService.getToken()}`,
-                    'Content-Type': 'application/json'
-                };
-                await loadUsers(headers);
-            } catch (error) {
-                console.error('[Admin] Error refreshing users:', error);
-            } finally {
-                button.disabled = false;
-            }
-        }
-
-        async function refreshTasks() {
-            const button = event.target.closest('button');
-            button.disabled = true;
-            try {
-                const headers = {
-                    'Authorization': `Bearer ${window._authService.getToken()}`,
-                    'Content-Type': 'application/json'
-                };
-                await loadTasks(headers);
-            } catch (error) {
-                console.error('[Admin] Error refreshing tasks:', error);
-            } finally {
-                button.disabled = false;
-            }
-        }
-
-        async function saveSettings() {
-            const button = event.target.closest('button');
-            button.disabled = true;
-
-            try {
-                const settings = {
-                    referralPoints: parseInt(document.getElementById('referralPoints').value),
-                    dailyCheckInPoints: parseInt(document.getElementById('dailyCheckInPoints').value)
-                };
-
-                const response = await fetch('/api/admin/settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    },
-                    body: JSON.stringify(settings)
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to save settings');
-                }
-
-                alert('设置已保存');
-            } catch (error) {
-                console.error('[Admin] Error saving settings:', error);
-                alert('保存设置失败');
-            } finally {
-                button.disabled = false;
-            }
-        }
-
-        async function logout() {
-            try {
-                await window._authService.logout();
-            } catch (error) {
-                console.error('[Admin] Logout error:', error);
-                window.location.replace('/auth/login.html');
-            }
-        }
-
-        async function addUser() {
-            const email = prompt('请输入用户邮箱：');
-            if (!email) return;
-
-            const password = prompt('请输入用户密码：');
-            if (!password) return;
-
-            try {
-                const response = await fetch('/api/admin/users', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to add user');
-                }
-
-                alert('用户添加成功');
-                await loadUsers();
-            } catch (error) {
-                console.error('[Admin] Error adding user:', error);
-                alert('添加用户失败');
-            }
-        }
-
-        async function updateUser(userId, field, value) {
-            try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    },
-                    body: JSON.stringify({ [field]: value })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to update user');
-                }
-
-                // 如果更新成功，不需要刷新整个列表
-                console.log(`[Admin] Updated user ${userId} ${field}`);
-            } catch (error) {
-                console.error('[Admin] Error updating user:', error);
-                alert('更新用户失败');
-                await loadUsers(); // 重新加载以恢复原始数据
-            }
-        }
-
-        async function deleteUser(userId) {
-            if (!confirm('确定要删除该用户吗？此操作不可恢复。')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to delete user');
-                }
-
-                alert('用户已删除');
-                await loadUsers();
-            } catch (error) {
-                console.error('[Admin] Error deleting user:', error);
-                alert('删除用户失败');
-            }
-        }
-
-        async function updateTask(taskId, field, value) {
-            try {
-                const response = await fetch(`/api/admin/tasks/${taskId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    },
-                    body: JSON.stringify({ [field]: value })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to update task');
-                }
-
-                console.log(`[Admin] Updated task ${taskId} ${field}`);
-            } catch (error) {
-                console.error('[Admin] Error updating task:', error);
-                alert('更新任务失败');
-                await loadTasks(); // 重新加载以恢复原始数据
-            }
-        }
-
-        async function toggleTask(taskId) {
-            try {
-                const response = await fetch(`/api/admin/tasks/${taskId}/toggle`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to toggle task');
-                }
-
-                await loadTasks();
-            } catch (error) {
-                console.error('[Admin] Error toggling task:', error);
-                alert('切换任务状态失败');
-            }
-        }
-
-        function updateStats(stats) {
-            document.getElementById('totalUsers').textContent = stats.totalUsers || '0';
-            document.getElementById('activeUsers').textContent = stats.activeUsers || '0';
-            document.getElementById('totalTasks').textContent = stats.totalTasks || '0';
-            document.getElementById('completedTasks').textContent = stats.completedTasks || '0';
-        }
-
-        function updateUsers(users) {
-            const userList = document.getElementById('userList');
-            if (users.length === 0) {
-                userList.innerHTML = '<tr><td colspan="7" class="empty-state">暂无用户数据</td></tr>';
-                return;
-            }
-
-            userList.innerHTML = users.map(user => `
-                <tr>
-                    <td>${user.id}</td>
-                    <td>${user.email}</td>
-                    <td><span class="badge ${user.isAdmin ? 'admin' : 'user'}">${user.isAdmin ? '管理员' : '用户'}</span></td>
-                    <td>${user.points}</td>
-                    <td><code>${user.referralCode}</code></td>
-                    <td>${new Date(user.createdAt).toLocaleString()}</td>
-                    <td>
-                        ${user.id !== window._authService.getUser().id ? `
-                            <button class="delete-btn" onclick="deleteUser(${user.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        ` : ''}
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function updateTasks(tasks) {
-            const taskList = document.getElementById('taskList');
-            if (tasks.length === 0) {
-                taskList.innerHTML = '<tr><td colspan="5" class="empty-state">暂无任务数据</td></tr>';
-                return;
-            }
-
-            taskList.innerHTML = tasks.map(task => `
-                <tr>
-                    <td>${task.title}</td>
-                    <td>
-                        <textarea onchange="updateTask(${task.id}, 'description', this.value)"
-                                class="editable-field">${task.description}</textarea>
-                    </td>
-                    <td>${task.points}</td>
-                    <td>
-                        <span class="status-badge ${task.isActive ? 'status-active' : 'status-inactive'}">
-                            ${task.isActive ? '进行中' : '已暂停'}
-                        </span>
-                    </td>
-                    <td>
-                        <button onclick="toggleTask(${task.id})" class="${task.isActive ? 'warning' : 'success'}">
-                            <i class="fas fa-${task.isActive ? 'pause' : 'play'}"></i>
-                            ${task.isActive ? '暂停' : '启用'}
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function updateSettings(settings) {
-            if (settings && settings.length > 0) {
-                document.getElementById('referralPoints').value = settings[0].referralPoints || 100;
-                document.getElementById('dailyCheckInPoints').value = settings[0].dailyCheckInPoints || 10;
-            }
-        }
-
-        // Overview Functions
-        async function loadOverview() {
-            try {
-                const [usersResponse, tasksResponse, completedTasksResponse] = await Promise.all([
-                    fetch('/api/admin/users/count', {
-                        headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
-                    }),
-                    fetch('/api/admin/tasks/count', {
-                        headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
-                    }),
-                    fetch('/api/admin/tasks/completed/count', {
-                        headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
-                    })
-                ]);
-
-                const [usersData, tasksData, completedTasksData] = await Promise.all([
-                    usersResponse.json(),
-                    tasksResponse.json(),
-                    completedTasksResponse.json()
-                ]);
-
-                document.getElementById('totalUsers').textContent = usersData.count || '0';
-                document.getElementById('totalTasks').textContent = tasksData.count || '0';
-                document.getElementById('completedTasks').textContent = completedTasksData.count || '0';
-            } catch (error) {
-                console.error('[Admin] Error loading overview:', error);
-                showToast('Error', '加载数据概览失败');
-            }
-        }
-
-        // Logout Function
-        function logout() {
-            window._authService.logout();
-            window.location.href = '/';
-        }
-
-        // Initialize Admin Page
-        async function initializeAdmin() {
-            try {
                 const user = window._authService.getUser();
                 if (!user || !user.isAdmin) {
                     window.location.href = '/';
                     return;
                 }
                 console.log('[Admin] Admin user verified:', user);
-                
-                // Load all data
+                await loadAllData();
+            } catch (error) {
+                console.error('[Admin] Error initializing admin page:', error);
+                showToast('Error', '初始化失败');
+            }
+        }
+
+        // Load all admin data
+        async function loadAllData() {
+            try {
                 await Promise.all([
                     loadOverview(),
                     loadUsers(),
-                    loadTasks(),
-                    loadSettings()
+                    loadTasks()
                 ]);
             } catch (error) {
                 console.error('[Admin] Error loading admin data:', error);
@@ -1083,52 +649,139 @@
             }
         }
 
-        // Initialize when document is ready
-        document.addEventListener('DOMContentLoaded', initializeAdmin);
-
-        // User Management Functions
+        // Load Users
         async function loadUsers() {
             try {
                 const response = await fetch('/api/admin/users', {
+                    headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
+                });
+                const users = await response.json();
+                
+                const userList = document.getElementById('userList');
+                if (!userList) {
+                    console.error('[Admin] User list element not found');
+                    return;
+                }
+
+                userList.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.email}</td>
+                        <td>${user.isAdmin ? '管理员' : '普通用户'}</td>
+                        <td>${user.points || 0}</td>
+                        <td>${user.referralCode || '-'}</td>
+                        <td>${new Date(user.createdAt).toLocaleString()}</td>
+                        <td>
+                            ${user.id !== window._authService.getUser().id ? 
+                                `<button onclick="deleteUser(${user.id})" class="danger small">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : 
+                                '-'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('[Admin] Error loading users:', error);
+                showToast('Error', '加载用户列表失败');
+            }
+        }
+
+        // Load Tasks
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/admin/tasks', {
+                    headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
+                });
+                const tasks = await response.json();
+                
+                const taskList = document.getElementById('taskList');
+                if (!taskList) {
+                    console.error('[Admin] Task list element not found');
+                    return;
+                }
+
+                taskList.innerHTML = tasks.map(task => `
+                    <tr>
+                        <td>${task.id}</td>
+                        <td>${task.title}</td>
+                        <td>${task.description}</td>
+                        <td>${task.points}</td>
+                        <td>${task.type}</td>
+                        <td>${task.status}</td>
+                        <td>${new Date(task.startDate).toLocaleString()}</td>
+                        <td>
+                            <button onclick="editTask(${task.id})" class="small">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteTask(${task.id})" class="danger small">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('[Admin] Error loading tasks:', error);
+                showToast('Error', '加载任务列表失败');
+            }
+        }
+
+        // Add User
+        async function handleAddUser(event) {
+            event.preventDefault();
+            const form = event.target;
+            const email = form.email.value;
+            const password = form.password.value;
+            const role = form.role.value;
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`,
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window._authService.getToken()}`
+                    },
+                    body: JSON.stringify({ email, password, isAdmin: role === 'admin' })
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to load users');
+                    const error = await response.json();
+                    throw new Error(error.error || '添加用户失败');
                 }
 
-                const users = await response.json();
-                const tbody = document.getElementById('userList');
-                tbody.innerHTML = '';
-
-                users.forEach(user => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${user.id}</td>
-                        <td>${user.email}</td>
-                        <td><span class="badge ${user.isAdmin ? 'admin' : 'user'}">${user.isAdmin ? '管理员' : '用户'}</span></td>
-                        <td>${user.points}</td>
-                        <td><code>${user.referralCode}</code></td>
-                        <td>${new Date(user.createdAt).toLocaleString()}</td>
-                        <td>
-                            ${user.id !== window._authService.getUser().id ? `
-                                <button class="delete-btn" onclick="deleteUser(${user.id})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            ` : ''}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                await loadUsers();
+                hideAddUserModal();
+                form.reset();
+                showToast('Success', '用户添加成功');
             } catch (error) {
-                console.error('[Admin] Error loading users:', error);
+                console.error('[Admin] Error adding user:', error);
                 showToast('Error', error.message);
             }
         }
 
+        // Delete User
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除这个用户吗？')) return;
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '删除用户失败');
+                }
+
+                await loadUsers();
+                showToast('Success', '用户删除成功');
+            } catch (error) {
+                console.error('[Admin] Error deleting user:', error);
+                showToast('Error', error.message);
+            }
+        }
+
+        // Modal Functions
         function showAddUserModal() {
             document.getElementById('addUserModal').style.display = 'block';
         }
@@ -1138,66 +791,8 @@
             document.getElementById('addUserForm').reset();
         }
 
-        // Add user form submission
-        document.getElementById('addUserForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('newUserEmail').value;
-            const password = document.getElementById('newUserPassword').value;
-            const isAdmin = document.getElementById('newUserRole').value === 'true';
-            
-            try {
-                const response = await fetch('/api/admin/users', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    },
-                    body: JSON.stringify({ email, password, isAdmin })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to add user');
-                }
-                
-                const data = await response.json();
-                console.log('[Admin] User added:', data.user);
-                
-                hideAddUserModal();
-                await loadUsers();
-                showToast('Success', '用户添加成功');
-            } catch (error) {
-                console.error('[Admin] Error adding user:', error);
-                showToast('Error', error.message);
-            }
-        });
-
-        async function deleteUser(userId) {
-            if (!confirm('确定要删除这个用户吗？')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to delete user');
-                }
-                
-                await loadUsers();
-                showToast('Success', '用户删除成功');
-            } catch (error) {
-                console.error('[Admin] Error deleting user:', error);
-                showToast('Error', error.message);
-            }
-        }
+        // Initialize when document is ready
+        document.addEventListener('DOMContentLoaded', initializeAdmin);
     </script>
 </body>
 </html>

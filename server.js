@@ -80,36 +80,9 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/admin', authenticateToken, isAdmin, adminRoutes);
 
 // Health check endpoints for App Engine (no authentication required)
-app.get('/_ah/start', (req, res) => {
-    console.log('Received start request');
-    res.status(200).send('OK');
-});
-
 app.get('/_ah/health', (req, res) => {
     console.log('Received health check request');
     res.status(200).send('OK');
-});
-
-app.get('/_ah/stop', async (req, res) => {
-    console.log('Received stop request');
-    try {
-        const server = app.get('server');
-        if (server) {
-            server.close(() => {
-                console.log('Server closed');
-                res.status(200).send('Server stopped');
-                process.exit(0);
-            });
-        } else {
-            console.log('No server instance found');
-            res.status(200).send('No server instance found');
-            process.exit(0);
-        }
-    } catch (error) {
-        console.error('Error during shutdown:', error);
-        res.status(500).send('Error during shutdown');
-        process.exit(1);
-    }
 });
 
 // Handle frontend routing (no authentication required)
@@ -200,11 +173,60 @@ async function initializeApp() {
 
         // Start server
         const PORT = process.env.PORT || 8081;
-        app.listen(PORT, () => {
+        const server = app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
+
+        // Store server instance
+        app.set('server', server);
+
+        // Handle graceful shutdown
+        process.on('SIGTERM', async () => {
+            console.log('SIGTERM signal received');
+            await gracefulShutdown();
+        });
+
+        process.on('SIGINT', async () => {
+            console.log('SIGINT signal received');
+            await gracefulShutdown();
+        });
+
+        // Handle App Engine start/stop
+        app.get('/_ah/start', (req, res) => {
+            console.log('Received start request');
+            res.status(200).send('Application started');
+        });
+
+        app.get('/_ah/stop', async (req, res) => {
+            console.log('Received stop request');
+            await gracefulShutdown();
+            res.status(200).send('Application stopping');
+        });
+
     } catch (error) {
         console.error('Error initializing app:', error);
+        process.exit(1);
+    }
+}
+
+// Graceful shutdown function
+async function gracefulShutdown() {
+    try {
+        const server = app.get('server');
+        if (server) {
+            console.log('Closing HTTP server...');
+            await new Promise((resolve) => server.close(resolve));
+            console.log('HTTP server closed');
+        }
+
+        console.log('Closing database connection...');
+        await sequelize.close();
+        console.log('Database connection closed');
+
+        console.log('Graceful shutdown completed');
+        process.exit(0);
+    } catch (error) {
+        console.error('Error during graceful shutdown:', error);
         process.exit(1);
     }
 }
@@ -214,7 +236,12 @@ initializeApp();
 
 // 错误处理
 process.on('unhandledRejection', (error) => {
-    console.error('Unhandled promise rejection:', error);
+    console.error('Unhandled Rejection:', error);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    gracefulShutdown();
 });
 
 module.exports = app;

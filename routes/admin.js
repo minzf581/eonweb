@@ -314,7 +314,7 @@ router.patch('/users/:id', async (req, res) => {
     }
 });
 
-// Get total users count
+// 获取用户总数
 router.get('/users/count', async (req, res) => {
     try {
         const count = await User.count();
@@ -322,11 +322,15 @@ router.get('/users/count', async (req, res) => {
         res.json({ count });
     } catch (error) {
         console.error('[Admin API] Error getting users count:', error);
-        res.status(500).json({ error: '获取用户数量失败' });
+        res.status(500).json({ 
+            success: false, 
+            error: '获取用户数量失败',
+            details: error.message 
+        });
     }
 });
 
-// Get total tasks count
+// 获取任务总数
 router.get('/tasks/count', async (req, res) => {
     try {
         const count = await Task.count();
@@ -334,11 +338,15 @@ router.get('/tasks/count', async (req, res) => {
         res.json({ count });
     } catch (error) {
         console.error('[Admin API] Error getting tasks count:', error);
-        res.status(500).json({ error: '获取任务数量失败' });
+        res.status(500).json({ 
+            success: false, 
+            error: '获取任务数量失败',
+            details: error.message 
+        });
     }
 });
 
-// Get completed tasks count
+// 获取已完成任务数
 router.get('/tasks/completed/count', async (req, res) => {
     try {
         const count = await Task.count({
@@ -350,7 +358,11 @@ router.get('/tasks/completed/count', async (req, res) => {
         res.json({ count });
     } catch (error) {
         console.error('[Admin API] Error getting completed tasks count:', error);
-        res.status(500).json({ error: '获取已完成任务数量失败' });
+        res.status(500).json({ 
+            success: false, 
+            error: '获取已完成任务数量失败',
+            details: error.message 
+        });
     }
 });
 

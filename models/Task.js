@@ -19,7 +19,8 @@ const Task = sequelize.define('Task', {
     },
     type: {
         type: DataTypes.ENUM('daily', 'weekly', 'one-time'),
-        allowNull: false
+        allowNull: false,
+        defaultValue: 'one-time'
     },
     requirements: {
         type: DataTypes.ARRAY(DataTypes.STRING),
@@ -27,6 +28,7 @@ const Task = sequelize.define('Task', {
     },
     verificationMethod: {
         type: DataTypes.ENUM('automatic', 'manual'),
+        allowNull: false,
         defaultValue: 'automatic'
     },
     isActive: {
@@ -34,18 +36,18 @@ const Task = sequelize.define('Task', {
         defaultValue: true
     },
     status: {
-        type: DataTypes.STRING,
-        defaultValue: 'coming_soon',
-        validate: {
-            isIn: [['active', 'completed', 'coming_soon']]
-        }
+        type: DataTypes.ENUM('active', 'completed', 'coming_soon'),
+        allowNull: false,
+        defaultValue: 'coming_soon'
     },
     startDate: {
         type: DataTypes.DATE,
+        allowNull: false,
         defaultValue: DataTypes.NOW
     },
     endDate: {
-        type: DataTypes.DATE
+        type: DataTypes.DATE,
+        allowNull: true
     }
 }, {
     timestamps: true
