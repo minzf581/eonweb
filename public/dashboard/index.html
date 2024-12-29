@@ -632,8 +632,10 @@
             console.log('[Dashboard] Initializing dashboard...');
             
             try {
+                console.log('[Dashboard] Waiting for AuthService...');
                 // Wait for AuthService and verify auth
                 await waitForAuthService();
+                console.log('[Dashboard] AuthService found');
                 
                 if (!window._authService.isLoggedIn()) {
                     console.log('[Dashboard] User not logged in, redirecting to login');
@@ -660,8 +662,19 @@
                 // Update user info in the UI
                 document.getElementById('userEmail').textContent = user.email;
                 
-                // Load dashboard data
-                await loadStats();
+                // Load all dashboard data
+                try {
+                    await Promise.all([
+                        loadStats(),
+                        loadTasks(),
+                        loadReferralData()
+                    ]);
+                } catch (dataError) {
+                    console.error('[Dashboard] Error loading dashboard data:', dataError);
+                    // Show error but don't redirect
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('errorMessage').textContent = 'Some dashboard data failed to load. Please refresh the page.';
+                }
 
                 console.log('[Dashboard] Dashboard initialized successfully');
             } catch (error) {
