@@ -433,17 +433,48 @@
                     throw new Error('Failed to load stats');
                 }
 
-                const data = await response.json();
-                console.log('Stats loaded:', data);
+                const result = await response.json();
+                console.log('Stats loaded:', result);
+                
+                if (!result.success || !result.data) {
+                    throw new Error('Invalid stats response');
+                }
+
+                const data = result.data;
                 
                 // Update stats display
                 document.getElementById('totalCredits').textContent = data.credits || 0;
                 document.getElementById('completedTasks').textContent = data.completedTasks || 0;
                 
                 // Update both referral code displays
-                const referralCode = data.referralCode || '-';
-                document.getElementById('referralCodeDisplay').textContent = referralCode;
-                document.getElementById('referralCodeText').textContent = referralCode;
+                if (data.referralCode) {
+                    document.getElementById('referralCodeDisplay').textContent = data.referralCode;
+                    document.getElementById('referralCodeText').textContent = data.referralCode;
+                    
+                    // Enable copy buttons
+                    const copyButtons = document.querySelectorAll('.copy-button');
+                    copyButtons.forEach(button => {
+                        button.disabled = false;
+                        button.style.opacity = '1';
+                    });
+                } else {
+                    const defaultText = 'No referral code';
+                    document.getElementById('referralCodeDisplay').textContent = defaultText;
+                    document.getElementById('referralCodeText').textContent = defaultText;
+                    
+                    // Disable copy buttons
+                    const copyButtons = document.querySelectorAll('.copy-button');
+                    copyButtons.forEach(button => {
+                        button.disabled = true;
+                        button.style.opacity = '0.5';
+                    });
+                }
+
+                console.log('Stats updated:', {
+                    credits: data.credits,
+                    completedTasks: data.completedTasks,
+                    referralCode: data.referralCode
+                });
             } catch (error) {
                 console.error('[Dashboard] Error loading stats:', error);
                 document.getElementById('errorMessage').style.display = 'block';
@@ -574,11 +605,12 @@
         // Copy referral code to clipboard
         async function copyReferralCode() {
             const code = document.getElementById('referralCodeDisplay').textContent;
-            if (code && code !== '-') {
+            if (code && code !== 'No referral code') {
                 try {
                     await navigator.clipboard.writeText(code);
                     showToast('success', 'Referral code copied!');
                 } catch (err) {
+                    console.error('Copy failed:', err);
                     showToast('error', 'Failed to copy referral code');
                 }
             }

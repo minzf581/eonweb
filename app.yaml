@@ -19,7 +19,10 @@ env_variables:
   DB_USER: "eonuser"
   DB_PASSWORD: "eonprotocol"
   DB_NAME: "eon_protocol"
-  JWT_SECRET: "your-secret-key"
+  DB_PORT: "5432"
+  JWT_SECRET: "eon-jwt-secret-2024"
+  JWT_EXPIRES_IN: "24h"
+  CORS_ORIGIN: "*"
   CLOUD_SQL_CONNECTION_NAME: "eonhome-445809:asia-southeast2:eon-db"
 
 beta_settings:
