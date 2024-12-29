@@ -352,7 +352,7 @@
                     </div>
                     <div class="stat-card">
                         <h3>Referral Code</h3>
-                        <div class="stat-value" id="referralCode">-</div>
+                        <div class="stat-value" id="referralCodeDisplay">-</div>
                         <button class="copy-button" onclick="copyReferralCode()">
                             <i class="fas fa-copy"></i> Copy
                         </button>
@@ -376,8 +376,10 @@
                     </div>
                     <p>Invite friends to join and both of you will earn bonus points!</p>
                     <div class="referral-code">
-                        <span class="code-display" id="referralCode">Loading...</span>
-                        <button onclick="copyReferralCode()" class="copy-button">Copy</button>
+                        <span class="code-display" id="referralCodeText">Loading...</span>
+                        <button onclick="copyReferralCode()" class="copy-button">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
                     </div>
                     <div class="referral-stats">
                         <div class="stat-item">
@@ -434,10 +436,14 @@
                 const data = await response.json();
                 console.log('Stats loaded:', data);
                 
-                // Update UI with stats
+                // Update stats display
                 document.getElementById('totalCredits').textContent = data.credits || 0;
                 document.getElementById('completedTasks').textContent = data.completedTasks || 0;
-                document.getElementById('referralCode').textContent = data.referralCode || '-';
+                
+                // Update both referral code displays
+                const referralCode = data.referralCode || '-';
+                document.getElementById('referralCodeDisplay').textContent = referralCode;
+                document.getElementById('referralCodeText').textContent = referralCode;
             } catch (error) {
                 console.error('[Dashboard] Error loading stats:', error);
                 document.getElementById('errorMessage').style.display = 'block';
@@ -537,7 +543,8 @@
                     throw new Error('Invalid referral data response');
                 }
 
-                document.getElementById('referralCode').textContent = data.data.referralCode || 'N/A';
+                document.getElementById('referralCodeDisplay').textContent = data.data.referralCode || 'N/A';
+                document.getElementById('referralCodeText').textContent = data.data.referralCode || 'N/A';
                 document.getElementById('referralCount').textContent = data.data.referralCount || 0;
                 document.getElementById('referralPoints').textContent = data.data.totalPoints || 0;
 
@@ -566,7 +573,7 @@
 
         // Copy referral code to clipboard
         async function copyReferralCode() {
-            const code = document.getElementById('referralCode').textContent;
+            const code = document.getElementById('referralCodeDisplay').textContent;
             if (code && code !== '-') {
                 try {
                     await navigator.clipboard.writeText(code);
