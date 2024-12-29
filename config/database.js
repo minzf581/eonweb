@@ -5,8 +5,19 @@ if (process.env.NODE_ENV === 'production') {
     require('dotenv').config();
 }
 
+const productionConfig = {
+    dialect: 'postgres',
+    database: process.env.DB_NAME || 'eon_protocol',
+    username: process.env.DB_USER || 'eonuser',
+    password: process.env.DB_PASSWORD || 'eonprotocol',
+    host: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
+    dialectOptions: {
+        socketPath: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
+    }
+};
+
 // Sequelize CLI 配置
-const cliConfig = {
+const config = {
     development: {
         dialect: 'postgres',
         database: process.env.DB_NAME || 'eon_protocol',
@@ -15,22 +26,13 @@ const cliConfig = {
         host: 'localhost',
         port: process.env.DB_PORT || 5432
     },
-    production: {
-        dialect: 'postgres',
-        database: process.env.DB_NAME || 'eon_protocol',
-        username: process.env.DB_USER || 'eonuser',
-        password: process.env.DB_PASSWORD || 'eonprotocol',
-        host: process.env.DB_HOST,
-        dialectOptions: {
-            socketPath: process.env.DB_HOST
-        }
-    }
+    production: productionConfig
 };
 
 // 应用运行时配置
 const runtimeConfig = {
     development: {
-        ...cliConfig.development,
+        ...config.development,
         pool: {
             max: 5,
             min: 0,
@@ -40,7 +42,7 @@ const runtimeConfig = {
         logging: console.log
     },
     production: {
-        ...cliConfig.production,
+        ...config.production,
         pool: {
             max: 5,
             min: 0,
@@ -103,6 +105,7 @@ connectWithRetry()
         process.exit(1);
     });
 
+// 导出配置
 module.exports = sequelize;
-module.exports.development = cliConfig.development;
-module.exports.production = cliConfig.production;
+module.exports.development = config.development;
+module.exports.production = config.production;
