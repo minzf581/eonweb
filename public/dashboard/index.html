@@ -485,15 +485,11 @@
         // Load tasks with retry logic
         async function loadTasks(attempt = 1, maxAttempts = 3) {
             console.log('[Dashboard] Loading tasks...');
-            console.log('[Dashboard] AuthService state:', {
-                exists: !!window._authService,
-                hasGetToken: window._authService && typeof window._authService.getToken !== 'undefined'
-            });
-
+            
             try {
                 await waitForAuthService();
                 const token = window._authService.getToken();
-                console.log('[Dashboard] Token retrieved:', !!token);
+                console.log('[Dashboard] Token retrieved for tasks');
 
                 const response = await fetch('/api/tasks', {
                     headers: {
@@ -502,29 +498,29 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to load tasks');
+                    throw new Error(`Failed to load tasks: ${response.status}`);
                 }
 
-                const data = await response.json();
-                console.log('[Dashboard] Tasks loaded successfully');
+                const result = await response.json();
+                console.log('[Dashboard] Tasks API response:', result);
 
                 const tasksContainer = document.getElementById('tasksContainer');
                 tasksContainer.innerHTML = '';
 
-                if (!data.success || !data.data || data.data.length === 0) {
-                    tasksContainer.innerHTML = '<p>No available tasks</p>';
+                if (!result.success || !result.data || result.data.length === 0) {
+                    tasksContainer.innerHTML = '<p class="no-tasks">No tasks available at the moment.</p>';
                     return;
                 }
 
-                tasksContainer.innerHTML = data.data.map(task => `
+                tasksContainer.innerHTML = result.data.map(task => `
                     <div class="task-card ${task.completed ? 'completed' : ''}">
                         <div class="task-header">
                             <h3>${task.title}</h3>
-                            <span class="task-reward">${task.credits} Credits</span>
+                            <span class="task-reward">${task.points} Credits</span>
                         </div>
                         <p class="task-description">${task.description}</p>
                         <div class="task-footer">
-                            <span class="task-status">${task.completed ? 'Completed' : 'Not Started'}</span>
+                            <span class="task-status ${task.completed ? 'completed' : ''}">${task.completed ? 'Completed' : 'Available'}</span>
                             ${!task.completed ? 
                                 `<button onclick="startTask('${task.id}')" class="task-action start-task">
                                     Start Task
@@ -534,13 +530,82 @@
                         </div>
                     </div>
                 `).join('');
+
+                // Add task styles if not already present
+                if (!document.getElementById('taskStyles')) {
+                    const styles = document.createElement('style');
+                    styles.id = 'taskStyles';
+                    styles.textContent = `
+                        .task-card {
+                            background: white;
+                            border-radius: 10px;
+                            padding: 20px;
+                            margin-bottom: 15px;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        }
+                        .task-card.completed {
+                            opacity: 0.8;
+                            background: #f8f9fa;
+                        }
+                        .task-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 10px;
+                        }
+                        .task-reward {
+                            background: #e3f2fd;
+                            color: #1976d2;
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            font-size: 0.9em;
+                        }
+                        .task-description {
+                            color: #666;
+                            margin-bottom: 15px;
+                            line-height: 1.5;
+                        }
+                        .task-footer {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        }
+                        .task-status {
+                            font-size: 0.9em;
+                            color: #666;
+                        }
+                        .task-status.completed {
+                            color: #4caf50;
+                        }
+                        .start-task {
+                            background: #1976d2;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            transition: background 0.3s;
+                        }
+                        .start-task:hover {
+                            background: #1565c0;
+                        }
+                        .no-tasks {
+                            text-align: center;
+                            color: #666;
+                            padding: 20px;
+                        }
+                    `;
+                    document.head.appendChild(styles);
+                }
             } catch (error) {
                 console.error('[Dashboard] Error loading tasks:', error);
                 if (attempt < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    console.log(`[Dashboard] Retrying task load... Attempt ${attempt + 1}/${maxAttempts}`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
                     return loadTasks(attempt + 1, maxAttempts);
                 }
-                throw error;
+                const tasksContainer = document.getElementById('tasksContainer');
+                tasksContainer.innerHTML = '<p class="error-message">Failed to load tasks. Please try refreshing the page.</p>';
             }
         }
 
