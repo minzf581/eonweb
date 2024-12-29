@@ -14,20 +14,13 @@ router.get('/', authenticateToken, async (req, res) => {
 
         // 获取任务完成统计
         const completedTasks = await UserTask.count({
-            where: { userId }
+            where: { userId, status: 'completed' }
         });
 
-        // 获取总任务数
-        const totalTasks = await Task.count();
-
-        // 计算任务完成率
-        const completionRate = totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(2) : 0;
-
         const stats = {
-            points: user.points || 0,
+            credits: user.points || 0,
             completedTasks,
-            totalTasks,
-            completionRate: parseFloat(completionRate)
+            referralCode: user.referralCode || ''
         };
 
         console.log('Stats data:', stats);

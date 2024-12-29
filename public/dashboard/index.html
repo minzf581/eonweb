@@ -55,6 +55,28 @@
             align-items: center;
         }
 
+        .logout-btn {
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: #4338ca;
+        }
+
+        .logout-btn i {
+            font-size: 16px;
+        }
+
         .user-info {
             display: flex;
             align-items: center;
@@ -270,6 +292,34 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: #fff;
+            animation: fadeIn 0.5s;
+        }
+        
+        .toast.success {
+            background-color: #2ecc71;
+        }
+        
+        .toast.error {
+            background-color: #e74c3c;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -282,25 +332,30 @@
                     <div class="user-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <span class="user-name" id="userName">Loading...</span>
+                    <span class="user-name" id="userEmail">Loading...</span>
                 </div>
-                <button onclick="window.authService.logout()" class="task-action">Logout</button>
+                <button onclick="window._authService.logout()" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
             </div>
 
             <main>
                 <!-- Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3>Total Points</h3>
-                        <div class="stat-value" id="pointsStats">0</div>
+                        <h3>Total Credits</h3>
+                        <div class="stat-value" id="totalCredits">0</div>
                     </div>
                     <div class="stat-card">
                         <h3>Completed Tasks</h3>
-                        <div class="stat-value" id="completedTasksStats">0</div>
+                        <div class="stat-value" id="completedTasks">0</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Active Tasks</h3>
-                        <div class="stat-value" id="activeTasksStats">0</div>
+                        <h3>Referral Code</h3>
+                        <div class="stat-value" id="referralCode">-</div>
+                        <button class="copy-button" onclick="copyReferralCode()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
                     </div>
                 </div>
 
@@ -349,27 +404,13 @@
             let attempts = 0;
 
             while (attempts < maxAttempts) {
-                console.log('[Dashboard] Checking AuthService initialization attempt', attempts + 1);
-                console.log('[Dashboard] window.authService:', window.authService);
-                
-                if (window.authService && typeof window.authService.isInitialized === 'function') {
-                    console.log('[Dashboard] AuthService found, checking initialization');
-                    if (window.authService.isInitialized()) {
-                        console.log('[Dashboard] AuthService is initialized');
-                        return true;
-                    }
-                } else {
-                    console.log('[Dashboard] AuthService or isInitialized not available');
-                    console.log('[Dashboard] window.authService:', window.authService);
-                    if (window.authService) {
-                        console.log('[Dashboard] Methods:', {
-                            getToken: typeof window.authService.getToken,
-                            isInitialized: typeof window.authService.isInitialized
-                        });
-                    }
+                if (window._authService) {
+                    console.log('[Dashboard] AuthService found');
+                    return true;
                 }
 
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log('[Dashboard] AuthService not available yet, attempt', attempts + 1);
+                await new Promise(resolve => setTimeout(resolve, 500));
                 attempts++;
             }
 
@@ -377,22 +418,12 @@
             return false;
         }
 
-        // Load user stats with retry logic
-        async function loadStats(attempt = 1, maxAttempts = 3) {
-            console.log('[Dashboard] Loading stats...');
-            console.log('[Dashboard] AuthService state:', {
-                exists: !!window.authService,
-                hasGetToken: window.authService && typeof window.authService.getToken !== 'undefined'
-            });
-
+        // Load user stats
+        async function loadStats() {
             try {
-                await waitForAuthService();
-                const token = window.authService.getToken;
-                console.log('[Dashboard] Token retrieved:', !!token);
-
                 const response = await fetch('/api/stats', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${window._authService.getToken()}`
                     }
                 });
 
@@ -401,18 +432,16 @@
                 }
 
                 const data = await response.json();
-                console.log('[Dashboard] Stats loaded successfully');
+                console.log('Stats loaded:', data);
                 
-                document.getElementById('pointsStats').textContent = data.points || 0;
-                document.getElementById('completedTasksStats').textContent = data.completedTasks || 0;
-                document.getElementById('activeTasksStats').textContent = data.activeTasks || 0;
+                // Update UI with stats
+                document.getElementById('totalCredits').textContent = data.credits || 0;
+                document.getElementById('completedTasks').textContent = data.completedTasks || 0;
+                document.getElementById('referralCode').textContent = data.referralCode || '-';
             } catch (error) {
                 console.error('[Dashboard] Error loading stats:', error);
-                if (attempt < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    return loadStats(attempt + 1, maxAttempts);
-                }
-                throw error;
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorMessage').textContent = 'Failed to load stats. Please refresh the page.';
             }
         }
 
@@ -420,13 +449,13 @@
         async function loadTasks(attempt = 1, maxAttempts = 3) {
             console.log('[Dashboard] Loading tasks...');
             console.log('[Dashboard] AuthService state:', {
-                exists: !!window.authService,
-                hasGetToken: window.authService && typeof window.authService.getToken !== 'undefined'
+                exists: !!window._authService,
+                hasGetToken: window._authService && typeof window._authService.getToken !== 'undefined'
             });
 
             try {
                 await waitForAuthService();
-                const token = window.authService.getToken;
+                const token = window._authService.getToken();
                 console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/tasks', {
@@ -454,7 +483,7 @@
                     <div class="task-card ${task.completed ? 'completed' : ''}">
                         <div class="task-header">
                             <h3>${task.title}</h3>
-                            <span class="task-reward">${task.points} Points</span>
+                            <span class="task-reward">${task.credits} Credits</span>
                         </div>
                         <p class="task-description">${task.description}</p>
                         <div class="task-footer">
@@ -482,13 +511,13 @@
         async function loadReferralData(attempt = 1, maxAttempts = 3) {
             console.log('[Dashboard] Loading referral data...');
             console.log('[Dashboard] AuthService state:', {
-                exists: !!window.authService,
-                hasGetToken: window.authService && typeof window.authService.getToken !== 'undefined'
+                exists: !!window._authService,
+                hasGetToken: window._authService && typeof window._authService.getToken !== 'undefined'
             });
 
             try {
                 await waitForAuthService();
-                const token = window.authService.getToken;
+                const token = window._authService.getToken();
                 console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/referral', {
@@ -537,87 +566,80 @@
 
         // Copy referral code to clipboard
         async function copyReferralCode() {
-            const referralCode = document.getElementById('referralCode').textContent;
-            try {
-                await navigator.clipboard.writeText(referralCode);
-                const copyButton = document.querySelector('.copy-button');
-                const originalText = copyButton.textContent;
-                copyButton.textContent = 'Copied!';
-                copyButton.style.backgroundColor = '#059669'; // Success green color
-                
-                // Reset button after 2 seconds
-                setTimeout(() => {
-                    copyButton.textContent = originalText;
-                    copyButton.style.backgroundColor = '#4f46e5';
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy referral code:', err);
-                alert('Failed to copy referral code. Please try again.');
+            const code = document.getElementById('referralCode').textContent;
+            if (code && code !== '-') {
+                try {
+                    await navigator.clipboard.writeText(code);
+                    showToast('success', 'Referral code copied!');
+                } catch (err) {
+                    showToast('error', 'Failed to copy referral code');
+                }
             }
         }
 
-        // Initialize dashboard with retry logic
-        async function initializeDashboard(attempt = 1, maxAttempts = 3) {
+        // Initialize dashboard
+        async function initializeDashboard() {
             console.log('[Dashboard] Initializing dashboard...');
             
             try {
-                // Wait for AuthService to be ready
+                // Wait for AuthService and verify auth
                 await waitForAuthService();
-
-                // Update user info
-                const user = await window.authService.getUser();
-                console.log('[Dashboard] User info:', user);
-
-                if (!user) {
-                    console.log('[Dashboard] No user found, redirecting to login...');
-                    window.location.href = '/auth/login.html';
-                    return;
-                }
-
-                if (user.email) {
-                    document.getElementById('userName').textContent = user.email;
-                } else {
-                    console.error('[Dashboard] User found but no email:', user);
-                    throw new Error('Invalid user information');
-                }
-
-                // Load all data concurrently
-                await Promise.all([
-                    loadStats(),
-                    loadTasks(),
-                    loadReferralData()
-                ]);
-
-            } catch (error) {
-                console.error('[Dashboard] Dashboard initialization failed (attempt ' + attempt + '/' + maxAttempts + '):', error);
                 
-                // If we get a 401 or user is null, redirect to login
-                if (error.message.includes('401') || error.message.includes('unauthorized') || 
-                    error.message.includes('Invalid token') || error.message.includes('Failed to get user information')) {
-                    console.log('[Dashboard] Authentication error, redirecting to login...');
+                if (!window._authService.isLoggedIn()) {
+                    console.log('[Dashboard] User not logged in, redirecting to login');
                     window.location.href = '/auth/login.html';
                     return;
                 }
 
-                if (attempt < maxAttempts) {
-                    console.log('[Dashboard] Retrying initialization...');
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    return initializeDashboard(attempt + 1, maxAttempts);
+                // Verify token
+                const isValid = await window._authService.verifyToken();
+                if (!isValid) {
+                    console.log('[Dashboard] Token invalid, redirecting to login');
+                    window.location.href = '/auth/login.html';
+                    return;
                 }
-                throw error;
+
+                // Get user info
+                const user = window._authService.getUser();
+                if (!user) {
+                    console.log('[Dashboard] No user found, redirecting to login');
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
+
+                // Update user info in the UI
+                document.getElementById('userEmail').textContent = user.email;
+                
+                // Load dashboard data
+                await loadStats();
+
+                console.log('[Dashboard] Dashboard initialized successfully');
+            } catch (error) {
+                console.error('[Dashboard] Dashboard initialization failed:', error);
+                // Only redirect to login if it's an auth error
+                if (error.message && (error.message.includes('unauthorized') || error.message.includes('invalid token'))) {
+                    window.location.href = '/auth/login.html';
+                } else {
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('errorMessage').textContent = 'Failed to load dashboard. Please refresh the page.';
+                }
             }
         }
 
+        // Show toast message
+        function showToast(type, message) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
         // Start initialization when the page loads
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await initializeDashboard();
-            } catch (error) {
-                console.error('[Dashboard] Failed to initialize dashboard:', error);
-                // Final fallback - redirect to login if all else fails
-                window.location.href = '/auth/login.html';
-            }
-        });
+        document.addEventListener('DOMContentLoaded', initializeDashboard);
     </script>
 </body>
 </html>
