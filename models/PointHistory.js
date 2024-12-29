@@ -22,11 +22,20 @@ PointHistory.init({
         allowNull: false
     },
     type: {
-        type: DataTypes.ENUM('referral', 'task', 'bonus'),
+        type: DataTypes.ENUM('referral', 'task', 'bonus', 'bandwidth_sharing'),
         allowNull: false
     },
+    metadata: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    status: {
+        type: DataTypes.ENUM('pending', 'completed', 'failed'),
+        defaultValue: 'completed'
+    },
     description: {
-        type: DataTypes.STRING
+        type: DataTypes.STRING,
+        allowNull: true
     }
 }, {
     sequelize,
