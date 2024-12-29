@@ -107,7 +107,7 @@ async function seedTasks() {
         const tasks = [
             {
                 title: 'Referral Reward',
-                description: '邀请新用户加入平台',
+                description: 'Invite new users to join the platform',
                 points: 100,
                 type: 'one-time',
                 requirements: ['Invite a new user'],
@@ -118,8 +118,8 @@ async function seedTasks() {
             },
             {
                 title: 'Share Bandwidth',
-                description: '分享带宽获得奖励',
-                points: 50,
+                description: 'Share bandwidth to earn rewards',
+                points: 20,
                 type: 'daily',
                 requirements: ['Share minimum 1GB bandwidth'],
                 verificationMethod: 'automatic',

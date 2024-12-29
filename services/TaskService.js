@@ -3,17 +3,17 @@ const UserTask = require('../models/UserTask');
 const PointHistory = require('../models/PointHistory');
 
 class TaskService {
-    // 获取所有任务（管理员用）
+    // Get all tasks (admin)
     static async getAllTasks() {
         return await Task.find({}).sort({ createdAt: -1 });
     }
 
-    // 获取可用任务（用户用）
+    // Get available tasks (user)
     static async getAvailableTasks() {
         return await Task.find({ status: 'Active' }).sort({ createdAt: -1 });
     }
 
-    // 切换任务状态
+    // Toggle task status
     static async toggleTaskStatus(taskId) {
         const task = await Task.findById(taskId);
         if (!task) {
@@ -25,19 +25,19 @@ class TaskService {
         return task;
     }
 
-    // 获取用户任务历史
+    // Get user task history
     static async getUserTaskHistory(userId) {
         return await UserTask.find({ userId }).sort({ createdAt: -1 });
     }
 
-    // 创建任务
+    // Create task
     static async createTask(taskData) {
         const task = new Task(taskData);
         await task.save();
         return task;
     }
 
-    // 更新任务
+    // Update task
     static async updateTask(taskId, updates) {
         const task = await Task.findById(taskId);
         if (!task) {
@@ -49,7 +49,7 @@ class TaskService {
         return task;
     }
 
-    // 删除任务
+    // Delete task
     static async deleteTask(taskId) {
         const task = await Task.findById(taskId);
         if (!task) {
@@ -57,7 +57,7 @@ class TaskService {
         }
 
         await Task.deleteOne({ _id: taskId });
-        // 清理相关数据
+        // Clean up related data
         await UserTask.deleteMany({ taskId });
         await PointHistory.deleteMany({ taskId });
     }
