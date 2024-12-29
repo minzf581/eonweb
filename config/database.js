@@ -63,7 +63,13 @@ if (env === 'production') {
     });
 }
 
-const sequelize = new Sequelize(currentConfig);
+// 创建 Sequelize 实例
+const sequelize = new Sequelize(
+    currentConfig.database,
+    currentConfig.username,
+    currentConfig.password,
+    currentConfig
+);
 
 // 测试连接
 const connectWithRetry = async (maxRetries = 5, delay = 5000) => {
@@ -93,4 +99,4 @@ connectWithRetry()
     });
 
 module.exports = sequelize;
-module.exports.config = config; // 导出配置以供 Sequelize CLI 使用
+module.exports.config = config[env]; // 导出配置以供 Sequelize CLI 使用
