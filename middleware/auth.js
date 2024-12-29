@@ -74,6 +74,38 @@ const authenticateToken = async (req, res, next) => {
     }
 };
 
+const authenticateApiKey = async (req, res, next) => {
+    try {
+        console.log('[Auth] Authenticating API key');
+        
+        const apiKey = req.headers['x-api-key'];
+        if (!apiKey) {
+            console.log('[Auth] No API key provided');
+            return res.status(401).json({
+                success: false,
+                message: 'API key is required'
+            });
+        }
+
+        // 验证 API 密钥
+        if (apiKey !== process.env.API_KEY) {
+            console.log('[Auth] Invalid API key');
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid API key'
+            });
+        }
+
+        next();
+    } catch (error) {
+        console.error('[Auth] API key authentication error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Authentication failed'
+        });
+    }
+};
+
 const isAdmin = async (req, res, next) => {
     try {
         console.log('[Auth] Checking admin status');
@@ -133,5 +165,6 @@ const isAdmin = async (req, res, next) => {
 
 module.exports = {
     authenticateToken,
+    authenticateApiKey,
     isAdmin
 };

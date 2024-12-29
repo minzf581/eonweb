@@ -6,6 +6,7 @@ const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
+const pointsRoutes = require('./routes/points');
 
 const app = express();
 
@@ -13,7 +14,7 @@ const app = express();
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'X-API-Key']
 }));
 
 // Logging middleware
@@ -32,6 +33,7 @@ app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/points', pointsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
