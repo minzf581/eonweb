@@ -203,14 +203,18 @@
                     const response = await auth.login(emailInput.value, passwordInput.value);
                     console.log('Login response:', {
                         success: response.success,
-                        user: {
-                            email: response.user.email,
-                            isAdmin: response.user.isAdmin
-                        }
+                        user: response.user
                     });
+
+                    if (response.success) {
+                        // Redirect based on user role
+                        window.location.href = response.user.isAdmin ? '/admin/' : '/dashboard/';
+                    } else {
+                        showError(response.error || 'Login failed');
+                    }
                 } catch (error) {
                     console.error('Login error:', error);
-                    showError('登录时发生错误，请稍后重试');
+                    showError('An error occurred during login. Please try again later.');
                 } finally {
                     setLoading(false);
                 }
