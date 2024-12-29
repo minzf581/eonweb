@@ -523,14 +523,12 @@
                             <span class="task-reward">${task.points} Points</span>
                         </div>
                         <p class="task-description">${task.description}</p>
-                        ${!task.completed ? `
-                            <button class="start-task-btn" onclick="startTask(${task.id})">Start Task</button>
-                        ` : `
+                        ${task.completed ? `
                             <div class="task-completed">
                                 <span class="completed-text">Completed</span>
                                 <span class="completed-date">${new Date(task.completedAt).toLocaleDateString()}</span>
                             </div>
-                        `}
+                        ` : ''}
                     </div>
                 `).join('');
             } catch (error) {
