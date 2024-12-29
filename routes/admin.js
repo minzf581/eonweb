@@ -10,7 +10,7 @@ const { authenticateToken, isAdmin } = require('../middleware/auth');
 router.use(authenticateToken);
 router.use(isAdmin);
 
-// 获取管理员统计数据
+// Get admin statistics
 router.get('/stats', async (req, res) => {
     try {
         console.log('[Admin API] Getting stats, user:', {
@@ -67,7 +67,7 @@ router.get('/stats', async (req, res) => {
     }
 });
 
-// 获取所有用户
+// Get all users
 router.get('/users', async (req, res) => {
     try {
         console.log('[Admin API] Getting users');
@@ -82,13 +82,13 @@ router.get('/users', async (req, res) => {
         console.error('[Admin API] Error getting users:', error);
         res.status(500).json({ 
             success: false,
-            error: '加载用户列表失败',
+            error: 'Failed to load user list',
             details: error.message 
         });
     }
 });
 
-// 添加新用户
+// Add new user
 router.post('/users', async (req, res) => {
     try {
         console.log('[Admin API] Adding user, admin:', {
@@ -158,7 +158,7 @@ router.post('/users', async (req, res) => {
     }
 });
 
-// 获取所有任务
+// Get all tasks
 router.get('/tasks', async (req, res) => {
     try {
         console.log('[Admin API] Getting tasks');
@@ -173,13 +173,13 @@ router.get('/tasks', async (req, res) => {
         console.error('[Admin API] Error getting tasks:', error);
         res.status(500).json({ 
             success: false,
-            error: '加载任务列表失败',
+            error: 'Failed to load task list',
             details: error.message 
         });
     }
 });
 
-// 获取系统设置
+// Get system settings
 router.get('/settings', async (req, res) => {
     try {
         console.log('[Admin API] Getting settings, user:', {
@@ -197,7 +197,7 @@ router.get('/settings', async (req, res) => {
     }
 });
 
-// 更新系统设置
+// Update system settings
 router.post('/settings', async (req, res) => {
     try {
         console.log('[Admin API] Updating settings, user:', {
@@ -225,7 +225,7 @@ router.post('/settings', async (req, res) => {
     }
 });
 
-// 删除用户
+// Delete user
 router.delete('/users/:id', async (req, res) => {
     try {
         console.log('[Admin API] Deleting user, admin:', {
@@ -269,7 +269,7 @@ router.delete('/users/:id', async (req, res) => {
     }
 });
 
-// 更新用户
+// Update user
 router.patch('/users/:id', async (req, res) => {
     try {
         console.log('[Admin API] Updating user, admin:', {
@@ -309,7 +309,7 @@ router.patch('/users/:id', async (req, res) => {
     }
 });
 
-// 获取用户总数
+// Get total number of users
 router.get('/users/count', async (req, res) => {
     try {
         console.log('[Admin API] Getting users count');
@@ -320,13 +320,13 @@ router.get('/users/count', async (req, res) => {
         console.error('[Admin API] Error getting users count:', error);
         res.status(500).json({ 
             success: false, 
-            error: '获取用户数量失败',
+            error: 'Failed to get users count',
             details: error.message 
         });
     }
 });
 
-// 获取任务总数
+// Get total number of tasks
 router.get('/tasks/count', async (req, res) => {
     try {
         console.log('[Admin API] Getting tasks count');
@@ -337,13 +337,13 @@ router.get('/tasks/count', async (req, res) => {
         console.error('[Admin API] Error getting tasks count:', error);
         res.status(500).json({ 
             success: false, 
-            error: '获取任务数量失败',
+            error: 'Failed to get tasks count',
             details: error.message 
         });
     }
 });
 
-// 获取已完成任务数
+// Get number of completed tasks
 router.get('/tasks/completed/count', async (req, res) => {
     try {
         console.log('[Admin API] Getting completed tasks count');
@@ -358,7 +358,7 @@ router.get('/tasks/completed/count', async (req, res) => {
         console.error('[Admin API] Error getting completed tasks count:', error);
         res.status(500).json({ 
             success: false, 
-            error: '获取已完成任务数量失败',
+            error: 'Failed to get completed tasks count',
             details: error.message 
         });
     }

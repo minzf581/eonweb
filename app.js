@@ -9,31 +9,31 @@ const adminRoutes = require('./routes/admin');
 
 const app = express();
 
-// 启用 CORS
+// Enable CORS
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
-// 日志中间件
+// Logging middleware
 app.use(morgan('dev'));
 
-// 解析 JSON 请求体
+// Parse JSON request body
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 静态文件服务
+// Static file service
 app.use(express.static('public'));
 
-// 路由
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 
-// 错误处理中间件
+// Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({

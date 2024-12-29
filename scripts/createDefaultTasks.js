@@ -5,8 +5,8 @@ const Task = require('../models/Task');
 
 const defaultTasks = [
     {
-        title: '推荐用户',
-        description: '成功推荐一个新用户注册并完成任务',
+        title: 'Referral Reward',
+        description: 'Successfully refer a new user who registers and completes tasks',
         points: 100,
         type: 'one-time',
         isActive: true,
@@ -14,8 +14,8 @@ const defaultTasks = [
         verificationMethod: 'automatic'
     },
     {
-        title: '共享带宽',
-        description: '共享您的网络带宽资源',
+        title: 'Share Bandwidth',
+        description: 'Share your network bandwidth resources',
         points: 50,
         type: 'daily',
         isActive: true,
@@ -29,14 +29,14 @@ async function createDefaultTasks() {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('Connected to MongoDB');
 
-        // 检查是否已存在任务
+        // Check if tasks already exist
         const existingTasks = await Task.find({});
         if (existingTasks.length === 0) {
-            // 创建默认任务
+            // Create default tasks
             await Task.insertMany(defaultTasks);
             console.log('Default tasks created successfully');
         } else {
-            // 更新现有任务
+            // Update existing tasks
             for (const task of defaultTasks) {
                 await Task.findOneAndUpdate(
                     { title: task.title },
@@ -49,7 +49,7 @@ async function createDefaultTasks() {
     } catch (error) {
         console.error('Error creating default tasks:', error);
     } finally {
-        await mongoose.connection.close();
+        mongoose.disconnect();
     }
 }
 

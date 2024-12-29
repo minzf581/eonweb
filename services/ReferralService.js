@@ -4,39 +4,39 @@ const PointRecord = require('../models/PointRecord');
 class ReferralService {
     static async handleReferral(newUser, referralCode) {
         if (!referralCode) {
-            // 没有推荐码，给予基础积分
+            // No referral code, give base points
             await this.awardPoints(newUser._id, 50, 'OTHER');
             return;
         }
 
         try {
-            // 查找推荐人
+            // Find referrer
             const referrer = await User.findOne({ referralCode });
             if (!referrer) {
-                // 推荐码无效，给予基础积分
+                // Invalid referral code, give base points
                 await this.awardPoints(newUser._id, 50, 'OTHER');
                 return;
             }
 
-            // 更新新用户的推荐人
+            // Update new user's referrer
             await User.findByIdAndUpdate(newUser._id, { referredBy: referrer._id });
 
-            // 给推荐人奖励积分
+            // Award points to referrer
             await this.awardPoints(referrer._id, 100, 'REFERRAL', newUser._id);
 
-            // 给新用户奖励积分
+            // Award points to new user
             await this.awardPoints(newUser._id, 100, 'REFERRED', referrer._id);
 
         } catch (error) {
             console.error('Error in handleReferral:', error);
-            // 如果处理推荐出错，至少给予基础积分
+            // If referral processing fails, at least give base points
             await this.awardPoints(newUser._id, 50, 'OTHER');
         }
     }
 
     static async awardPoints(userId, points, type, referralId = null) {
         try {
-            // 创建积分记录
+            // Create points record
             await PointRecord.create({
                 userId,
                 points,
@@ -44,7 +44,7 @@ class ReferralService {
                 referralId
             });
 
-            // 更新用户总积分
+            // Update user total points
             await User.findByIdAndUpdate(userId, { $inc: { points } });
         } catch (error) {
             console.error('Error in awardPoints:', error);

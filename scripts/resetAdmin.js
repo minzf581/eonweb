@@ -4,26 +4,27 @@ const crypto = require('crypto');
 
 async function resetAdmin() {
     try {
-        // 1. 删除现有管理员用户
+        // 1. Delete existing admin user
         console.log('Deleting existing admin user...');
         await User.destroy({
-            where: { email: 'info@eon-protocol.com' }
+            where: { isAdmin: true }
         });
         console.log('Existing admin user deleted');
 
-        // 2. 创建新的管理员用户
+        // 2. Create new admin user
         console.log('Creating new admin user...');
-        const hashedPassword = await bcrypt.hash('vijTo9-kehmet-cessis', 10);
-        
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('admin123', salt);
+
         const admin = await User.create({
-            email: 'info@eon-protocol.com',
+            email: 'admin@example.com',
             password: hashedPassword,
-            referralCode: crypto.randomBytes(4).toString('hex').toUpperCase(),
             isAdmin: true,
-            points: 0
+            points: 0,
+            referralCode: crypto.randomBytes(3).toString('hex')
         });
-        
-        console.log('New admin user created successfully:', {
+
+        console.log('Admin user reset successful:', {
             id: admin.id,
             email: admin.email,
             referralCode: admin.referralCode,
@@ -32,10 +33,12 @@ async function resetAdmin() {
     } catch (error) {
         console.error('Error resetting admin user:', error);
         process.exit(1);
+    } finally {
+        process.exit(0);
     }
 }
 
-// 执行重置
+// Execute reset
 resetAdmin()
     .then(() => process.exit(0))
     .catch(error => {
