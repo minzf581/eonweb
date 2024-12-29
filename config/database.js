@@ -10,9 +10,10 @@ const productionConfig = {
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD || 'eonprotocol',
-    host: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
+    host: '127.0.0.1',  // 使用 localhost 通过 Cloud SQL Auth Proxy 连接
+    port: process.env.DB_PORT || 5432,
     dialectOptions: {
-        socketPath: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
+        // 在这里可以添加 SSL 配置如果需要
     }
 };
 
@@ -59,7 +60,7 @@ const currentConfig = runtimeConfig[env];
 if (env === 'production') {
     console.log('Using Cloud SQL configuration:', {
         host: currentConfig.host,
-        socketPath: currentConfig.dialectOptions?.socketPath,
+        port: currentConfig.port,
         database: currentConfig.database,
         username: currentConfig.username
     });
