@@ -70,14 +70,9 @@ router.get('/stats', async (req, res) => {
 // 获取所有用户
 router.get('/users', async (req, res) => {
     try {
-        console.log('[Admin API] Getting users, user:', {
-            id: req.user.id,
-            email: req.user.email,
-            isAdmin: req.user.isAdmin
-        });
-
+        console.log('[Admin API] Getting users');
         const users = await User.findAll({
-            attributes: ['id', 'email', 'points', 'referralCode', 'isAdmin', 'createdAt', 'updatedAt'],
+            attributes: ['id', 'email', 'points', 'referralCode', 'isAdmin', 'createdAt'],
             order: [['createdAt', 'DESC']]
         });
         
@@ -87,7 +82,7 @@ router.get('/users', async (req, res) => {
         console.error('[Admin API] Error getting users:', error);
         res.status(500).json({ 
             success: false,
-            error: 'Failed to load users',
+            error: '加载用户列表失败',
             details: error.message 
         });
     }
@@ -166,13 +161,9 @@ router.post('/users', async (req, res) => {
 // 获取所有任务
 router.get('/tasks', async (req, res) => {
     try {
-        console.log('[Admin API] Getting tasks, user:', {
-            id: req.user.id,
-            email: req.user.email,
-            isAdmin: req.user.isAdmin
-        });
-
+        console.log('[Admin API] Getting tasks');
         const tasks = await Task.findAll({
+            attributes: ['id', 'title', 'description', 'points', 'type', 'status', 'startDate', 'isActive'],
             order: [['createdAt', 'DESC']]
         });
         
@@ -180,7 +171,11 @@ router.get('/tasks', async (req, res) => {
         res.json(tasks);
     } catch (error) {
         console.error('[Admin API] Error getting tasks:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ 
+            success: false,
+            error: '加载任务列表失败',
+            details: error.message 
+        });
     }
 });
 
@@ -317,6 +312,7 @@ router.patch('/users/:id', async (req, res) => {
 // 获取用户总数
 router.get('/users/count', async (req, res) => {
     try {
+        console.log('[Admin API] Getting users count');
         const count = await User.count();
         console.log('[Admin API] Users count:', count);
         res.json({ count });
@@ -333,6 +329,7 @@ router.get('/users/count', async (req, res) => {
 // 获取任务总数
 router.get('/tasks/count', async (req, res) => {
     try {
+        console.log('[Admin API] Getting tasks count');
         const count = await Task.count();
         console.log('[Admin API] Tasks count:', count);
         res.json({ count });
@@ -349,6 +346,7 @@ router.get('/tasks/count', async (req, res) => {
 // 获取已完成任务数
 router.get('/tasks/completed/count', async (req, res) => {
     try {
+        console.log('[Admin API] Getting completed tasks count');
         const count = await Task.count({
             where: {
                 status: 'completed'

@@ -451,6 +451,62 @@
         .form-actions button {
             margin-left: 10px;
         }
+
+        /* Toast Styles */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            padding: 12px 24px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            color: white;
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease-in-out;
+        }
+
+        .toast.success {
+            background-color: #4caf50;
+        }
+
+        .toast.error {
+            background-color: #f44336;
+        }
+
+        .toast.info {
+            background-color: #2196f3;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading State Styles */
+        .loading-state {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-error {
+            color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -463,6 +519,9 @@
             </button>
         </div>
     </header>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <div class="container">
         <!-- Overview Section -->
@@ -638,6 +697,13 @@
         // Load all admin data
         async function loadAllData() {
             try {
+                // Show loading state
+                document.getElementById('totalUsers').textContent = '加载中...';
+                document.getElementById('totalTasks').textContent = '加载中...';
+                document.getElementById('completedTasks').textContent = '加载中...';
+                document.getElementById('userList').innerHTML = '<tr><td colspan="7" class="text-center loading-state">加载中...</td></tr>';
+                document.getElementById('taskList').innerHTML = '<tr><td colspan="8" class="text-center loading-state">加载中...</td></tr>';
+
                 await Promise.all([
                     loadOverview(),
                     loadUsers(),
@@ -649,17 +715,59 @@
             }
         }
 
+        // Overview Functions
+        async function loadOverview() {
+            try {
+                const [usersResponse, tasksResponse, completedTasksResponse] = await Promise.all([
+                    fetch('/api/admin/users/count', {
+                        headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
+                    }),
+                    fetch('/api/admin/tasks/count', {
+                        headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
+                    }),
+                    fetch('/api/admin/tasks/completed/count', {
+                        headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
+                    })
+                ]);
+
+                if (!usersResponse.ok || !tasksResponse.ok || !completedTasksResponse.ok) {
+                    throw new Error('Failed to fetch overview data');
+                }
+
+                const [usersData, tasksData, completedTasksData] = await Promise.all([
+                    usersResponse.json(),
+                    tasksResponse.json(),
+                    completedTasksResponse.json()
+                ]);
+
+                document.getElementById('totalUsers').textContent = usersData.count || '0';
+                document.getElementById('totalTasks').textContent = tasksData.count || '0';
+                document.getElementById('completedTasks').textContent = completedTasksData.count || '0';
+            } catch (error) {
+                console.error('[Admin] Error loading overview:', error);
+                document.getElementById('totalUsers').textContent = '-';
+                document.getElementById('totalTasks').textContent = '-';
+                document.getElementById('completedTasks').textContent = '-';
+                showToast('Error', '加载数据概览失败');
+            }
+        }
+
         // Load Users
         async function loadUsers() {
             try {
                 const response = await fetch('/api/admin/users', {
                     headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
                 });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch users');
+                }
+
                 const users = await response.json();
-                
                 const userList = document.getElementById('userList');
-                if (!userList) {
-                    console.error('[Admin] User list element not found');
+                
+                if (!users || users.length === 0) {
+                    userList.innerHTML = '<tr><td colspan="7" class="text-center">暂无用户数据</td></tr>';
                     return;
                 }
 
@@ -682,6 +790,7 @@
                 `).join('');
             } catch (error) {
                 console.error('[Admin] Error loading users:', error);
+                document.getElementById('userList').innerHTML = '<tr><td colspan="7" class="text-center text-error">加载失败</td></tr>';
                 showToast('Error', '加载用户列表失败');
             }
         }
@@ -692,11 +801,16 @@
                 const response = await fetch('/api/admin/tasks', {
                     headers: { 'Authorization': `Bearer ${window._authService.getToken()}` }
                 });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tasks');
+                }
+
                 const tasks = await response.json();
-                
                 const taskList = document.getElementById('taskList');
-                if (!taskList) {
-                    console.error('[Admin] Task list element not found');
+                
+                if (!tasks || tasks.length === 0) {
+                    taskList.innerHTML = '<tr><td colspan="8" class="text-center">暂无任务数据</td></tr>';
                     return;
                 }
 
@@ -721,6 +835,7 @@
                 `).join('');
             } catch (error) {
                 console.error('[Admin] Error loading tasks:', error);
+                document.getElementById('taskList').innerHTML = '<tr><td colspan="8" class="text-center text-error">加载失败</td></tr>';
                 showToast('Error', '加载任务列表失败');
             }
         }
@@ -789,6 +904,21 @@
         function hideAddUserModal() {
             document.getElementById('addUserModal').style.display = 'none';
             document.getElementById('addUserForm').reset();
+        }
+
+        // Toast Functions
+        function showToast(type, message, duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type.toLowerCase()}`;
+            toast.textContent = message;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-in-out';
+                setTimeout(() => container.removeChild(toast), 300);
+            }, duration);
         }
 
         // Initialize when document is ready
