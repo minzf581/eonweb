@@ -13,8 +13,6 @@ const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const sequelize = require('./config/database');
-const seedAdminUser = require('./seeders/adminUser');
-const seedTasks = require('./seeders/tasks');
 const { User, Task, UserTask, PointHistory, Settings } = require('./models');
 const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
@@ -22,6 +20,7 @@ const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 const { authenticateToken, isAdmin } = require('./middleware/auth');
+const crypto = require('crypto');
 
 const app = express();
 
@@ -124,50 +123,94 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// 数据库同步和服务器启动
-async function startServer() {
+// Seed tasks
+async function seedTasks() {
+    console.log('Seeding tasks...');
     try {
-        // 同步数据库模型
+        // Delete existing tasks
+        await Task.destroy({ where: {} });
+
+        // Create tasks
+        const tasks = [
+            {
+                title: 'Referral Reward',
+                description: '邀请新用户加入平台',
+                points: 100,
+                type: 'one-time',
+                requirements: ['Invite a new user'],
+                verificationMethod: 'automatic',
+                isActive: true,
+                status: 'active',
+                startDate: new Date()
+            },
+            {
+                title: 'Share Bandwidth',
+                description: '分享带宽获得奖励',
+                points: 50,
+                type: 'daily',
+                requirements: ['Share minimum 1GB bandwidth'],
+                verificationMethod: 'automatic',
+                isActive: true,
+                status: 'active',
+                startDate: new Date()
+            }
+        ];
+
+        for (const task of tasks) {
+            const createdTask = await Task.create(task);
+            console.log(`Created task: ${createdTask.title}`);
+        }
+
+        console.log('Tasks seeded successfully');
+    } catch (error) {
+        console.error('Error seeding tasks:', error);
+    }
+}
+
+// Initialize database and start server
+async function initializeApp() {
+    try {
+        // Sync database
         await sequelize.sync();
         console.log('Database synchronized');
 
-        // 创建管理员用户
-        await seedAdminUser();
-        
+        // Create admin user if not exists
+        const adminEmail = 'info@eon-protocol.com';
+        const existingAdmin = await User.findOne({ where: { email: adminEmail } });
+
+        if (!existingAdmin) {
+            const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+            const hashedPassword = await bcryptjs.hash(adminPassword, 10);
+            const referralCode = crypto.randomBytes(4).toString('hex');
+
+            await User.create({
+                email: adminEmail,
+                password: hashedPassword,
+                isAdmin: true,
+                points: 0,
+                referralCode
+            });
+            console.log('Admin user created');
+        } else {
+            console.log('Admin user already exists');
+        }
+
         // Seed tasks
         await seedTasks();
 
-        // 启动服务器
-        const server = app.listen(process.env.PORT || 8081, () => {
-            console.log(`Server running on port ${process.env.PORT || 8081}`);
+        // Start server
+        const PORT = process.env.PORT || 8081;
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
         });
-
-        // Store server instance
-        app.set('server', server);
-
-        // Handle shutdown
-        process.on('SIGTERM', () => {
-            console.log('SIGTERM signal received');
-            const server = app.get('server');
-            if (server) {
-                server.close(() => {
-                    console.log('Server closed');
-                    process.exit(0);
-                });
-            } else {
-                console.log('No server instance found');
-                process.exit(0);
-            }
-        });
-
     } catch (error) {
-        console.error('Failed to start server:', error);
+        console.error('Error initializing app:', error);
         process.exit(1);
     }
 }
 
-// Start the server
-startServer();
+// Initialize app
+initializeApp();
 
 // 错误处理
 process.on('unhandledRejection', (error) => {

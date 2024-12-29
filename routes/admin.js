@@ -3,8 +3,12 @@ const router = express.Router();
 const { User, Task, Settings } = require('../models');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { authenticateToken, isAdmin } = require('../middleware/auth');
 
-// Note: Authentication middleware is now applied at the app level in server.js
+// Apply authentication and admin check to all routes
+router.use(authenticateToken);
+router.use(isAdmin);
 
 // 获取管理员统计数据
 router.get('/stats', async (req, res) => {
@@ -307,6 +311,46 @@ router.patch('/users/:id', async (req, res) => {
     } catch (error) {
         console.error('[Admin API] Error updating user:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get total users count
+router.get('/users/count', async (req, res) => {
+    try {
+        const count = await User.count();
+        console.log('[Admin API] Users count:', count);
+        res.json({ count });
+    } catch (error) {
+        console.error('[Admin API] Error getting users count:', error);
+        res.status(500).json({ error: '获取用户数量失败' });
+    }
+});
+
+// Get total tasks count
+router.get('/tasks/count', async (req, res) => {
+    try {
+        const count = await Task.count();
+        console.log('[Admin API] Tasks count:', count);
+        res.json({ count });
+    } catch (error) {
+        console.error('[Admin API] Error getting tasks count:', error);
+        res.status(500).json({ error: '获取任务数量失败' });
+    }
+});
+
+// Get completed tasks count
+router.get('/tasks/completed/count', async (req, res) => {
+    try {
+        const count = await Task.count({
+            where: {
+                status: 'completed'
+            }
+        });
+        console.log('[Admin API] Completed tasks count:', count);
+        res.json({ count });
+    } catch (error) {
+        console.error('[Admin API] Error getting completed tasks count:', error);
+        res.status(500).json({ error: '获取已完成任务数量失败' });
     }
 });
 
