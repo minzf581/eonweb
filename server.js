@@ -140,12 +140,55 @@ async function seedTasks() {
     }
 }
 
+// Graceful shutdown function
+async function gracefulShutdown() {
+    console.log('Starting graceful shutdown...');
+    let exitCode = 0;
+
+    try {
+        // Close HTTP server first
+        const server = app.get('server');
+        if (server) {
+            console.log('Closing HTTP server...');
+            await new Promise((resolve, reject) => {
+                server.close((err) => {
+                    if (err) {
+                        console.error('Error closing HTTP server:', err);
+                        reject(err);
+                    } else {
+                        console.log('HTTP server closed successfully');
+                        resolve();
+                    }
+                });
+            });
+        }
+
+        // Then close database connection
+        if (sequelize) {
+            console.log('Closing database connection...');
+            await sequelize.close();
+            console.log('Database connection closed successfully');
+        }
+
+        console.log('Graceful shutdown completed successfully');
+    } catch (error) {
+        console.error('Error during graceful shutdown:', error);
+        exitCode = 1;
+    }
+
+    // Only exit if not handling App Engine stop request
+    if (!process.env.GAE_VERSION) {
+        process.exit(exitCode);
+    }
+}
+
 // Initialize database and start server
 async function initializeApp() {
     try {
         // Sync database
+        console.log('Synchronizing database...');
         await sequelize.sync();
-        console.log('Database synchronized');
+        console.log('Database synchronized successfully');
 
         // Create admin user if not exists
         const adminEmail = 'info@eon-protocol.com';
@@ -163,7 +206,7 @@ async function initializeApp() {
                 points: 0,
                 referralCode
             });
-            console.log('Admin user created');
+            console.log('Admin user created successfully');
         } else {
             console.log('Admin user already exists');
         }
@@ -180,25 +223,23 @@ async function initializeApp() {
         // Store server instance
         app.set('server', server);
 
-        // Handle graceful shutdown
-        process.on('SIGTERM', async () => {
-            console.log('SIGTERM signal received');
-            await gracefulShutdown();
-        });
-
-        process.on('SIGINT', async () => {
-            console.log('SIGINT signal received');
-            await gracefulShutdown();
+        // Handle graceful shutdown signals
+        const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
+        signals.forEach(signal => {
+            process.on(signal, async () => {
+                console.log(`${signal} signal received`);
+                await gracefulShutdown();
+            });
         });
 
         // Handle App Engine start/stop
         app.get('/_ah/start', (req, res) => {
-            console.log('Received start request');
+            console.log('Received App Engine start request');
             res.status(200).send('Application started');
         });
 
         app.get('/_ah/stop', async (req, res) => {
-            console.log('Received stop request');
+            console.log('Received App Engine stop request');
             await gracefulShutdown();
             res.status(200).send('Application stopping');
         });
@@ -209,39 +250,20 @@ async function initializeApp() {
     }
 }
 
-// Graceful shutdown function
-async function gracefulShutdown() {
-    try {
-        const server = app.get('server');
-        if (server) {
-            console.log('Closing HTTP server...');
-            await new Promise((resolve) => server.close(resolve));
-            console.log('HTTP server closed');
-        }
-
-        console.log('Closing database connection...');
-        await sequelize.close();
-        console.log('Database connection closed');
-
-        console.log('Graceful shutdown completed');
-        process.exit(0);
-    } catch (error) {
-        console.error('Error during graceful shutdown:', error);
-        process.exit(1);
-    }
-}
-
-// Initialize app
-initializeApp();
-
-// 错误处理
+// Handle uncaught errors
 process.on('unhandledRejection', (error) => {
-    console.error('Unhandled Rejection:', error);
+    console.error('Unhandled Promise Rejection:', error);
 });
 
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
     gracefulShutdown();
+});
+
+// Initialize app
+initializeApp().catch(error => {
+    console.error('Failed to initialize app:', error);
+    process.exit(1);
 });
 
 module.exports = app;
