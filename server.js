@@ -24,73 +24,102 @@ const crypto = require('crypto');
 
 const app = express();
 
-// Health check endpoints must be first, before any other middleware or routes
+// Health check endpoints - must be first and completely independent
 app.get('/_ah/start', (req, res) => {
     console.log('Received App Engine start request');
     res.status(200).send('OK');
+    // Initialize app in the background
+    initializeApp().catch(err => {
+        console.error('Failed to initialize app:', err);
+    });
 });
 
-app.get('/_ah/stop', async (req, res) => {
+app.get('/_ah/stop', (req, res) => {
     console.log('Received App Engine stop request');
+    res.status(200).send('OK');
+    // Cleanup in the background
+    cleanup().catch(err => {
+        console.error('Failed to cleanup:', err);
+    });
+});
+
+// Separate initialization function
+async function initializeApp() {
     try {
-        await gracefulShutdown();
-        res.status(200).send('OK');
+        // Request logging middleware
+        app.use((req, res, next) => {
+            const start = Date.now();
+            res.on('finish', () => {
+                const duration = Date.now() - start;
+                console.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+            });
+            next();
+        });
+
+        // Middleware setup
+        const corsOptions = {
+            origin: [
+                'http://localhost:8080',
+                'http://localhost:3000',
+                'https://eonhome-445809.et.r.appspot.com'
+            ],
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization'],
+            credentials: true
+        };
+
+        app.use(cors(corsOptions));
+        app.use(express.json());
+        app.use(cookieParser());
+        app.use(compression());
+
+        // Serve static files
+        app.use(express.static(path.join(__dirname, 'public')));
+
+        // Routes
+        app.use('/api/auth', authRoutes);
+        app.use('/api/referral', referralRoutes);
+        app.use('/api/tasks', tasksRoutes);
+        app.use('/api/stats', statsRoutes);
+        app.use('/api/admin', adminRoutes);
+
+        // Handle frontend routing
+        app.get('*', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        });
+
+        // Global error handler - place this after all routes
+        app.use((err, req, res, next) => {
+            console.error('Global error handler caught:', err);
+            console.error('Error stack:', err.stack);
+            res.status(500).json({
+                error: 'Internal server error',
+                message: process.env.NODE_ENV === 'development' ? err.message : undefined
+            });
+        });
+
+        console.log('App initialization completed successfully');
     } catch (error) {
-        console.error('Error during shutdown:', error);
-        res.status(200).send('Stopping with errors');
+        console.error('Failed to initialize app:', error);
+        throw error;
     }
-});
+}
 
-// Request logging middleware
-app.use((req, res, next) => {
-    const start = Date.now();
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        console.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
-    });
-    next();
-});
+// Cleanup function
+async function cleanup() {
+    try {
+        await sequelize.close();
+        console.log('Database connection closed successfully');
+    } catch (error) {
+        console.error('Error during cleanup:', error);
+        throw error;
+    }
+}
 
-// Middleware setup
-const corsOptions = {
-    origin: [
-        'http://localhost:8080',
-        'http://localhost:3000',
-        'https://eonhome-445809.et.r.appspot.com'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-};
-
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(cookieParser());
-app.use(compression());
-
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/referral', referralRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Handle frontend routing
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Global error handler - place this after all routes
-app.use((err, req, res, next) => {
-    console.error('Global error handler caught:', err);
-    console.error('Error stack:', err.stack);
-    res.status(500).json({
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+// Start server immediately, don't wait for initialization
+const PORT = process.env.PORT || 8081;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
 
 // Graceful shutdown
@@ -115,39 +144,6 @@ async function gracefulShutdown() {
     }
 }
 
-// Initialize server
-async function startServer() {
-    try {
-        // Start server first
-        const PORT = process.env.PORT || 8081;
-        const server = app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
-        app.set('server', server);
-
-        // Then initialize database
-        console.log('Testing database connection...');
-        await sequelize.authenticate();
-        console.log('Database connection established');
-
-        // Handle graceful shutdown
-        const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
-        signals.forEach(signal => {
-            process.on(signal, async () => {
-                console.log(`${signal} signal received`);
-                await gracefulShutdown();
-                process.exit(0);
-            });
-        });
-
-        return server;
-    } catch (error) {
-        console.error('Failed to start server:', error);
-        console.error('Error stack:', error.stack);
-        process.exit(1);
-    }
-}
-
 // Handle uncaught errors
 process.on('unhandledRejection', (error) => {
     console.error('Unhandled Promise Rejection:', error);
@@ -160,5 +156,12 @@ process.on('uncaughtException', (error) => {
     process.exit(1);
 });
 
-// Start the server
-startServer();
+// Handle graceful shutdown
+const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
+signals.forEach(signal => {
+    process.on(signal, async () => {
+        console.log(`${signal} signal received`);
+        await gracefulShutdown();
+        process.exit(0);
+    });
+});
