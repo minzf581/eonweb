@@ -182,16 +182,39 @@ async function gracefulShutdown() {
     }
 }
 
-// Handle App Engine start/stop
-app.get('/_ah/start', (req, res) => {
-    console.log('Received App Engine start request');
-    res.status(200).send('Application started');
+// Handle App Engine start/stop with error handling
+app.get('/_ah/start', async (req, res) => {
+    try {
+        console.log('Received App Engine start request');
+        // Test database connection
+        await sequelize.authenticate();
+        console.log('Database connection test successful on /_ah/start');
+        res.status(200).send('Application started');
+    } catch (error) {
+        console.error('Error in /_ah/start:', error);
+        // Still return 200 to prevent App Engine from continuously restarting
+        res.status(200).send('Application starting with errors');
+    }
 });
 
 app.get('/_ah/stop', async (req, res) => {
-    console.log('Received App Engine stop request');
-    await gracefulShutdown();
-    res.status(200).send('Application stopping');
+    try {
+        console.log('Received App Engine stop request');
+        await gracefulShutdown();
+        res.status(200).send('Application stopping');
+    } catch (error) {
+        console.error('Error in /_ah/stop:', error);
+        res.status(200).send('Application stopping with errors');
+    }
+});
+
+// Add global error handler
+app.use((err, req, res, next) => {
+    console.error('Global error handler caught:', err);
+    res.status(500).json({ 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
 });
 
 // Initialize database and start server
