@@ -24,7 +24,7 @@ const crypto = require('crypto');
 
 const app = express();
 
-// Health check endpoints - must be first and completely independent
+// Health check endpoints BEFORE any other middleware
 app.get('/_ah/start', (req, res) => {
     console.log('Received App Engine start request');
     res.status(200).send('OK');
