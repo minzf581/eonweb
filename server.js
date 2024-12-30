@@ -24,7 +24,25 @@ const crypto = require('crypto');
 
 const app = express();
 
-// Error logging middleware
+// Health check endpoint - keep this as simple as possible
+// Place this before any other middleware or routes
+app.get('/_ah/start', (req, res) => {
+    console.log('Received App Engine start request');
+    res.status(200).send('OK');
+});
+
+app.get('/_ah/stop', async (req, res) => {
+    console.log('Received App Engine stop request');
+    try {
+        await gracefulShutdown();
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('Error during shutdown:', error);
+        res.status(200).send('Stopping with errors');
+    }
+});
+
+// Request logging middleware
 app.use((req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
@@ -32,16 +50,6 @@ app.use((req, res, next) => {
         console.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
     });
     next();
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-    console.error('Global error handler caught:', err);
-    console.error('Error stack:', err.stack);
-    res.status(500).json({
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
 });
 
 // Middleware setup
@@ -71,26 +79,19 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Health check endpoint - keep this as simple as possible
-app.get('/_ah/start', (req, res) => {
-    console.log('Received App Engine start request');
-    res.status(200).send('OK');
-});
-
-app.get('/_ah/stop', async (req, res) => {
-    console.log('Received App Engine stop request');
-    try {
-        await gracefulShutdown();
-        res.status(200).send('OK');
-    } catch (error) {
-        console.error('Error during shutdown:', error);
-        res.status(200).send('Stopping with errors');
-    }
-});
-
 // Handle frontend routing
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Global error handler - place this after all routes
+app.use((err, req, res, next) => {
+    console.error('Global error handler caught:', err);
+    console.error('Error stack:', err.stack);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
 });
 
 // Graceful shutdown
