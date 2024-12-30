@@ -18,10 +18,10 @@ beta_settings:
 
 handlers:
   - url: /.*
-    script: auto
+    script: app.js
     secure: always
 
-entrypoint: node server.js
+entrypoint: node app.js
 
 automatic_scaling:
   target_cpu_utilization: 0.65
