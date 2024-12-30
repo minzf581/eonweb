@@ -5,32 +5,23 @@ instance_class: F1
 env_variables:
   NODE_ENV: "production"
   PORT: "8081"
-  HEALTH_PORT: "8082"
   DB_HOST: "/cloudsql/eonhome-445809:asia-southeast2:eon-db"
   DB_USER: "eonuser"
   DB_PASSWORD: "eonprotocol"
   DB_NAME: "eon_protocol"
-  DB_PORT: "5432"
-  JWT_SECRET: "eon-jwt-secret-2024"
-  JWT_EXPIRES_IN: "24h"
-  CORS_ORIGIN: "*"
-  CLOUD_SQL_CONNECTION_NAME: "eonhome-445809:asia-southeast2:eon-db"
+  ADMIN_PASSWORD: "eonprotocol"
+  JWT_SECRET: "eonprotocol"
+  API_KEY: "eonprotocol"
 
 beta_settings:
   cloud_sql_instances: "eonhome-445809:asia-southeast2:eon-db"
 
 handlers:
-  - url: /_ah/.*
-    script: health.js
-    secure: always
-    redirect_http_response_code: 301
-
   - url: /.*
     script: auto
     secure: always
-    redirect_http_response_code: 301
 
-entrypoint: npm start
+entrypoint: node server.js
 
 automatic_scaling:
   target_cpu_utilization: 0.65
