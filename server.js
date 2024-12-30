@@ -182,6 +182,18 @@ async function gracefulShutdown() {
     }
 }
 
+// Handle App Engine start/stop
+app.get('/_ah/start', (req, res) => {
+    console.log('Received App Engine start request');
+    res.status(200).send('Application started');
+});
+
+app.get('/_ah/stop', async (req, res) => {
+    console.log('Received App Engine stop request');
+    await gracefulShutdown();
+    res.status(200).send('Application stopping');
+});
+
 // Initialize database and start server
 async function initializeApp() {
     try {
@@ -230,18 +242,6 @@ async function initializeApp() {
                 console.log(`${signal} signal received`);
                 await gracefulShutdown();
             });
-        });
-
-        // Handle App Engine start/stop
-        app.get('/_ah/start', (req, res) => {
-            console.log('Received App Engine start request');
-            res.status(200).send('Application started');
-        });
-
-        app.get('/_ah/stop', async (req, res) => {
-            console.log('Received App Engine stop request');
-            await gracefulShutdown();
-            res.status(200).send('Application stopping');
         });
 
     } catch (error) {
