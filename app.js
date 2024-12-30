@@ -7,7 +7,6 @@ const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 const pointsRoutes = require('./routes/points');
-const http = require('http');
 
 const app = express();
 
@@ -45,26 +44,28 @@ app.use((err, req, res, next) => {
     });
 });
 
+module.exports = app;
+
+const http = require('http');
+
 // Create a bare minimum server just for health checks
 const server = http.createServer((req, res) => {
+    console.log(`Received request: ${req.method} ${req.url}`);
+    
     if (req.url === '/_ah/start') {
         console.log('Received App Engine start request');
-        res.writeHead(200);
+        res.writeHead(200, {'Content-Type': 'text/plain'});
         res.end('OK');
-        
-        // Start the main application in the background
-        require('./app');
     } 
     else if (req.url === '/_ah/stop') {
         console.log('Received App Engine stop request');
-        res.writeHead(200);
+        res.writeHead(200, {'Content-Type': 'text/plain'});
         res.end('OK');
     }
     else {
-        // Forward all other requests to the main application
-        require('./app');
-        res.writeHead(404);
-        res.end();
+        console.log('Received request for:', req.url);
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.end('Health check server running');
     }
 });
 
@@ -72,5 +73,3 @@ const port = process.env.PORT || 8081;
 server.listen(port, () => {
     console.log(`Health check server listening on port ${port}`);
 });
-
-module.exports = app;
