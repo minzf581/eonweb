@@ -186,12 +186,26 @@ async function gracefulShutdown() {
 app.get('/_ah/start', async (req, res) => {
     try {
         console.log('Received App Engine start request');
+        
         // Test database connection
+        console.log('Testing database connection...');
         await sequelize.authenticate();
         console.log('Database connection test successful on /_ah/start');
-        res.status(200).send('Application started');
+        
+        // Wait for app initialization
+        console.log('Waiting for app initialization...');
+        if (!app.get('server')) {
+            console.log('Server not yet initialized, starting initialization...');
+            await initializeApp();
+            console.log('App initialization completed');
+        }
+        
+        res.status(200).send('Application started successfully');
     } catch (error) {
         console.error('Error in /_ah/start:', error);
+        if (error.stack) {
+            console.error('Error stack:', error.stack);
+        }
         // Still return 200 to prevent App Engine from continuously restarting
         res.status(200).send('Application starting with errors');
     }
@@ -221,15 +235,17 @@ app.use((err, req, res, next) => {
 async function initializeApp() {
     try {
         // Sync database
-        console.log('Synchronizing database...');
+        console.log('Starting database synchronization...');
         await sequelize.sync();
         console.log('Database synchronized successfully');
 
         // Create admin user if not exists
+        console.log('Checking for admin user...');
         const adminEmail = 'info@eon-protocol.com';
         const existingAdmin = await User.findOne({ where: { email: adminEmail } });
 
         if (!existingAdmin) {
+            console.log('Creating admin user...');
             const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
             const hashedPassword = await bcryptjs.hash(adminPassword, 10);
             const referralCode = crypto.randomBytes(4).toString('hex');
@@ -247,7 +263,9 @@ async function initializeApp() {
         }
 
         // Seed tasks
+        console.log('Starting task seeding...');
         await seedTasks();
+        console.log('Tasks seeded successfully');
 
         // Start server
         const PORT = process.env.PORT || 8081;
@@ -257,6 +275,7 @@ async function initializeApp() {
 
         // Store server instance
         app.set('server', server);
+        console.log('Server instance stored in app');
 
         // Handle graceful shutdown signals
         const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
@@ -266,9 +285,14 @@ async function initializeApp() {
                 await gracefulShutdown();
             });
         });
+        console.log('Signal handlers registered');
 
     } catch (error) {
-        console.error('Error initializing app:', error);
+        console.error('Error in initializeApp:', error);
+        // Log the full error stack
+        if (error.stack) {
+            console.error('Error stack:', error.stack);
+        }
         process.exit(1);
     }
 }
