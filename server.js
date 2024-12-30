@@ -55,6 +55,26 @@ app.use((req, res, next) => {
     next();
 });
 
+// Error logging middleware
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+    });
+    next();
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('Global error handler caught:', err);
+    console.error('Error stack:', err.stack);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
 // Serve static files first
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -83,6 +103,32 @@ app.use('/api/admin', authenticateToken, isAdmin, adminRoutes);
 app.get('/_ah/health', (req, res) => {
     console.log('Received health check request');
     res.status(200).send('OK');
+});
+
+app.get('/_ah/start', async (req, res) => {
+    console.log('Received App Engine start request');
+    try {
+        // Basic health check
+        await sequelize.authenticate();
+        console.log('Database connection successful');
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('Health check failed:', error);
+        console.error('Error stack:', error.stack);
+        // Return 200 to prevent continuous restarts
+        res.status(200).send('Starting with errors');
+    }
+});
+
+app.get('/_ah/stop', async (req, res) => {
+    console.log('Received App Engine stop request');
+    try {
+        await gracefulShutdown();
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('Stop request failed:', error);
+        res.status(200).send('Stopping with errors');
+    }
 });
 
 // Handle frontend routing (no authentication required)
@@ -182,62 +228,16 @@ async function gracefulShutdown() {
     }
 }
 
-// Handle App Engine start/stop with error handling
-app.get('/_ah/start', async (req, res) => {
-    try {
-        console.log('Received App Engine start request');
-        
-        // Test database connection
-        console.log('Testing database connection...');
-        await sequelize.authenticate();
-        console.log('Database connection test successful on /_ah/start');
-        
-        // Wait for app initialization
-        console.log('Waiting for app initialization...');
-        if (!app.get('server')) {
-            console.log('Server not yet initialized, starting initialization...');
-            await initializeApp();
-            console.log('App initialization completed');
-        }
-        
-        res.status(200).send('Application started successfully');
-    } catch (error) {
-        console.error('Error in /_ah/start:', error);
-        if (error.stack) {
-            console.error('Error stack:', error.stack);
-        }
-        // Still return 200 to prevent App Engine from continuously restarting
-        res.status(200).send('Application starting with errors');
-    }
-});
-
-app.get('/_ah/stop', async (req, res) => {
-    try {
-        console.log('Received App Engine stop request');
-        await gracefulShutdown();
-        res.status(200).send('Application stopping');
-    } catch (error) {
-        console.error('Error in /_ah/stop:', error);
-        res.status(200).send('Application stopping with errors');
-    }
-});
-
-// Add global error handler
-app.use((err, req, res, next) => {
-    console.error('Global error handler caught:', err);
-    res.status(500).json({ 
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
-
 // Initialize database and start server
 async function initializeApp() {
     try {
+        // Test database connection
+        await sequelize.authenticate();
+        console.log('Database connection established');
+
         // Sync database
-        console.log('Starting database synchronization...');
         await sequelize.sync();
-        console.log('Database synchronized successfully');
+        console.log('Database synchronized');
 
         // Create admin user if not exists
         console.log('Checking for admin user...');
@@ -287,29 +287,30 @@ async function initializeApp() {
         });
         console.log('Signal handlers registered');
 
+        return server;
     } catch (error) {
-        console.error('Error in initializeApp:', error);
-        // Log the full error stack
-        if (error.stack) {
-            console.error('Error stack:', error.stack);
-        }
+        console.error('Application initialization failed:', error);
+        console.error('Error stack:', error.stack);
         process.exit(1);
     }
 }
 
+// Start the application
+initializeApp().catch(error => {
+    console.error('Failed to start application:', error);
+    console.error('Error stack:', error.stack);
+    process.exit(1);
+});
+
 // Handle uncaught errors
 process.on('unhandledRejection', (error) => {
     console.error('Unhandled Promise Rejection:', error);
+    console.error('Error stack:', error.stack);
 });
 
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
-    gracefulShutdown();
-});
-
-// Initialize app
-initializeApp().catch(error => {
-    console.error('Failed to initialize app:', error);
+    console.error('Error stack:', error.stack);
     process.exit(1);
 });
 
