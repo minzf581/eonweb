@@ -24,14 +24,14 @@ const crypto = require('crypto');
 
 const app = express();
 
-// Health check endpoint - keep this as simple as possible
-// Place this before any other middleware or routes
-app.get('/_ah/start', (req, res) => {
+// Create a separate router for health checks with no middleware
+const healthRouter = express.Router();
+healthRouter.get('/_ah/start', (req, res) => {
     console.log('Received App Engine start request');
     res.status(200).send('OK');
 });
 
-app.get('/_ah/stop', async (req, res) => {
+healthRouter.get('/_ah/stop', async (req, res) => {
     console.log('Received App Engine stop request');
     try {
         await gracefulShutdown();
@@ -41,6 +41,9 @@ app.get('/_ah/stop', async (req, res) => {
         res.status(200).send('Stopping with errors');
     }
 });
+
+// Mount health check router first, before any middleware
+app.use('/', healthRouter);
 
 // Request logging middleware
 app.use((req, res, next) => {
