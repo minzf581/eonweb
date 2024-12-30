@@ -27,6 +27,8 @@ const validateIP = (ipv4, ipv6) => {
 // Update user points from bandwidth sharing plugin
 router.post('/update', authenticateApiKey, async (req, res) => {
     try {
+        console.log('[Points] Received update request:', req.body);
+        
         const { 
             email, 
             points, 
@@ -38,6 +40,7 @@ router.post('/update', authenticateApiKey, async (req, res) => {
 
         // Validate required fields
         if (!email || typeof points !== 'number') {
+            console.log('[Points] Validation failed:', { email, points });
             return res.status(400).json({
                 success: false,
                 message: 'Invalid request. Email and points are required.'
@@ -47,6 +50,7 @@ router.post('/update', authenticateApiKey, async (req, res) => {
         // Validate IP addresses
         const ipErrors = validateIP(ipv4, ipv6);
         if (ipErrors.length > 0) {
+            console.log('[Points] IP validation failed:', ipErrors);
             return res.status(400).json({
                 success: false,
                 message: 'IP validation failed',
@@ -56,6 +60,8 @@ router.post('/update', authenticateApiKey, async (req, res) => {
 
         // Start transaction
         const result = await sequelize.transaction(async (t) => {
+            console.log('[Points] Starting transaction for user:', email);
+            
             // Find user
             const user = await User.findOne({
                 where: { email },
@@ -63,16 +69,26 @@ router.post('/update', authenticateApiKey, async (req, res) => {
             });
 
             if (!user) {
+                console.log('[Points] User not found:', email);
                 throw new Error('User not found');
             }
+
+            console.log('[Points] Found user:', { id: user.id, currentPoints: user.points });
 
             // Update user points
             const updatedUser = await user.update({
                 points: user.points + points
             }, { transaction: t });
 
+            console.log('[Points] Updated user points:', { 
+                id: user.id, 
+                oldPoints: user.points, 
+                addedPoints: points, 
+                newPoints: updatedUser.points 
+            });
+
             // Create point history record
-            await PointHistory.create({
+            const pointHistory = await PointHistory.create({
                 userId: user.id,
                 points,
                 type,
@@ -85,10 +101,12 @@ router.post('/update', authenticateApiKey, async (req, res) => {
                 status: 'completed'
             }, { transaction: t });
 
+            console.log('[Points] Created point history record:', pointHistory.id);
+
             return updatedUser;
         });
 
-        console.log(`[Points] Updated points for user ${email}: +${points} points (IPv4: ${ipv4 || 'N/A'}, IPv6: ${ipv6 || 'N/A'})`);
+        console.log(`[Points] Successfully updated points for user ${email}: +${points} points (IPv4: ${ipv4 || 'N/A'}, IPv6: ${ipv6 || 'N/A'})`);
         
         res.json({
             success: true,
@@ -99,11 +117,16 @@ router.post('/update', authenticateApiKey, async (req, res) => {
                 ipv6: ipv6 || null
             }
         });
+
     } catch (error) {
-        console.error('[Points] Error updating points:', error);
-        res.status(error.message === 'User not found' ? 404 : 500).json({
+        console.error('[Points] Error in points update:', error);
+        console.error('[Points] Error stack:', error.stack);
+        console.error('[Points] Request body:', req.body);
+        
+        res.status(500).json({
             success: false,
-            message: error.message || 'Failed to update points'
+            message: 'Failed to update points',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
 });
