@@ -35,6 +35,17 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/points', pointsRoutes);
 
+// App Engine health checks
+app.get('/_ah/start', (req, res) => {
+    console.log('Received App Engine start request');
+    res.status(200).send('OK');
+});
+
+app.get('/_ah/stop', (req, res) => {
+    console.log('Received App Engine stop request');
+    res.status(200).send('OK');
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
