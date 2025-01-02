@@ -17,6 +17,10 @@ beta_settings:
   cloud_sql_instances: "eonhome-445809:asia-southeast2:eon-db"
 
 handlers:
+  - url: /static
+    static_dir: public
+    secure: always
+
   - url: /.*
     script: auto
     secure: always
