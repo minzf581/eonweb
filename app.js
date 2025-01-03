@@ -26,19 +26,23 @@ const publicPath = path.join(__dirname, 'public');
 let isInitialized = false;
 let isInitializing = false;
 let initPromise = null;
+let initRetryCount = 0;
+const MAX_INIT_RETRIES = 3;
 
 // Initialize application
 const initialize = async () => {
     // If already initialized, return immediately
     if (isInitialized) {
+        console.log('[Initialize] Already initialized, skipping');
         return true;
     }
 
     // If initialization is in progress, wait for it
     if (isInitializing) {
+        console.log('[Initialize] Initialization in progress, waiting...');
         try {
             await initPromise;
-            return true;
+            return isInitialized;
         } catch (error) {
             console.error('[Initialize] Error while waiting for initialization:', error);
             return false;
@@ -49,18 +53,29 @@ const initialize = async () => {
     isInitializing = true;
     initPromise = (async () => {
         try {
-            console.log('[Initialize] Starting initialization...');
+            console.log('[Initialize] Starting initialization (attempt ' + (initRetryCount + 1) + ' of ' + MAX_INIT_RETRIES + ')');
             
             // Test database connection
             await sequelize.authenticate();
             console.log('[Database] Connected successfully');
             
             isInitialized = true;
+            initRetryCount = 0;
             console.log('[Initialize] Initialization completed successfully');
             return true;
         } catch (error) {
             console.error('[Initialize] Error during initialization:', error);
-            return false;
+            
+            // Increment retry count and check if we should retry
+            initRetryCount++;
+            if (initRetryCount < MAX_INIT_RETRIES) {
+                console.log('[Initialize] Will retry initialization');
+                return false;
+            } else {
+                console.error('[Initialize] Max retries reached, giving up');
+                initRetryCount = 0;
+                throw error;
+            }
         } finally {
             isInitializing = false;
             initPromise = null;
@@ -80,25 +95,35 @@ app.use(express.static(publicPath, {
 // Health check endpoints
 app.get('/_ah/warmup', async (req, res) => {
     console.log('[Health Check] Warmup request received');
+    
+    // If already initialized, return success immediately
+    if (isInitialized) {
+        console.log('[Health Check] Warmup skipped - already initialized');
+        return res.status(200).send('OK');
+    }
+    
+    // If initialization is in progress, wait for it
+    if (isInitializing) {
+        console.log('[Health Check] Warmup waiting for initialization');
+        try {
+            await initPromise;
+            if (isInitialized) {
+                console.log('[Health Check] Warmup completed successfully');
+                return res.status(200).send('OK');
+            }
+        } catch (error) {
+            console.error('[Health Check] Error during warmup:', error);
+        }
+    }
+    
+    // Try to initialize
     try {
-        // If initialization is in progress, return success
-        if (isInitializing) {
-            console.log('[Health Check] Warmup skipped - initialization in progress');
-            return res.status(200).send('OK');
-        }
-        
-        // If already initialized, return success
-        if (isInitialized) {
-            console.log('[Health Check] Warmup skipped - already initialized');
-            return res.status(200).send('OK');
-        }
-
         const success = await initialize();
         if (success) {
             console.log('[Health Check] Warmup completed successfully');
             res.status(200).send('OK');
         } else {
-            console.error('[Health Check] Warmup failed');
+            console.error('[Health Check] Warmup failed - initialization unsuccessful');
             res.status(500).send('Failed');
         }
     } catch (error) {
@@ -109,25 +134,35 @@ app.get('/_ah/warmup', async (req, res) => {
 
 app.get('/_ah/start', async (req, res) => {
     console.log('[Health Check] Start request received');
+    
+    // If already initialized, return success immediately
+    if (isInitialized) {
+        console.log('[Health Check] Start skipped - already initialized');
+        return res.status(200).send('OK');
+    }
+    
+    // If initialization is in progress, wait for it
+    if (isInitializing) {
+        console.log('[Health Check] Start waiting for initialization');
+        try {
+            await initPromise;
+            if (isInitialized) {
+                console.log('[Health Check] Start completed successfully');
+                return res.status(200).send('OK');
+            }
+        } catch (error) {
+            console.error('[Health Check] Error during start:', error);
+        }
+    }
+    
+    // Try to initialize
     try {
-        // If initialization is in progress, return success
-        if (isInitializing) {
-            console.log('[Health Check] Start skipped - initialization in progress');
-            return res.status(200).send('OK');
-        }
-        
-        // If already initialized, return success
-        if (isInitialized) {
-            console.log('[Health Check] Start skipped - already initialized');
-            return res.status(200).send('OK');
-        }
-
         const success = await initialize();
         if (success) {
             console.log('[Health Check] Start completed successfully');
             res.status(200).send('OK');
         } else {
-            console.error('[Health Check] Start failed');
+            console.error('[Health Check] Start failed - initialization unsuccessful');
             res.status(500).send('Failed');
         }
     } catch (error) {
