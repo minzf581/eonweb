@@ -64,10 +64,29 @@ app.use((err, req, res, next) => {
     });
 });
 
-module.exports = app;
-
-// Create server and listen
+// Start server first
 const port = process.env.PORT || 8081;
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+const server = app.listen(port, () => {
+    console.log(`[Server] Server is running on port ${port}`);
 });
+
+// Handle server shutdown gracefully
+process.on('SIGTERM', () => {
+    console.log('[Server] Received SIGTERM. Starting graceful shutdown...');
+    server.close(() => {
+        console.log('[Server] Server closed.');
+        process.exit(0);
+    });
+});
+
+// Then initialize database connection
+const { sequelize } = require('./models');
+sequelize.authenticate()
+    .then(() => {
+        console.log('[Database] Connection has been established successfully.');
+    })
+    .catch(err => {
+        console.error('[Database] Unable to connect to the database:', err);
+    });
+
+module.exports = app;
