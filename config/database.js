@@ -5,6 +5,9 @@ if (process.env.NODE_ENV === 'production') {
     require('dotenv').config();
 }
 
+const isLocal = process.env.NODE_ENV !== 'production';
+console.log(`Running in ${isLocal ? 'local' : 'production'} mode`);
+
 const productionConfig = {
     dialect: 'postgres',
     database: process.env.DB_NAME || 'eon_protocol',
@@ -13,19 +16,31 @@ const productionConfig = {
     host: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
     dialectOptions: {
         socketPath: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
-    }
+    },
+    logging: console.log
 };
 
-// Sequelize CLI 配置
+const developmentConfig = {
+    dialect: 'postgres',
+    database: process.env.DB_NAME || 'eon_protocol',
+    username: process.env.DB_USER || 'eonuser',
+    password: process.env.DB_PASSWORD || 'eonprotocol',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    logging: console.log
+};
+
+// Choose configuration based on environment
+const activeConfig = isLocal ? developmentConfig : productionConfig;
+console.log('Using database configuration:', {
+    host: activeConfig.host,
+    database: activeConfig.database,
+    username: activeConfig.username
+});
+
+// Sequelize CLI configuration
 const config = {
-    development: {
-        dialect: 'postgres',
-        database: process.env.DB_NAME || 'eon_protocol',
-        username: process.env.DB_USER || 'eonuser',
-        password: process.env.DB_PASSWORD || 'eonprotocol',
-        host: 'localhost',
-        port: process.env.DB_PORT || 5432
-    },
+    development: developmentConfig,
     production: productionConfig
 };
 
@@ -38,8 +53,7 @@ const runtimeConfig = {
             min: 0,
             acquire: 30000,
             idle: 10000
-        },
-        logging: console.log
+        }
     },
     production: {
         ...config.production,
@@ -48,8 +62,7 @@ const runtimeConfig = {
             min: 0,
             acquire: 30000,
             idle: 10000
-        },
-        logging: console.log
+        }
     }
 };
 
