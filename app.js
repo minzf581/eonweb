@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const { sequelize } = require('./models');
 const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
@@ -9,6 +10,7 @@ const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 const pointsRoutes = require('./routes/points');
 
+// Initialize Express app
 const app = express();
 
 // Middleware
@@ -64,29 +66,39 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server first
-const port = process.env.PORT || 8081;
-const server = app.listen(port, () => {
-    console.log(`[Server] Server is running on port ${port}`);
-});
-
-// Handle server shutdown gracefully
-process.on('SIGTERM', () => {
-    console.log('[Server] Received SIGTERM. Starting graceful shutdown...');
-    server.close(() => {
-        console.log('[Server] Server closed.');
-        process.exit(0);
-    });
-});
-
-// Then initialize database connection
-const { sequelize } = require('./models');
-sequelize.authenticate()
-    .then(() => {
+// Initialize application
+async function startServer() {
+    try {
+        // First, connect to the database
+        console.log('[Database] Connecting to database...');
+        await sequelize.authenticate();
         console.log('[Database] Connection has been established successfully.');
-    })
-    .catch(err => {
-        console.error('[Database] Unable to connect to the database:', err);
-    });
+
+        // Then start the server
+        const port = process.env.PORT || 8081;
+        const server = app.listen(port, () => {
+            console.log(`[Server] Server is running on port ${port}`);
+        });
+
+        // Handle graceful shutdown
+        process.on('SIGTERM', () => {
+            console.log('[Server] Received SIGTERM. Starting graceful shutdown...');
+            server.close(async () => {
+                console.log('[Server] Closing database connection...');
+                await sequelize.close();
+                console.log('[Server] Server and database connections closed.');
+                process.exit(0);
+            });
+        });
+
+        return server;
+    } catch (error) {
+        console.error('[Startup] Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+// Start the application
+startServer();
 
 module.exports = app;
