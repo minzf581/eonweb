@@ -25,7 +25,9 @@ const publicPath = path.join(__dirname, 'public');
 // Serve static files first
 app.use(express.static(publicPath, {
     index: false,
-    extensions: ['html']
+    extensions: ['html'],
+    fallthrough: true,
+    maxAge: '1h'
 }));
 
 // Application state
@@ -56,14 +58,24 @@ const initialize = async () => {
 // Health check endpoints
 app.get('/_ah/warmup', async (req, res) => {
     console.log('[Health Check] Warmup request received');
-    const success = await initialize();
-    res.status(success ? 200 : 500).send(success ? 'OK' : 'Failed');
+    try {
+        const success = await initialize();
+        res.status(success ? 200 : 500).send(success ? 'OK' : 'Failed');
+    } catch (error) {
+        console.error('[Health Check] Warmup error:', error);
+        res.status(500).send('Error during warmup');
+    }
 });
 
 app.get('/_ah/start', async (req, res) => {
     console.log('[Health Check] Start request received');
-    const success = await initialize();
-    res.status(success ? 200 : 500).send(success ? 'OK' : 'Failed');
+    try {
+        const success = await initialize();
+        res.status(success ? 200 : 500).send(success ? 'OK' : 'Failed');
+    } catch (error) {
+        console.error('[Health Check] Start error:', error);
+        res.status(500).send('Error during start');
+    }
 });
 
 app.get('/_ah/live', (req, res) => {
@@ -79,8 +91,13 @@ app.get('/_ah/ready', (req, res) => {
 // API Routes
 app.use('/api/*', async (req, res, next) => {
     if (!isInitialized) {
-        const success = await initialize();
-        if (!success) {
+        try {
+            const success = await initialize();
+            if (!success) {
+                return res.status(503).json({ error: 'Service unavailable' });
+            }
+        } catch (error) {
+            console.error('[API] Error during initialization:', error);
             return res.status(503).json({ error: 'Service unavailable' });
         }
     }
@@ -95,29 +112,51 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/points', pointsRoutes);
 
 // Handle root path specifically
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
     console.log('[Route] Serving index.html for root path');
-    res.sendFile(path.join(publicPath, 'index.html'), err => {
+    try {
+        await initialize();
+        res.sendFile(path.join(publicPath, 'index.html'), err => {
+            if (err) {
+                console.error('[Route] Error serving index.html:', err);
+                res.status(500).send('Error serving index.html');
+            }
+        });
+    } catch (error) {
+        console.error('[Route] Error during initialization:', error);
+        res.status(503).send('Service unavailable');
+    }
+});
+
+// Handle favicon.ico
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(publicPath, 'favicon.ico'), err => {
         if (err) {
-            console.error('[Route] Error serving index.html:', err);
-            res.status(500).send('Error serving index.html');
+            console.error('[Route] Error serving favicon.ico:', err);
+            res.status(404).send('Favicon not found');
         }
     });
 });
 
 // Handle all other routes
-app.get('/*', (req, res) => {
+app.get('/*', async (req, res) => {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'API endpoint not found' });
     }
     
     console.log(`[Route] Serving index.html for path: ${req.path}`);
-    res.sendFile(path.join(publicPath, 'index.html'), err => {
-        if (err) {
-            console.error('[Route] Error serving index.html:', err);
-            res.status(500).send('Error serving index.html');
-        }
-    });
+    try {
+        await initialize();
+        res.sendFile(path.join(publicPath, 'index.html'), err => {
+            if (err) {
+                console.error('[Route] Error serving index.html:', err);
+                res.status(500).send('Error serving index.html');
+            }
+        });
+    } catch (error) {
+        console.error('[Route] Error during initialization:', error);
+        res.status(503).send('Service unavailable');
+    }
 });
 
 // Error handling
