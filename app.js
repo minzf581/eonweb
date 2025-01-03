@@ -26,21 +26,27 @@ const publicPath = path.join(__dirname, 'public');
 const instanceId = Math.random().toString(36).substring(7);
 console.log(`[App] Starting instance ${instanceId}`);
 
-let isInitialized = false;
-let isInitializing = false;
-let initPromise = null;
-let initRetryCount = 0;
-let lastInitTime = 0;
-const MAX_INIT_RETRIES = 3;
+// Global initialization state
+const state = {
+    isInitialized: false,
+    isInitializing: false,
+    initPromise: null,
+    initRetryCount: 0,
+    lastInitTime: 0,
+    instanceStartTime: Date.now()
+};
+
 const INIT_TIMEOUT = 30000; // 30 seconds timeout
 const INIT_COOLDOWN = 5000; // 5 seconds cooldown between retries
+const MAX_INIT_RETRIES = 3;
 
 // Initialize application with timeout
 const initializeWithTimeout = async (timeout) => {
     const now = Date.now();
+    
     try {
         // Add cooldown between retries
-        const timeSinceLastInit = now - lastInitTime;
+        const timeSinceLastInit = now - state.lastInitTime;
         if (timeSinceLastInit < INIT_COOLDOWN) {
             console.log(`[Initialize] Cooling down (${timeSinceLastInit}ms < ${INIT_COOLDOWN}ms)`);
             await new Promise(resolve => setTimeout(resolve, INIT_COOLDOWN - timeSinceLastInit));
@@ -53,7 +59,7 @@ const initializeWithTimeout = async (timeout) => {
         const initResult = await Promise.race([initialize(), timeoutPromise]);
         return initResult;
     } catch (error) {
-        console.error('[Initialize] Timeout or error:', error.message);
+        console.error(`[Initialize] Timeout or error on instance ${instanceId}:`, error.message);
         return false;
     }
 };
@@ -62,60 +68,61 @@ const initializeWithTimeout = async (timeout) => {
 const initialize = async () => {
     const now = Date.now();
     
-    // If already initialized recently (within last minute), return immediately
-    if (isInitialized && (now - lastInitTime) < 60000) {
-        console.log(`[Initialize] Already initialized recently (${now - lastInitTime}ms ago), skipping`);
+    // If already initialized and instance is still fresh (less than 4 minutes old)
+    const instanceAge = now - state.instanceStartTime;
+    if (state.isInitialized && instanceAge < 240000) {
+        console.log(`[Initialize] Already initialized and instance is fresh (age: ${instanceAge}ms) on instance ${instanceId}`);
         return true;
     }
 
     // If initialization is in progress, wait for it
-    if (isInitializing) {
-        console.log('[Initialize] Initialization in progress, waiting...');
+    if (state.isInitializing && state.initPromise) {
+        console.log(`[Initialize] Initialization in progress on instance ${instanceId}, waiting...`);
         try {
-            await initPromise;
-            return isInitialized;
+            await state.initPromise;
+            return state.isInitialized;
         } catch (error) {
-            console.error('[Initialize] Error while waiting for initialization:', error);
+            console.error(`[Initialize] Error while waiting for initialization on instance ${instanceId}:`, error);
             return false;
         }
     }
 
     // Start initialization
-    isInitializing = true;
-    lastInitTime = now;
+    state.isInitializing = true;
+    state.lastInitTime = now;
     
-    initPromise = (async () => {
+    state.initPromise = (async () => {
         try {
-            console.log(`[Initialize] Starting initialization on instance ${instanceId} (attempt ${initRetryCount + 1} of ${MAX_INIT_RETRIES})`);
+            console.log(`[Initialize] Starting initialization on instance ${instanceId} (attempt ${state.initRetryCount + 1} of ${MAX_INIT_RETRIES})`);
             
             // Test database connection
             await sequelize.authenticate();
-            console.log('[Database] Connected successfully');
+            console.log(`[Database] Connected successfully on instance ${instanceId}`);
             
-            isInitialized = true;
-            initRetryCount = 0;
+            state.isInitialized = true;
+            state.initRetryCount = 0;
             console.log(`[Initialize] Initialization completed successfully on instance ${instanceId}`);
             return true;
         } catch (error) {
             console.error(`[Initialize] Error during initialization on instance ${instanceId}:`, error);
             
             // Increment retry count and check if we should retry
-            initRetryCount++;
-            if (initRetryCount < MAX_INIT_RETRIES) {
+            state.initRetryCount++;
+            if (state.initRetryCount < MAX_INIT_RETRIES) {
                 console.log(`[Initialize] Will retry initialization on instance ${instanceId}`);
                 return false;
             } else {
                 console.error(`[Initialize] Max retries reached on instance ${instanceId}, giving up`);
-                initRetryCount = 0;
+                state.initRetryCount = 0;
                 throw error;
             }
         } finally {
-            isInitializing = false;
-            initPromise = null;
+            state.isInitializing = false;
+            state.initPromise = null;
         }
     })();
 
-    return initPromise;
+    return state.initPromise;
 };
 
 // Serve static files first
@@ -130,39 +137,27 @@ app.get('/_ah/warmup', async (req, res) => {
     const requestId = Math.random().toString(36).substring(7);
     console.log(`[Health Check] Warmup request received on instance ${instanceId} (${requestId})`);
     
-    // If already initialized recently, return success immediately
-    if (isInitialized && (Date.now() - lastInitTime) < 60000) {
-        console.log(`[Health Check] Warmup skipped - already initialized recently on instance ${instanceId} (${requestId})`);
-        return res.status(200).send('OK');
-    }
-    
-    // If initialization is in progress, wait for it with timeout
-    if (isInitializing) {
-        console.log(`[Health Check] Warmup waiting for initialization on instance ${instanceId} (${requestId})`);
-        try {
-            const success = await initializeWithTimeout(INIT_TIMEOUT);
-            if (success) {
-                console.log(`[Health Check] Warmup completed successfully on instance ${instanceId} (${requestId})`);
-                return res.status(200).send('OK');
-            } else {
-                console.error(`[Health Check] Warmup failed - initialization timeout on instance ${instanceId} (${requestId})`);
-                return res.status(500).send('Timeout');
-            }
-        } catch (error) {
-            console.error(`[Health Check] Error during warmup on instance ${instanceId}: ${error.message} (${requestId})`);
-            return res.status(500).send('Error during warmup');
-        }
-    }
-    
-    // Try to initialize with timeout
     try {
-        const success = await initializeWithTimeout(INIT_TIMEOUT);
-        if (success) {
+        // Always try to initialize on warmup
+        const WARMUP_TIMEOUT = 25000; // 25 seconds timeout for warmup
+        console.log(`[Health Check] Starting initialization for warmup on instance ${instanceId} (${requestId})`);
+        
+        // If already initializing, wait for it
+        if (state.isInitializing && state.initPromise) {
+            console.log(`[Health Check] Waiting for in-progress initialization on instance ${instanceId} (${requestId})`);
+            await state.initPromise;
+        } else {
+            // Start new initialization
+            await initializeWithTimeout(WARMUP_TIMEOUT);
+        }
+        
+        // Check final state
+        if (state.isInitialized) {
             console.log(`[Health Check] Warmup completed successfully on instance ${instanceId} (${requestId})`);
             res.status(200).send('OK');
         } else {
-            console.error(`[Health Check] Warmup failed - initialization unsuccessful on instance ${instanceId} (${requestId})`);
-            res.status(500).send('Failed');
+            console.error(`[Health Check] Warmup failed - not initialized on instance ${instanceId} (${requestId})`);
+            res.status(500).send('Not initialized');
         }
     } catch (error) {
         console.error(`[Health Check] Warmup error on instance ${instanceId}: ${error.message} (${requestId})`);
@@ -174,39 +169,27 @@ app.get('/_ah/start', async (req, res) => {
     const requestId = Math.random().toString(36).substring(7);
     console.log(`[Health Check] Start request received on instance ${instanceId} (${requestId})`);
     
-    // If already initialized recently, return success immediately
-    if (isInitialized && (Date.now() - lastInitTime) < 60000) {
-        console.log(`[Health Check] Start skipped - already initialized recently on instance ${instanceId} (${requestId})`);
-        return res.status(200).send('OK');
-    }
-    
-    // If initialization is in progress, wait for it with timeout
-    if (isInitializing) {
-        console.log(`[Health Check] Start waiting for initialization on instance ${instanceId} (${requestId})`);
-        try {
-            const success = await initializeWithTimeout(INIT_TIMEOUT);
-            if (success) {
-                console.log(`[Health Check] Start completed successfully on instance ${instanceId} (${requestId})`);
-                return res.status(200).send('OK');
-            } else {
-                console.error(`[Health Check] Start failed - initialization timeout on instance ${instanceId} (${requestId})`);
-                return res.status(500).send('Timeout');
-            }
-        } catch (error) {
-            console.error(`[Health Check] Error during start on instance ${instanceId}: ${error.message} (${requestId})`);
-            return res.status(500).send('Error during start');
-        }
-    }
-    
-    // Try to initialize with timeout
     try {
-        const success = await initializeWithTimeout(INIT_TIMEOUT);
-        if (success) {
+        // Always try to initialize on start
+        const START_TIMEOUT = 25000; // 25 seconds timeout for start
+        console.log(`[Health Check] Starting initialization for start on instance ${instanceId} (${requestId})`);
+        
+        // If already initializing, wait for it
+        if (state.isInitializing && state.initPromise) {
+            console.log(`[Health Check] Waiting for in-progress initialization on instance ${instanceId} (${requestId})`);
+            await state.initPromise;
+        } else {
+            // Start new initialization
+            await initializeWithTimeout(START_TIMEOUT);
+        }
+        
+        // Check final state
+        if (state.isInitialized) {
             console.log(`[Health Check] Start completed successfully on instance ${instanceId} (${requestId})`);
             res.status(200).send('OK');
         } else {
-            console.error(`[Health Check] Start failed - initialization unsuccessful on instance ${instanceId} (${requestId})`);
-            res.status(500).send('Failed');
+            console.error(`[Health Check] Start failed - not initialized on instance ${instanceId} (${requestId})`);
+            res.status(500).send('Not initialized');
         }
     } catch (error) {
         console.error(`[Health Check] Start error on instance ${instanceId}: ${error.message} (${requestId})`);
@@ -221,7 +204,7 @@ app.get('/_ah/live', (req, res) => {
 
 app.get('/_ah/ready', (req, res) => {
     console.log('[Health Check] Ready check received');
-    if (isInitialized) {
+    if (state.isInitialized) {
         console.log('[Health Check] Ready check passed');
         res.status(200).send('OK');
     } else {
@@ -232,7 +215,7 @@ app.get('/_ah/ready', (req, res) => {
 
 // API Routes
 app.use('/api/*', async (req, res, next) => {
-    if (!isInitialized) {
+    if (!state.isInitialized) {
         try {
             const success = await initialize();
             if (!success) {
@@ -269,9 +252,9 @@ app.get('/', async (req, res) => {
     console.log('[Route] Serving index.html for root path');
     
     // If initialization is in progress, wait for it
-    if (isInitializing) {
+    if (state.isInitializing) {
         try {
-            await initPromise;
+            await state.initPromise;
         } catch (error) {
             console.error('[Route] Error waiting for initialization:', error);
             return res.status(503).send('Service unavailable');
@@ -279,7 +262,7 @@ app.get('/', async (req, res) => {
     }
     
     // If not initialized, try to initialize
-    if (!isInitialized) {
+    if (!state.isInitialized) {
         try {
             const success = await initialize();
             if (!success) {
