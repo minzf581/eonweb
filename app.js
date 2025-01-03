@@ -12,15 +12,7 @@ const pointsRoutes = require('./routes/points');
 
 // Initialize Express app
 const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
-
-// Static files
-const publicPath = path.join(__dirname, 'public');
+const port = process.env.PORT || 8081;
 
 // Application state
 const instanceId = Math.random().toString(36).substring(7);
@@ -33,12 +25,46 @@ const state = {
     initPromise: null,
     initRetryCount: 0,
     lastInitTime: 0,
-    instanceStartTime: Date.now()
+    instanceStartTime: Date.now(),
+    startupComplete: false
 };
 
+// Constants
 const INIT_TIMEOUT = 30000; // 30 seconds timeout
 const INIT_COOLDOWN = 5000; // 5 seconds cooldown between retries
 const MAX_INIT_RETRIES = 3;
+const STARTUP_TIMEOUT = 25000; // 25 seconds for startup
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev'));
+
+// Static files
+const publicPath = path.join(__dirname, 'public');
+
+// Start server before initialization
+const server = app.listen(port, () => {
+    console.log(`[Server] Running on port ${port}`);
+    
+    // Start initialization after server is listening
+    (async () => {
+        try {
+            console.log(`[Startup] Beginning startup sequence on instance ${instanceId}`);
+            const success = await initializeWithTimeout(STARTUP_TIMEOUT);
+            if (success) {
+                console.log(`[Startup] Initial startup completed successfully on instance ${instanceId}`);
+            } else {
+                console.error(`[Startup] Initial startup failed on instance ${instanceId}`);
+            }
+        } catch (error) {
+            console.error(`[Startup] Error during startup on instance ${instanceId}:`, error);
+        } finally {
+            state.startupComplete = true;
+        }
+    })();
+});
 
 // Initialize application with timeout
 const initializeWithTimeout = async (timeout) => {
@@ -138,26 +164,39 @@ app.get('/_ah/warmup', async (req, res) => {
     console.log(`[Health Check] Warmup request received on instance ${instanceId} (${requestId})`);
     
     try {
-        // Always try to initialize on warmup
-        const WARMUP_TIMEOUT = 25000; // 25 seconds timeout for warmup
-        console.log(`[Health Check] Starting initialization for warmup on instance ${instanceId} (${requestId})`);
+        // If startup is not complete, return 200 to allow instance to continue starting
+        if (!state.startupComplete) {
+            console.log(`[Health Check] Warmup received during startup on instance ${instanceId} (${requestId})`);
+            return res.status(200).send('Starting');
+        }
+        
+        // If already initialized and instance is fresh, return success
+        const instanceAge = Date.now() - state.instanceStartTime;
+        if (state.isInitialized && instanceAge < 240000) {
+            console.log(`[Health Check] Warmup skipped - already initialized and fresh on instance ${instanceId} (${requestId})`);
+            return res.status(200).send('OK');
+        }
         
         // If already initializing, wait for it
         if (state.isInitializing && state.initPromise) {
             console.log(`[Health Check] Waiting for in-progress initialization on instance ${instanceId} (${requestId})`);
             await state.initPromise;
-        } else {
-            // Start new initialization
-            await initializeWithTimeout(WARMUP_TIMEOUT);
+            if (state.isInitialized) {
+                console.log(`[Health Check] Warmup completed - initialization finished on instance ${instanceId} (${requestId})`);
+                return res.status(200).send('OK');
+            }
         }
         
-        // Check final state
-        if (state.isInitialized) {
+        // Try to initialize
+        console.log(`[Health Check] Starting initialization for warmup on instance ${instanceId} (${requestId})`);
+        const success = await initializeWithTimeout(STARTUP_TIMEOUT);
+        
+        if (success) {
             console.log(`[Health Check] Warmup completed successfully on instance ${instanceId} (${requestId})`);
             res.status(200).send('OK');
         } else {
-            console.error(`[Health Check] Warmup failed - not initialized on instance ${instanceId} (${requestId})`);
-            res.status(500).send('Not initialized');
+            console.error(`[Health Check] Warmup failed - initialization failed on instance ${instanceId} (${requestId})`);
+            res.status(500).send('Initialization failed');
         }
     } catch (error) {
         console.error(`[Health Check] Warmup error on instance ${instanceId}: ${error.message} (${requestId})`);
@@ -170,26 +209,39 @@ app.get('/_ah/start', async (req, res) => {
     console.log(`[Health Check] Start request received on instance ${instanceId} (${requestId})`);
     
     try {
-        // Always try to initialize on start
-        const START_TIMEOUT = 25000; // 25 seconds timeout for start
-        console.log(`[Health Check] Starting initialization for start on instance ${instanceId} (${requestId})`);
+        // If startup is not complete, return 200 to allow instance to continue starting
+        if (!state.startupComplete) {
+            console.log(`[Health Check] Start received during startup on instance ${instanceId} (${requestId})`);
+            return res.status(200).send('Starting');
+        }
+        
+        // If already initialized and instance is fresh, return success
+        const instanceAge = Date.now() - state.instanceStartTime;
+        if (state.isInitialized && instanceAge < 240000) {
+            console.log(`[Health Check] Start skipped - already initialized and fresh on instance ${instanceId} (${requestId})`);
+            return res.status(200).send('OK');
+        }
         
         // If already initializing, wait for it
         if (state.isInitializing && state.initPromise) {
             console.log(`[Health Check] Waiting for in-progress initialization on instance ${instanceId} (${requestId})`);
             await state.initPromise;
-        } else {
-            // Start new initialization
-            await initializeWithTimeout(START_TIMEOUT);
+            if (state.isInitialized) {
+                console.log(`[Health Check] Start completed - initialization finished on instance ${instanceId} (${requestId})`);
+                return res.status(200).send('OK');
+            }
         }
         
-        // Check final state
-        if (state.isInitialized) {
+        // Try to initialize
+        console.log(`[Health Check] Starting initialization for start on instance ${instanceId} (${requestId})`);
+        const success = await initializeWithTimeout(STARTUP_TIMEOUT);
+        
+        if (success) {
             console.log(`[Health Check] Start completed successfully on instance ${instanceId} (${requestId})`);
             res.status(200).send('OK');
         } else {
-            console.error(`[Health Check] Start failed - not initialized on instance ${instanceId} (${requestId})`);
-            res.status(500).send('Not initialized');
+            console.error(`[Health Check] Start failed - initialization failed on instance ${instanceId} (${requestId})`);
+            res.status(500).send('Initialization failed');
         }
     } catch (error) {
         console.error(`[Health Check] Start error on instance ${instanceId}: ${error.message} (${requestId})`);
@@ -310,27 +362,5 @@ app.use((err, req, res, next) => {
     console.error('[Error]', err);
     res.status(500).json({ error: 'Internal server error' });
 });
-
-// Start server
-const port = process.env.PORT || 8081;
-
-const startServer = async () => {
-    try {
-        // Start HTTP server
-        app.listen(port, () => {
-            console.log(`[Server] Running on port ${port}`);
-        });
-
-        // Initialize in background
-        initialize().catch(error => {
-            console.error('[Startup] Background initialization failed:', error);
-        });
-    } catch (error) {
-        console.error('[Startup] Failed to start server:', error);
-        process.exit(1);
-    }
-};
-
-startServer();
 
 module.exports = app;
