@@ -51,12 +51,10 @@ router.post('/register', async (req, res) => {
         }
 
         // 创建新用户
-        const hashedPassword = await bcrypt.hash(password, 10);
         const user = await User.create({
             email,
-            password: hashedPassword,
+            password,
             referredBy: referralCode, // Store the referral code used during registration
-            referralCode: crypto.randomBytes(4).toString('hex'),
             points: 0,
             isAdmin: false
         });
