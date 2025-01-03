@@ -17,6 +17,25 @@ beta_settings:
   cloud_sql_instances: "eonhome-445809:asia-southeast2:eon-db"
 
 handlers:
+  # 静态文件处理
+  - url: /css
+    static_dir: public/css
+    secure: always
+
+  - url: /js
+    static_dir: public/js
+    secure: always
+
+  - url: /images
+    static_dir: public/images
+    secure: always
+
+  # API 路由处理
+  - url: /api/.*
+    script: auto
+    secure: always
+
+  # 所有其他请求
   - url: /.*
     script: auto
     secure: always

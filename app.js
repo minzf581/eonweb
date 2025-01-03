@@ -61,6 +61,7 @@ app.get('/_ah/warmup', (req, res) => {
 
 // Static file service with readiness check
 app.use((req, res, next) => {
+    console.log(`[Request] Received request for ${req.path}`);
     if (!isReady && !req.path.startsWith('/_ah/')) {
         console.log(`[Request] Rejected ${req.path} - Application not ready`);
         res.status(503).json({ status: 'initializing' });
@@ -73,7 +74,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Root route with error handling
 app.get('/', (req, res, next) => {
+    console.log('[Route] Received request for root path');
     if (!isReady) {
+        console.log('[Route] Application not ready');
         res.status(503).json({ status: 'initializing' });
         return;
     }
@@ -89,7 +92,14 @@ app.get('/', (req, res, next) => {
     });
 });
 
-// API Routes
+// API Routes with error handling
+app.use('/api', (req, res, next) => {
+    if (!isReady) {
+        return res.status(503).json({ status: 'initializing' });
+    }
+    next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
