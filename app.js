@@ -40,8 +40,35 @@ app.use((err, req, res, next) => {
     console.error(`[Error] Unhandled error on instance ${instanceId}: ${err.message}`);
     // Only send response if headers haven't been sent
     if (!res.headersSent) {
-        res.status(200).send('Processing request');
+        res.status(500).send('Internal Server Error');
     }
+});
+
+// Basic middleware
+app.use(morgan(':method :url :status :response-time ms'));
+app.use(express.json());
+app.use(cors());
+
+// Static files path
+const publicPath = path.join(__dirname, 'public');
+console.log(`[Static] Serving static files from: ${publicPath}`);
+
+// Serve static files with logging
+app.use(express.static(publicPath, {
+    index: false,
+    extensions: ['html'],
+    fallthrough: true,
+    setHeaders: (res, path, stat) => {
+        res.set('x-timestamp', Date.now());
+    }
+}));
+
+// Log static file access
+app.use((req, res, next) => {
+    if (!req.path.startsWith('/api')) {
+        console.log(`[Static] Accessing: ${req.path}`);
+    }
+    next();
 });
 
 // Health check endpoints - register these before any middleware
@@ -159,39 +186,9 @@ app.get('/_ah/ready', (req, res) => {
     }
 });
 
-// Register other middleware after health checks
-app.use(morgan(':method :url :status :response-time ms'));
-app.use(express.json());
-app.use(cors());
-
-// Static files
-const publicPath = path.join(__dirname, 'public');
-
-// Initialize server
-const server = app.listen(port, async () => {
-    state.serverStarted = true;
-    console.log(`[Server] Running on port ${port}`);
-    
-    try {
-        console.log(`[Startup] Beginning startup sequence on instance ${instanceId}`);
-        await initializeWithTimeout(INIT_TIMEOUT);
-        console.log(`[Startup] Initial startup completed successfully on instance ${instanceId}`);
-    } catch (error) {
-        console.error(`[Startup] Error during startup on instance ${instanceId}:`, error);
-    } finally {
-        state.startupComplete = true;
-    }
-});
-
-// Serve static files first
-app.use(express.static(publicPath, {
-    index: false,
-    extensions: ['html'],
-    fallthrough: true
-}));
-
-// API Routes
+// API Routes middleware - check initialization
 app.use('/api/*', async (req, res, next) => {
+    console.log(`[API] Request to ${req.path}`);
     if (!state.isInitialized) {
         try {
             const success = await initialize();
@@ -207,6 +204,7 @@ app.use('/api/*', async (req, res, next) => {
     next();
 });
 
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
@@ -216,17 +214,20 @@ app.use('/api/points', pointsRoutes);
 
 // Handle favicon.ico
 app.get('/favicon.ico', (req, res) => {
-    res.sendFile(path.join(publicPath, 'favicon.ico'), err => {
+    const faviconPath = path.join(publicPath, 'favicon.ico');
+    console.log(`[Static] Serving favicon from: ${faviconPath}`);
+    res.sendFile(faviconPath, err => {
         if (err) {
-            console.warn('[Route] Favicon not found:', err.message);
+            console.warn('[Static] Favicon not found:', err.message);
             res.status(404).end();
         }
     });
 });
 
-// Handle root path specifically
+// Handle root path
 app.get('/', async (req, res) => {
     console.log('[Route] Serving index.html for root path');
+    const indexPath = path.join(publicPath, 'index.html');
     
     // If initialization is in progress, wait for it
     if (state.isInitializing) {
@@ -253,39 +254,37 @@ app.get('/', async (req, res) => {
     }
     
     // Serve the file
-    res.sendFile(path.join(publicPath, 'index.html'), err => {
+    console.log(`[Route] Sending index.html from: ${indexPath}`);
+    res.sendFile(indexPath, err => {
         if (err) {
             console.error('[Route] Error serving index.html:', err);
             res.status(500).send('Error serving index.html');
+        } else {
+            console.log('[Route] Successfully served index.html');
         }
     });
 });
 
-// Handle all other routes
-app.get('/*', async (req, res) => {
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-    }
-    
-    console.log(`[Route] Serving index.html for path: ${req.path}`);
-    try {
-        await initialize();
-        res.sendFile(path.join(publicPath, 'index.html'), err => {
-            if (err) {
-                console.error('[Route] Error serving index.html:', err);
-                res.status(500).send('Error serving index.html');
-            }
-        });
-    } catch (error) {
-        console.error('[Route] Error during initialization:', error);
-        res.status(503).send('Service unavailable');
-    }
+// Catch-all handler for other routes
+app.use((req, res) => {
+    console.log(`[Route] Not found: ${req.path}`);
+    res.status(404).send('Not Found');
 });
 
-// Error handling
-app.use((err, req, res, next) => {
-    console.error('[Error]', err);
-    res.status(500).json({ error: 'Internal server error' });
+// Initialize server
+const server = app.listen(port, async () => {
+    state.serverStarted = true;
+    console.log(`[Server] Running on port ${port}`);
+    
+    try {
+        console.log(`[Startup] Beginning startup sequence on instance ${instanceId}`);
+        await initializeWithTimeout(INIT_TIMEOUT);
+        console.log(`[Startup] Initial startup completed successfully on instance ${instanceId}`);
+    } catch (error) {
+        console.error(`[Startup] Error during startup on instance ${instanceId}:`, error);
+    } finally {
+        state.startupComplete = true;
+    }
 });
 
 // Initialize application with timeout
