@@ -18,75 +18,69 @@ const port = process.env.PORT || 8081;
 const instanceId = Math.random().toString(36).substring(7);
 console.log(`[App] Starting instance ${instanceId}`);
 
-// Global initialization state
+// Initialize state tracking
 const state = {
-    isInitialized: false,
-    isInitializing: false,
-    initPromise: null,
-    initRetryCount: 0,
-    lastInitTime: 0,
-    instanceStartTime: Date.now(),
-    startupComplete: false,
     serverStarted: false,
-    pendingWarmupRequests: new Set()
+    startupComplete: false,
+    isInitializing: false,
+    isInitialized: false,
+    instanceStartTime: Date.now(),
+    initPromise: null,
+    initAttempts: 0
 };
 
-// Constants
-const INIT_TIMEOUT = 30000; // 30 seconds timeout
-const INIT_COOLDOWN = 5000; // 5 seconds cooldown between retries
-const MAX_INIT_RETRIES = 3;
-const STARTUP_TIMEOUT = 25000; // 25 seconds for startup
-const WARMUP_TIMEOUT = 15000; // 15 seconds timeout for warmup requests
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(`[Error] Unhandled error on instance ${instanceId}: ${err.message}`);
+    if (!res.headersSent) {
+        res.status(200).send('Processing request');
+    }
+});
 
-// Health check endpoints - register these first
-app.get('/_ah/warmup', async (req, res) => {
-    const requestId = Math.random().toString(36).substring(7);
-    console.log(`[Health Check] Warmup request received on instance ${instanceId} (${requestId})`);
-    
-    // Send an immediate 200 response to prevent timeout
-    res.status(200).send('Starting');
-    
+// Health check endpoints - register these first before any middleware
+app.get('/_ah/warmup', async (req, res, next) => {
     try {
-        // If server hasn't started yet, just log and return
-        if (!state.serverStarted) {
-            console.log(`[Health Check] Early warmup received before server start on instance ${instanceId} (${requestId})`);
-            return;
-        }
+        const requestId = Math.random().toString(36).substring(7);
+        console.log(`[Health Check] Warmup request received on instance ${instanceId} (${requestId})`);
         
-        // If startup is not complete, just log and return
-        if (!state.startupComplete) {
-            console.log(`[Health Check] Warmup received during startup on instance ${instanceId} (${requestId})`);
-            return;
-        }
+        // Always respond with 200 immediately
+        res.status(200).send('Warmup acknowledged');
         
-        // If already initialized and instance is fresh, just log and return
-        const instanceAge = Date.now() - state.instanceStartTime;
-        if (state.isInitialized && instanceAge < 240000) {
-            console.log(`[Health Check] Warmup skipped - already initialized and fresh on instance ${instanceId} (${requestId})`);
-            return;
-        }
-        
-        // If already initializing, wait for it
-        if (state.isInitializing && state.initPromise) {
-            console.log(`[Health Check] Waiting for in-progress initialization on instance ${instanceId} (${requestId})`);
-            await state.initPromise;
-            if (state.isInitialized) {
-                console.log(`[Health Check] Warmup completed - initialization finished on instance ${instanceId} (${requestId})`);
-                return;
+        // Perform warmup tasks asynchronously
+        setImmediate(async () => {
+            try {
+                if (!state.serverStarted) {
+                    console.log(`[Health Check] Early warmup received before server start on instance ${instanceId} (${requestId})`);
+                    return;
+                }
+
+                if (!state.startupComplete) {
+                    console.log(`[Health Check] Warmup received during startup on instance ${instanceId} (${requestId})`);
+                    return;
+                }
+
+                const instanceAge = Date.now() - state.instanceStartTime;
+                if (state.isInitialized && instanceAge < 240000) {
+                    console.log(`[Health Check] Warmup skipped - already initialized and fresh on instance ${instanceId} (${requestId})`);
+                    return;
+                }
+
+                if (state.isInitializing && state.initPromise) {
+                    console.log(`[Health Check] Waiting for in-progress initialization on instance ${instanceId} (${requestId})`);
+                    await state.initPromise;
+                    return;
+                }
+
+                console.log(`[Health Check] Starting initialization for warmup on instance ${instanceId} (${requestId})`);
+                await initializeWithTimeout(STARTUP_TIMEOUT);
+                console.log(`[Health Check] Warmup tasks completed on instance ${instanceId} (${requestId})`);
+            } catch (error) {
+                console.error(`[Health Check] Async warmup error on instance ${instanceId}: ${error.message} (${requestId})`);
             }
-        }
-        
-        // Try to initialize
-        console.log(`[Health Check] Starting initialization for warmup on instance ${instanceId} (${requestId})`);
-        const success = await initializeWithTimeout(STARTUP_TIMEOUT);
-        
-        if (success) {
-            console.log(`[Health Check] Warmup completed successfully on instance ${instanceId} (${requestId})`);
-        } else {
-            console.error(`[Health Check] Warmup failed - initialization failed on instance ${instanceId} (${requestId})`);
-        }
+        });
     } catch (error) {
-        console.error(`[Health Check] Warmup error on instance ${instanceId}: ${error.message} (${requestId})`);
+        console.error(`[Health Check] Warmup handler error on instance ${instanceId}: ${error.message}`);
+        next(error);
     }
 });
 
@@ -157,11 +151,10 @@ app.get('/_ah/ready', (req, res) => {
     }
 });
 
-// Middleware
-app.use(cors());
+// Register other middleware after health checks
+app.use(morgan(':method :url :status :response-time ms'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
+app.use(cors());
 
 // Static files
 const publicPath = path.join(__dirname, 'public');
@@ -178,29 +171,11 @@ const server = app.listen(port, () => {
             const success = await initializeWithTimeout(STARTUP_TIMEOUT);
             if (success) {
                 console.log(`[Startup] Initial startup completed successfully on instance ${instanceId}`);
-                // Resolve any pending warmup requests
-                for (const request of state.pendingWarmupRequests) {
-                    clearTimeout(request.timeoutId);
-                    request.resolve('success');
-                }
-                state.pendingWarmupRequests.clear();
             } else {
                 console.error(`[Startup] Initial startup failed on instance ${instanceId}`);
-                // Reject any pending warmup requests
-                for (const request of state.pendingWarmupRequests) {
-                    clearTimeout(request.timeoutId);
-                    request.reject(new Error('Initialization failed'));
-                }
-                state.pendingWarmupRequests.clear();
             }
         } catch (error) {
             console.error(`[Startup] Error during startup on instance ${instanceId}:`, error);
-            // Reject any pending warmup requests
-            for (const request of state.pendingWarmupRequests) {
-                clearTimeout(request.timeoutId);
-                request.reject(error);
-            }
-            state.pendingWarmupRequests.clear();
         } finally {
             state.startupComplete = true;
         }
@@ -318,10 +293,10 @@ const initializeWithTimeout = async (timeout) => {
     
     try {
         // Add cooldown between retries
-        const timeSinceLastInit = now - state.lastInitTime;
-        if (timeSinceLastInit < INIT_COOLDOWN) {
-            console.log(`[Initialize] Cooling down (${timeSinceLastInit}ms < ${INIT_COOLDOWN}ms)`);
-            await new Promise(resolve => setTimeout(resolve, INIT_COOLDOWN - timeSinceLastInit));
+        const timeSinceLastInit = now - state.instanceStartTime;
+        if (timeSinceLastInit < 5000) {
+            console.log(`[Initialize] Cooling down (${timeSinceLastInit}ms < 5000ms)`);
+            await new Promise(resolve => setTimeout(resolve, 5000 - timeSinceLastInit));
         }
         
         const timeoutPromise = new Promise((_, reject) => {
@@ -361,31 +336,31 @@ const initialize = async () => {
 
     // Start initialization
     state.isInitializing = true;
-    state.lastInitTime = now;
+    state.instanceStartTime = now;
     
     state.initPromise = (async () => {
         try {
-            console.log(`[Initialize] Starting initialization on instance ${instanceId} (attempt ${state.initRetryCount + 1} of ${MAX_INIT_RETRIES})`);
+            console.log(`[Initialize] Starting initialization on instance ${instanceId} (attempt ${state.initAttempts + 1} of 3)`);
             
             // Test database connection
             await sequelize.authenticate();
             console.log(`[Database] Connected successfully on instance ${instanceId}`);
             
             state.isInitialized = true;
-            state.initRetryCount = 0;
+            state.initAttempts = 0;
             console.log(`[Initialize] Initialization completed successfully on instance ${instanceId}`);
             return true;
         } catch (error) {
             console.error(`[Initialize] Error during initialization on instance ${instanceId}:`, error);
             
             // Increment retry count and check if we should retry
-            state.initRetryCount++;
-            if (state.initRetryCount < MAX_INIT_RETRIES) {
+            state.initAttempts++;
+            if (state.initAttempts < 3) {
                 console.log(`[Initialize] Will retry initialization on instance ${instanceId}`);
                 return false;
             } else {
                 console.error(`[Initialize] Max retries reached on instance ${instanceId}, giving up`);
-                state.initRetryCount = 0;
+                state.initAttempts = 0;
                 throw error;
             }
         } finally {
