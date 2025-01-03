@@ -10,11 +10,14 @@ const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 const pointsRoutes = require('./routes/points');
 
-// Initialize Express app
-const app = express();
-const port = process.env.PORT || 8081;
+// Constants - define these at the very top
+const INIT_TIMEOUT = 30000;  // 30 seconds for initialization
+const STARTUP_TIMEOUT = 25000;  // 25 seconds for startup
+const INIT_MAX_RETRIES = 3;
+const INIT_COOLDOWN = 5000;  // 5 seconds between retries
+const INSTANCE_FRESH_TIME = 240000;  // 4 minutes
 
-// Application state
+// Generate instance ID
 const instanceId = Math.random().toString(36).substring(7);
 console.log(`[App] Starting instance ${instanceId}`);
 
@@ -29,18 +32,24 @@ const state = {
     initAttempts: 0
 };
 
-// Error handling middleware
+// Initialize Express app
+const app = express();
+const port = process.env.PORT || 8081;
+
+// Error handling middleware - must be first
 app.use((err, req, res, next) => {
     console.error(`[Error] Unhandled error on instance ${instanceId}: ${err.message}`);
+    // Only send response if headers haven't been sent
     if (!res.headersSent) {
         res.status(200).send('Processing request');
     }
 });
 
-// Health check endpoints - register these first before any middleware
+// Health check endpoints - register these before any middleware
 app.get('/_ah/warmup', async (req, res, next) => {
+    const requestId = Math.random().toString(36).substring(7);
+    
     try {
-        const requestId = Math.random().toString(36).substring(7);
         console.log(`[Health Check] Warmup request received on instance ${instanceId} (${requestId})`);
         
         // Always respond with 200 immediately
@@ -60,7 +69,7 @@ app.get('/_ah/warmup', async (req, res, next) => {
                 }
 
                 const instanceAge = Date.now() - state.instanceStartTime;
-                if (state.isInitialized && instanceAge < 240000) {
+                if (state.isInitialized && instanceAge < INSTANCE_FRESH_TIME) {
                     console.log(`[Health Check] Warmup skipped - already initialized and fresh on instance ${instanceId} (${requestId})`);
                     return;
                 }
@@ -72,7 +81,7 @@ app.get('/_ah/warmup', async (req, res, next) => {
                 }
 
                 console.log(`[Health Check] Starting initialization for warmup on instance ${instanceId} (${requestId})`);
-                await initializeWithTimeout(STARTUP_TIMEOUT);
+                await initializeWithTimeout(INIT_TIMEOUT);
                 console.log(`[Health Check] Warmup tasks completed on instance ${instanceId} (${requestId})`);
             } catch (error) {
                 console.error(`[Health Check] Async warmup error on instance ${instanceId}: ${error.message} (${requestId})`);
@@ -106,7 +115,7 @@ app.get('/_ah/start', async (req, res) => {
         
         // If already initialized and instance is fresh, just log and return
         const instanceAge = Date.now() - state.instanceStartTime;
-        if (state.isInitialized && instanceAge < 240000) {
+        if (state.isInitialized && instanceAge < INSTANCE_FRESH_TIME) {
             console.log(`[Health Check] Start skipped - already initialized and fresh on instance ${instanceId} (${requestId})`);
             return;
         }
@@ -123,7 +132,7 @@ app.get('/_ah/start', async (req, res) => {
         
         // Try to initialize
         console.log(`[Health Check] Starting initialization for start on instance ${instanceId} (${requestId})`);
-        const success = await initializeWithTimeout(STARTUP_TIMEOUT);
+        const success = await initializeWithTimeout(INIT_TIMEOUT);
         
         if (success) {
             console.log(`[Health Check] Start completed successfully on instance ${instanceId} (${requestId})`);
@@ -159,27 +168,20 @@ app.use(cors());
 // Static files
 const publicPath = path.join(__dirname, 'public');
 
-// Start server
-const server = app.listen(port, () => {
-    console.log(`[Server] Running on port ${port}`);
+// Initialize server
+const server = app.listen(port, async () => {
     state.serverStarted = true;
+    console.log(`[Server] Running on port ${port}`);
     
-    // Start initialization after server is listening
-    (async () => {
-        try {
-            console.log(`[Startup] Beginning startup sequence on instance ${instanceId}`);
-            const success = await initializeWithTimeout(STARTUP_TIMEOUT);
-            if (success) {
-                console.log(`[Startup] Initial startup completed successfully on instance ${instanceId}`);
-            } else {
-                console.error(`[Startup] Initial startup failed on instance ${instanceId}`);
-            }
-        } catch (error) {
-            console.error(`[Startup] Error during startup on instance ${instanceId}:`, error);
-        } finally {
-            state.startupComplete = true;
-        }
-    })();
+    try {
+        console.log(`[Startup] Beginning startup sequence on instance ${instanceId}`);
+        await initializeWithTimeout(INIT_TIMEOUT);
+        console.log(`[Startup] Initial startup completed successfully on instance ${instanceId}`);
+    } catch (error) {
+        console.error(`[Startup] Error during startup on instance ${instanceId}:`, error);
+    } finally {
+        state.startupComplete = true;
+    }
 });
 
 // Serve static files first
@@ -294,9 +296,9 @@ const initializeWithTimeout = async (timeout) => {
     try {
         // Add cooldown between retries
         const timeSinceLastInit = now - state.instanceStartTime;
-        if (timeSinceLastInit < 5000) {
-            console.log(`[Initialize] Cooling down (${timeSinceLastInit}ms < 5000ms)`);
-            await new Promise(resolve => setTimeout(resolve, 5000 - timeSinceLastInit));
+        if (timeSinceLastInit < INIT_COOLDOWN) {
+            console.log(`[Initialize] Cooling down (${timeSinceLastInit}ms < ${INIT_COOLDOWN}ms)`);
+            await new Promise(resolve => setTimeout(resolve, INIT_COOLDOWN - timeSinceLastInit));
         }
         
         const timeoutPromise = new Promise((_, reject) => {
@@ -317,7 +319,7 @@ const initialize = async () => {
     
     // If already initialized and instance is still fresh (less than 4 minutes old)
     const instanceAge = now - state.instanceStartTime;
-    if (state.isInitialized && instanceAge < 240000) {
+    if (state.isInitialized && instanceAge < INSTANCE_FRESH_TIME) {
         console.log(`[Initialize] Already initialized and instance is fresh (age: ${instanceAge}ms) on instance ${instanceId}`);
         return true;
     }
@@ -340,7 +342,7 @@ const initialize = async () => {
     
     state.initPromise = (async () => {
         try {
-            console.log(`[Initialize] Starting initialization on instance ${instanceId} (attempt ${state.initAttempts + 1} of 3)`);
+            console.log(`[Initialize] Starting initialization on instance ${instanceId} (attempt ${state.initAttempts + 1} of ${INIT_MAX_RETRIES})`);
             
             // Test database connection
             await sequelize.authenticate();
@@ -355,7 +357,7 @@ const initialize = async () => {
             
             // Increment retry count and check if we should retry
             state.initAttempts++;
-            if (state.initAttempts < 3) {
+            if (state.initAttempts < INIT_MAX_RETRIES) {
                 console.log(`[Initialize] Will retry initialization on instance ${instanceId}`);
                 return false;
             } else {
