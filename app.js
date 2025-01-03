@@ -27,7 +27,8 @@ const state = {
     lastInitTime: 0,
     instanceStartTime: Date.now(),
     startupComplete: false,
-    serverStarted: false
+    serverStarted: false,
+    pendingWarmupRequests: new Set()
 };
 
 // Constants
@@ -35,6 +36,7 @@ const INIT_TIMEOUT = 30000; // 30 seconds timeout
 const INIT_COOLDOWN = 5000; // 5 seconds cooldown between retries
 const MAX_INIT_RETRIES = 3;
 const STARTUP_TIMEOUT = 25000; // 25 seconds for startup
+const WARMUP_TIMEOUT = 15000; // 15 seconds timeout for warmup requests
 
 // Health check endpoints - register these first
 app.get('/_ah/warmup', async (req, res) => {
@@ -42,6 +44,21 @@ app.get('/_ah/warmup', async (req, res) => {
     console.log(`[Health Check] Warmup request received on instance ${instanceId} (${requestId})`);
     
     try {
+        // Create a promise for this request
+        const warmupPromise = new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                state.pendingWarmupRequests.delete(requestId);
+                resolve('timeout');
+            }, WARMUP_TIMEOUT);
+            
+            state.pendingWarmupRequests.add({
+                id: requestId,
+                resolve,
+                reject,
+                timeoutId
+            });
+        });
+        
         // If server hasn't started yet, return 200 immediately
         if (!state.serverStarted) {
             console.log(`[Health Check] Early warmup received before server start on instance ${instanceId} (${requestId})`);
@@ -85,6 +102,13 @@ app.get('/_ah/warmup', async (req, res) => {
     } catch (error) {
         console.error(`[Health Check] Warmup error on instance ${instanceId}: ${error.message} (${requestId})`);
         res.status(500).send('Error during warmup');
+    } finally {
+        // Clean up the request
+        const request = Array.from(state.pendingWarmupRequests).find(r => r.id === requestId);
+        if (request) {
+            clearTimeout(request.timeoutId);
+            state.pendingWarmupRequests.delete(request);
+        }
     }
 });
 
@@ -176,11 +200,29 @@ const server = app.listen(port, () => {
             const success = await initializeWithTimeout(STARTUP_TIMEOUT);
             if (success) {
                 console.log(`[Startup] Initial startup completed successfully on instance ${instanceId}`);
+                // Resolve any pending warmup requests
+                for (const request of state.pendingWarmupRequests) {
+                    clearTimeout(request.timeoutId);
+                    request.resolve('success');
+                }
+                state.pendingWarmupRequests.clear();
             } else {
                 console.error(`[Startup] Initial startup failed on instance ${instanceId}`);
+                // Reject any pending warmup requests
+                for (const request of state.pendingWarmupRequests) {
+                    clearTimeout(request.timeoutId);
+                    request.reject(new Error('Initialization failed'));
+                }
+                state.pendingWarmupRequests.clear();
             }
         } catch (error) {
             console.error(`[Startup] Error during startup on instance ${instanceId}:`, error);
+            // Reject any pending warmup requests
+            for (const request of state.pendingWarmupRequests) {
+                clearTimeout(request.timeoutId);
+                request.reject(error);
+            }
+            state.pendingWarmupRequests.clear();
         } finally {
             state.startupComplete = true;
         }
