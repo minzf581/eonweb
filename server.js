@@ -76,17 +76,17 @@ async function initializeApp() {
         // Serve static files
         app.use(express.static(path.join(__dirname, 'public')));
 
+        // Handle frontend routing
+        app.get('/', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        });
+
         // Routes
         app.use('/api/auth', authRoutes);
         app.use('/api/referral', referralRoutes);
         app.use('/api/tasks', tasksRoutes);
         app.use('/api/stats', statsRoutes);
         app.use('/api/admin', adminRoutes);
-
-        // Handle frontend routing
-        app.get('*', (req, res) => {
-            res.sendFile(path.join(__dirname, 'public', 'index.html'));
-        });
 
         // Global error handler - place this after all routes
         app.use((err, req, res, next) => {
@@ -117,7 +117,7 @@ async function cleanup() {
 }
 
 // Start server immediately, don't wait for initialization
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
