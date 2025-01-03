@@ -1,13 +1,16 @@
 const { Model, DataTypes } = require('sequelize');
 
-class PointHistory extends Model {
-    static associate(models) {
-        // Define associations here if needed
-        // This method will be called in models/index.js
+module.exports = (sequelize) => {
+    class PointHistory extends Model {
+        static associate(models) {
+            // Define associations here if needed
+            PointHistory.belongsTo(models.User, {
+                foreignKey: 'userId',
+                as: 'user'
+            });
+        }
     }
-}
 
-const initPointHistory = (sequelize) => {
     PointHistory.init({
         id: {
             type: DataTypes.INTEGER,
@@ -44,10 +47,9 @@ const initPointHistory = (sequelize) => {
         }
     }, {
         sequelize,
-        modelName: 'PointHistory'
+        modelName: 'PointHistory',
+        tableName: 'PointHistories'
     });
 
     return PointHistory;
 };
-
-module.exports = initPointHistory;

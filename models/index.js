@@ -59,7 +59,7 @@ const models = {
 
 // Call associate methods if they exist
 Object.values(models).forEach(model => {
-    if (model.associate && typeof model.associate === 'function') {
+    if (model.associate) {
         model.associate(models);
     }
 });
