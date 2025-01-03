@@ -12,7 +12,6 @@ const pointsRoutes = require('./routes/points');
 
 // Constants - define these at the very top
 const INIT_TIMEOUT = 30000;  // 30 seconds for initialization
-const STARTUP_TIMEOUT = 25000;  // 25 seconds for startup
 const INIT_MAX_RETRIES = 3;
 const INIT_COOLDOWN = 5000;  // 5 seconds between retries
 const INSTANCE_FRESH_TIME = 240000;  // 4 minutes
