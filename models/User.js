@@ -50,12 +50,12 @@ const initUser = (sequelize) => {
         password: {
             type: DataTypes.STRING,
             allowNull: false,
-            set(value) {
+            async set(value) {
                 try {
                     if (value) {
                         console.log('Hashing password...');
-                        const salt = bcrypt.genSaltSync(10);
-                        const hash = bcrypt.hashSync(value, salt);
+                        const salt = await bcrypt.genSalt(10);
+                        const hash = await bcrypt.hash(value, salt);
                         console.log('Password hashed successfully');
                         this.setDataValue('password', hash);
                     }
