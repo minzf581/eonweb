@@ -28,6 +28,22 @@ let isInitializing = false;
 let initPromise = null;
 let initRetryCount = 0;
 const MAX_INIT_RETRIES = 3;
+const INIT_TIMEOUT = 30000; // 30 seconds timeout
+
+// Initialize application with timeout
+const initializeWithTimeout = async (timeout) => {
+    try {
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Initialization timeout')), timeout);
+        });
+        
+        const initResult = await Promise.race([initialize(), timeoutPromise]);
+        return initResult;
+    } catch (error) {
+        console.error('[Initialize] Timeout or error:', error.message);
+        return false;
+    }
+};
 
 // Initialize application
 const initialize = async () => {
@@ -94,79 +110,89 @@ app.use(express.static(publicPath, {
 
 // Health check endpoints
 app.get('/_ah/warmup', async (req, res) => {
-    console.log('[Health Check] Warmup request received');
+    const requestId = Math.random().toString(36).substring(7);
+    console.log(`[Health Check] Warmup request received (${requestId})`);
     
     // If already initialized, return success immediately
     if (isInitialized) {
-        console.log('[Health Check] Warmup skipped - already initialized');
+        console.log(`[Health Check] Warmup skipped - already initialized (${requestId})`);
         return res.status(200).send('OK');
     }
     
-    // If initialization is in progress, wait for it
+    // If initialization is in progress, wait for it with timeout
     if (isInitializing) {
-        console.log('[Health Check] Warmup waiting for initialization');
+        console.log(`[Health Check] Warmup waiting for initialization (${requestId})`);
         try {
-            await initPromise;
-            if (isInitialized) {
-                console.log('[Health Check] Warmup completed successfully');
+            const success = await initializeWithTimeout(INIT_TIMEOUT);
+            if (success) {
+                console.log(`[Health Check] Warmup completed successfully (${requestId})`);
                 return res.status(200).send('OK');
+            } else {
+                console.error(`[Health Check] Warmup failed - initialization timeout (${requestId})`);
+                return res.status(500).send('Timeout');
             }
         } catch (error) {
-            console.error('[Health Check] Error during warmup:', error);
+            console.error(`[Health Check] Error during warmup: ${error.message} (${requestId})`);
+            return res.status(500).send('Error during warmup');
         }
     }
     
-    // Try to initialize
+    // Try to initialize with timeout
     try {
-        const success = await initialize();
+        const success = await initializeWithTimeout(INIT_TIMEOUT);
         if (success) {
-            console.log('[Health Check] Warmup completed successfully');
+            console.log(`[Health Check] Warmup completed successfully (${requestId})`);
             res.status(200).send('OK');
         } else {
-            console.error('[Health Check] Warmup failed - initialization unsuccessful');
+            console.error(`[Health Check] Warmup failed - initialization unsuccessful (${requestId})`);
             res.status(500).send('Failed');
         }
     } catch (error) {
-        console.error('[Health Check] Warmup error:', error);
+        console.error(`[Health Check] Warmup error: ${error.message} (${requestId})`);
         res.status(500).send('Error during warmup');
     }
 });
 
 app.get('/_ah/start', async (req, res) => {
-    console.log('[Health Check] Start request received');
+    const requestId = Math.random().toString(36).substring(7);
+    console.log(`[Health Check] Start request received (${requestId})`);
     
     // If already initialized, return success immediately
     if (isInitialized) {
-        console.log('[Health Check] Start skipped - already initialized');
+        console.log(`[Health Check] Start skipped - already initialized (${requestId})`);
         return res.status(200).send('OK');
     }
     
-    // If initialization is in progress, wait for it
+    // If initialization is in progress, wait for it with timeout
     if (isInitializing) {
-        console.log('[Health Check] Start waiting for initialization');
+        console.log(`[Health Check] Start waiting for initialization (${requestId})`);
         try {
-            await initPromise;
-            if (isInitialized) {
-                console.log('[Health Check] Start completed successfully');
+            const success = await initializeWithTimeout(INIT_TIMEOUT);
+            if (success) {
+                console.log(`[Health Check] Start completed successfully (${requestId})`);
                 return res.status(200).send('OK');
+            } else {
+                console.error(`[Health Check] Start failed - initialization timeout (${requestId})`);
+                return res.status(500).send('Timeout');
             }
         } catch (error) {
-            console.error('[Health Check] Error during start:', error);
+            console.error(`[Health Check] Error during start: ${error.message} (${requestId})`);
+            return res.status(500).send('Error during start');
         }
     }
     
-    // Try to initialize
+    // Try to initialize with timeout
     try {
-        const success = await initialize();
+        const success = await initializeWithTimeout(INIT_TIMEOUT);
         if (success) {
-            console.log('[Health Check] Start completed successfully');
+            console.log(`[Health Check] Start completed successfully (${requestId})`);
             res.status(200).send('OK');
         } else {
-            console.error('[Health Check] Start failed - initialization unsuccessful');
+            console.error(`[Health Check] Start failed - initialization unsuccessful (${requestId})`);
             res.status(500).send('Failed');
         }
     } catch (error) {
-        console.error('[Health Check] Start error:', error);
+        console.error(`[Health Check] Start error: ${error.message} (${requestId})`);
         res.status(500).send('Error during start');
     }
 });
