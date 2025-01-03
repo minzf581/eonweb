@@ -50,19 +50,15 @@ const initUser = (sequelize) => {
         password: {
             type: DataTypes.STRING,
             allowNull: false,
-            async set(value) {
-                try {
-                    if (value) {
-                        console.log('Hashing password...');
-                        const salt = await bcrypt.genSalt(10);
-                        const hash = await bcrypt.hash(value, salt);
-                        console.log('Password hashed successfully');
-                        this.setDataValue('password', hash);
-                    }
-                } catch (error) {
-                    console.error('Password hashing error:', error);
-                    throw error;
+            set(value) {
+                if (!value) {
+                    throw new Error('Password cannot be null');
                 }
+                console.log('Hashing password...');
+                const salt = bcrypt.genSaltSync(10);
+                const hash = bcrypt.hashSync(value, salt);
+                console.log('Password hashed successfully');
+                this.setDataValue('password', hash);
             }
         },
         referralCode: {
