@@ -66,7 +66,7 @@ app.use(express.static(publicPath, {
 // Log static file access
 app.use((req, res, next) => {
     if (!req.path.startsWith('/api')) {
-        console.log(`[Static] Accessing: ${req.path}`);
+        console.log(`[Static] Serving: ${req.path}`);
     }
     next();
 });
@@ -269,22 +269,6 @@ app.get('/', async (req, res) => {
 app.use((req, res) => {
     console.log(`[Route] Not found: ${req.path}`);
     res.status(404).send('Not Found');
-});
-
-// Initialize server
-const server = app.listen(port, async () => {
-    state.serverStarted = true;
-    console.log(`[Server] Running on port ${port}`);
-    
-    try {
-        console.log(`[Startup] Beginning startup sequence on instance ${instanceId}`);
-        await initializeWithTimeout(INIT_TIMEOUT);
-        console.log(`[Startup] Initial startup completed successfully on instance ${instanceId}`);
-    } catch (error) {
-        console.error(`[Startup] Error during startup on instance ${instanceId}:`, error);
-    } finally {
-        state.startupComplete = true;
-    }
 });
 
 // Initialize application with timeout

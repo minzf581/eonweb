@@ -21,11 +21,17 @@ const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 const { authenticateToken, isAdmin } = require('./middleware/auth');
 const crypto = require('crypto');
+const appRoutes = require('./app');
 
 const app = express();
 
 // Force the server to use the PORT from environment variable
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.GAE_PORT || process.env.PORT || 8080;
+console.log('Environment variables:', {
+    NODE_ENV: process.env.NODE_ENV,
+    GAE_PORT: process.env.GAE_PORT,
+    PORT: process.env.PORT
+});
 console.log(`Configured to run on port ${PORT}`);
 
 // Health check endpoints BEFORE any other middleware
@@ -52,6 +58,8 @@ app.get('/_ah/stop', (req, res) => {
         console.error('Failed to cleanup:', err);
     });
 });
+
+app.use('/', appRoutes);
 
 // Separate initialization function
 async function initializeApp() {
@@ -85,11 +93,12 @@ async function initializeApp() {
 
         // Serve static files
         const publicPath = process.env.NODE_ENV === 'production' 
-            ? '/workspace/public'  // App Engine environment
+            ? path.join(process.cwd(), 'public')  // App Engine environment
             : path.join(__dirname, 'public');  // Local environment
         
+        console.log('Current working directory:', process.cwd());
         console.log('Serving static files from:', publicPath);
-        app.use(express.static(publicPath));
+        app.use('/static', express.static(publicPath));
 
         // Handle frontend routing for SPA
         app.get('/*', (req, res) => {
@@ -180,3 +189,5 @@ signals.forEach(signal => {
         process.exit(0);
     });
 });
+
+initializeApp();
