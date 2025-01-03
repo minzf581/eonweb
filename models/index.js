@@ -1,3 +1,11 @@
+const { Sequelize } = require('sequelize');
+const { runtimeConfig } = require('../config/database');
+
+// 创建 Sequelize 实例
+const env = process.env.NODE_ENV || 'development';
+const config = runtimeConfig[env];
+const sequelize = new Sequelize(config);
+
 const User = require('./User');
 const Task = require('./Task');
 const UserTask = require('./UserTask');
@@ -5,55 +13,68 @@ const PointHistory = require('./PointHistory');
 const Settings = require('./Settings');
 const Referral = require('./Referral');
 
+// 初始化模型
+const models = {
+    User: User(sequelize),
+    Task: Task(sequelize),
+    UserTask: UserTask(sequelize),
+    PointHistory: PointHistory(sequelize),
+    Settings: Settings(sequelize),
+    Referral: Referral(sequelize)
+};
+
 // Define relationships
-User.hasMany(UserTask, {
+models.User.hasMany(models.UserTask, {
     foreignKey: 'userId',
     as: 'tasks'
 });
-UserTask.belongsTo(User, {
+models.UserTask.belongsTo(models.User, {
     foreignKey: 'userId'
 });
 
-Task.hasMany(UserTask, {
+models.Task.hasMany(models.UserTask, {
     foreignKey: 'taskId',
     as: 'userTasks'
 });
-UserTask.belongsTo(Task, {
+models.UserTask.belongsTo(models.Task, {
     foreignKey: 'taskId'
 });
 
-User.hasMany(PointHistory, {
+models.User.hasMany(models.PointHistory, {
     foreignKey: 'userId',
     as: 'pointHistory'
 });
-PointHistory.belongsTo(User, {
+models.PointHistory.belongsTo(models.User, {
     foreignKey: 'userId'
 });
 
 // Referral relationships
-User.hasMany(Referral, {
+models.User.hasMany(models.Referral, {
     foreignKey: 'referrerId',
     as: 'referralsGiven'  
 });
-Referral.belongsTo(User, {
+models.Referral.belongsTo(models.User, {
     foreignKey: 'referrerId',
     as: 'referrer'
 });
 
-User.hasOne(Referral, {
+models.User.hasOne(models.Referral, {
     foreignKey: 'referredId',
     as: 'referralReceived'  
 });
-Referral.belongsTo(User, {
+models.Referral.belongsTo(models.User, {
     foreignKey: 'referredId',
     as: 'referred'
 });
 
+// Add the sequelize instance to the models
+Object.values(models).forEach(model => {
+    if (model.associate) {
+        model.associate(models);
+    }
+});
+
 module.exports = {
-    User,
-    Task,
-    UserTask,
-    PointHistory,
-    Settings,
-    Referral
+    sequelize,
+    ...models
 };

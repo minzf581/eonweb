@@ -53,6 +53,12 @@ app.get('/_ah/ready', (req, res) => {
     res.status(200).json({ status: 'ready' });
 });
 
+// Warmup request handler
+app.get('/_ah/warmup', (req, res) => {
+    console.log('[Warmup] Received warmup request');
+    res.status(200).send('OK');
+});
+
 // Static file service with readiness check
 app.use((req, res, next) => {
     if (!isReady && !req.path.startsWith('/_ah/')) {
@@ -140,6 +146,9 @@ async function startServer() {
 }
 
 // Start the application
-startServer();
+startServer().catch(err => {
+    console.error('[Fatal] Failed to start application:', err);
+    process.exit(1);
+});
 
 module.exports = app;

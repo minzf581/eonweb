@@ -1,5 +1,4 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
@@ -26,92 +25,81 @@ class User extends Model {
         delete values.password;
         return values;
     }
+
+    static associate(models) {
+        // Define associations here if needed
+        // This method will be called in models/index.js
+    }
 }
 
-User.init({
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: {
-            isEmail: true
-        }
-    },
-    password: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        set(value) {
-            try {
-                if (value) {
-                    console.log('Hashing password...');
-                    const salt = bcrypt.genSaltSync(10);
-                    const hashedPassword = bcrypt.hashSync(value, salt);
-                    console.log('Password hashed successfully');
-                    this.setDataValue('password', hashedPassword);
-                }
-            } catch (error) {
-                console.error('Error hashing password:', error);
-                throw error;
+const initUser = (sequelize) => {
+    User.init({
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+        },
+        email: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true,
+            validate: {
+                isEmail: true
             }
-        }
-    },
-    referralCode: {
-        type: DataTypes.STRING,
-        unique: true,
-        allowNull: true
-    },
-    referredBy: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        references: {
-            model: 'Users',
-            key: 'id'
-        }
-    },
-    points: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    isAdmin: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    isAdmin: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    }
-}, {
-    sequelize,
-    modelName: 'User',
-    hooks: {
-        async beforeCreate(user) {
-            // Generate a unique referral code
-            const generateReferralCode = () => {
-                // Generate a 8-character random string
-                return crypto.randomBytes(4).toString('hex').toUpperCase();
-            };
-
-            // Keep trying until we get a unique code
-            let referralCode;
-            let isUnique = false;
-            while (!isUnique) {
-                referralCode = generateReferralCode();
-                // Check if this code already exists
-                const existingUser = await User.findOne({ where: { referralCode } });
-                if (!existingUser) {
-                    isUnique = true;
+        },
+        password: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            set(value) {
+                try {
+                    if (value) {
+                        console.log('Hashing password...');
+                        const salt = bcrypt.genSaltSync(10);
+                        const hash = bcrypt.hashSync(value, salt);
+                        console.log('Password hashed successfully');
+                        this.setDataValue('password', hash);
+                    }
+                } catch (error) {
+                    console.error('Password hashing error:', error);
+                    throw error;
                 }
             }
-
-            // Set the unique referral code
-            user.referralCode = referralCode;
+        },
+        referralCode: {
+            type: DataTypes.STRING,
+            unique: true,
+            allowNull: true
+        },
+        points: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        },
+        isAdmin: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
         }
-    }
-});
+    }, {
+        sequelize,
+        modelName: 'User',
+        hooks: {
+            beforeCreate: async (user) => {
+                try {
+                    console.log('Generating referral code...');
+                    if (!user.referralCode) {
+                        const randomBytes = crypto.randomBytes(4);
+                        const referralCode = randomBytes.toString('hex').toUpperCase();
+                        console.log('Generated referral code:', referralCode);
+                        user.referralCode = referralCode;
+                    }
+                } catch (error) {
+                    console.error('Error generating referral code:', error);
+                    throw error;
+                }
+            }
+        }
+    });
 
-module.exports = User;
+    return User;
+};
+
+module.exports = initUser;
