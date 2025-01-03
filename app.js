@@ -19,10 +19,35 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
+// Application state
+let isInitialized = false;
+
+// Initialize application
+const initialize = async () => {
+    if (isInitialized) {
+        return;
+    }
+
+    try {
+        // Connect to database
+        await sequelize.authenticate();
+        console.log('[Database] Connected successfully');
+        isInitialized = true;
+    } catch (error) {
+        console.error('[Initialize] Error:', error);
+        throw error;
+    }
+};
+
 // Health check endpoints
-app.get('/_ah/start', (req, res) => {
+app.get('/_ah/start', async (req, res) => {
     console.log('[Health Check] Start request received');
-    res.status(200).send('OK');
+    try {
+        await initialize();
+        res.status(200).send('OK');
+    } catch (error) {
+        res.status(500).send('Error during initialization');
+    }
 });
 
 app.get('/_ah/stop', (req, res) => {
@@ -30,17 +55,40 @@ app.get('/_ah/stop', (req, res) => {
     res.status(200).send('OK');
 });
 
-app.get('/_ah/ready', (req, res) => {
+app.get('/_ah/ready', async (req, res) => {
     console.log('[Health Check] Ready check received');
-    res.status(200).send('OK');
+    try {
+        await initialize();
+        res.status(200).send('OK');
+    } catch (error) {
+        res.status(503).send('Not ready');
+    }
 });
 
-app.get('/_ah/warmup', (req, res) => {
+app.get('/_ah/warmup', async (req, res) => {
     console.log('[Health Check] Warmup request received');
-    res.status(200).send('OK');
+    try {
+        await initialize();
+        res.status(200).send('OK');
+    } catch (error) {
+        res.status(500).send('Warmup failed');
+    }
 });
 
-// API Routes
+// API Routes - only available after initialization
+app.use(async (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        try {
+            await initialize();
+            next();
+        } catch (error) {
+            res.status(503).json({ error: 'Service unavailable' });
+        }
+    } else {
+        next();
+    }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
@@ -72,9 +120,8 @@ const port = process.env.PORT || 8081;
 
 const startServer = async () => {
     try {
-        // Connect to database
-        await sequelize.authenticate();
-        console.log('[Database] Connected successfully');
+        // Ensure database is connected
+        await initialize();
         
         // Start HTTP server
         app.listen(port, () => {
