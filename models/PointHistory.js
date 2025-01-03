@@ -1,5 +1,4 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
 
 class PointHistory extends Model {
     static associate(models) {
@@ -51,4 +50,4 @@ const initPointHistory = (sequelize) => {
     return PointHistory;
 };
 
-module.exports = initPointHistory(sequelize);
+module.exports = initPointHistory;

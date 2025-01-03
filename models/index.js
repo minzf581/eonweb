@@ -1,14 +1,14 @@
 const { Sequelize } = require('sequelize');
 const path = require('path');
 
-// 加载环境变量
+// Load environment variables
 if (process.env.NODE_ENV === 'production') {
     require('dotenv').config({ path: path.join(__dirname, '../.env.production') });
 } else {
     require('dotenv').config({ path: path.join(__dirname, '../.env') });
 }
 
-// 创建 Sequelize 实例
+// Create Sequelize instance
 const env = process.env.NODE_ENV || 'development';
 const config = {
     dialect: 'postgres',
@@ -30,23 +30,39 @@ const config = {
 
 const sequelize = new Sequelize(config);
 
-// 导入模型定义
-const User = require('./User')(sequelize);
-const Task = require('./Task')(sequelize);
-const UserTask = require('./UserTask')(sequelize);
-const PointHistory = require('./PointHistory')(sequelize);
-const Settings = require('./Settings')(sequelize);
-const Referral = require('./Referral')(sequelize);
+// Import model initializers
+const initUser = require('./User');
+const initTask = require('./Task');
+const initUserTask = require('./UserTask');
+const initPointHistory = require('./PointHistory');
+const initSettings = require('./Settings');
+const initReferral = require('./Referral');
 
-// 初始化模型
+// Initialize models
+const User = initUser(sequelize);
+const Task = initTask(sequelize);
+const UserTask = initUserTask(sequelize);
+const PointHistory = initPointHistory(sequelize);
+const Settings = initSettings(sequelize);
+const Referral = initReferral(sequelize);
+
+// Define models object
 const models = {
     User,
     Task,
     UserTask,
     PointHistory,
     Settings,
-    Referral
+    Referral,
+    sequelize
 };
+
+// Call associate methods if they exist
+Object.values(models).forEach(model => {
+    if (model.associate && typeof model.associate === 'function') {
+        model.associate(models);
+    }
+});
 
 // Define relationships
 models.User.hasMany(models.UserTask, {
@@ -92,14 +108,5 @@ models.Referral.belongsTo(models.User, {
     as: 'referred'
 });
 
-// Add the sequelize instance to the models
-Object.values(models).forEach(model => {
-    if (model.associate) {
-        model.associate(models);
-    }
-});
-
-module.exports = {
-    sequelize,
-    ...models
-};
+// Export models and sequelize instance
+module.exports = models;
