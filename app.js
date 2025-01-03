@@ -19,9 +19,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Serve static files first
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Health check endpoints
 app.get('/_ah/start', (req, res) => {
     console.log('[Health Check] Start request received');
@@ -51,13 +48,17 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/points', pointsRoutes);
 
-// Root route - serve index.html for all other routes
-app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-        res.status(404).json({ error: 'API endpoint not found' });
-    } else {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    }
+// Static files
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath, {
+    index: false,
+    extensions: ['html']
+}));
+
+// Handle all other routes
+app.get('/*', (req, res) => {
+    console.log(`[Route] Serving index.html for path: ${req.path}`);
+    res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // Error handling
