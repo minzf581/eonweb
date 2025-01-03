@@ -19,13 +19,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Static files
-const publicPath = path.join(__dirname, 'public');
-app.use(express.static(publicPath, {
-    index: false,
-    extensions: ['html']
-}));
-
 // Application state
 let isInitialized = false;
 let isInitializing = false;
@@ -98,7 +91,12 @@ app.get('/_ah/stop', (req, res) => {
     res.status(200).send('OK');
 });
 
-app.get('/_ah/ready', async (req, res) => {
+app.get('/_ah/live', (req, res) => {
+    console.log('[Health Check] Liveness check received');
+    res.status(200).send('OK');
+});
+
+app.get('/_ah/ready', (req, res) => {
     console.log('[Health Check] Ready check received');
     if (isInitialized) {
         res.status(200).send('OK');
@@ -115,10 +113,36 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/points', pointsRoutes);
 
+// Static files
+const publicPath = path.join(__dirname, 'public');
+
+// Serve static files with specific options
+app.use(express.static(publicPath, {
+    index: false, // Disable automatic serving of index.html
+    extensions: ['html'], // Allow serving .html files without extension
+    fallthrough: true // Allow falling through to next middleware if file not found
+}));
+
+// Handle root path specifically
+app.get('/', (req, res) => {
+    console.log('[Route] Serving index.html for root path');
+    res.sendFile(path.join(publicPath, 'index.html'), err => {
+        if (err) {
+            console.error('[Route] Error serving index.html:', err);
+            res.status(500).send('Error serving index.html');
+        }
+    });
+});
+
 // Handle all other routes
 app.get('/*', (req, res) => {
     console.log(`[Route] Serving index.html for path: ${req.path}`);
-    res.sendFile(path.join(publicPath, 'index.html'));
+    res.sendFile(path.join(publicPath, 'index.html'), err => {
+        if (err) {
+            console.error('[Route] Error serving index.html:', err);
+            res.status(500).send('Error serving index.html');
+        }
+    });
 });
 
 // Error handling
