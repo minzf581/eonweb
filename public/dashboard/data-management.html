@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Core Scripts -->
     <script src="../js/authService.js"></script>
+    <script src="../js/dataManagement.js"></script>
     
     <style>
         :root {
@@ -412,6 +413,122 @@
         .toast.show {
             opacity: 1;
         }
+
+        /* 新增样式 */
+        .metadata-form {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .metadata-form .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .metadata-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .metadata-form input,
+        .metadata-form select,
+        .metadata-form textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+        }
+
+        .upload-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 1rem;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+        }
+
+        .data-info {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .data-actions button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 0.5rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .data-actions button:hover {
+            opacity: 1;
+        }
+
+        .status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .status.active {
+            background: var(--success-color);
+        }
+
+        .status.inactive {
+            background: var(--danger-color);
+        }
+
+        .audit-log {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+        }
+
+        .audit-log-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .audit-log-item:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body>
@@ -479,6 +596,40 @@
                         <button class="upload-btn">Choose Files</button>
                         <input type="file" id="fileInput" multiple hidden>
                     </div>
+                    <div class="metadata-form">
+                        <h3>Dataset Metadata</h3>
+                        <form id="metadataForm">
+                            <div class="form-group">
+                                <label>Dataset Name</label>
+                                <input type="text" name="datasetName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea name="description" rows="3" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select name="category" required>
+                                    <option value="financial">Financial Data</option>
+                                    <option value="healthcare">Healthcare Data</option>
+                                    <option value="scientific">Scientific Data</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Price (Credits)</label>
+                                <input type="number" name="price" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Privacy Level</label>
+                                <select name="privacyLevel" required>
+                                    <option value="public">Public</option>
+                                    <option value="private">Private</option>
+                                    <option value="restricted">Restricted</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
                     <div class="upload-list">
                         <h3>Upload Queue</h3>
                         <div id="uploadQueue"></div>
@@ -497,14 +648,19 @@
                     <div class="status-card">
                         <h3>Encryption Status</h3>
                         <div class="status-list" id="encryptionStatus">
-                            <!-- Encryption status items will be added here -->
+                            <div class="status-item">
+                                <span class="status active">Active</span>
+                                <span>AES-256 Encryption</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status active">Active</span>
+                                <span>Key Management</span>
+                            </div>
                         </div>
                     </div>
                     <div class="encryption-logs">
                         <h3>Encryption Logs</h3>
-                        <div class="log-list" id="encryptionLogs">
-                            <!-- Encryption logs will be added here -->
-                        </div>
+                        <div class="log-list" id="encryptionLogs"></div>
                     </div>
                 </div>
             </section>
@@ -539,9 +695,7 @@
                     </div>
                     <div class="storage-details">
                         <h3>Data Files</h3>
-                        <div class="data-list" id="dataFiles">
-                            <!-- Data files will be added here -->
-                        </div>
+                        <div class="data-list" id="dataFiles"></div>
                     </div>
                 </div>
             </section>
@@ -553,11 +707,9 @@
                     <div class="usage-chart">
                         <canvas id="usageChart"></canvas>
                     </div>
-                    <div class="access-logs">
-                        <h3>Access Logs</h3>
-                        <div class="log-list" id="accessLogs">
-                            <!-- Access logs will be added here -->
-                        </div>
+                    <div class="audit-log">
+                        <h3>Audit Log</h3>
+                        <div id="auditLog"></div>
                     </div>
                 </div>
             </section>
