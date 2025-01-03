@@ -13,18 +13,24 @@ const pointsRoutes = require('./routes/points');
 // Initialize Express app
 const app = express();
 
+// Application state
+let isReady = false;
+let dbConnected = false;
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Static file service
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Health check endpoints with detailed logging
 app.get('/_ah/start', (req, res) => {
     console.log('[Health Check] Received start request');
+    if (!isReady) {
+        console.log('[Health Check] Application not ready yet');
+        res.status(503).json({ status: 'initializing' });
+        return;
+    }
     res.status(200).send('OK');
 });
 
@@ -33,8 +39,38 @@ app.get('/_ah/stop', (req, res) => {
     res.status(200).send('OK');
 });
 
+// Readiness probe
+app.get('/_ah/ready', (req, res) => {
+    console.log(`[Health Check] Readiness check - DB Connected: ${dbConnected}, App Ready: ${isReady}`);
+    if (!isReady || !dbConnected) {
+        res.status(503).json({
+            ready: false,
+            dbConnected,
+            isReady
+        });
+        return;
+    }
+    res.status(200).json({ status: 'ready' });
+});
+
+// Static file service with readiness check
+app.use((req, res, next) => {
+    if (!isReady && !req.path.startsWith('/_ah/')) {
+        console.log(`[Request] Rejected ${req.path} - Application not ready`);
+        res.status(503).json({ status: 'initializing' });
+        return;
+    }
+    next();
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Root route with error handling
 app.get('/', (req, res, next) => {
+    if (!isReady) {
+        res.status(503).json({ status: 'initializing' });
+        return;
+    }
     console.log('[Route] Serving index.html');
     const indexPath = path.join(__dirname, 'public', 'index.html');
     res.sendFile(indexPath, err => {
@@ -73,16 +109,21 @@ async function startServer() {
         console.log('[Database] Connecting to database...');
         await sequelize.authenticate();
         console.log('[Database] Connection has been established successfully.');
+        dbConnected = true;
 
         // Then start the server
         const port = process.env.PORT || 8081;
         const server = app.listen(port, () => {
             console.log(`[Server] Server is running on port ${port}`);
+            // Mark application as ready
+            isReady = true;
+            console.log('[Server] Application is ready to handle requests');
         });
 
         // Handle graceful shutdown
         process.on('SIGTERM', () => {
             console.log('[Server] Received SIGTERM. Starting graceful shutdown...');
+            isReady = false; // Mark as not ready to reject new requests
             server.close(async () => {
                 console.log('[Server] Closing database connection...');
                 await sequelize.close();
