@@ -26,11 +26,11 @@ const appRoutes = require('./app');
 const app = express();
 
 // Force the server to use the PORT from environment variable
-const PORT = process.env.GAE_PORT || process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080;
 console.log('Environment variables:', {
     NODE_ENV: process.env.NODE_ENV,
-    GAE_PORT: process.env.GAE_PORT,
-    PORT: process.env.PORT
+    PORT: process.env.PORT,
+    JWT_SECRET: process.env.JWT_SECRET ? '[HIDDEN]' : 'NOT_SET'
 });
 console.log(`Configured to run on port ${PORT}`);
 
