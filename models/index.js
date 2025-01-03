@@ -1,26 +1,51 @@
 const { Sequelize } = require('sequelize');
-const { runtimeConfig } = require('../config/database');
+const path = require('path');
+
+// 加载环境变量
+if (process.env.NODE_ENV === 'production') {
+    require('dotenv').config({ path: path.join(__dirname, '../.env.production') });
+} else {
+    require('dotenv').config({ path: path.join(__dirname, '../.env') });
+}
 
 // 创建 Sequelize 实例
 const env = process.env.NODE_ENV || 'development';
-const config = runtimeConfig[env];
+const config = {
+    dialect: 'postgres',
+    database: process.env.DB_NAME || 'eon_protocol',
+    username: process.env.DB_USER || 'eonuser',
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
+    dialectOptions: env === 'production' ? {
+        socketPath: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
+    } : undefined,
+    pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+    },
+    logging: console.log
+};
+
 const sequelize = new Sequelize(config);
 
-const User = require('./User');
-const Task = require('./Task');
-const UserTask = require('./UserTask');
-const PointHistory = require('./PointHistory');
-const Settings = require('./Settings');
-const Referral = require('./Referral');
+// 导入模型定义
+const User = require('./User')(sequelize);
+const Task = require('./Task')(sequelize);
+const UserTask = require('./UserTask')(sequelize);
+const PointHistory = require('./PointHistory')(sequelize);
+const Settings = require('./Settings')(sequelize);
+const Referral = require('./Referral')(sequelize);
 
 // 初始化模型
 const models = {
-    User: User(sequelize),
-    Task: Task(sequelize),
-    UserTask: UserTask(sequelize),
-    PointHistory: PointHistory(sequelize),
-    Settings: Settings(sequelize),
-    Referral: Referral(sequelize)
+    User,
+    Task,
+    UserTask,
+    PointHistory,
+    Settings,
+    Referral
 };
 
 // Define relationships
