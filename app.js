@@ -19,76 +19,51 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
+// Static files
+const publicPath = path.join(__dirname, 'public');
+
+// Serve static files first
+app.use(express.static(publicPath, {
+    index: false,
+    extensions: ['html']
+}));
+
 // Application state
 let isInitialized = false;
-let isInitializing = false;
-let initError = null;
 
 // Initialize application
 const initialize = async () => {
-    // If already initialized, return immediately
     if (isInitialized) {
-        return;
-    }
-
-    // If initialization is in progress, wait for it
-    if (isInitializing) {
-        console.log('[Initialize] Waiting for initialization to complete...');
-        while (isInitializing) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        if (initError) {
-            throw initError;
-        }
-        return;
+        return true;
     }
 
     try {
-        isInitializing = true;
         console.log('[Initialize] Starting initialization...');
-
-        // Connect to database
+        
+        // Test database connection
         await sequelize.authenticate();
         console.log('[Database] Connected successfully');
         
         isInitialized = true;
-        isInitializing = false;
-        initError = null;
         console.log('[Initialize] Initialization completed successfully');
+        return true;
     } catch (error) {
         console.error('[Initialize] Error during initialization:', error);
-        isInitializing = false;
-        initError = error;
-        throw error;
+        return false;
     }
 };
 
 // Health check endpoints
 app.get('/_ah/warmup', async (req, res) => {
     console.log('[Health Check] Warmup request received');
-    try {
-        await initialize();
-        res.status(200).send('OK');
-    } catch (error) {
-        console.error('[Health Check] Warmup failed:', error);
-        res.status(500).send('Warmup failed');
-    }
+    const success = await initialize();
+    res.status(success ? 200 : 500).send(success ? 'OK' : 'Failed');
 });
 
 app.get('/_ah/start', async (req, res) => {
     console.log('[Health Check] Start request received');
-    try {
-        await initialize();
-        res.status(200).send('OK');
-    } catch (error) {
-        console.error('[Health Check] Start failed:', error);
-        res.status(500).send('Start failed');
-    }
-});
-
-app.get('/_ah/stop', (req, res) => {
-    console.log('[Health Check] Stop request received');
-    res.status(200).send('OK');
+    const success = await initialize();
+    res.status(success ? 200 : 500).send(success ? 'OK' : 'Failed');
 });
 
 app.get('/_ah/live', (req, res) => {
@@ -98,30 +73,26 @@ app.get('/_ah/live', (req, res) => {
 
 app.get('/_ah/ready', (req, res) => {
     console.log('[Health Check] Ready check received');
-    if (isInitialized) {
-        res.status(200).send('OK');
-    } else {
-        res.status(503).send('Not ready');
-    }
+    res.status(isInitialized ? 200 : 503).send(isInitialized ? 'OK' : 'Not ready');
 });
 
 // API Routes
+app.use('/api/*', async (req, res, next) => {
+    if (!isInitialized) {
+        const success = await initialize();
+        if (!success) {
+            return res.status(503).json({ error: 'Service unavailable' });
+        }
+    }
+    next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/points', pointsRoutes);
-
-// Static files
-const publicPath = path.join(__dirname, 'public');
-
-// Serve static files with specific options
-app.use(express.static(publicPath, {
-    index: false, // Disable automatic serving of index.html
-    extensions: ['html'], // Allow serving .html files without extension
-    fallthrough: true // Allow falling through to next middleware if file not found
-}));
 
 // Handle root path specifically
 app.get('/', (req, res) => {
@@ -136,6 +107,10 @@ app.get('/', (req, res) => {
 
 // Handle all other routes
 app.get('/*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    
     console.log(`[Route] Serving index.html for path: ${req.path}`);
     res.sendFile(path.join(publicPath, 'index.html'), err => {
         if (err) {
@@ -156,12 +131,12 @@ const port = process.env.PORT || 8081;
 
 const startServer = async () => {
     try {
-        // Start HTTP server first
-        const server = app.listen(port, () => {
+        // Start HTTP server
+        app.listen(port, () => {
             console.log(`[Server] Running on port ${port}`);
         });
 
-        // Then initialize in background
+        // Initialize in background
         initialize().catch(error => {
             console.error('[Startup] Background initialization failed:', error);
         });
