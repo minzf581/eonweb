@@ -4,7 +4,7 @@ instance_class: F1
 
 env_variables:
   NODE_ENV: "production"
-  PORT: "8081"
+  PORT: "8080"
   DB_HOST: "/cloudsql/eonhome-445809:asia-southeast2:eon-db"
   DB_USER: "eonuser"
   DB_PASSWORD: "eonprotocol"
@@ -21,7 +21,7 @@ handlers:
     script: auto
     secure: always
 
-entrypoint: node app.js
+entrypoint: node server.js
 
 automatic_scaling:
   target_cpu_utilization: 0.65

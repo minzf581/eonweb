@@ -25,8 +25,14 @@ const developmentConfig = {
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD || 'eonprotocol',
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || '34.101.201.243', 
     port: process.env.DB_PORT || 5432,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false 
+        }
+    },
     logging: console.log
 };
 
@@ -35,7 +41,8 @@ const activeConfig = isLocal ? developmentConfig : productionConfig;
 console.log('Using database configuration:', {
     host: activeConfig.host,
     database: activeConfig.database,
-    username: activeConfig.username
+    username: activeConfig.username,
+    ssl: activeConfig.dialectOptions?.ssl ? 'enabled' : 'disabled'
 });
 
 // Sequelize CLI configuration
