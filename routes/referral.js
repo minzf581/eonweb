@@ -129,11 +129,27 @@ async function processReferral(userId, referralCode) {
         }
 
         // 创建推荐记录
+        const REFERRAL_POINTS = 100; // 推荐奖励积分
         const referral = await Referral.create({
             referrerId: referrer.id,
             referredId: userId,
-            status: 'pending',
-            pointsEarned: 0 // 初始积分为0，等待完成任务后再奖励
+            status: 'completed',
+            pointsEarned: REFERRAL_POINTS
+        });
+
+        // 更新推荐人的积分
+        await User.increment('points', {
+            by: REFERRAL_POINTS,
+            where: { id: referrer.id }
+        });
+
+        // 记录积分历史
+        await PointHistory.create({
+            userId: referrer.id,
+            points: REFERRAL_POINTS,
+            type: 'referral',
+            description: `Referral bonus for user ${userId}`,
+            status: 'completed'
         });
 
         return referral;
