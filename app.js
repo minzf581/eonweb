@@ -43,39 +43,27 @@ app.get('/_ah/warmup', async (req, res) => {
     const requestId = Math.random().toString(36).substring(7);
     console.log(`[Health Check] Warmup request received on instance ${instanceId} (${requestId})`);
     
+    // Send an immediate 200 response to prevent timeout
+    res.status(200).send('Starting');
+    
     try {
-        // Create a promise for this request
-        const warmupPromise = new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                state.pendingWarmupRequests.delete(requestId);
-                resolve('timeout');
-            }, WARMUP_TIMEOUT);
-            
-            state.pendingWarmupRequests.add({
-                id: requestId,
-                resolve,
-                reject,
-                timeoutId
-            });
-        });
-        
-        // If server hasn't started yet, return 200 immediately
+        // If server hasn't started yet, just log and return
         if (!state.serverStarted) {
             console.log(`[Health Check] Early warmup received before server start on instance ${instanceId} (${requestId})`);
-            return res.status(200).send('Starting');
+            return;
         }
         
-        // If startup is not complete, return 200 to allow instance to continue starting
+        // If startup is not complete, just log and return
         if (!state.startupComplete) {
             console.log(`[Health Check] Warmup received during startup on instance ${instanceId} (${requestId})`);
-            return res.status(200).send('Starting');
+            return;
         }
         
-        // If already initialized and instance is fresh, return success
+        // If already initialized and instance is fresh, just log and return
         const instanceAge = Date.now() - state.instanceStartTime;
         if (state.isInitialized && instanceAge < 240000) {
             console.log(`[Health Check] Warmup skipped - already initialized and fresh on instance ${instanceId} (${requestId})`);
-            return res.status(200).send('OK');
+            return;
         }
         
         // If already initializing, wait for it
@@ -84,7 +72,7 @@ app.get('/_ah/warmup', async (req, res) => {
             await state.initPromise;
             if (state.isInitialized) {
                 console.log(`[Health Check] Warmup completed - initialization finished on instance ${instanceId} (${requestId})`);
-                return res.status(200).send('OK');
+                return;
             }
         }
         
@@ -94,21 +82,11 @@ app.get('/_ah/warmup', async (req, res) => {
         
         if (success) {
             console.log(`[Health Check] Warmup completed successfully on instance ${instanceId} (${requestId})`);
-            res.status(200).send('OK');
         } else {
             console.error(`[Health Check] Warmup failed - initialization failed on instance ${instanceId} (${requestId})`);
-            res.status(500).send('Initialization failed');
         }
     } catch (error) {
         console.error(`[Health Check] Warmup error on instance ${instanceId}: ${error.message} (${requestId})`);
-        res.status(500).send('Error during warmup');
-    } finally {
-        // Clean up the request
-        const request = Array.from(state.pendingWarmupRequests).find(r => r.id === requestId);
-        if (request) {
-            clearTimeout(request.timeoutId);
-            state.pendingWarmupRequests.delete(request);
-        }
     }
 });
 
@@ -116,24 +94,27 @@ app.get('/_ah/start', async (req, res) => {
     const requestId = Math.random().toString(36).substring(7);
     console.log(`[Health Check] Start request received on instance ${instanceId} (${requestId})`);
     
+    // Send an immediate 200 response to prevent timeout
+    res.status(200).send('Starting');
+    
     try {
-        // If server hasn't started yet, return 200 immediately
+        // If server hasn't started yet, just log and return
         if (!state.serverStarted) {
             console.log(`[Health Check] Early start received before server start on instance ${instanceId} (${requestId})`);
-            return res.status(200).send('Starting');
+            return;
         }
         
-        // If startup is not complete, return 200 to allow instance to continue starting
+        // If startup is not complete, just log and return
         if (!state.startupComplete) {
             console.log(`[Health Check] Start received during startup on instance ${instanceId} (${requestId})`);
-            return res.status(200).send('Starting');
+            return;
         }
         
-        // If already initialized and instance is fresh, return success
+        // If already initialized and instance is fresh, just log and return
         const instanceAge = Date.now() - state.instanceStartTime;
         if (state.isInitialized && instanceAge < 240000) {
             console.log(`[Health Check] Start skipped - already initialized and fresh on instance ${instanceId} (${requestId})`);
-            return res.status(200).send('OK');
+            return;
         }
         
         // If already initializing, wait for it
@@ -142,7 +123,7 @@ app.get('/_ah/start', async (req, res) => {
             await state.initPromise;
             if (state.isInitialized) {
                 console.log(`[Health Check] Start completed - initialization finished on instance ${instanceId} (${requestId})`);
-                return res.status(200).send('OK');
+                return;
             }
         }
         
@@ -152,14 +133,11 @@ app.get('/_ah/start', async (req, res) => {
         
         if (success) {
             console.log(`[Health Check] Start completed successfully on instance ${instanceId} (${requestId})`);
-            res.status(200).send('OK');
         } else {
             console.error(`[Health Check] Start failed - initialization failed on instance ${instanceId} (${requestId})`);
-            res.status(500).send('Initialization failed');
         }
     } catch (error) {
         console.error(`[Health Check] Start error on instance ${instanceId}: ${error.message} (${requestId})`);
-        res.status(500).send('Error during start');
     }
 });
 
