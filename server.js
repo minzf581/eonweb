@@ -24,6 +24,10 @@ const crypto = require('crypto');
 
 const app = express();
 
+// Force the server to use the PORT from environment variable
+const PORT = process.env.PORT || 8080;
+console.log(`Configured to run on port ${PORT}`);
+
 // Health check endpoints BEFORE any other middleware
 app.get('/_ah/start', (req, res) => {
     console.log('Received App Engine start request');
@@ -80,12 +84,16 @@ async function initializeApp() {
         app.use(compression());
 
         // Serve static files
-        const publicPath = path.join(__dirname, 'public');
+        const publicPath = process.env.NODE_ENV === 'production' 
+            ? '/workspace/public'  // App Engine environment
+            : path.join(__dirname, 'public');  // Local environment
+        
         console.log('Serving static files from:', publicPath);
         app.use(express.static(publicPath));
 
         // Handle frontend routing for SPA
         app.get('/*', (req, res) => {
+            console.log(`Serving index.html for path: ${req.path}`);
             res.sendFile(path.join(publicPath, 'index.html'));
         });
 
@@ -124,8 +132,7 @@ async function cleanup() {
     }
 }
 
-// Start server immediately, don't wait for initialization
-const PORT = process.env.PORT || 8080;
+// Start server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
