@@ -28,10 +28,16 @@ const app = express();
 app.get('/_ah/start', (req, res) => {
     console.log('Received App Engine start request');
     res.status(200).send('OK');
-    // Initialize app in the background
-    initializeApp().catch(err => {
-        console.error('Failed to initialize app:', err);
-    });
+});
+
+app.get('/_ah/warmup', (req, res) => {
+    console.log('Received App Engine warmup request');
+    res.status(200).send('OK');
+});
+
+app.get('/_ah/health', (req, res) => {
+    console.log('Received health check request');
+    res.status(200).send('OK');
 });
 
 app.get('/_ah/stop', (req, res) => {
@@ -74,11 +80,13 @@ async function initializeApp() {
         app.use(compression());
 
         // Serve static files
-        app.use(express.static(path.join(__dirname, 'public')));
+        const publicPath = path.join(__dirname, 'public');
+        console.log('Serving static files from:', publicPath);
+        app.use(express.static(publicPath));
 
-        // Handle frontend routing
-        app.get('/', (req, res) => {
-            res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        // Handle frontend routing for SPA
+        app.get('/*', (req, res) => {
+            res.sendFile(path.join(publicPath, 'index.html'));
         });
 
         // Routes
