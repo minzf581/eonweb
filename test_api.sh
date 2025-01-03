@@ -25,6 +25,11 @@ print_test_result() {
     fi
 }
 
+# 生成唯一的测试邮箱
+TIMESTAMP=$(date +%s)
+TEST_EMAIL="test_${TIMESTAMP}@example.com"
+echo "使用测试邮箱: ${TEST_EMAIL}"
+
 # 1. 认证相关测试
 echo "=== 认证测试 ==="
 
@@ -33,8 +38,8 @@ echo "测试注册..."
 REGISTER_RESPONSE=$(curl -s -X POST "${API_URL}/auth/register" \
     -H "Content-Type: application/json" \
     -d '{
-        "username": "testuser",
-        "email": "test@example.com",
+        "username": "testuser_'${TIMESTAMP}'",
+        "email": "'${TEST_EMAIL}'",
         "password": "password123",
         "referralCode": ""
     }')
@@ -49,14 +54,14 @@ echo "测试登录..."
 LOGIN_RESPONSE=$(curl -s -X POST "${API_URL}/auth/login" \
     -H "Content-Type: application/json" \
     -d '{
-        "email": "test@example.com",
+        "email": "'${TEST_EMAIL}'",
         "password": "password123"
     }')
 echo "Login Response: $LOGIN_RESPONSE"
 print_test_result $? "用户登录"
 
 # 从登录响应中提取token
-TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; print(json.loads(sys.stdin.read()).get('data', {}).get('token', ''))")
+TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; print(json.loads(sys.stdin.read()).get('token', ''))")
 echo "Token: $TOKEN"
 
 # 如果没有获取到token，退出测试
