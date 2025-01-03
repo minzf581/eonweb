@@ -26,11 +26,6 @@ app.use(morgan('dev'));
 // Health check endpoints with detailed logging
 app.get('/_ah/start', (req, res) => {
     console.log('[Health Check] Received start request');
-    if (!isReady) {
-        console.log('[Health Check] Application not ready yet');
-        res.status(503).json({ status: 'initializing' });
-        return;
-    }
     res.status(200).send('OK');
 });
 
@@ -54,52 +49,33 @@ app.get('/_ah/ready', (req, res) => {
 });
 
 // Warmup request handler
-app.get('/_ah/warmup', (req, res) => {
+app.get('/_ah/warmup', async (req, res) => {
     console.log('[Warmup] Received warmup request');
-    res.status(200).send('OK');
-});
-
-// Static file service with readiness check
-app.use((req, res, next) => {
-    console.log(`[Request] Received request for ${req.path}`);
-    if (!isReady && !req.path.startsWith('/_ah/')) {
-        console.log(`[Request] Rejected ${req.path} - Application not ready`);
-        res.status(503).json({ status: 'initializing' });
-        return;
+    try {
+        if (!dbConnected) {
+            console.log('[Warmup] Connecting to database...');
+            await sequelize.authenticate();
+            console.log('[Warmup] Database connection established');
+            dbConnected = true;
+        }
+        isReady = true;
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('[Warmup] Error during warmup:', error);
+        res.status(500).json({ error: 'Warmup failed' });
     }
-    next();
 });
 
+// Static file service
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Root route with error handling
-app.get('/', (req, res, next) => {
-    console.log('[Route] Received request for root path');
-    if (!isReady) {
-        console.log('[Route] Application not ready');
-        res.status(503).json({ status: 'initializing' });
-        return;
-    }
+app.get('/', (req, res) => {
     console.log('[Route] Serving index.html');
-    const indexPath = path.join(__dirname, 'public', 'index.html');
-    res.sendFile(indexPath, err => {
-        if (err) {
-            console.error('[Error] Failed to serve index.html:', err);
-            next(err);
-        } else {
-            console.log('[Success] index.html served successfully');
-        }
-    });
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// API Routes with error handling
-app.use('/api', (req, res, next) => {
-    if (!isReady) {
-        return res.status(503).json({ status: 'initializing' });
-    }
-    next();
-});
-
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/tasks', tasksRoutes);
@@ -151,7 +127,7 @@ async function startServer() {
         return server;
     } catch (error) {
         console.error('[Startup] Failed to start server:', error);
-        process.exit(1);
+        throw error;
     }
 }
 
