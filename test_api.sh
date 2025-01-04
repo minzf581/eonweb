@@ -4,7 +4,7 @@
 BASE_URL="https://eonhome-445809.et.r.appspot.com"
 API_URL="${BASE_URL}/api"  # 添加 /api 前缀
 TOKEN=""  # 登录后需要设置这个值
-API_KEY="your_api_key_here"  # 设置你的API密钥
+API_KEY="proxy_api_key_d1e8a37b5c4f9"  # 默认测试API密钥
 
 # 颜色定义
 GREEN='\033[0;32m'
