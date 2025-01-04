@@ -19,7 +19,8 @@
 1. 联系系统管理员申请API密钥
 2. API密钥用于代理后台的身份认证
 3. 每个代理后台使用唯一的API密钥
-4. API密钥示例：`proxy_api_key_xxxxxxxxxxxxx`
+4. 默认测试API密钥：`proxy_api_key_d1e8a37b5c4f9`（仅用于测试环境）
+5. API密钥格式：以 `proxy_api_key_` 为前缀的字符串
 
 ## 用户注册
 
