@@ -9,6 +9,7 @@ const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 const pointsRoutes = require('./routes/points');
+const proxyRoutes = require('./routes/proxy');
 
 // Constants - define these at the very top
 const INIT_TIMEOUT = 30000;  // 30 seconds for initialization
@@ -211,6 +212,7 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/points', pointsRoutes);
+app.use('/api/proxy', proxyRoutes);
 
 // Handle favicon.ico
 app.get('/favicon.ico', (req, res) => {
