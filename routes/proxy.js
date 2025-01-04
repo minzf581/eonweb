@@ -1,39 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateProxyBackend } = require('../middleware/proxyAuth');
-const { NodeStatus, User, PointHistory } = require('../models');
+const { NodeStatus, User, PointHistory, ProxyBackend } = require('../models');
 const { validateBatchReport } = require('../validators/proxyValidator');
 const sequelize = require('../config/database');
 
 // 计算积分的辅助函数
-const calculatePoints = (bandwidth, timeInMinutes) => {
+const calculatePoints = (traffic, duration) => {
     // 积分计算规则：
     // 1. 基础在线积分：每小时1点
     // 2. 带宽积分：每GB上传流量10点，下载流量5点
-    const onlinePoints = Math.floor(timeInMinutes / 60);
-    const trafficPoints = Math.floor(bandwidth.upload / 1024) * 10 + 
-                         Math.floor(bandwidth.download / 1024) * 5;
+    const onlinePoints = Math.floor(duration / 3600); // 将秒转换为小时
+    const trafficPoints = Math.floor(traffic.upload / (1024 * 1024 * 1024)) * 10 + 
+                         Math.floor(traffic.download / (1024 * 1024 * 1024)) * 5;
     return onlinePoints + trafficPoints;
 };
 
-// 查找或创建用户的辅助函数
-const findUserByIP = async (ipAddress, transaction) => {
-    const pointHistory = await PointHistory.findOne({
-        where: {
-            type: 'bandwidth_sharing',
-            metadata: {
-                [sequelize.Op.like]: `%${ipAddress}%`
-            }
-        },
-        order: [['createdAt', 'DESC']],
+// 查找用户的辅助函数
+const findUser = async (username, transaction) => {
+    return User.findOne({
+        where: { username },
         transaction
     });
-
-    if (pointHistory) {
-        return User.findByPk(pointHistory.userId, { transaction });
-    }
-
-    return null;
 };
 
 // 批量上报节点状态
@@ -61,18 +49,20 @@ router.post('/report/batch', authenticateProxyBackend, validateBatchReport, asyn
 
         // 处理每个节点
         const nodeStatusData = await Promise.all(nodes.map(async node => {
+            // 查找用户
+            const user = await findUser(node.username, transaction);
+            if (!user) {
+                console.warn(`User not found for username: ${node.username}`);
+                return null;
+            }
+
             const existingNode = existingNodesMap.get(node.deviceId);
-            const timeDiff = existingNode ? 
-                Math.floor((timestamp - existingNode.lastReportTime) / (1000 * 60)) : 0;
-            
-            // 查找关联用户
-            const user = await findUserByIP(node.ipAddress, transaction);
             
             // 计算新增积分
-            const newPoints = calculatePoints(node.bandwidth, timeDiff);
+            const newPoints = calculatePoints(node.traffic, node.duration);
             
-            // 如果找到用户，更新积分
-            if (user && newPoints > 0) {
+            // 更新积分
+            if (newPoints > 0) {
                 await PointHistory.create({
                     userId: user.id,
                     points: newPoints,
@@ -80,9 +70,11 @@ router.post('/report/batch', authenticateProxyBackend, validateBatchReport, asyn
                     metadata: JSON.stringify({
                         deviceId: node.deviceId,
                         ipAddress: node.ipAddress,
-                        uploadBandwidth: node.bandwidth.upload,
-                        downloadBandwidth: node.bandwidth.download,
-                        onlineTime: timeDiff,
+                        status: node.status,
+                        duration: node.duration,
+                        upload: node.traffic.upload,
+                        download: node.traffic.download,
+                        reportType: node.reportType,
                         timestamp: timestamp.toISOString()
                     }),
                     status: 'completed'
@@ -94,47 +86,59 @@ router.post('/report/batch', authenticateProxyBackend, validateBatchReport, asyn
                 });
             }
             
-            return {
+            const nodeData = {
                 deviceId: node.deviceId,
-                userId: user?.id,
+                username: node.username,
+                userId: user.id,
                 status: node.status,
-                uploadBandwidth: node.bandwidth.upload,
-                downloadBandwidth: node.bandwidth.download,
                 ipAddress: node.ipAddress,
-                country: node.location?.country,
-                city: node.location?.city,
                 lastReportTime: timestamp,
-                proxyBackendId,
-                totalUploadBytes: sequelize.literal(`COALESCE(totalUploadBytes, 0) + ${node.bandwidth.upload * 1024 * 1024}`),
-                totalDownloadBytes: sequelize.literal(`COALESCE(totalDownloadBytes, 0) + ${node.bandwidth.download * 1024 * 1024}`),
-                onlineTime: sequelize.literal(`COALESCE(onlineTime, 0) + ${timeDiff}`)
+                lastReportType: node.reportType,
+                lastReportDuration: node.duration,
+                lastReportUpload: node.traffic.upload,
+                lastReportDownload: node.traffic.download,
+                totalUploadBytes: sequelize.literal(`COALESCE(totalUploadBytes, 0) + ${node.traffic.upload}`),
+                totalDownloadBytes: sequelize.literal(`COALESCE(totalDownloadBytes, 0) + ${node.traffic.download}`),
+                totalOnlineTime: sequelize.literal(`COALESCE(totalOnlineTime, 0) + ${node.duration}`)
             };
+
+            // 如果是状态变更上报，更新状态变更时间
+            if (node.reportType === 'status_change') {
+                nodeData.lastStatusChange = timestamp;
+            }
+
+            return nodeData;
         }));
 
+        // 过滤掉无效的节点（用户不存在的情况）
+        const validNodes = nodeStatusData.filter(node => node !== null);
+
         // 批量更新节点状态
-        await NodeStatus.bulkCreate(nodeStatusData, {
+        await NodeStatus.bulkCreate(validNodes, {
             updateOnDuplicate: [
+                'username',
                 'userId',
                 'status', 
-                'uploadBandwidth', 
-                'downloadBandwidth', 
-                'ipAddress', 
-                'country', 
-                'city', 
+                'ipAddress',
+                'lastStatusChange',
                 'lastReportTime',
+                'lastReportType',
+                'lastReportDuration',
+                'lastReportUpload',
+                'lastReportDownload',
                 'totalUploadBytes',
                 'totalDownloadBytes',
-                'onlineTime'
+                'totalOnlineTime'
             ],
             transaction
         });
 
         // 更新代理后台统计信息
-        const activeNodesCount = nodes.filter(node => node.status === 'active').length;
+        const onlineNodesCount = validNodes.filter(node => node.status === 'online').length;
         await ProxyBackend.update({
             lastSyncTime: timestamp,
-            totalNodes: nodes.length,
-            activeNodes: activeNodesCount
+            totalNodes: validNodes.length,
+            activeNodes: onlineNodesCount
         }, {
             where: { id: proxyBackendId },
             transaction
@@ -147,8 +151,9 @@ router.post('/report/batch', authenticateProxyBackend, validateBatchReport, asyn
             message: 'success',
             data: {
                 syncTime: timestamp,
-                processedNodes: nodes.length,
-                activeNodes: activeNodesCount
+                processedNodes: validNodes.length,
+                activeNodes: onlineNodesCount,
+                skippedNodes: nodes.length - validNodes.length
             }
         });
     } catch (error) {
@@ -173,7 +178,7 @@ router.get('/stats', authenticateProxyBackend, async (req, res) => {
                 [sequelize.fn('COUNT', sequelize.col('deviceId')), 'count'],
                 [sequelize.fn('SUM', sequelize.col('totalUploadBytes')), 'totalUploadBytes'],
                 [sequelize.fn('SUM', sequelize.col('totalDownloadBytes')), 'totalDownloadBytes'],
-                [sequelize.fn('SUM', sequelize.col('onlineTime')), 'totalOnlineTime']
+                [sequelize.fn('SUM', sequelize.col('totalOnlineTime')), 'totalOnlineTime']
             ],
             where: { proxyBackendId },
             group: ['status']

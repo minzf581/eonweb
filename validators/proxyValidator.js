@@ -2,16 +2,15 @@ const Joi = require('joi');
 
 const nodeSchema = Joi.object({
     deviceId: Joi.string().required(),
-    status: Joi.string().valid('active', 'inactive').required(),
-    bandwidth: Joi.object({
-        upload: Joi.number().min(0).required(),
-        download: Joi.number().min(0).required()
-    }).required(),
+    username: Joi.string().required(),
+    status: Joi.string().valid('online', 'offline').required(),
     ipAddress: Joi.string().ip().required(),
-    location: Joi.object({
-        country: Joi.string().allow(null),
-        city: Joi.string().allow(null)
-    }).optional()
+    duration: Joi.number().integer().min(0).required(),
+    traffic: Joi.object({
+        upload: Joi.number().integer().min(0).required(),    // bytes
+        download: Joi.number().integer().min(0).required()   // bytes
+    }).required(),
+    reportType: Joi.string().valid('status_change', 'daily').required()
 });
 
 const batchReportSchema = Joi.object({
