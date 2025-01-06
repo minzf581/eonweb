@@ -40,12 +40,15 @@ sleep 5
 
 # 设置环境变量
 export NODE_ENV=production
-export DB_HOST=/cloudsql/eonhome-445809:asia-southeast2:eon-db
+export DB_HOST=localhost
 export DB_PORT=5432
+export DB_NAME=eon_protocol
+export DB_USER=eonuser
+export DB_PASSWORD=eonprotocol
 
 # 运行数据库迁移
 echo "Running database migrations..."
-NODE_ENV=production npx sequelize-cli db:migrate
+NODE_ENV=production npx sequelize-cli db:migrate --env production
 
 MIGRATION_STATUS=$?
 
