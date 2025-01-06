@@ -81,8 +81,10 @@ router.get('/user/list', authenticateToken, async (req, res) => {
             where: { user_id: userId },
             include: [{
                 model: Task,
+                as: 'task',
                 required: true
-            }]
+            }],
+            order: [['created_at', 'DESC']]
         });
 
         res.json({
