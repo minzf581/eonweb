@@ -27,22 +27,14 @@ const authenticateToken = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         console.log('[Auth] Token decoded:', decoded);
 
-        if (!decoded.id) {
-            console.log('[Auth] Invalid token payload - missing id');
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token'
-            });
-        }
-
         // Get fresh user data from database
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code']
+            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code', 'credits']
         });
 
         if (!user) {
-            console.log('[Auth] User not found:', { id: decoded.id });
+            console.log('[Auth] User not found:', decoded);
             return res.status(401).json({
                 success: false,
                 message: 'User not found'
@@ -50,7 +42,13 @@ const authenticateToken = async (req, res, next) => {
         }
 
         // Attach user to request
-        req.user = user;
+        req.user = user.toJSON();
+        console.log('[Auth] User authenticated:', {
+            id: user.id,
+            email: user.email,
+            is_admin: user.is_admin
+        });
+
         next();
     } catch (error) {
         console.error('[Auth] Authentication error:', error);
@@ -63,20 +61,16 @@ const authenticateToken = async (req, res, next) => {
 
 const authenticateApiKey = async (req, res, next) => {
     try {
-        console.log('[Auth] Authenticating API key');
-        
         const apiKey = req.headers['x-api-key'];
         if (!apiKey) {
-            console.log('[Auth] No API key provided');
             return res.status(401).json({
                 success: false,
-                message: 'API key is required'
+                message: 'API key required'
             });
         }
 
-        // 验证 API 密钥
-        if (apiKey !== process.env.API_KEY) {
-            console.log('[Auth] Invalid API key');
+        // TODO: Implement API key validation
+        if (apiKey !== process.env.PROXY_API_KEY) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid API key'
@@ -86,7 +80,7 @@ const authenticateApiKey = async (req, res, next) => {
         next();
     } catch (error) {
         console.error('[Auth] API key authentication error:', error);
-        res.status(500).json({
+        return res.status(401).json({
             success: false,
             message: 'Authentication failed'
         });
@@ -95,16 +89,6 @@ const authenticateApiKey = async (req, res, next) => {
 
 const isAdmin = async (req, res, next) => {
     try {
-        console.log('[Auth] Checking admin status');
-
-        if (!req.user) {
-            console.log('[Auth] No user data in request');
-            return res.status(401).json({
-                success: false,
-                message: 'Authentication required'
-            });
-        }
-
         // Get fresh user data to ensure admin status is current
         const user = await User.findOne({
             where: { id: req.user.id },
@@ -112,7 +96,6 @@ const isAdmin = async (req, res, next) => {
         });
 
         if (!user) {
-            console.log('[Auth] User not found:', { id: req.user.id });
             return res.status(401).json({
                 success: false,
                 message: 'User not found'
@@ -120,52 +103,30 @@ const isAdmin = async (req, res, next) => {
         }
 
         if (!user.is_admin) {
-            console.log('[Auth] Access denied - not admin:', { id: user.id, email: user.email });
             return res.status(403).json({
                 success: false,
-                message: 'Access denied'
+                message: 'Admin access required'
             });
         }
-
-        // Update req.user with fresh data
-        req.user = {
-            id: user.id,
-            email: user.email,
-            is_admin: user.is_admin
-        };
-
-        console.log('[Auth] Admin check successful:', {
-            id: user.id,
-            email: user.email,
-            is_admin: user.is_admin
-        });
 
         next();
     } catch (error) {
         console.error('[Auth] Admin check error:', error);
         return res.status(500).json({
             success: false,
-            message: 'Error checking admin status'
+            message: 'Server error'
         });
     }
 };
 
 const isAdminSimple = (req, res, next) => {
-    try {
-        if (!req.user.is_admin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-        next();
-    } catch (error) {
-        console.error('Error in isAdmin middleware:', error);
-        res.status(500).json({
+    if (!req.user.is_admin) {
+        return res.status(403).json({
             success: false,
-            message: 'Error checking admin status'
+            message: 'Admin access required'
         });
     }
+    next();
 };
 
 module.exports = {

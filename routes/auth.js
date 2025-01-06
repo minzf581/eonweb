@@ -135,7 +135,7 @@ router.post('/login', async (req, res) => {
         // 查找用户
         const user = await User.findOne({ 
             where: { email },
-            attributes: ['id', 'email', 'password', 'is_admin', 'points', 'referral_code', 'username']
+            attributes: ['id', 'email', 'password', 'is_admin', 'points', 'referral_code', 'username', 'credits']
         });
 
         if (!user) {
@@ -188,15 +188,17 @@ router.post('/login', async (req, res) => {
 
         // Return success response
         return res.status(200).json({
-            token,
             success: true,
             message: 'Login successful',
-            data: {
+            token,
+            user: {
                 id: user.id,
                 email: user.email,
                 is_admin: user.is_admin,
                 points: user.points,
-                referral_code: user.referral_code
+                referral_code: user.referral_code,
+                credits: user.credits,
+                username: user.username
             }
         });
     } catch (error) {
