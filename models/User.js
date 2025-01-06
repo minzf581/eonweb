@@ -77,15 +77,10 @@ const initUser = (sequelize) => {
             allowNull: false,
             defaultValue: 'active'
         },
-        balance: {
+        credits: {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: false,
             defaultValue: 0.00
-        },
-        referral_code: {
-            type: DataTypes.STRING,
-            unique: true,
-            allowNull: true
         },
         points: {
             type: DataTypes.INTEGER,
@@ -94,6 +89,19 @@ const initUser = (sequelize) => {
         is_admin: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
+        },
+        referral_code: {
+            type: DataTypes.STRING,
+            unique: true,
+            allowNull: true
+        },
+        referred_by: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        last_login_at: {
+            type: DataTypes.DATE,
+            allowNull: true
         }
     }, {
         sequelize,
