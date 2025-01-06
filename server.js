@@ -24,6 +24,7 @@ const crypto = require('crypto');
 const appRoutes = require('./app');
 const proxyRoutes = require('./routes/proxy');
 const bandwidthRoutes = require('./routes/bandwidth');
+const fs = require('fs');
 
 const app = express();
 
@@ -102,19 +103,47 @@ async function initializeApp() {
         app.use('/api/bandwidth', bandwidthRoutes);
         app.use('/api/admin', adminRoutes);
 
-        // Serve static files
-        app.use('/static', express.static(path.join(__dirname, 'public/static')));
-        app.use(express.static(path.join(__dirname, 'public')));
+        // Configure static file serving
+        const publicPath = path.join(__dirname, 'public');
+        console.log('[Static] Serving static files from:', publicPath);
+
+        // Serve static files from /static path
+        app.use('/static', express.static(path.join(publicPath, 'static')));
+
+        // Serve static files from root path
+        app.use(express.static(publicPath));
 
         // Serve index.html for root path
         app.get('/', (req, res) => {
-            res.sendFile(path.join(__dirname, 'public/index.html'));
+            console.log('[Route] Serving index.html for root path');
+            const indexPath = path.join(publicPath, 'index.html');
+            console.log('[Route] Sending index.html from:', indexPath);
+            res.sendFile(indexPath, (err) => {
+                if (err) {
+                    console.error('[Route] Error sending index.html:', err);
+                    res.status(500).send('Error loading index.html');
+                } else {
+                    console.log('[Route] Successfully served index.html');
+                }
+            });
         });
 
-        // Handle frontend routing for SPA
+        // Handle SPA routing
         app.get('/*', (req, res) => {
-            console.log(`Serving index.html for path: ${req.path}`);
-            res.sendFile(path.join(__dirname, 'public/index.html'));
+            // Log the request
+            console.log('[Route] Handling SPA route:', req.path);
+            
+            // First try to serve as a static file
+            const staticPath = path.join(publicPath, req.path);
+            if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
+                console.log('[Static] Serving:', req.path);
+                res.sendFile(staticPath);
+                return;
+            }
+            
+            // If not a static file, serve index.html
+            console.log('[Route] Not found:', req.path);
+            res.sendFile(path.join(publicPath, 'index.html'));
         });
 
         // Global error handler - place this after all routes
