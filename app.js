@@ -214,8 +214,8 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/points', pointsRoutes);
-app.use('/api/proxy', cors(), proxyRoutes); // 修改代理路由注册
-app.use('/api/user', usersRoutes); // 新增路由
+app.use('/api/proxy', cors(), proxyRoutes);
+app.use('/api/users', usersRoutes);
 
 // Handle favicon.ico
 app.get('/favicon.ico', (req, res) => {

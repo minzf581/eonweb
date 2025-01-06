@@ -278,45 +278,47 @@ router.get('/nodes/:deviceId/stats', checkApiKey, async (req, res) => {
   }
 });
 
-// Node online report
+// 节点上线上报
 router.post('/online', authenticateToken, async (req, res) => {
     try {
         const { nodeId, ip, port } = req.body;
-        console.log(`[Proxy] Node online report - nodeId: ${nodeId}, ip: ${ip}, port: ${port}`);
+        const userId = req.user.id;
 
-        // Create or update proxy node
-        const [node, created] = await ProxyNode.findOrCreate({
-            where: { deviceId: nodeId },
-            defaults: {
-                ip,
-                port,
-                status: 'online',
-                lastSeenAt: new Date()
+        // 检查节点是否已存在
+        let proxyNode = await ProxyNode.findOne({
+            where: {
+                nodeId: nodeId,
+                userId: userId
             }
         });
 
-        if (!created) {
-            await node.update({
-                ip,
-                port,
+        if (proxyNode) {
+            // 更新节点状态
+            await proxyNode.update({
+                ip: ip,
+                port: port,
                 status: 'online',
-                lastSeenAt: new Date()
+                lastOnline: new Date()
+            });
+        } else {
+            // 创建新节点
+            proxyNode = await ProxyNode.create({
+                nodeId: nodeId,
+                userId: userId,
+                ip: ip,
+                port: port,
+                status: 'online',
+                lastOnline: new Date()
             });
         }
 
-        // Create node status record
-        await NodeStatus.create({
-            deviceId: nodeId,
-            status: 'online',
-            timestamp: new Date()
-        });
-
         res.json({
             success: true,
-            message: 'Node online status reported successfully'
+            message: 'Node online status reported successfully',
+            data: proxyNode
         });
     } catch (error) {
-        console.error('[Proxy] Error reporting node online status:', error);
+        console.error('Error in proxy node online:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to report node online status',
@@ -325,47 +327,40 @@ router.post('/online', authenticateToken, async (req, res) => {
     }
 });
 
-// Node daily report
+// 节点每日上报
 router.post('/daily', authenticateToken, async (req, res) => {
     try {
-        const { nodeId, bandwidth, connections, uptime } = req.body;
-        console.log(`[Proxy] Node daily report - nodeId: ${nodeId}`);
+        const { nodeId, bandwidth } = req.body;
+        const userId = req.user.id;
 
-        // Update proxy node stats
-        const node = await ProxyNode.findOne({
-            where: { deviceId: nodeId }
+        // 查找节点
+        const proxyNode = await ProxyNode.findOne({
+            where: {
+                nodeId: nodeId,
+                userId: userId
+            }
         });
 
-        if (!node) {
+        if (!proxyNode) {
             return res.status(404).json({
                 success: false,
                 message: 'Node not found'
             });
         }
 
-        await node.update({
-            bandwidth,
-            connections,
-            uptime,
+        // 更新节点状态
+        await proxyNode.update({
+            bandwidth: bandwidth,
             lastReport: new Date()
-        });
-
-        // Create node status record
-        await NodeStatus.create({
-            deviceId: nodeId,
-            status: 'active',
-            bandwidth,
-            connections,
-            uptime,
-            timestamp: new Date()
         });
 
         res.json({
             success: true,
-            message: 'Node daily report submitted successfully'
+            message: 'Node daily report submitted successfully',
+            data: proxyNode
         });
     } catch (error) {
-        console.error('[Proxy] Error submitting node daily report:', error);
+        console.error('Error in proxy node daily report:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to submit node daily report',
@@ -374,42 +369,40 @@ router.post('/daily', authenticateToken, async (req, res) => {
     }
 });
 
-// Node offline report
+// 节点下线上报
 router.post('/offline', authenticateToken, async (req, res) => {
     try {
         const { nodeId } = req.body;
-        console.log(`[Proxy] Node offline report - nodeId: ${nodeId}`);
+        const userId = req.user.id;
 
-        // Update proxy node status
-        const node = await ProxyNode.findOne({
-            where: { deviceId: nodeId }
+        // 查找节点
+        const proxyNode = await ProxyNode.findOne({
+            where: {
+                nodeId: nodeId,
+                userId: userId
+            }
         });
 
-        if (!node) {
+        if (!proxyNode) {
             return res.status(404).json({
                 success: false,
                 message: 'Node not found'
             });
         }
 
-        await node.update({
+        // 更新节点状态
+        await proxyNode.update({
             status: 'offline',
             lastOffline: new Date()
         });
 
-        // Create node status record
-        await NodeStatus.create({
-            deviceId: nodeId,
-            status: 'offline',
-            timestamp: new Date()
-        });
-
         res.json({
             success: true,
-            message: 'Node offline status reported successfully'
+            message: 'Node offline status reported successfully',
+            data: proxyNode
         });
     } catch (error) {
-        console.error('[Proxy] Error reporting node offline status:', error);
+        console.error('Error in proxy node offline:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to report node offline status',
@@ -418,28 +411,42 @@ router.post('/offline', authenticateToken, async (req, res) => {
     }
 });
 
-// 获取所有节点状态统计
+// 获取节点统计
 router.get('/stats', authenticateToken, async (req, res) => {
-  try {
-    const stats = await ProxyNode.findAll({
-      attributes: [
-        'status',
-        [sequelize.fn('COUNT', sequelize.col('deviceId')), 'count'],
-        [sequelize.fn('SUM', sequelize.col('totalUploadBytes')), 'totalUploadBytes'],
-        [sequelize.fn('SUM', sequelize.col('totalDownloadBytes')), 'totalDownloadBytes'],
-        [sequelize.fn('SUM', sequelize.col('totalOnlineSeconds')), 'totalOnlineTime']
-      ],
-      group: ['status']
-    });
+    try {
+        const userId = req.user.id;
 
-    res.json({
-      success: true,
-      data: stats
-    });
-  } catch (error) {
-    console.error('Error in getting stats:', error);
-    res.status(500).json({ success: false, message: 'Failed to get stats' });
-  }
+        // 获取用户的所有节点
+        const nodes = await ProxyNode.findAll({
+            where: {
+                userId: userId
+            }
+        });
+
+        // 计算统计数据
+        const totalNodes = nodes.length;
+        const onlineNodes = nodes.filter(node => node.status === 'online').length;
+        const totalBandwidth = nodes.reduce((sum, node) => sum + (node.bandwidth || 0), 0);
+
+        const stats = {
+            totalNodes,
+            onlineNodes,
+            totalBandwidth,
+            nodes: nodes
+        };
+
+        res.json({
+            success: true,
+            data: stats
+        });
+    } catch (error) {
+        console.error('Error in get proxy node stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get node stats',
+            error: error.message
+        });
+    }
 });
 
 module.exports = router;

@@ -1,19 +1,26 @@
-const { Model } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 
-module.exports = (sequelize, DataTypes) => {
+module.exports = (sequelize) => {
   class ProxyNode extends Model {
     static associate(models) {
-      ProxyNode.hasMany(models.NodeStatus, {
-        foreignKey: 'nodeid'
+      ProxyNode.belongsTo(models.User, {
+        foreignKey: 'userId'
       });
     }
   }
 
   ProxyNode.init({
-    nodeid: {
+    nodeId: {
       type: DataTypes.STRING,
+      allowNull: false
+    },
+    userId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      unique: true
+      references: {
+        model: 'users',
+        key: 'id'
+      }
     },
     ip: {
       type: DataTypes.STRING,
@@ -31,21 +38,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BIGINT,
       defaultValue: 0
     },
-    connections: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
-    },
-    uptime: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
-    },
-    lastonline: {
+    lastOnline: {
       type: DataTypes.DATE
     },
-    lastoffline: {
+    lastOffline: {
       type: DataTypes.DATE
     },
-    lastreport: {
+    lastReport: {
       type: DataTypes.DATE
     }
   }, {
@@ -54,8 +53,8 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'proxy_nodes',
     underscored: true,
     timestamps: true,
-    createdAt: 'createdat',
-    updatedAt: 'updatedat'
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
   });
 
   return ProxyNode;

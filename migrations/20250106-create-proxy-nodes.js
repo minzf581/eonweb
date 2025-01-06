@@ -3,7 +3,14 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Create proxy nodes table
+    // 1. 先删除已存在的表（如果存在）
+    await queryInterface.dropTable('proxy_nodes', { cascade: true });
+    
+    // 2. 删除并重新创建枚举类型
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_proxy_nodes_status" CASCADE;`);
+    await queryInterface.sequelize.query(`CREATE TYPE "enum_proxy_nodes_status" AS ENUM ('online', 'offline');`);
+
+    // 3. 创建代理节点表
     await queryInterface.createTable('proxy_nodes', {
       id: {
         allowNull: false,
@@ -11,10 +18,20 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      nodeid: {
+      node_id: {
         type: Sequelize.STRING,
         allowNull: false,
         unique: true
+      },
+      user_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       ip: {
         type: Sequelize.STRING,
@@ -25,36 +42,28 @@ module.exports = {
         allowNull: false
       },
       status: {
-        type: Sequelize.ENUM('online', 'offline'),
+        type: "enum_proxy_nodes_status",
         defaultValue: 'offline'
       },
       bandwidth: {
         type: Sequelize.BIGINT,
         defaultValue: 0
       },
-      connections: {
-        type: Sequelize.INTEGER,
-        defaultValue: 0
-      },
-      uptime: {
-        type: Sequelize.INTEGER,
-        defaultValue: 0
-      },
-      lastonline: {
+      last_online: {
         type: Sequelize.DATE
       },
-      lastoffline: {
+      last_offline: {
         type: Sequelize.DATE
       },
-      lastreport: {
+      last_report: {
         type: Sequelize.DATE
       },
-      createdat: {
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updatedat: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -62,11 +71,11 @@ module.exports = {
     });
 
     // Create indexes
-    await queryInterface.addIndex('proxy_nodes', ['nodeid']);
+    await queryInterface.addIndex('proxy_nodes', ['node_id']);
     await queryInterface.addIndex('proxy_nodes', ['status']);
-    await queryInterface.addIndex('proxy_nodes', ['lastonline']);
-    await queryInterface.addIndex('proxy_nodes', ['lastoffline']);
-    await queryInterface.addIndex('proxy_nodes', ['lastreport']);
+    await queryInterface.addIndex('proxy_nodes', ['last_online']);
+    await queryInterface.addIndex('proxy_nodes', ['last_offline']);
+    await queryInterface.addIndex('proxy_nodes', ['last_report']);
 
     // Create node statuses table
     await queryInterface.createTable('node_statuses', {
@@ -76,12 +85,12 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      nodeid: {
+      node_id: {
         type: Sequelize.STRING,
         allowNull: false,
         references: {
           model: 'proxy_nodes',
-          key: 'nodeid'
+          key: 'node_id'
         }
       },
       status: {
@@ -105,12 +114,12 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      createdat: {
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updatedat: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -118,14 +127,17 @@ module.exports = {
     });
 
     // Create indexes
-    await queryInterface.addIndex('node_statuses', ['nodeid']);
+    await queryInterface.addIndex('node_statuses', ['node_id']);
     await queryInterface.addIndex('node_statuses', ['status']);
     await queryInterface.addIndex('node_statuses', ['timestamp']);
   },
 
   async down(queryInterface, Sequelize) {
-    // Drop tables in reverse order
+    // 删除代理节点表
     await queryInterface.dropTable('node_statuses');
     await queryInterface.dropTable('proxy_nodes');
+    
+    // 删除枚举类型
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_proxy_nodes_status" CASCADE;');
   }
 };
