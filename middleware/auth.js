@@ -38,7 +38,7 @@ const authenticateToken = async (req, res, next) => {
         // Get fresh user data from database
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'isAdmin', 'points', 'referralCode']
+            attributes: ['id', 'email', 'isadmin', 'points', 'referralcode']
         });
 
         if (!user) {
@@ -53,15 +53,15 @@ const authenticateToken = async (req, res, next) => {
         req.user = {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin,
+            isadmin: user.isadmin,
             points: user.points,
-            referralCode: user.referralCode
+            referralcode: user.referralcode
         };
 
         console.log('[Auth] Authentication successful:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         });
 
         next();
@@ -121,7 +121,7 @@ const isAdmin = async (req, res, next) => {
         // Get fresh user data to ensure admin status is current
         const user = await User.findOne({
             where: { id: req.user.id },
-            attributes: ['id', 'email', 'isAdmin']
+            attributes: ['id', 'email', 'isadmin']
         });
 
         if (!user) {
@@ -132,7 +132,7 @@ const isAdmin = async (req, res, next) => {
             });
         }
 
-        if (!user.isAdmin) {
+        if (!user.isadmin) {
             console.log('[Auth] Access denied - not admin:', { id: user.id, email: user.email });
             return res.status(403).json({
                 success: false,
@@ -144,13 +144,13 @@ const isAdmin = async (req, res, next) => {
         req.user = {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         };
 
         console.log('[Auth] Admin check successful:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         });
 
         next();
@@ -163,8 +163,27 @@ const isAdmin = async (req, res, next) => {
     }
 };
 
+const isAdminSimple = (req, res, next) => {
+    try {
+        if (!req.user.isadmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+        next();
+    } catch (error) {
+        console.error('Error in isAdmin middleware:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error checking admin status'
+        });
+    }
+};
+
 module.exports = {
     authenticateToken,
     authenticateApiKey,
-    isAdmin
+    isAdmin,
+    isAdminSimple
 };

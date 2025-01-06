@@ -1,166 +1,166 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const Settings = require('../models/Settings');
-const User = require('../models/User');
-const PointHistory = require('../models/PointHistory');
-const UserTask = require('../models/UserTask');
+const settings = require('../models/settings');
+const user = require('../models/user');
+const pointhistory = require('../models/pointhistory');
+const usertask = require('../models/usertask');
 
-class UserService {
+class userservice {
     // 创建用户
-    static async createUser(email, password, referralCode = null, isAdmin = false) {
-        console.log('Creating user:', email, 'isAdmin:', isAdmin);
+    static async createuser(email, password, referralcode = null, isadmin = false) {
+        console.log('creating user:', email, 'isadmin:', isadmin);
         
         // 检查邮箱是否已存在
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            throw new Error('Email already exists');
+        const existinguser = await user.findOne({ email });
+        if (existinguser) {
+            throw new error('email already exists');
         }
 
         // 获取设置
-        const settings = await Settings.findOne({});
-        const referralPoints = settings?.referralPoints || 100;
-        const baseReferralPoints = settings?.baseReferralPoints || 50;
-        const dailyReferralLimit = settings?.dailyReferralLimit || 10;
+        const settingsdoc = await settings.findOne({});
+        const referralpoints = settingsdoc?.referralpoints || 100;
+        const basereferralpoints = settingsdoc?.basereferralpoints || 50;
+        const dailyreferrallimit = settingsdoc?.dailyreferrallimit || 10;
 
         // 生成唯一的推荐码
-        const userReferralCode = crypto.randomBytes(5).toString('hex');
+        const userreferralcode = crypto.randombytes(5).tostring('hex');
         
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({
+        const hashedpassword = await bcrypt.hash(password, 10);
+        const newuser = new user({
             email,
-            password: hashedPassword,
-            isAdmin,
-            referralCode: userReferralCode,
-            referredBy: null  // 先设为 null，后面再更新
+            password: hashedpassword,
+            isadmin,
+            referralcode: userreferralcode,
+            referredby: null  // 先设为 null，后面再更新
         });
         
         // 如果有推荐码，验证并处理推荐逻辑
-        if (referralCode) {
-            const referrer = await User.findOne({ referralCode });
+        if (referralcode) {
+            const referrer = await user.findOne({ referralcode });
             if (referrer) {
                 // 检查推荐人今日推荐次数
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const referralCount = await PointHistory.countDocuments({
-                    userId: referrer._id,
+                const today = new date();
+                today.sethours(0, 0, 0, 0);
+                const referralcount = await pointhistory.countdocuments({
+                    userid: referrer._id,
                     type: 'referral',
-                    createdAt: { $gte: today }
+                    createdat: { $gte: today }
                 });
 
-                if (referralCount >= dailyReferralLimit) {
+                if (referralcount >= dailyreferrallimit) {
                     // 如果超过限制，仍然可以注册，但推荐人不会获得积分
-                    console.log(`Referrer ${referrer.email} has reached daily limit`);
+                    console.log(`referrer ${referrer.email} has reached daily limit`);
                 } else {
                     // 更新用户的推荐人
-                    user.referredBy = referrer._id;
+                    newuser.referredby = referrer._id;
 
                     // 更新推荐人积分
-                    referrer.points += referralPoints;
+                    referrer.points += referralpoints;
                     await referrer.save();
 
                     // 记录推荐人获得积分的历史
-                    const referrerPointHistory = new PointHistory({
-                        userId: referrer._id,
-                        points: referralPoints,
+                    const referrerpointhistory = new pointhistory({
+                        userid: referrer._id,
+                        points: referralpoints,
                         type: 'referral',
-                        description: `Referral bonus for inviting ${email}`
+                        description: `referral bonus for inviting ${email}`
                     });
-                    await referrerPointHistory.save();
+                    await referrerpointhistory.save();
 
                     // 给新用户添加被推荐奖励积分
-                    user.points = referralPoints;
+                    newuser.points = referralpoints;
                     
                     // 记录新用户获得积分的历史
-                    const userPointHistory = new PointHistory({
-                        userId: user._id,
-                        points: referralPoints,
+                    const userpointhistory = new pointhistory({
+                        userid: newuser._id,
+                        points: referralpoints,
                         type: 'referral',
-                        description: `Welcome bonus from referral by ${referrer.email}`
+                        description: `welcome bonus from referral by ${referrer.email}`
                     });
-                    await userPointHistory.save();
+                    await userpointhistory.save();
                 }
             }
         } else {
             // 无推荐码，给予基础积分
-            user.points = baseReferralPoints;
+            newuser.points = basereferralpoints;
             
             // 记录基础积分历史
-            const pointHistory = new PointHistory({
-                userId: user._id,
-                points: baseReferralPoints,
+            const pointhistory = new pointhistory({
+                userid: newuser._id,
+                points: basereferralpoints,
                 type: 'bonus',
-                description: 'Welcome bonus for new user'
+                description: 'welcome bonus for new user'
             });
-            await pointHistory.save();
+            await pointhistory.save();
         }
         
-        await user.save();
-        console.log('User created:', user);
+        await newuser.save();
+        console.log('user created:', newuser);
         
-        return user._id;
+        return newuser._id;
     }
 
     // 验证用户
-    static async verifyUser(email, password) {
-        const user = await User.findOne({ email });
+    static async verifyuser(email, password) {
+        const user = await user.findOne({ email });
         if (!user) {
             return null;
         }
 
-        const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) {
+        const isvalid = await bcrypt.compare(password, user.password);
+        if (!isvalid) {
             return null;
         }
 
         return {
             id: user._id,
             email: user.email,
-            isAdmin: user.isAdmin,
+            isadmin: user.isadmin,
             points: user.points
         };
     }
 
     // 获取所有用户
-    static async getAllUsers() {
-        const users = await User.find({}).sort({ createdAt: -1 });
+    static async getallusers() {
+        const users = await user.find({}).sort({ createdat: -1 });
         return users.map(user => ({
             _id: user._id,
             email: user.email,
-            isAdmin: user.isAdmin,
+            isadmin: user.isadmin,
             points: user.points || 0,
-            referralCode: user.referralCode || 'N/A',
-            status: user.status || 'Active',
-            createdAt: user.createdAt
+            referralcode: user.referralcode || 'n/a',
+            status: user.status || 'active',
+            createdat: user.createdat
         }));
     }
 
     // 获取用户信息
-    static async getUserById(userId) {
-        const user = await User.findById(userId);
+    static async getuserbyid(userid) {
+        const user = await user.findbyid(userid);
         if (!user) {
-            throw new Error('User not found');
+            throw new error('user not found');
         }
         return {
             id: user._id,
             email: user.email,
-            isAdmin: user.isAdmin,
+            isadmin: user.isadmin,
             points: user.points,
-            referralCode: user.referralCode,
-            referredBy: user.referredBy
+            referralcode: user.referralcode,
+            referredby: user.referredby
         };
     }
 
     // 更新用户信息
-    static async updateUser(userId, updates) {
-        const user = await User.findById(userId);
+    static async updateuser(userid, updates) {
+        const user = await user.findbyid(userid);
         if (!user) {
-            throw new Error('User not found');
+            throw new error('user not found');
         }
 
         // 只允许更新特定字段
-        const allowedUpdates = ['email', 'isAdmin', 'points'];
-        Object.keys(updates).forEach(key => {
-            if (allowedUpdates.includes(key)) {
+        const allowedupdates = ['email', 'isadmin', 'points'];
+        object.keys(updates).foreach(key => {
+            if (allowedupdates.includes(key)) {
                 user[key] = updates[key];
             }
         });
@@ -170,17 +170,17 @@ class UserService {
     }
 
     // 删除用户
-    static async deleteUser(userId) {
-        const user = await User.findById(userId);
+    static async deleteuser(userid) {
+        const user = await user.findbyid(userid);
         if (!user) {
-            throw new Error('User not found');
+            throw new error('user not found');
         }
 
-        await User.deleteOne({ _id: userId });
+        await user.deletone({ _id: userid });
         // 清理相关数据
-        await PointHistory.deleteMany({ userId });
-        await UserTask.deleteMany({ userId });
+        await pointhistory.deletemany({ userid });
+        await usertask.deletemany({ userid });
     }
 }
 
-module.exports = UserService;
+module.exports = userservice;

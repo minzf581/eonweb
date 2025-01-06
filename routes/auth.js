@@ -14,7 +14,7 @@ router.post('/register', async (req, res) => {
             email: req.body.email
         });
 
-        const { email, password, referralCode } = req.body;
+        const { email, password, referralcode } = req.body;
         
         // 检查必需字段
         if (!email || !password) {
@@ -54,14 +54,14 @@ router.post('/register', async (req, res) => {
         const user = await User.create({
             email,
             password,
-            referredBy: referralCode, // Store the referral code used during registration
+            referralcode,
             points: 0,
-            isAdmin: false
+            isadmin: false
         });
 
         // 处理推荐码关系
-        if (referralCode) {
-            await processReferral(user.id, referralCode);
+        if (referralcode) {
+            await processReferral(user.id, referralcode);
         }
 
         // 生成 JWT
@@ -69,7 +69,7 @@ router.post('/register', async (req, res) => {
             { 
                 id: user.id, 
                 email: user.email,
-                isAdmin: user.isAdmin 
+                isadmin: user.isadmin 
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
@@ -78,7 +78,7 @@ router.post('/register', async (req, res) => {
         console.log('[Auth] Registration successful:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         });
 
         res.status(201).json({
@@ -88,9 +88,9 @@ router.post('/register', async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                isadmin: user.isadmin,
                 points: user.points,
-                referralCode: user.referralCode
+                referralcode: user.referralcode
             }
         });
     } catch (error) {
@@ -123,7 +123,7 @@ router.post('/login', async (req, res) => {
         // 查找用户
         const user = await User.findOne({ 
             where: { email },
-            attributes: ['id', 'email', 'password', 'isAdmin', 'points', 'referralCode']
+            attributes: ['id', 'email', 'password', 'isadmin', 'points', 'referralcode']
         });
 
         if (!user) {
@@ -157,7 +157,7 @@ router.post('/login', async (req, res) => {
         const tokenPayload = {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         };
 
         console.log('[Auth] Generated token payload:', tokenPayload);
@@ -176,16 +176,16 @@ router.post('/login', async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                isadmin: user.isadmin,
                 points: user.points,
-                referralCode: user.referralCode
+                referralcode: user.referralcode
             }
         };
 
         console.log('[Auth] Login successful:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         });
 
         res.json(responsePayload);
@@ -221,13 +221,13 @@ router.get('/me', async (req, res) => {
         console.log('[Auth] Token decoded:', {
             id: decoded.id,
             email: decoded.email,
-            isAdmin: decoded.isAdmin
+            isadmin: decoded.isadmin
         });
         
         // 获取用户信息
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'isAdmin', 'points', 'referralCode']
+            attributes: ['id', 'email', 'isadmin', 'points', 'referralcode']
         });
 
         if (!user) {
@@ -241,7 +241,7 @@ router.get('/me', async (req, res) => {
         console.log('[Auth] User info retrieved:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         });
 
         res.json({
@@ -268,14 +268,14 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
         console.log('[Auth] Token decoded:', {
             id: decoded.id,
             email: decoded.email,
-            isAdmin: decoded.isAdmin,
+            isadmin: decoded.isadmin,
             exp: new Date(decoded.exp * 1000).toISOString()
         });
         
         // 获取用户信息
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'isAdmin', 'points', 'referralCode']
+            attributes: ['id', 'email', 'isadmin', 'points', 'referralcode']
         });
 
         if (!user) {
@@ -289,7 +289,7 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
         console.log('[Auth] Token verification successful:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         });
 
         return res.json({
@@ -297,9 +297,9 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                isadmin: user.isadmin,
                 points: user.points,
-                referralCode: user.referralCode
+                referralcode: user.referralcode
             }
         });
     } catch (error) {

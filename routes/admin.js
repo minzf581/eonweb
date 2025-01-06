@@ -16,17 +16,17 @@ router.get('/stats', async (req, res) => {
         console.log('[Admin API] Getting stats, user:', {
             id: req.user.id,
             email: req.user.email,
-            isAdmin: req.user.isAdmin
+            isadmin: req.user.isadmin
         });
 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
 
-        const [totalUsers, activeUsers, totalTasks, currentTasks] = await Promise.all([
+        const [totalusers, activeusers, totaltasks, currenttasks] = await Promise.all([
             User.count(),
             User.count({
                 where: {
-                    updatedAt: {
+                    updatedat: {
                         [Op.gte]: yesterday
                     }
                 }
@@ -41,18 +41,18 @@ router.get('/stats', async (req, res) => {
             Task.count({
                 where: {
                     status: 'active',
-                    isActive: true
+                    isactive: true
                 }
             })
         ]);
 
         const stats = {
-            totalUsers,
-            activeUsers,
-            totalTasks,
-            currentTasks,
-            currentTaskPercentage: totalTasks > 0 ? (currentTasks / totalTasks * 100).toFixed(1) : 0,
-            userParticipationRate: totalUsers > 0 ? (activeUsers / totalUsers * 100).toFixed(1) : 0
+            totalusers,
+            activeusers,
+            totaltasks,
+            currenttasks,
+            currenttaskpercentage: totaltasks > 0 ? (currenttasks / totaltasks * 100).toFixed(1) : 0,
+            userparticipationrate: totalusers > 0 ? (activeusers / totalusers * 100).toFixed(1) : 0
         };
 
         console.log('[Admin API] Stats:', stats);
@@ -70,20 +70,34 @@ router.get('/stats', async (req, res) => {
 // Get all users
 router.get('/users', async (req, res) => {
     try {
-        console.log('[Admin API] Getting users');
-        const users = await User.findAll({
-            attributes: ['id', 'email', 'points', 'referralCode', 'isAdmin', 'createdAt'],
-            order: [['createdAt', 'DESC']]
+        console.log('[Admin API] Getting all users, requested by:', {
+            id: req.user.id,
+            email: req.user.email,
+            isadmin: req.user.isadmin
         });
-        
-        console.log('[Admin API] Found users:', users.length);
-        res.json(users);
+
+        const users = await User.findAll({
+            attributes: ['id', 'email', 'points', 'referralcode', 'isadmin', 'createdat'],
+            order: [['createdat', 'DESC']]
+        });
+
+        res.json({
+            success: true,
+            users: users.map(user => ({
+                id: user.id,
+                email: user.email,
+                points: user.points,
+                referralcode: user.referralcode,
+                isadmin: user.isadmin,
+                createdat: user.createdat
+            }))
+        });
     } catch (error) {
         console.error('[Admin API] Error getting users:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            error: 'Failed to load user list',
-            details: error.message 
+            message: 'Error getting users',
+            error: error.message
         });
     }
 });
@@ -91,69 +105,66 @@ router.get('/users', async (req, res) => {
 // Add new user
 router.post('/users', async (req, res) => {
     try {
-        console.log('[Admin API] Adding user, admin:', {
+        console.log('[Admin API] Creating user, requested by:', {
             id: req.user.id,
             email: req.user.email,
-            isAdmin: req.user.isAdmin
+            isadmin: req.user.isadmin
         });
 
-        const { email, password, isAdmin } = req.body;
+        const { email, password, isadmin } = req.body;
 
-        // Validate required fields
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
-                error: 'Email and password are required'
+                message: 'Email and password are required'
             });
         }
 
-        // Check if user already exists
-        const existingUser = await User.findOne({ where: { email } });
+        const existingUser = await User.findOne({
+            where: { email }
+        });
+
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                error: 'User already exists'
+                message: 'Email already registered'
             });
         }
 
-        // Generate referral code
-        const referralCode = crypto.randomBytes(4).toString('hex');
+        const referralcode = crypto.randomBytes(4).toString('hex');
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create user
         const user = await User.create({
             email,
-            password: hashedPassword,
-            referralCode,
-            isAdmin: !!isAdmin,
+            password,
+            referralcode,
+            isadmin: !!isadmin,
             points: 0
         });
 
         console.log('[Admin API] User created:', {
             id: user.id,
             email: user.email,
-            isAdmin: user.isAdmin
+            isadmin: user.isadmin
         });
 
-        res.json({
+        res.status(201).json({
             success: true,
+            message: 'User created successfully',
             user: {
                 id: user.id,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                isadmin: user.isadmin,
                 points: user.points,
-                referralCode: user.referralCode,
-                createdAt: user.createdAt
+                referralcode: user.referralcode,
+                createdat: user.createdat
             }
         });
     } catch (error) {
         console.error('[Admin API] Error creating user:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to create user',
-            details: error.message
+            message: 'Error creating user',
+            error: error.message
         });
     }
 });
@@ -163,8 +174,8 @@ router.get('/tasks', async (req, res) => {
     try {
         console.log('[Admin API] Getting tasks');
         const tasks = await Task.findAll({
-            attributes: ['id', 'title', 'description', 'points', 'type', 'status', 'startDate', 'isActive'],
-            order: [['createdAt', 'DESC']]
+            attributes: ['id', 'title', 'description', 'points', 'type', 'status', 'startdate', 'isactive'],
+            order: [['createdat', 'DESC']]
         });
         
         console.log('[Admin API] Found tasks:', tasks.length);
@@ -185,7 +196,7 @@ router.get('/settings', async (req, res) => {
         console.log('[Admin API] Getting settings, user:', {
             id: req.user.id,
             email: req.user.email,
-            isAdmin: req.user.isAdmin
+            isadmin: req.user.isadmin
         });
 
         const settings = await Settings.findAll();
@@ -203,19 +214,19 @@ router.post('/settings', async (req, res) => {
         console.log('[Admin API] Updating settings, user:', {
             id: req.user.id,
             email: req.user.email,
-            isAdmin: req.user.isAdmin
+            isadmin: req.user.isadmin
         });
 
-        const { referralPoints, taskPoints } = req.body;
+        const { referralpoints, taskpoints } = req.body;
         
         await Settings.upsert({
-            key: 'referralPoints',
-            value: referralPoints
+            key: 'referralpoints',
+            value: referralpoints
         });
         
         await Settings.upsert({
-            key: 'taskPoints',
-            value: taskPoints
+            key: 'taskpoints',
+            value: taskpoints
         });
         
         res.json({ success: true });
@@ -231,20 +242,20 @@ router.delete('/users/:id', async (req, res) => {
         console.log('[Admin API] Deleting user, admin:', {
             id: req.user.id,
             email: req.user.email,
-            isAdmin: req.user.isAdmin
+            isadmin: req.user.isadmin
         });
 
-        const userId = req.params.id;
+        const userid = req.params.id;
 
         // Prevent self-deletion
-        if (userId === req.user.id.toString()) {
+        if (userid === req.user.id.toString()) {
             return res.status(400).json({
                 success: false,
                 error: 'Cannot delete your own account'
             });
         }
 
-        const user = await User.findByPk(userId);
+        const user = await User.findByPk(userid);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -253,7 +264,7 @@ router.delete('/users/:id', async (req, res) => {
         }
 
         await user.destroy();
-        console.log('[Admin API] User deleted:', { id: userId });
+        console.log('[Admin API] User deleted:', { id: userid });
 
         res.json({
             success: true,
@@ -275,17 +286,17 @@ router.patch('/users/:id', async (req, res) => {
         console.log('[Admin API] Updating user, admin:', {
             id: req.user.id,
             email: req.user.email,
-            isAdmin: req.user.isAdmin
+            isadmin: req.user.isadmin
         });
 
-        const userId = req.params.id;
+        const userid = req.params.id;
         const updates = req.body;
         
         // Prevent updating sensitive fields
         delete updates.password;
         delete updates.email;
         
-        const user = await User.findByPk(userId);
+        const user = await User.findByPk(userid);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -297,10 +308,10 @@ router.patch('/users/:id', async (req, res) => {
                 id: user.id,
                 email: user.email,
                 points: user.points,
-                referralCode: user.referralCode,
-                isAdmin: user.isAdmin,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt
+                referralcode: user.referralcode,
+                isadmin: user.isadmin,
+                createdat: user.createdat,
+                updatedat: user.updatedat
             }
         });
     } catch (error) {
