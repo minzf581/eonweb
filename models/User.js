@@ -27,7 +27,6 @@ class User extends Model {
     }
 
     static associate(models) {
-        // Define associations here if needed
         User.hasMany(models.UserTask, {
             foreignKey: 'userid'
         });
@@ -67,6 +66,21 @@ const initUser = (sequelize) => {
                 console.log('Password hashed successfully');
                 this.setDataValue('password', hash);
             }
+        },
+        role: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue: 'user'
+        },
+        status: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue: 'active'
+        },
+        balance: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0.00
         },
         referral_code: {
             type: DataTypes.STRING,

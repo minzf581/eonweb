@@ -14,29 +14,48 @@ module.exports = {
       });
 
       // Update existing users to have a username based on their email
-      const [users] = await queryInterface.sequelize.query(
-        'SELECT id, email FROM users WHERE username = $1',
+      await queryInterface.sequelize.query(
+        'UPDATE users SET username = SPLIT_PART(email, \'@\', 1) WHERE username = $1',
         {
           bind: ['user_' + Date.now()]
         }
       );
+    }
 
-      for (const user of users) {
-        await queryInterface.sequelize.query(
-          'UPDATE users SET username = $1 WHERE id = $2',
-          {
-            bind: [user.email.split('@')[0], user.id]
-          }
-        );
-      }
+    // Add other missing columns if they don't exist
+    if (!tableInfo.role) {
+      await queryInterface.addColumn('users', 'role', {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: 'user'
+      });
+    }
+
+    if (!tableInfo.status) {
+      await queryInterface.addColumn('users', 'status', {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: 'active'
+      });
+    }
+
+    if (!tableInfo.balance) {
+      await queryInterface.addColumn('users', 'balance', {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00
+      });
     }
   },
 
   async down(queryInterface, Sequelize) {
     const tableInfo = await queryInterface.describeTable('users');
     
-    if (tableInfo.username) {
-      await queryInterface.removeColumn('users', 'username');
-    }
+    const columns = ['username', 'role', 'status', 'balance'];
+    const changes = columns
+      .filter(column => tableInfo[column])
+      .map(column => queryInterface.removeColumn('users', column));
+    
+    await Promise.all(changes);
   }
 };
