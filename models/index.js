@@ -35,10 +35,10 @@ const models = {
 User.hasMany(PointHistory);
 PointHistory.belongsTo(User);
 
-User.hasMany(UserTask);
-Task.hasMany(UserTask);
-UserTask.belongsTo(User);
-UserTask.belongsTo(Task);
+User.hasMany(UserTask, { as: 'UserTasks' });
+Task.hasMany(UserTask, { as: 'UserTasks' });
+UserTask.belongsTo(User, { as: 'User' });
+UserTask.belongsTo(Task, { as: 'Task' });
 
 User.hasMany(Referral, { foreignKey: 'referrerId', as: 'Referrals' });
 User.hasMany(Referral, { foreignKey: 'referredId', as: 'ReferredBy' });

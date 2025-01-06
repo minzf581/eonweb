@@ -90,6 +90,7 @@ router.post('/report/batch', authenticateProxyBackend, validateBatchReport, asyn
                 deviceId: node.deviceId,
                 username: node.username,
                 userId: user.id,
+                proxyBackendId: proxyBackendId,
                 status: node.status,
                 ipAddress: node.ipAddress,
                 lastReportTime: timestamp,
@@ -118,6 +119,7 @@ router.post('/report/batch', authenticateProxyBackend, validateBatchReport, asyn
             updateOnDuplicate: [
                 'username',
                 'userId',
+                'proxyBackendId',
                 'status', 
                 'ipAddress',
                 'lastStatusChange',
