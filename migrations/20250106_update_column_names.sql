@@ -7,6 +7,9 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'updatedAt') THEN
         ALTER TABLE tasks RENAME COLUMN "updatedAt" TO updated_at;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'deleted_at') THEN
+        ALTER TABLE tasks ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
+    END IF;
 END $$;
 
 -- 修改 user_tasks 表
@@ -30,6 +33,9 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'updatedAt') THEN
         ALTER TABLE user_tasks RENAME COLUMN "updatedAt" TO updated_at;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'deleted_at') THEN
+        ALTER TABLE user_tasks ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
+    END IF;
 END $$;
 
 -- 修改 users 表
@@ -52,17 +58,6 @@ BEGIN
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'isAdmin') THEN
         ALTER TABLE users RENAME COLUMN "isAdmin" TO is_admin;
-    END IF;
-END $$;
-
--- 添加软删除列
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'deleted_at') THEN
-        ALTER TABLE user_tasks ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'deleted_at') THEN
-        ALTER TABLE tasks ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'deleted_at') THEN
         ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;

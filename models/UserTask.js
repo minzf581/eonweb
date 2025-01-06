@@ -44,6 +44,10 @@ const initUserTask = (sequelize) => {
         points: {
             type: DataTypes.INTEGER,
             defaultValue: 0
+        },
+        deleted_at: {
+            type: DataTypes.DATE,
+            allowNull: true
         }
     }, {
         sequelize,
@@ -51,10 +55,10 @@ const initUserTask = (sequelize) => {
         tableName: 'user_tasks',
         underscored: true,
         timestamps: true,
+        paranoid: true,
         createdAt: 'created_at',
         updatedAt: 'updated_at',
-        deletedAt: 'deleted_at',
-        paranoid: true
+        deletedAt: 'deleted_at'
     });
 
     return UserTask;
