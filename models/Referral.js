@@ -17,48 +17,57 @@ class Referral extends Model {
 
 const initReferral = (sequelize) => {
     Referral.init({
-        referrer_id: {
+        referrerId: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
                 model: 'users',
                 key: 'id'
-            }
+            },
+            field: 'referrer_id'
         },
-        referred_id: {
+        referredId: {
             type: DataTypes.INTEGER,
             allowNull: false,
             unique: true,
             references: {
                 model: 'users',
                 key: 'id'
-            }
+            },
+            field: 'referred_id'
         },
-        points_earned: {
+        pointsEarned: {
             type: DataTypes.INTEGER,
-            defaultValue: 0
+            defaultValue: 0,
+            field: 'points_earned'
         },
         status: {
             type: DataTypes.ENUM('pending', 'completed'),
             defaultValue: 'pending'
+        },
+        deletedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'deleted_at'
+        },
+        createdAt: {
+            type: DataTypes.DATE,
+            field: 'created_at'
+        },
+        updatedAt: {
+            type: DataTypes.DATE,
+            field: 'updated_at'
         }
     }, {
         sequelize,
         modelName: 'Referral',
         tableName: 'referrals',
-        underscored: true,
+        underscored: false,
         timestamps: true,
+        paranoid: true,
         createdAt: 'created_at',
         updatedAt: 'updated_at',
-        indexes: [
-            {
-                fields: ['referrer_id']
-            },
-            {
-                fields: ['referred_id'],
-                unique: true
-            }
-        ]
+        deletedAt: 'deleted_at'
     });
 
     return Referral;

@@ -4,7 +4,7 @@ module.exports = (sequelize) => {
   class ProxyNode extends Model {
     static associate(models) {
       ProxyNode.belongsTo(models.User, {
-        foreignKey: 'userId'
+        foreignKey: 'userid'
       });
     }
   }
@@ -12,15 +12,17 @@ module.exports = (sequelize) => {
   ProxyNode.init({
     nodeId: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      field: 'node_id'
     },
-    userId: {
+    userid: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: 'users',
         key: 'id'
-      }
+      },
+      field: 'userid'
     },
     ip: {
       type: DataTypes.STRING,
@@ -39,22 +41,40 @@ module.exports = (sequelize) => {
       defaultValue: 0
     },
     lastOnline: {
-      type: DataTypes.DATE
+      type: DataTypes.DATE,
+      field: 'last_online'
     },
     lastOffline: {
-      type: DataTypes.DATE
+      type: DataTypes.DATE,
+      field: 'last_offline'
     },
     lastReport: {
-      type: DataTypes.DATE
+      type: DataTypes.DATE,
+      field: 'last_report'
+    },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'deleted_at'
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      field: 'created_at'
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      field: 'updated_at'
     }
   }, {
     sequelize,
     modelName: 'ProxyNode',
     tableName: 'proxy_nodes',
-    underscored: true,
+    underscored: false,
     timestamps: true,
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    paranoid: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    deletedAt: 'deleted_at'
   });
 
   return ProxyNode;

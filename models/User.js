@@ -28,7 +28,7 @@ class User extends Model {
 
     static associate(models) {
         User.hasMany(models.UserTask, {
-            foreignKey: 'user_id',
+            foreignKey: 'userid',
             as: 'tasks'
         });
     }
@@ -56,79 +56,67 @@ const initUser = (sequelize) => {
         },
         password: {
             type: DataTypes.STRING,
-            allowNull: false,
-            set(value) {
-                if (!value) {
-                    throw new Error('Password cannot be null');
-                }
-                console.log('Hashing password...');
-                const salt = bcrypt.genSaltSync(10);
-                const hash = bcrypt.hashSync(value, salt);
-                console.log('Password hashed successfully');
-                this.setDataValue('password', hash);
-            }
-        },
-        role: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            defaultValue: 'user'
-        },
-        status: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            defaultValue: 'active'
-        },
-        credits: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false,
-            defaultValue: 0.00
+            allowNull: false
         },
         points: {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
-        is_admin: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false
+        credits: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
         },
-        referral_code: {
+        isAdmin: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            field: 'is_admin'
+        },
+        referralCode: {
             type: DataTypes.STRING,
             unique: true,
-            allowNull: true
+            field: 'referral_code'
         },
-        referred_by: {
-            type: DataTypes.STRING,
-            allowNull: true
+        referredBy: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            field: 'referred_by'
         },
-        last_login_at: {
+        lastLoginAt: {
             type: DataTypes.DATE,
-            allowNull: true
+            allowNull: true,
+            field: 'last_login_at'
+        },
+        deletedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'deleted_at'
+        },
+        createdAt: {
+            type: DataTypes.DATE,
+            field: 'created_at'
+        },
+        updatedAt: {
+            type: DataTypes.DATE,
+            field: 'updated_at'
         }
     }, {
         sequelize,
         modelName: 'User',
         tableName: 'users',
-        underscored: true,
+        underscored: false,
         timestamps: true,
+        paranoid: true,
         createdAt: 'created_at',
         updatedAt: 'updated_at',
+        deletedAt: 'deleted_at',
         hooks: {
             beforeCreate: async (user) => {
-                try {
-                    console.log('Generating referral code...');
-                    if (!user.referral_code) {
-                        const randomBytes = crypto.randomBytes(4);
-                        const referralCode = randomBytes.toString('hex').toUpperCase();
-                        console.log('Generated referral code:', referralCode);
-                        user.referral_code = referralCode;
-                    }
-                    // Generate username from email if not provided
-                    if (!user.username) {
-                        user.username = user.email.split('@')[0];
-                    }
-                } catch (error) {
-                    console.error('Error in beforeCreate hook:', error);
-                    throw error;
+                if (user.password) {
+                    const salt = await bcrypt.genSalt(10);
+                    user.password = await bcrypt.hash(user.password, salt);
+                }
+                if (!user.referralCode) {
+                    user.referralCode = crypto.randomBytes(4).toString('hex');
                 }
             }
         }

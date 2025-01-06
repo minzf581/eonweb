@@ -3,7 +3,7 @@ const { Model, DataTypes } = require('sequelize');
 class BandwidthTask extends Model {
     static associate(models) {
         BandwidthTask.belongsTo(models.User, {
-            foreignKey: 'userId',
+            foreignKey: 'userid',
             as: 'user'
         });
     }
@@ -11,22 +11,25 @@ class BandwidthTask extends Model {
 
 const initBandwidthTask = (sequelize) => {
     BandwidthTask.init({
-        userId: {
+        userid: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
-                model: 'Users',
+                model: 'users',
                 key: 'id'
-            }
+            },
+            field: 'userid'
         },
         uploadSpeed: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            field: 'upload_speed',
             comment: '上传速度限制 (KB/s)'
         },
         downloadSpeed: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            field: 'download_speed',
             comment: '下载速度限制 (KB/s)'
         },
         duration: {
@@ -37,6 +40,7 @@ const initBandwidthTask = (sequelize) => {
         actualDuration: {
             type: DataTypes.INTEGER,
             allowNull: true,
+            field: 'actual_duration',
             comment: '实际持续时间 (秒)'
         },
         status: {
@@ -46,24 +50,37 @@ const initBandwidthTask = (sequelize) => {
         },
         startedAt: {
             type: DataTypes.DATE,
-            allowNull: true
+            allowNull: true,
+            field: 'started_at'
         },
         completedAt: {
             type: DataTypes.DATE,
-            allowNull: true
+            allowNull: true,
+            field: 'completed_at'
+        },
+        deletedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'deleted_at'
+        },
+        createdAt: {
+            type: DataTypes.DATE,
+            field: 'created_at'
+        },
+        updatedAt: {
+            type: DataTypes.DATE,
+            field: 'updated_at'
         }
     }, {
         sequelize,
         modelName: 'BandwidthTask',
-        underscored: true,  
-        indexes: [
-            {
-                fields: ['userId']
-            },
-            {
-                fields: ['status']
-            }
-        ]
+        tableName: 'bandwidth_tasks',
+        underscored: false,
+        timestamps: true,
+        paranoid: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
+        deletedAt: 'deleted_at'
     });
 
     return BandwidthTask;

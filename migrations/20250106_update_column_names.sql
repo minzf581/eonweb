@@ -15,17 +15,32 @@ END $$;
 -- 修改 user_tasks 表
 DO $$
 BEGIN
+    -- First rename any snake_case columns back to camelCase if they exist
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'user_id') THEN
+        ALTER TABLE user_tasks RENAME COLUMN user_id TO userid;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'task_id') THEN
+        ALTER TABLE user_tasks RENAME COLUMN task_id TO taskid;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'start_time') THEN
+        ALTER TABLE user_tasks RENAME COLUMN start_time TO starttime;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'end_time') THEN
+        ALTER TABLE user_tasks RENAME COLUMN end_time TO endtime;
+    END IF;
+    
+    -- Then handle any camelCase columns that might exist
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'userId') THEN
-        ALTER TABLE user_tasks RENAME COLUMN "userId" TO user_id;
+        ALTER TABLE user_tasks RENAME COLUMN "userId" TO userid;
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'taskId') THEN
-        ALTER TABLE user_tasks RENAME COLUMN "taskId" TO task_id;
+        ALTER TABLE user_tasks RENAME COLUMN "taskId" TO taskid;
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'startTime') THEN
-        ALTER TABLE user_tasks RENAME COLUMN "startTime" TO start_time;
+        ALTER TABLE user_tasks RENAME COLUMN "startTime" TO starttime;
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'endTime') THEN
-        ALTER TABLE user_tasks RENAME COLUMN "endTime" TO end_time;
+        ALTER TABLE user_tasks RENAME COLUMN "endTime" TO endtime;
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_tasks' AND column_name = 'createdAt') THEN
         ALTER TABLE user_tasks RENAME COLUMN "createdAt" TO created_at;
