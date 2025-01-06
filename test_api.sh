@@ -40,6 +40,7 @@ echo "测试注册..."
 echo "发送注册请求到: ${API_URL}/auth/register"
 REGISTER_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/register" \
     -H "Content-Type: application/json" \
+    -H "Content-Length: 0" \
     -d '{
         "email": "'${TEST_EMAIL}'",
         "password": "password123",
@@ -80,6 +81,7 @@ sleep 1
 echo "测试登录..."
 LOGIN_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/login" \
     -H "Content-Type: application/json" \
+    -H "Content-Length: 0" \
     -d '{
         "email": "'${TEST_EMAIL}'",
         "password": "password123"
@@ -112,6 +114,7 @@ echo "测试节点上线上报..."
 DEVICE_ID="test_device_${TIMESTAMP}"
 curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
     -H "Content-Type: application/json" \
+    -H "Content-Length: 0" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
         "nodes": [{
@@ -136,6 +139,7 @@ sleep 2
 echo "测试节点每日上报..."
 curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
     -H "Content-Type: application/json" \
+    -H "Content-Length: 0" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
         "nodes": [{
@@ -157,6 +161,7 @@ print_test_result $? "节点每日上报"
 echo "测试节点下线上报..."
 curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
     -H "Content-Type: application/json" \
+    -H "Content-Length: 0" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
         "nodes": [{
@@ -191,8 +196,12 @@ print_test_result $? "获取任务列表"
 
 # 3.2 开始任务
 echo "开始任务..."
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/tasks/1/start" \
-    -H "Authorization: Bearer ${TOKEN}"
+TASK_ID=1
+TASK_START_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/tasks/${TASK_ID}/start" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" \
+    -H "Content-Length: 0")
+echo "$TASK_START_RESPONSE"
 print_test_result $? "开始任务"
 
 # 4. 积分相关测试
@@ -220,6 +229,7 @@ echo -e "\n=== 带宽共享任务测试 ==="
 echo "创建带宽共享任务..."
 BANDWIDTH_TASK_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth" \
     -H "Content-Type: application/json" \
+    -H "Content-Length: 0" \
     -H "Authorization: Bearer ${TOKEN}" \
     -d '{
         "uploadSpeed": 100,
@@ -246,8 +256,11 @@ print_test_result $? "获取带宽任务详情"
 
 # 6.4 启动带宽共享任务
 echo "启动带宽共享任务..."
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth/${TASK_ID}/start" \
-    -H "Authorization: Bearer ${TOKEN}"
+TASK_START_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth/${TASK_ID}/start" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" \
+    -H "Content-Length: 0")
+echo "$TASK_START_RESPONSE"
 print_test_result $? "启动带宽共享任务"
 
 # 等待几秒钟
@@ -255,8 +268,11 @@ sleep 3
 
 # 6.5 停止带宽共享任务
 echo "停止带宽共享任务..."
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth/${TASK_ID}/stop" \
-    -H "Authorization: Bearer ${TOKEN}"
+TASK_STOP_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth/${TASK_ID}/stop" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" \
+    -H "Content-Length: 0")
+echo "$TASK_STOP_RESPONSE"
 print_test_result $? "停止带宽共享任务"
 
 # 输出测试结果统计
