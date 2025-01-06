@@ -1,5 +1,5 @@
 const { Sequelize } = require('sequelize');
-const sequelize = require('../config/database');
+const sequelize = require('../config/sequelize');
 
 // Import model initializers
 const initUser = require('./User');
@@ -32,41 +32,18 @@ const models = {
 };
 
 // Define associations
-models.User.hasMany(models.PointHistory);
-models.PointHistory.belongsTo(models.User);
+User.hasMany(PointHistory);
+PointHistory.belongsTo(User);
 
-models.User.hasMany(models.UserTask, {
-    foreignKey: 'userId',
-    as: 'tasks'
-});
-models.Task.hasMany(models.UserTask, {
-    foreignKey: 'taskId',
-    as: 'userTasks'
-});
-models.UserTask.belongsTo(models.User, {
-    foreignKey: 'userId'
-});
-models.UserTask.belongsTo(models.Task, {
-    foreignKey: 'taskId'
-});
+User.hasMany(UserTask);
+Task.hasMany(UserTask);
+UserTask.belongsTo(User);
+UserTask.belongsTo(Task);
 
-models.User.hasMany(models.Referral, {
-    foreignKey: 'referrerId',
-    as: 'referralsGiven'  
-});
-models.Referral.belongsTo(models.User, {
-    foreignKey: 'referrerId',
-    as: 'referrer'
-});
-
-models.User.hasOne(models.Referral, {
-    foreignKey: 'referredId',
-    as: 'referralReceived'  
-});
-models.Referral.belongsTo(models.User, {
-    foreignKey: 'referredId',
-    as: 'referred'
-});
+User.hasMany(Referral, { foreignKey: 'referrerId', as: 'Referrals' });
+User.hasMany(Referral, { foreignKey: 'referredId', as: 'ReferredBy' });
+Referral.belongsTo(User, { foreignKey: 'referrerId', as: 'Referrer' });
+Referral.belongsTo(User, { foreignKey: 'referredId', as: 'Referred' });
 
 // Export models and sequelize instance
 module.exports = models;

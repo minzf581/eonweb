@@ -4,7 +4,7 @@ require('dotenv').config();
 const isLocal = process.env.NODE_ENV !== 'production';
 console.log(`Running in ${isLocal ? 'local' : 'production'} mode`);
 
-const config = {
+const dbConfig = {
     dialect: 'postgres',
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
@@ -22,45 +22,18 @@ const config = {
 
 // 打印配置信息（不包含敏感信息）
 console.log('Using database configuration:', {
-    host: config.host,
-    database: config.database,
-    username: config.username,
-    ssl: config.dialectOptions?.ssl ? 'enabled' : 'disabled'
+    host: dbConfig.host,
+    database: dbConfig.database,
+    username: dbConfig.username,
+    ssl: dbConfig.dialectOptions?.ssl ? 'enabled' : 'disabled'
 });
 
-const { Sequelize } = require('sequelize');
-const sequelize = new Sequelize(
-    config.database,
-    config.username,
-    config.password,
-    config
-);
+// Sequelize CLI 需要的格式
+module.exports = {
+    development: dbConfig,
+    test: dbConfig,
+    production: dbConfig
+};
 
-async function connectWithRetry(maxRetries = 5, delay = 5000) {
-    let retries = 0;
-    while (retries < maxRetries) {
-        try {
-            await sequelize.authenticate();
-            console.log('Database connection has been established successfully.');
-            break;
-        } catch (error) {
-            retries++;
-            if (retries === maxRetries) {
-                throw error;
-            }
-            console.log(`Failed to connect to database (attempt ${retries}/${maxRetries}). Retrying in ${delay/1000} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-}
-
-// Initialize connection
-connectWithRetry()
-    .catch(err => {
-        console.error('Unable to connect to the database:', err);
-        process.exit(1);
-    });
-
-// 导出配置
-module.exports = sequelize;
-module.exports.config = config;
+// 导出运行时配置
+module.exports.dbConfig = dbConfig;
