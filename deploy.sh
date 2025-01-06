@@ -10,6 +10,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 清理已存在的 Cloud SQL Proxy 进程
+echo "Cleaning up existing Cloud SQL Proxy processes..."
+pkill -f cloud_sql_proxy || true
+
 # 下载并设置 Cloud SQL Proxy
 echo "Setting up Cloud SQL Proxy..."
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -35,18 +39,19 @@ PROXY_PID=$!
 sleep 5
 
 # 设置环境变量
-export DB_HOST=localhost
+export NODE_ENV=production
+export DB_HOST=/cloudsql/eonhome-445809:asia-southeast2:eon-db
 export DB_PORT=5432
 
 # 运行数据库迁移
 echo "Running database migrations..."
-NODE_ENV=development npx sequelize-cli db:migrate
+NODE_ENV=production npx sequelize-cli db:migrate
 
 MIGRATION_STATUS=$?
 
 # 停止 Cloud SQL Proxy
 echo "Stopping Cloud SQL Proxy..."
-kill $PROXY_PID
+kill $PROXY_PID || true
 
 if [ $MIGRATION_STATUS -ne 0 ]; then
     echo "Database migration failed. Please check the error message above."
@@ -75,8 +80,10 @@ if [ $? -eq 0 ]; then
     
     # 获取当前正在服务的版本
     SERVING_VERSION=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT>0" --format="value(version.id)" | head -n 1)
-    echo "Cleaning up previous serving version: $SERVING_VERSION"
-    gcloud app versions delete $SERVING_VERSION --quiet
+    if [ ! -z "$SERVING_VERSION" ]; then
+        echo "Cleaning up previous serving version: $SERVING_VERSION"
+        gcloud app versions delete $SERVING_VERSION --quiet
+    fi
     
     echo "Deployment and cleanup completed."
     
