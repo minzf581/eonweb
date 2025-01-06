@@ -50,6 +50,13 @@ export DB_PASSWORD=eonprotocol
 echo "Running database migrations..."
 NODE_ENV=production npx sequelize-cli db:migrate --env production
 
+# 运行原生 SQL 迁移脚本
+echo "Running SQL migrations..."
+PGPASSWORD=$DB_PASSWORD psql -h localhost -p 5432 -U $DB_USER -d $DB_NAME -f migrations/20250106_update_column_names.sql
+
+# 等待迁移完成
+sleep 2
+
 MIGRATION_STATUS=$?
 
 # 停止 Cloud SQL Proxy
