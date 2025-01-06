@@ -1,5 +1,5 @@
 const { Sequelize } = require('sequelize');
-const sequelize = require('../config/sequelize');
+const { sequelize } = require('../config/sequelize');
 
 // Import model initializers
 const initUser = require('./User');
