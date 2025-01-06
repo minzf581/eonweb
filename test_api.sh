@@ -85,18 +85,26 @@ LOGIN_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/login" 
         "password": "password123"
     }')
 echo "Login Response: $LOGIN_RESPONSE"
-LOGIN_SUCCESS=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print('true' if response.get('success') else 'false')")
+
+# 检查登录响应是否为空
+if [ -z "$LOGIN_RESPONSE" ]; then
+    echo "登录响应为空"
+    print_test_result 1 "用户登录"
+    exit 1
+fi
+
+# 尝试解析 JSON
+LOGIN_SUCCESS=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print('true' if response.get('success') else 'false')" 2>/dev/null || echo "false")
 if [ "$LOGIN_SUCCESS" = "true" ]; then
     print_test_result 0 "用户登录"
+    # 从登录响应中提取token
+    TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print(response.get('token', '') if response.get('success') else '')")
+    echo "Token: $TOKEN"
 else
     print_test_result 1 "用户登录"
     echo "登录失败，退出测试"
     exit 1
 fi
-
-# 从登录响应中提取token
-TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print(response.get('token', '') if response.get('success') else '')")
-echo "Token: $TOKEN"
 
 # 如果没有获取到token，退出测试
 if [ -z "$TOKEN" ]; then
