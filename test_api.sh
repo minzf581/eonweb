@@ -40,7 +40,6 @@ echo "测试注册..."
 echo "发送注册请求到: ${API_URL}/auth/register"
 REGISTER_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/register" \
     -H "Content-Type: application/json" \
-    -H "Content-Length: 0" \
     -d '{
         "email": "'${TEST_EMAIL}'",
         "password": "password123",
@@ -81,7 +80,6 @@ sleep 1
 echo "测试登录..."
 LOGIN_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/login" \
     -H "Content-Type: application/json" \
-    -H "Content-Length: 0" \
     -d '{
         "email": "'${TEST_EMAIL}'",
         "password": "password123"
@@ -112,23 +110,20 @@ echo -e "\n=== 代理节点状态上报测试 ==="
 # 2.1 节点上线
 echo "测试节点上线上报..."
 DEVICE_ID="test_device_${TIMESTAMP}"
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report" \
     -H "Content-Type: application/json" \
-    -H "Content-Length: 0" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
-        "nodes": [{
-            "deviceId": "'${DEVICE_ID}'",
-            "username": "'${TEST_USERNAME}'",
-            "status": "online",
-            "ipAddress": "1.2.3.4",
-            "duration": 0,
-            "traffic": {
-                "upload": 0,
-                "download": 0
-            },
-            "reportType": "status_change"
-        }]
+        "deviceId": "'${DEVICE_ID}'",
+        "username": "'${TEST_USERNAME}'",
+        "status": "online",
+        "ipAddress": "1.2.3.4",
+        "duration": 0,
+        "traffic": {
+            "upload": 0,
+            "download": 0
+        },
+        "reportType": "status_change"
     }'
 print_test_result $? "节点上线上报"
 
@@ -137,51 +132,45 @@ sleep 2
 
 # 2.2 节点每日上报
 echo "测试节点每日上报..."
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report" \
     -H "Content-Type: application/json" \
-    -H "Content-Length: 0" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
-        "nodes": [{
-            "deviceId": "'${DEVICE_ID}'",
-            "username": "'${TEST_USERNAME}'",
-            "status": "online",
-            "ipAddress": "1.2.3.4",
-            "duration": 86400,
-            "traffic": {
-                "upload": 1073741824,
-                "download": 2147483648
-            },
-            "reportType": "daily"
-        }]
+        "deviceId": "'${DEVICE_ID}'",
+        "username": "'${TEST_USERNAME}'",
+        "status": "online",
+        "ipAddress": "1.2.3.4",
+        "duration": 86400,
+        "traffic": {
+            "upload": 1073741824,
+            "download": 2147483648
+        },
+        "reportType": "daily"
     }'
 print_test_result $? "节点每日上报"
 
 # 2.3 节点下线
 echo "测试节点下线上报..."
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report" \
     -H "Content-Type: application/json" \
-    -H "Content-Length: 0" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
-        "nodes": [{
-            "deviceId": "'${DEVICE_ID}'",
-            "username": "'${TEST_USERNAME}'",
-            "status": "offline",
-            "ipAddress": "1.2.3.4",
-            "duration": 3600,
-            "traffic": {
-                "upload": 536870912,
-                "download": 1073741824
-            },
-            "reportType": "status_change"
-        }]
+        "deviceId": "'${DEVICE_ID}'",
+        "username": "'${TEST_USERNAME}'",
+        "status": "offline",
+        "ipAddress": "1.2.3.4",
+        "duration": 3600,
+        "traffic": {
+            "upload": 536870912,
+            "download": 1073741824
+        },
+        "reportType": "status_change"
     }'
 print_test_result $? "节点下线上报"
 
 # 2.4 获取节点统计
 echo "测试获取节点统计..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/proxy/stats" \
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/proxy/stats/${DEVICE_ID}" \
     -H "X-API-Key: ${API_KEY}"
 print_test_result $? "获取节点统计"
 
