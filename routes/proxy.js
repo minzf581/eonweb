@@ -4,6 +4,8 @@ const { authenticateProxyBackend } = require('../middleware/proxyAuth');
 const { NodeStatus, User, PointHistory, ProxyBackend } = require('../models');
 const { validateBatchReport } = require('../validators/proxyValidator');
 const sequelize = require('../config/sequelize');
+const { ProxyNode } = require('../models');
+const { checkApiKey } = require('../middleware/auth');
 
 // 计算积分的辅助函数
 const calculatePoints = (traffic, duration) => {
@@ -199,6 +201,80 @@ router.get('/stats', authenticateProxyBackend, async (req, res) => {
             error: error.message
         });
     }
+});
+
+// 代理节点状态上报
+router.post('/nodes/report', checkApiKey, async (req, res) => {
+  try {
+    const { deviceId, username, status, ipAddress, duration, traffic, reportType } = req.body;
+
+    // 查找用户
+    const user = await User.findOne({ where: { email: username } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // 查找或创建代理节点
+    let proxyNode = await ProxyNode.findOne({ where: { deviceId } });
+    if (!proxyNode) {
+      proxyNode = await ProxyNode.create({
+        deviceId,
+        userId: user.id,
+        status,
+        ipAddress,
+        lastSeenAt: new Date()
+      });
+    } else {
+      // 更新节点状态
+      await proxyNode.update({
+        status,
+        ipAddress,
+        lastSeenAt: new Date()
+      });
+    }
+
+    // 如果是每日上报，更新流量统计
+    if (reportType === 'daily') {
+      await proxyNode.increment({
+        totalUploadBytes: traffic.upload,
+        totalDownloadBytes: traffic.download,
+        totalOnlineSeconds: duration
+      });
+    }
+
+    res.json({ success: true, message: 'Report received' });
+  } catch (error) {
+    console.error('Error in proxy report:', error);
+    res.status(500).json({ success: false, message: 'Failed to process report' });
+  }
+});
+
+// 获取节点统计
+router.get('/nodes/:deviceId/stats', checkApiKey, async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+
+    const proxyNode = await ProxyNode.findOne({ where: { deviceId } });
+    if (!proxyNode) {
+      return res.status(404).json({ success: false, message: 'Node not found' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        deviceId: proxyNode.deviceId,
+        status: proxyNode.status,
+        ipAddress: proxyNode.ipAddress,
+        lastSeenAt: proxyNode.lastSeenAt,
+        totalUploadBytes: proxyNode.totalUploadBytes,
+        totalDownloadBytes: proxyNode.totalDownloadBytes,
+        totalOnlineSeconds: proxyNode.totalOnlineSeconds
+      }
+    });
+  } catch (error) {
+    console.error('Error in get node stats:', error);
+    res.status(500).json({ success: false, message: 'Failed to get node stats' });
+  }
 });
 
 module.exports = router;
