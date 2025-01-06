@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Core Scripts -->
     <script src="../js/authService.js"></script>
+    <script src="../js/aiOperator.js"></script>
     
     <style>
         :root {
@@ -581,19 +582,194 @@
         .toggle-switch input:checked + .slider:before {
             transform: translateX(26px);
         }
+
+        /* 新增样式 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .dashboard-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .balance-display {
+            background: var(--card-bg);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            margin-left: 1rem;
+        }
+
+        .task-list {
+            margin-top: 1rem;
+        }
+
+        .task-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+        }
+
+        .task-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-progress {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .dataset-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .dataset-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 5px;
+        }
+
+        .dataset-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        /* 数据集浏览器样式 */
+        .search-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+        }
+
+        .filter-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            flex: 1;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+        }
+
+        .dataset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        /* 结果管理样式 */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* 分析部分样式 */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .date-input {
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+        }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
         <div class="sidebar">
-            <ul class="sidebar-menu">
-                <li><a href="#dashboard" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="#tasks"><i class="fas fa-tasks"></i> Computing Tasks</a></li>
-                <li><a href="#models"><i class="fas fa-brain"></i> AI Models</a></li>
-                <li><a href="#analytics"><i class="fas fa-chart-bar"></i> Analytics</a></li>
-                <li><a href="#settings"><i class="fas fa-cog"></i> Settings</a></li>
-            </ul>
+            <div class="logo">
+                <img src="../images/enologo.jpg" alt="EON Protocol Logo">
+            </div>
+            <nav>
+                <a href="#dashboard" class="active"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="#datasets"><i class="fas fa-database"></i> Datasets</a>
+                <a href="#tasks"><i class="fas fa-tasks"></i> Tasks</a>
+                <a href="#results"><i class="fas fa-file-alt"></i> Results</a>
+                <a href="#analytics"><i class="fas fa-chart-line"></i> Analytics</a>
+                <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+            </nav>
         </div>
 
         <!-- Main Content -->
@@ -602,56 +778,47 @@
             <section id="dashboard" class="section active">
                 <div class="header">
                     <h1>AI Operator Dashboard</h1>
-                    <div class="notifications">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge">3</span>
-                        <div class="notification-list">
-                            <div class="notification-item">New task completed</div>
-                            <div class="notification-item">System update available</div>
-                            <div class="notification-item">Resource usage alert</div>
+                    <div class="header-actions">
+                        <button id="topUpBtn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Top Up Credits
+                        </button>
+                        <div class="balance-display">
+                            Balance: <span id="accountBalance">0</span> Credits
                         </div>
                     </div>
                 </div>
-
-                <div class="dashboard-cards">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Active Tasks</h3>
-                            <i class="fas fa-microchip card-icon"></i>
-                        </div>
-                        <h2>12</h2>
-                        <p>Currently running computations</p>
+                
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-tasks"></i>
+                        <h3>Active Tasks</h3>
+                        <p id="activeTasksCount">0</p>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Data Sets</h3>
-                            <i class="fas fa-database card-icon"></i>
-                        </div>
-                        <h2>8</h2>
-                        <p>Authorized datasets</p>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Completed Tasks</h3>
+                        <p id="completedTasksCount">0</p>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Computing Credits</h3>
-                            <i class="fas fa-coins card-icon"></i>
-                        </div>
-                        <h2>5,000</h2>
-                        <p>Available credits</p>
+                    <div class="stat-card">
+                        <i class="fas fa-database"></i>
+                        <h3>Favorite Datasets</h3>
+                        <p id="favoritesCount">0</p>
                     </div>
                 </div>
 
-                <div class="charts-container">
-                    <div class="chart-card">
-                        <h3>Computing Resource Usage</h3>
-                        <canvas id="resourceChart"></canvas>
+                <!-- Recent Activity -->
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Recent Tasks</h3>
+                        <div id="recentTasks" class="task-list"></div>
                     </div>
-                    <div class="chart-card">
-                        <h3>Task Completion Trends</h3>
-                        <canvas id="trendsChart"></canvas>
+                    <div class="dashboard-card">
+                        <h3>Favorite Datasets</h3>
+                        <div id="favoriteDatasets" class="dataset-list"></div>
                     </div>
                 </div>
             </section>
-
             <!-- Tasks Section -->
             <section id="tasks" class="section">
                 <div class="header">
@@ -802,72 +969,25 @@
                 <div class="header">
                     <h1>Analytics</h1>
                     <div class="date-range">
-                        <input type="date" class="date-input">
+                        <input type="date" class="date-input" id="analyticsStartDate">
                         <span>to</span>
-                        <input type="date" class="date-input">
-                        <button class="btn btn-primary">Apply</button>
+                        <input type="date" class="date-input" id="analyticsEndDate">
                     </div>
                 </div>
-                <div class="analytics-container">
-                    <!-- Performance Metrics -->
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <h3>Computing Performance</h3>
-                            <canvas id="performanceChart"></canvas>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Resource Utilization</h3>
-                            <canvas id="resourceUtilizationChart"></canvas>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Task Success Rate</h3>
-                            <canvas id="successRateChart"></canvas>
-                        </div>
-                        <div class="metric-card">
-                            <h3>FHE Operations</h3>
-                            <canvas id="fheOperationsChart"></canvas>
-                        </div>
-                    </div>
 
-                    <!-- Detailed Statistics -->
-                    <div class="statistics-container">
-                        <h3>Detailed Statistics</h3>
-                        <table class="stats-table">
-                            <thead>
-                                <tr>
-                                    <th>Metric</th>
-                                    <th>Last 24h</th>
-                                    <th>Last Week</th>
-                                    <th>Last Month</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Total Tasks Processed</td>
-                                    <td>245</td>
-                                    <td>1,678</td>
-                                    <td>6,892</td>
-                                </tr>
-                                <tr>
-                                    <td>Average Processing Time</td>
-                                    <td>45.2s</td>
-                                    <td>42.8s</td>
-                                    <td>43.5s</td>
-                                </tr>
-                                <tr>
-                                    <td>FHE Operations</td>
-                                    <td>12,456</td>
-                                    <td>85,234</td>
-                                    <td>342,567</td>
-                                </tr>
-                                <tr>
-                                    <td>Resource Usage</td>
-                                    <td>78%</td>
-                                    <td>82%</td>
-                                    <td>80%</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- Analytics Charts -->
+                <div class="analytics-grid">
+                    <div class="chart-card">
+                        <h3>Credit Usage</h3>
+                        <canvas id="creditUsageChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Task Distribution</h3>
+                        <canvas id="taskDistributionChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Dataset Usage</h3>
+                        <canvas id="datasetUsageChart"></canvas>
                     </div>
                 </div>
             </section>
@@ -878,77 +998,61 @@
                     <h1>Settings</h1>
                 </div>
                 <div class="settings-container">
-                    <!-- System Settings -->
+                    <!-- Notification Settings -->
                     <div class="settings-card">
-                        <h3>System Configuration</h3>
-                        <form class="settings-form">
-                            <div class="form-group">
-                                <label>Maximum Concurrent Tasks</label>
-                                <input type="number" value="10" min="1" max="50">
-                            </div>
-                            <div class="form-group">
-                                <label>Resource Allocation Strategy</label>
-                                <select>
-                                    <option>Balanced</option>
-                                    <option>Performance Priority</option>
-                                    <option>Energy Efficient</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>FHE Security Level</label>
-                                <select>
-                                    <option>High (128-bit)</option>
-                                    <option>Very High (256-bit)</option>
-                                    <option>Maximum (512-bit)</option>
-                                </select>
-                            </div>
-                        </form>
+                        <h3>Notification Preferences</h3>
+                        <div class="settings-group">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="emailNotifications" checked>
+                                <span class="slider"></span>
+                                Email Notifications
+                            </label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="browserNotifications" checked>
+                                <span class="slider"></span>
+                                Browser Notifications
+                            </label>
+                        </div>
                     </div>
 
-                    <!-- API Configuration -->
+                    <!-- API Settings -->
                     <div class="settings-card">
-                        <h3>API Configuration</h3>
-                        <div class="api-settings">
-                            <div class="form-group">
+                        <h3>API Access</h3>
+                        <div class="settings-group">
+                            <div class="api-key">
                                 <label>API Key</label>
                                 <div class="api-key-display">
-                                    <input type="text" value="••••••••••••••••" readonly>
-                                    <button class="btn btn-sm btn-secondary">Show</button>
-                                    <button class="btn btn-sm btn-primary">Regenerate</button>
+                                    <input type="password" value="your-api-key" readonly>
+                                    <button class="btn btn-secondary" onclick="toggleApiKey(this)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-primary" onclick="regenerateApiKey()">
+                                        <i class="fas fa-sync"></i> Regenerate
+                                    </button>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Webhook URL</label>
-                                <input type="url" placeholder="https://your-webhook-url.com">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Notification Preferences -->
+                    <!-- Billing Settings -->
                     <div class="settings-card">
-                        <h3>Notification Preferences</h3>
-                        <div class="notification-settings">
-                            <div class="setting-item">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                                <span>Task Completion Alerts</span>
-                            </div>
-                            <div class="setting-item">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                                <span>Error Notifications</span>
-                            </div>
-                            <div class="setting-item">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                                <span>System Updates</span>
-                            </div>
+                        <h3>Billing Information</h3>
+                        <div class="settings-group">
+                            <form id="billingForm">
+                                <div class="form-group">
+                                    <label>Company Name</label>
+                                    <input type="text" name="companyName">
+                                </div>
+                                <div class="form-group">
+                                    <label>Billing Email</label>
+                                    <input type="email" name="billingEmail">
+                                </div>
+                                <div class="form-group">
+                                    <label>Tax ID</label>
+                                    <input type="text" name="taxId">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -959,172 +1063,80 @@
     <!-- New Task Modal -->
     <div class="modal" id="newTaskModal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>Create New Computing Task</h2>
-            <form id="newTaskForm">
+            <div class="modal-header">
+                <h2>New Computing Task</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="taskForm">
                 <div class="form-group">
-                    <label class="form-label">Task Name</label>
-                    <input type="text" class="form-control" placeholder="Enter task name">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Select Dataset</label>
-                    <select class="form-control">
-                        <option>Financial Records 2023</option>
-                        <option>Customer Behavior Analysis</option>
-                        <option>Market Trends 2023</option>
+                    <label>Dataset</label>
+                    <select name="datasetId" required>
+                        <!-- Datasets will be loaded dynamically -->
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Computing Resources</label>
-                    <select class="form-control">
-                        <option>Standard - 4 CPU cores</option>
-                        <option>Advanced - 8 CPU cores</option>
-                        <option>Premium - 16 CPU cores</option>
+                    <label>Computation Type</label>
+                    <select name="computationType" required>
+                        <option value="aggregation">Aggregation Analysis</option>
+                        <option value="ml_training">ML Model Training</option>
+                        <option value="prediction">Prediction</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Priority Level</label>
-                    <select class="form-control">
-                        <option>Normal</option>
-                        <option>High</option>
-                        <option>Urgent</option>
+                    <label>Privacy Technology</label>
+                    <select name="privacyTech" required>
+                        <option value="fhe">Fully Homomorphic Encryption</option>
+                        <option value="mpc">Multi-Party Computation</option>
+                        <option value="tee">Trusted Execution Environment</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Create Task</button>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select name="priority" required>
+                        <option value="standard">Standard</option>
+                        <option value="high">High Priority</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Parameters</label>
+                    <textarea name="parameters" rows="4" placeholder="Enter computation parameters in JSON format"></textarea>
+                </div>
+                <div class="cost-estimate">
+                    Estimated Cost: <span id="costEstimate">0</span> Credits
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Submit Task</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <script>
-        // Initialize Charts
-        function initializeCharts() {
-            // Resource Usage Chart
-            const resourceCtx = document.getElementById('resourceChart').getContext('2d');
-            new Chart(resourceCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'CPU Usage',
-                        data: [65, 59, 80, 81, 56, 55],
-                        borderColor: '#4dabf7',
-                        tension: 0.4
-                    }, {
-                        label: 'Memory Usage',
-                        data: [28, 48, 40, 19, 86, 27],
-                        borderColor: '#28a745',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: 'white' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: { color: 'white' }
-                        },
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: { color: 'white' }
-                        }
-                    }
-                }
-            });
+    <!-- Top Up Modal -->
+    <div class="modal" id="topUpModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Top Up Credits</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="payment-options">
+                <div class="payment-option">
+                    <h3>Google Pay</h3>
+                    <button class="btn btn-primary google-pay-button">
+                        <i class="fab fa-google-pay"></i> Pay with Google Pay
+                    </button>
+                </div>
+                <div class="payment-option">
+                    <h3>Cryptocurrency</h3>
+                    <button class="btn btn-primary crypto-button">
+                        <i class="fab fa-bitcoin"></i> Pay with Crypto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            // Task Completion Trends
-            const trendsCtx = document.getElementById('trendsChart').getContext('2d');
-            new Chart(trendsCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Completed Tasks',
-                        data: [12, 19, 3, 5, 2, 3],
-                        backgroundColor: 'rgba(77, 171, 247, 0.5)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: 'white' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: { color: 'white' }
-                        },
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: { color: 'white' }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Notification Toggle
-        document.querySelector('.notifications i').addEventListener('click', function() {
-            const notificationList = document.querySelector('.notification-list');
-            notificationList.style.display = notificationList.style.display === 'block' ? 'none' : 'block';
-        });
-
-        // Navigation Handling
-        document.addEventListener('DOMContentLoaded', function() {
-            const menuLinks = document.querySelectorAll('.sidebar-menu a');
-            const sections = document.querySelectorAll('.section');
-
-            // Hide all sections except the first one
-            sections.forEach((section, index) => {
-                if (index !== 0) {
-                    section.style.display = 'none';
-                }
-            });
-
-            menuLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-
-                    // Remove active class from all links
-                    menuLinks.forEach(l => l.classList.remove('active'));
-                    // Add active class to clicked link
-                    this.classList.add('active');
-
-                    // Hide all sections
-                    sections.forEach(section => {
-                        section.style.display = 'none';
-                    });
-
-                    // Show the selected section
-                    const targetId = this.getAttribute('href').substring(1);
-                    const targetSection = document.getElementById(targetId);
-                    if (targetSection) {
-                        targetSection.style.display = 'block';
-                    }
-                });
-            });
-        });
-
-        // Initialize charts when page loads
-        document.addEventListener('DOMContentLoaded', initializeCharts);
-    </script>
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
 </body>
 </html>

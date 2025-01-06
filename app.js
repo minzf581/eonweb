@@ -358,4 +358,16 @@ const initialize = async () => {
     return state.initPromise;
 };
 
+initialize()
+    .then(() => {
+        console.log(`[App] Initialization complete on instance ${instanceId}`);
+        state.isInitialized = true;
+        state.isInitializing = false;
+    })
+    .catch(error => {
+        console.error(`[App] Initialization failed on instance ${instanceId}:`, error);
+        state.isInitializing = false;
+        process.exit(1);
+    });
+
 module.exports = app;

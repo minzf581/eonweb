@@ -9,6 +9,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 运行数据库迁移
+echo "Running database migrations..."
+NODE_ENV=production npx sequelize-cli db:migrate
+
+if [ $? -ne 0 ]; then
+    echo "Database migration failed. Please check the error message above."
+    exit 1
+fi
+
 # 获取当前正在服务的版本
 SERVING_VERSION=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT>0" --format="value(version.id)" | head -n 1)
 echo "Current serving version: $SERVING_VERSION"
