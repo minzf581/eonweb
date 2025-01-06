@@ -9,12 +9,9 @@ const dbConfig = {
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD || 'eonprotocol',
-    host: process.env.DB_HOST || '34.101.146.171',
-    port: process.env.DB_PORT || 5432,
+    host: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
     dialectOptions: {
-        ssl: {
-            require: false
-        }
+        socketPath: process.env.DB_HOST || '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
     },
     logging: console.log
 };
@@ -24,7 +21,7 @@ console.log('Using database configuration:', {
     host: dbConfig.host,
     database: dbConfig.database,
     username: dbConfig.username,
-    ssl: dbConfig.dialectOptions?.ssl ? 'enabled' : 'disabled'
+    socketPath: dbConfig.dialectOptions?.socketPath
 });
 
 // Sequelize CLI 需要的格式
