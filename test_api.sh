@@ -98,17 +98,21 @@ LOGIN_SUCCESS=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response 
 if [ "$LOGIN_SUCCESS" = "true" ]; then
     print_test_result 0 "用户登录"
     # 从登录响应中提取token
-    TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print(response.get('token', '') if response.get('success') else '')")
+    TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print(response.get('token', ''))")
     echo "Token: $TOKEN"
+
+    # 确保token不为空
+    if [ -z "$TOKEN" ]; then
+        echo "未能获取到有效的token"
+        print_test_result 1 "获取token"
+        exit 1
+    fi
+
+    # 设置认证头
+    AUTH_HEADER="Authorization: Bearer $TOKEN"
 else
     print_test_result 1 "用户登录"
     echo "登录失败，退出测试"
-    exit 1
-fi
-
-# 如果没有获取到token，退出测试
-if [ -z "$TOKEN" ]; then
-    echo "未能获取到token，退出测试"
     exit 1
 fi
 
@@ -188,13 +192,13 @@ echo "测试任务相关接口..."
 # 3.1 获取可用任务列表
 echo "获取可用任务列表..."
 curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/tasks/available" \
-    -H "Authorization: Bearer ${TOKEN}"
+    -H "${AUTH_HEADER}"
 print_test_result $? "获取可用任务列表"
 
 # 3.2 开始每日签到任务
 echo "开始每日签到任务..."
 curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/tasks/1/start" \
-    -H "Authorization: Bearer ${TOKEN}" \
+    -H "${AUTH_HEADER}" \
     -H "Content-Type: application/json" \
     -H "Content-Length: 2" \
     -d '{}'
@@ -203,13 +207,13 @@ print_test_result $? "开始每日签到任务"
 # 3.3 获取用户任务列表
 echo "获取用户任务列表..."
 curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/tasks/user/list" \
-    -H "Authorization: Bearer ${TOKEN}"
+    -H "${AUTH_HEADER}"
 print_test_result $? "获取用户任务列表"
 
 # 3.4 获取用户积分统计
 echo "获取用户积分统计..."
 curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/user/points/stats" \
-    -H "Authorization: Bearer ${TOKEN}"
+    -H "${AUTH_HEADER}"
 print_test_result $? "获取用户积分统计"
 
 # 4. 积分相关测试
@@ -218,7 +222,7 @@ echo -e "\n=== 积分测试 ==="
 # 4.1 获取积分统计
 echo "获取积分统计..."
 curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/stats" \
-    -H "Authorization: Bearer ${TOKEN}"
+    -H "${AUTH_HEADER}"
 print_test_result $? "获取积分统计"
 
 # 5. 推荐相关测试
@@ -227,7 +231,7 @@ echo -e "\n=== 推荐测试 ==="
 # 5.1 获取推荐信息
 echo "获取推荐信息..."
 curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/referral" \
-    -H "Authorization: Bearer ${TOKEN}"
+    -H "${AUTH_HEADER}"
 print_test_result $? "获取推荐信息"
 
 # 输出测试结果统计
