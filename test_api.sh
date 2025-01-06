@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # API测试脚本
-BASE_URL="https://eonhome-445809.et.r.appspot.com"
+BASE_URL="http://localhost:3000"
 API_URL="${BASE_URL}/api"  # 添加 /api 前缀
 TOKEN=""  # 登录后需要设置这个值
 API_KEY="proxy_api_key_d1e8a37b5c4f9"  # 默认测试API密钥
