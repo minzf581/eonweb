@@ -1,5 +1,8 @@
+'use strict';
+
 // 加载环境变量
 if (process.env.NODE_ENV === 'production') {
+    console.log('Loading environment from: .env.production');
     require('dotenv').config({ path: '.env.production' });
 } else {
     require('dotenv').config();
@@ -35,68 +38,37 @@ const developmentConfig = {
 };
 
 // Choose configuration based on environment
-const activeConfig = isLocal ? developmentConfig : productionConfig;
+const dbConfig = isLocal ? developmentConfig : productionConfig;
 console.log('Using database configuration:', {
-    host: activeConfig.host,
-    database: activeConfig.database,
-    username: activeConfig.username,
-    ssl: activeConfig.dialectOptions?.ssl ? 'enabled' : 'disabled'
+    host: dbConfig.host,
+    database: dbConfig.database,
+    username: dbConfig.username,
+    ssl: dbConfig.dialectOptions?.ssl ? 'enabled' : 'disabled'
 });
 
-// Sequelize CLI configuration
-const config = {
-    development: developmentConfig,
-    production: productionConfig
-};
-
-// 应用运行时配置
-const runtimeConfig = {
-    development: {
-        ...config.development,
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        }
-    },
-    production: {
-        ...config.production,
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        }
-    }
-};
-
-const env = process.env.NODE_ENV || 'development';
-const currentConfig = runtimeConfig[env];
-
-if (env === 'production') {
+if (!isLocal) {
     console.log('Using Cloud SQL configuration:', {
-        host: currentConfig.host,
-        socketPath: currentConfig.dialectOptions?.socketPath,
-        database: currentConfig.database,
-        username: currentConfig.username
+        host: dbConfig.host,
+        socketPath: dbConfig.dialectOptions?.socketPath,
+        database: dbConfig.database,
+        username: dbConfig.username
     });
 } else {
     console.log('Using local configuration:', {
-        host: currentConfig.host,
-        port: currentConfig.port,
-        database: currentConfig.database,
-        username: currentConfig.username
+        host: dbConfig.host,
+        port: dbConfig.port,
+        database: dbConfig.database,
+        username: dbConfig.username
     });
 }
 
 const { Sequelize } = require('sequelize');
 const sequelize = new Sequelize(
-    currentConfig.database,
-    currentConfig.username,
-    currentConfig.password,
+    dbConfig.database,
+    dbConfig.username,
+    dbConfig.password,
     {
-        ...currentConfig,
+        ...dbConfig,
         retry: {
             max: 5,
             timeout: 3000
@@ -131,6 +103,9 @@ connectWithRetry()
     });
 
 // 导出配置
-module.exports = sequelize;
-module.exports.development = config.development;
-module.exports.production = config.production;
+module.exports = {
+    dbConfig,
+    sequelize,
+    development: developmentConfig,
+    production: productionConfig
+};

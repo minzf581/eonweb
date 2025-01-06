@@ -5,7 +5,13 @@ const sequelize = new Sequelize(
     dbConfig.database,
     dbConfig.username,
     dbConfig.password,
-    dbConfig
+    {
+        ...dbConfig,
+        retry: {
+            max: 5,
+            timeout: 3000
+        }
+    }
 );
 
 async function connectWithRetry(maxRetries = 5, delay = 5000) {
@@ -16,6 +22,7 @@ async function connectWithRetry(maxRetries = 5, delay = 5000) {
             console.log('Database connection has been established successfully.');
             break;
         } catch (error) {
+            console.error('Connection error:', error.message);
             retries++;
             if (retries === maxRetries) {
                 throw error;
