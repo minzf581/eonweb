@@ -5,8 +5,7 @@ const { NodeStatus, User, PointHistory, ProxyBackend } = require('../models');
 const { validateBatchReport } = require('../validators/proxyValidator');
 const { sequelize } = require('../config/sequelize');
 const { ProxyNode } = require('../models');
-const { checkApiKey } = require('../middleware/auth');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateApiKey, authenticateToken } = require('../middleware/auth');
 
 // 计算积分的辅助函数
 const calculatePoints = (traffic, duration) => {
@@ -205,7 +204,7 @@ router.get('/stats', authenticateProxyBackend, async (req, res) => {
 });
 
 // 代理节点状态上报
-router.post('/nodes/report', checkApiKey, async (req, res) => {
+router.post('/nodes/report', authenticateApiKey, async (req, res) => {
   try {
     const { deviceId, username, status, ipAddress, duration, traffic, reportType } = req.body;
 
@@ -251,7 +250,7 @@ router.post('/nodes/report', checkApiKey, async (req, res) => {
 });
 
 // 获取节点统计
-router.get('/nodes/:deviceId/stats', checkApiKey, async (req, res) => {
+router.get('/nodes/:deviceId/stats', authenticateApiKey, async (req, res) => {
   try {
     const { deviceId } = req.params;
 
