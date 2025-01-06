@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { sequelize } = require('../config/sequelize');
 
 // 获取用户积分统计
-router.get('/points/stats', authenticateToken, async (req, res) => {
+router.get('/points/stats', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
 
@@ -43,7 +43,7 @@ router.get('/points/stats', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error in get points stats:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch stats', error: error.message });
+    next(error);
   }
 });
 
