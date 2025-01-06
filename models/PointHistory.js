@@ -5,7 +5,7 @@ module.exports = (sequelize) => {
         static associate(models) {
             // Define associations here if needed
             PointHistory.belongsTo(models.User, {
-                foreignKey: 'userId',
+                foreignKey: 'user_id',
                 as: 'user'
             });
         }
@@ -17,11 +17,11 @@ module.exports = (sequelize) => {
             primaryKey: true,
             autoIncrement: true
         },
-        userId: {
+        user_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
-                model: 'Users',
+                model: 'users',
                 key: 'id'
             }
         },
@@ -48,7 +48,11 @@ module.exports = (sequelize) => {
     }, {
         sequelize,
         modelName: 'PointHistory',
-        tableName: 'PointHistories'
+        tableName: 'point_histories',
+        underscored: true,
+        timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
     });
 
     return PointHistory;

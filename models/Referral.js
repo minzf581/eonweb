@@ -6,18 +6,18 @@ class Referral extends Model {
         // This method will be called in models/index.js
         Referral.belongsTo(models.User, {
             as: 'referrer',
-            foreignKey: 'referrerid'
+            foreignKey: 'referrer_id'
         });
         Referral.belongsTo(models.User, {
             as: 'referred',
-            foreignKey: 'referredid'
+            foreignKey: 'referred_id'
         });
     }
 }
 
 const initReferral = (sequelize) => {
     Referral.init({
-        referrerid: {
+        referrer_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -25,7 +25,7 @@ const initReferral = (sequelize) => {
                 key: 'id'
             }
         },
-        referredid: {
+        referred_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             unique: true,
@@ -34,7 +34,7 @@ const initReferral = (sequelize) => {
                 key: 'id'
             }
         },
-        pointsearned: {
+        points_earned: {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
@@ -48,14 +48,14 @@ const initReferral = (sequelize) => {
         tableName: 'referrals',
         underscored: true,
         timestamps: true,
-        createdAt: 'createdat',
-        updatedAt: 'updatedat',
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
         indexes: [
             {
-                fields: ['referrerid']
+                fields: ['referrer_id']
             },
             {
-                fields: ['referredid'],
+                fields: ['referred_id'],
                 unique: true
             }
         ]

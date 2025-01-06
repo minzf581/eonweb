@@ -24,14 +24,14 @@ router.get('/', authenticateToken, async (req, res) => {
         let user = await User.findByPk(userId);
         
         // 如果用户没有推荐码，生成一个
-        if (!user.referralcode) {
+        if (!user.referral_code) {
             let code;
             do {
                 code = generateReferralCode();
                 // Check if code already exists
-                const existingUser = await User.findOne({ where: { referralcode: code } });
+                const existingUser = await User.findOne({ where: { referral_code: code } });
                 if (!existingUser) {
-                    await user.update({ referralcode: code });
+                    await user.update({ referral_code: code });
                     // Refresh user data
                     user = await User.findByPk(userId);
                     break;
@@ -41,37 +41,37 @@ router.get('/', authenticateToken, async (req, res) => {
         
         // 获取推荐统计
         const referralCount = await Referral.count({
-            where: { referrerid: userId }
+            where: { referrer_id: userId }
         });
         
-        const totalPoints = await Referral.sum('pointsearned', {
+        const totalPoints = await Referral.sum('points_earned', {
             where: {
-                referrerid: userId
+                referrer_id: userId
             }
         }) || 0; // 如果没有记录，返回0
 
         // 获取推荐历史
         const referrals = await Referral.findAll({
-            where: { referrerid: userId },
+            where: { referrer_id: userId },
             include: [{
                 model: User,
                 as: 'referred',
                 attributes: ['email']
             }],
-            order: [['createdat', 'DESC']]
+            order: [['created_at', 'DESC']]
         });
 
         res.json({
             success: true,
             data: {
-                referralcode: user.referralcode,
+                referral_code: user.referral_code,
                 referralCount,
                 totalPoints,
                 referrals: referrals.map(ref => ({
                     id: ref.id,
                     email: ref.referred.email,
-                    pointsearned: ref.pointsearned,
-                    createdat: ref.createdat
+                    points_earned: ref.points_earned,
+                    created_at: ref.created_at
                 }))
             }
         });
@@ -94,7 +94,7 @@ async function processReferral(userId, referralCode) {
 
         // 查找推荐人
         const referrer = await User.findOne({
-            where: { referralcode: referralCode }
+            where: { referral_code: referralCode }
         });
 
         if (!referrer) {
@@ -107,7 +107,7 @@ async function processReferral(userId, referralCode) {
 
         // 检查是否已经被推荐
         const existingReferral = await Referral.findOne({
-            where: { referredid: userId }
+            where: { referred_id: userId }
         });
 
         if (existingReferral) {
@@ -117,10 +117,10 @@ async function processReferral(userId, referralCode) {
         // 创建推荐记录
         const REFERRAL_POINTS = 100; // 推荐奖励积分
         const referral = await Referral.create({
-            referrerid: referrer.id,
-            referredid: userId,
+            referrer_id: referrer.id,
+            referred_id: userId,
             status: 'completed',
-            pointsearned: REFERRAL_POINTS
+            points_earned: REFERRAL_POINTS
         });
 
         // 更新推荐人的积分
@@ -131,7 +131,7 @@ async function processReferral(userId, referralCode) {
 
         // 记录积分历史
         await PointHistory.create({
-            userid: referrer.id,
+            user_id: referrer.id,
             points: REFERRAL_POINTS,
             type: 'referral',
             description: `Referral bonus for user ${userId}`,
