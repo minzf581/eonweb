@@ -28,7 +28,8 @@ class User extends Model {
 
     static associate(models) {
         User.hasMany(models.UserTask, {
-            foreignKey: 'userid'
+            foreignKey: 'user_id',
+            as: 'tasks'
         });
     }
 }

@@ -3,7 +3,7 @@ const { Model, DataTypes } = require('sequelize');
 class Task extends Model {
     static associate(models) {
         Task.hasMany(models.UserTask, {
-            foreignKey: 'taskId',
+            foreignKey: 'task_id',
             as: 'userTasks'
         });
     }
