@@ -277,4 +277,196 @@ router.get('/nodes/:deviceId/stats', checkApiKey, async (req, res) => {
   }
 });
 
+// Node online report
+router.post('/online', authenticateProxyBackend, async (req, res) => {
+    try {
+        const { nodeId, ip, port } = req.body;
+        console.log(`[Proxy] Node online report - nodeId: ${nodeId}, ip: ${ip}, port: ${port}`);
+
+        // Create or update proxy node
+        const [node, created] = await ProxyNode.findOrCreate({
+            where: { deviceId: nodeId },
+            defaults: {
+                ip,
+                port,
+                status: 'online',
+                lastSeenAt: new Date()
+            }
+        });
+
+        if (!created) {
+            await node.update({
+                ip,
+                port,
+                status: 'online',
+                lastSeenAt: new Date()
+            });
+        }
+
+        // Create node status record
+        await NodeStatus.create({
+            deviceId: nodeId,
+            status: 'online',
+            timestamp: new Date()
+        });
+
+        res.json({
+            success: true,
+            message: 'Node online status reported successfully'
+        });
+    } catch (error) {
+        console.error('[Proxy] Error reporting node online status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to report node online status',
+            error: error.message
+        });
+    }
+});
+
+// Node daily report
+router.post('/daily', authenticateProxyBackend, async (req, res) => {
+    try {
+        const { nodeId, bandwidth, connections, uptime } = req.body;
+        console.log(`[Proxy] Node daily report - nodeId: ${nodeId}`);
+
+        // Update proxy node stats
+        const node = await ProxyNode.findOne({
+            where: { deviceId: nodeId }
+        });
+
+        if (!node) {
+            return res.status(404).json({
+                success: false,
+                message: 'Node not found'
+            });
+        }
+
+        await node.update({
+            bandwidth,
+            connections,
+            uptime,
+            lastReport: new Date()
+        });
+
+        // Create node status record
+        await NodeStatus.create({
+            deviceId: nodeId,
+            status: 'active',
+            bandwidth,
+            connections,
+            uptime,
+            timestamp: new Date()
+        });
+
+        res.json({
+            success: true,
+            message: 'Node daily report submitted successfully'
+        });
+    } catch (error) {
+        console.error('[Proxy] Error submitting node daily report:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to submit node daily report',
+            error: error.message
+        });
+    }
+});
+
+// Node offline report
+router.post('/offline', authenticateProxyBackend, async (req, res) => {
+    try {
+        const { nodeId } = req.body;
+        console.log(`[Proxy] Node offline report - nodeId: ${nodeId}`);
+
+        // Update proxy node status
+        const node = await ProxyNode.findOne({
+            where: { deviceId: nodeId }
+        });
+
+        if (!node) {
+            return res.status(404).json({
+                success: false,
+                message: 'Node not found'
+            });
+        }
+
+        await node.update({
+            status: 'offline',
+            lastOffline: new Date()
+        });
+
+        // Create node status record
+        await NodeStatus.create({
+            deviceId: nodeId,
+            status: 'offline',
+            timestamp: new Date()
+        });
+
+        res.json({
+            success: true,
+            message: 'Node offline status reported successfully'
+        });
+    } catch (error) {
+        console.error('[Proxy] Error reporting node offline status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to report node offline status',
+            error: error.message
+        });
+    }
+});
+
+// Get node statistics
+router.get('/stats', authenticateProxyBackend, async (req, res) => {
+    try {
+        console.log('[Proxy] Fetching node statistics');
+
+        // Get all nodes with their latest status
+        const nodes = await ProxyNode.findAll({
+            attributes: [
+                'deviceId',
+                'ip',
+                'port',
+                'status',
+                'bandwidth',
+                'connections',
+                'uptime',
+                'lastSeenAt',
+                'lastOffline',
+                'lastReport'
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+
+        // Get total statistics
+        const totalStats = await ProxyNode.findAll({
+            attributes: [
+                [sequelize.fn('COUNT', sequelize.col('deviceId')), 'totalNodes'],
+                [sequelize.fn('SUM', sequelize.col('bandwidth')), 'totalBandwidth'],
+                [sequelize.fn('SUM', sequelize.col('connections')), 'totalConnections'],
+                [sequelize.fn('AVG', sequelize.col('uptime')), 'averageUptime']
+            ],
+            where: {
+                status: 'online'
+            }
+        });
+
+        res.json({
+            success: true,
+            data: {
+                nodes,
+                stats: totalStats[0]
+            }
+        });
+    } catch (error) {
+        console.error('[Proxy] Error fetching node statistics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch node statistics',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

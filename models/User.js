@@ -29,6 +29,9 @@ class User extends Model {
     static associate(models) {
         // Define associations here if needed
         // This method will be called in models/index.js
+        User.hasMany(models.UserTask, {
+            foreignKey: 'userid'
+        });
     }
 }
 
@@ -61,7 +64,7 @@ const initUser = (sequelize) => {
                 this.setDataValue('password', hash);
             }
         },
-        referralCode: {
+        referralcode: {
             type: DataTypes.STRING,
             unique: true,
             allowNull: true
@@ -70,22 +73,27 @@ const initUser = (sequelize) => {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
-        isAdmin: {
+        isadmin: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
         }
     }, {
         sequelize,
         modelName: 'User',
+        tableName: 'users',
+        underscored: true,
+        timestamps: true,
+        createdAt: 'createdat',
+        updatedAt: 'updatedat',
         hooks: {
             beforeCreate: async (user) => {
                 try {
                     console.log('Generating referral code...');
-                    if (!user.referralCode) {
+                    if (!user.referralcode) {
                         const randomBytes = crypto.randomBytes(4);
                         const referralCode = randomBytes.toString('hex').toUpperCase();
                         console.log('Generated referral code:', referralCode);
-                        user.referralCode = referralCode;
+                        user.referralcode = referralCode;
                     }
                 } catch (error) {
                     console.error('Error generating referral code:', error);

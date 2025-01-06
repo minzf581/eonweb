@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const path = require('path');
 const { sequelize } = require('./models');
@@ -48,7 +49,7 @@ app.use((err, req, res, next) => {
 
 // Basic middleware
 app.use(morgan(':method :url :status :response-time ms'));
-app.use(express.json());
+app.use(bodyParser.json());
 app.use(cors());
 
 // Static files path

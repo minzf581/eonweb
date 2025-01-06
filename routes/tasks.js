@@ -12,13 +12,12 @@ router.get('/', authenticateToken, async (req, res) => {
         // Get all active tasks and their completion status
         const tasks = await Task.findAll({
             where: {
-                isActive: true,
                 status: 'active'
             },
             include: [{
                 model: UserTask,
-                as: 'userTasks',
-                where: { userId },
+                as: 'UserTasks',
+                where: { userid: userId },
                 required: false
             }]
         });
@@ -28,12 +27,12 @@ router.get('/', authenticateToken, async (req, res) => {
         const formattedTasks = tasks.map(task => {
             const formatted = {
                 id: task.id,
-                title: task.title,
+                name: task.name,
                 description: task.description,
                 points: task.points,
                 type: task.type,
-                completed: task.userTasks && task.userTasks.length > 0,
-                completedAt: task.userTasks && task.userTasks.length > 0 ? task.userTasks[0].completedAt : null
+                completed: task.UserTasks && task.UserTasks.length > 0,
+                completedAt: task.UserTasks && task.UserTasks.length > 0 ? task.UserTasks[0].endtime : null
             };
             console.log(`[Tasks] Task ${task.id} formatted:`, formatted);
             return formatted;
@@ -65,7 +64,6 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
         const task = await Task.findOne({
             where: {
                 id: taskId,
-                isActive: true,
                 status: 'active'
             }
         });
@@ -81,8 +79,8 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
         // Check if user has already started/completed this task
         const existingUserTask = await UserTask.findOne({
             where: {
-                userId,
-                taskId
+                userid: userId,
+                taskid: taskId
             }
         });
 
@@ -96,20 +94,22 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
 
         // Create user task record
         const userTask = await UserTask.create({
-            userId,
-            taskId,
+            userid: userId,
+            taskid: taskId,
             status: 'in_progress',
-            startedAt: new Date()
+            starttime: new Date(),
+            points: task.points
         });
 
-        console.log(`[Tasks] Task ${taskId} started successfully for user ${userId}`);
+        console.log(`[Tasks] Created user task record:`, userTask.toJSON());
+
         res.json({
             success: true,
             message: 'Task started successfully',
             data: {
-                taskId,
+                taskId: taskId,
                 status: 'in_progress',
-                startedAt: userTask.startedAt
+                startTime: userTask.starttime
             }
         });
     } catch (error) {
@@ -156,8 +156,8 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
     // 检查用户是否已经开始了这个任务
     const existingTask = await UserTask.findOne({
       where: {
-        userId,
-        taskId,
+        userid: userId,
+        taskid: taskId,
         status: ['pending', 'in_progress']
       }
     });
@@ -167,17 +167,17 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
 
     // 创建用户任务
     const userTask = await UserTask.create({
-      userId,
-      taskId,
+      userid: userId,
+      taskid: taskId,
       status: 'in_progress',
-      startTime: new Date()
+      starttime: new Date()
     });
 
     // 如果是每日签到任务，直接完成
     if (task.type === 'daily') {
       await userTask.update({
         status: 'completed',
-        endTime: new Date(),
+        endtime: new Date(),
         points: task.points
       });
 
@@ -205,12 +205,12 @@ router.get('/user/list', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const userTasks = await UserTask.findAll({
-      where: { userId },
+      where: { userid: userId },
       include: [{
         model: Task,
         attributes: ['name', 'description', 'type', 'points']
       }],
-      order: [['createdAt', 'DESC']]
+      order: [['createdat', 'DESC']]
     });
 
     res.json({
@@ -221,6 +221,54 @@ router.get('/user/list', authenticateToken, async (req, res) => {
     console.error('Error in get user tasks:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch user tasks', error: error.message });
   }
+});
+
+// Get user tasks
+router.get('/user', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        console.log('[Tasks] Fetching user tasks for user:', userId);
+
+        const userTasks = await UserTask.findAll({
+            where: {
+                userid: userId
+            },
+            include: [{
+                model: Task,
+                attributes: ['name', 'description', 'type', 'points']
+            }],
+            order: [['createdat', 'DESC']]
+        });
+
+        console.log(`[Tasks] Found ${userTasks.length} user tasks`);
+
+        const formattedTasks = userTasks.map(userTask => ({
+            id: userTask.id,
+            taskId: userTask.taskid,
+            status: userTask.status,
+            startTime: userTask.starttime,
+            endTime: userTask.endtime,
+            points: userTask.points,
+            task: userTask.Task ? {
+                name: userTask.Task.name,
+                description: userTask.Task.description,
+                type: userTask.Task.type,
+                points: userTask.Task.points
+            } : null
+        }));
+
+        res.json({
+            success: true,
+            data: formattedTasks
+        });
+    } catch (error) {
+        console.error('[Tasks] Error fetching user tasks:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user tasks',
+            error: error.message
+        });
+    }
 });
 
 module.exports = router;
