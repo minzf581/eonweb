@@ -153,8 +153,9 @@ async function gracefulShutdown() {
   console.log('Starting graceful shutdown...');
   try {
     if (db && db.sequelize) {
-      await db.sequelize.close();
-      console.log('Database connection closed successfully');
+      // Close all connections in the pool
+      await db.sequelize.connectionManager.close();
+      console.log('Database connection pool closed successfully');
     } else {
       console.log('No database connection to close');
     }
