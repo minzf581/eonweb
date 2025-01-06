@@ -4,53 +4,53 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     // 1. 创建用户任务状态枚举
-    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_UserTasks_status" CASCADE;`);
-    await queryInterface.sequelize.query(`CREATE TYPE "enum_UserTasks_status" AS ENUM ('pending', 'in_progress', 'completed', 'failed');`);
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_user_tasks_status" CASCADE;`);
+    await queryInterface.sequelize.query(`CREATE TYPE "enum_user_tasks_status" AS ENUM ('pending', 'in_progress', 'completed', 'failed');`);
 
     // 2. 创建用户任务表
-    await queryInterface.createTable('UserTasks', {
+    await queryInterface.createTable('user_tasks', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
+      userid: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Users',
+          model: 'users',
           key: 'id'
         }
       },
-      taskId: {
+      taskid: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Tasks',
+          model: 'tasks',
           key: 'id'
         }
       },
       status: {
-        type: "enum_UserTasks_status",
+        type: "enum_user_tasks_status",
         defaultValue: 'pending'
       },
-      startTime: {
+      starttime: {
         type: Sequelize.DATE
       },
-      endTime: {
+      endtime: {
         type: Sequelize.DATE
       },
       points: {
         type: Sequelize.INTEGER,
         defaultValue: 0
       },
-      createdAt: {
+      createdat: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updatedAt: {
+      updatedat: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -58,16 +58,16 @@ module.exports = {
     });
 
     // 3. 创建索引
-    await queryInterface.addIndex('UserTasks', ['userId']);
-    await queryInterface.addIndex('UserTasks', ['taskId']);
-    await queryInterface.addIndex('UserTasks', ['status']);
+    await queryInterface.addIndex('user_tasks', ['userid']);
+    await queryInterface.addIndex('user_tasks', ['taskid']);
+    await queryInterface.addIndex('user_tasks', ['status']);
   },
 
   async down(queryInterface, Sequelize) {
     // 删除用户任务表
-    await queryInterface.dropTable('UserTasks');
+    await queryInterface.dropTable('user_tasks');
     
     // 删除枚举类型
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_UserTasks_status" CASCADE;');
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_user_tasks_status" CASCADE;');
   }
 };
