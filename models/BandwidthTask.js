@@ -55,6 +55,7 @@ const initBandwidthTask = (sequelize) => {
     }, {
         sequelize,
         modelName: 'BandwidthTask',
+        underscored: true,  
         indexes: [
             {
                 fields: ['userId']

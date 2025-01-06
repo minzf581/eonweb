@@ -9,7 +9,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
+      user_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -17,12 +17,12 @@ module.exports = {
           key: 'id'
         }
       },
-      uploadSpeed: {
+      upload_speed: {
         type: Sequelize.INTEGER,
         allowNull: false,
         comment: '上传速度限制 (KB/s)'
       },
-      downloadSpeed: {
+      download_speed: {
         type: Sequelize.INTEGER,
         allowNull: false,
         comment: '下载速度限制 (KB/s)'
@@ -32,7 +32,7 @@ module.exports = {
         allowNull: false,
         comment: '计划持续时间 (秒)'
       },
-      actualDuration: {
+      actual_duration: {
         type: Sequelize.INTEGER,
         allowNull: true,
         comment: '实际持续时间 (秒)'
@@ -42,27 +42,27 @@ module.exports = {
         allowNull: false,
         defaultValue: 'pending'
       },
-      startedAt: {
+      started_at: {
         type: Sequelize.DATE,
         allowNull: true
       },
-      completedAt: {
+      completed_at: {
         type: Sequelize.DATE,
         allowNull: true
       },
-      createdAt: {
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updatedAt: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
     });
 
-    await queryInterface.addIndex('BandwidthTasks', ['userId']);
+    await queryInterface.addIndex('BandwidthTasks', ['user_id']);
     await queryInterface.addIndex('BandwidthTasks', ['status']);
   },
 
