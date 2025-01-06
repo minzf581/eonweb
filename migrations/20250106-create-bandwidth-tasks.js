@@ -2,17 +2,18 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // 先创建 enum 类型
+    // First create enum type
     await queryInterface.sequelize.query(`
       DO $$ 
       BEGIN 
-        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_bandwidthtasks_status') THEN
-          CREATE TYPE "enum_bandwidthtasks_status" AS ENUM ('pending', 'running', 'completed', 'failed');
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_bandwidth_tasks_status') THEN
+          CREATE TYPE "enum_bandwidth_tasks_status" AS ENUM ('pending', 'running', 'completed', 'failed');
         END IF;
       END
       $$;
     `);
 
+    // Create table
     await queryInterface.createTable('bandwidth_tasks', {
       id: {
         allowNull: false,
@@ -24,7 +25,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Users',
+          model: 'users',
           key: 'id'
         }
       },
@@ -45,7 +46,7 @@ module.exports = {
         allowNull: true
       },
       status: {
-        type: Sequelize.ENUM('pending', 'running', 'completed', 'failed'),
+        type: "enum_bandwidth_tasks_status",
         allowNull: false,
         defaultValue: 'pending'
       },
@@ -69,25 +70,49 @@ module.exports = {
       }
     });
 
-    // 添加字段注释，并添加错误处理
+    // Add indexes if they don't exist
     try {
       await queryInterface.sequelize.query(`
-        COMMENT ON COLUMN "bandwidth_tasks"."upload_speed" IS '上传速度限制 (KB/s)';
-        COMMENT ON COLUMN "bandwidth_tasks"."download_speed" IS '下载速度限制 (KB/s)';
-        COMMENT ON COLUMN "bandwidth_tasks"."duration" IS '计划持续时间 (秒)';
-        COMMENT ON COLUMN "bandwidth_tasks"."actual_duration" IS '实际持续时间 (秒)';
+        DO $$ 
+        BEGIN 
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes 
+            WHERE tablename = 'bandwidth_tasks' 
+            AND indexname = 'bandwidth_tasks_user_id_idx'
+          ) THEN
+            CREATE INDEX bandwidth_tasks_user_id_idx ON bandwidth_tasks (user_id);
+          END IF;
+          
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes 
+            WHERE tablename = 'bandwidth_tasks' 
+            AND indexname = 'bandwidth_tasks_status_idx'
+          ) THEN
+            CREATE INDEX bandwidth_tasks_status_idx ON bandwidth_tasks (status);
+          END IF;
+        END $$;
+      `);
+    } catch (error) {
+      console.error('Error creating indexes:', error);
+      // Continue even if index creation fails
+    }
+
+    // Add column comments
+    try {
+      await queryInterface.sequelize.query(`
+        COMMENT ON COLUMN bandwidth_tasks.upload_speed IS '上传速度限制 (KB/s)';
+        COMMENT ON COLUMN bandwidth_tasks.download_speed IS '下载速度限制 (KB/s)';
+        COMMENT ON COLUMN bandwidth_tasks.duration IS '计划持续时间 (秒)';
+        COMMENT ON COLUMN bandwidth_tasks.actual_duration IS '实际持续时间 (秒)';
       `);
     } catch (error) {
       console.error('Error adding column comments:', error);
-      // Continue even if comments fail - they're not critical
+      // Continue even if comments fail
     }
-
-    await queryInterface.addIndex('bandwidth_tasks', ['user_id']);
-    await queryInterface.addIndex('bandwidth_tasks', ['status']);
   },
 
   down: async (queryInterface, Sequelize) => {
     await queryInterface.dropTable('bandwidth_tasks');
-    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_bandwidthtasks_status";`);
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_bandwidth_tasks_status";`);
   }
 };

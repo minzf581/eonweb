@@ -156,9 +156,11 @@ async function gracefulShutdown() {
     try {
         // 关闭数据库连接
         const db = require('./models');
-        if (db && db.sequelize) {
+        if (db && typeof db.sequelize.close === 'function') {
             await db.sequelize.close();
             console.log('Database connection closed successfully');
+        } else {
+            console.log('No database connection to close');
         }
         
         // 给服务器一些时间处理剩余的请求
