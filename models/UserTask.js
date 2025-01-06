@@ -3,10 +3,12 @@ const { Model, DataTypes } = require('sequelize');
 class UserTask extends Model {
     static associate(models) {
         UserTask.belongsTo(models.User, {
-            foreignKey: 'userId'
+            foreignKey: 'userId',
+            as: 'user'
         });
         UserTask.belongsTo(models.Task, {
-            foreignKey: 'taskId'
+            foreignKey: 'taskId',
+            as: 'task'
         });
     }
 }
@@ -49,8 +51,8 @@ const initUserTask = (sequelize) => {
         tableName: 'user_tasks',
         underscored: true,
         timestamps: true,
-        createdAt: 'createdAt',
-        updatedAt: 'updatedAt'
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
     });
 
     return UserTask;
