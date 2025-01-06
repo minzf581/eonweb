@@ -4,26 +4,12 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     // 1. 创建任务类型枚举
-    await queryInterface.sequelize.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_tasks_type') THEN
-          CREATE TYPE "enum_tasks_type" AS ENUM ('daily', 'bandwidth', 'proxy');
-        END IF;
-      END
-      $$;
-    `);
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_tasks_type";`);
+    await queryInterface.sequelize.query(`CREATE TYPE "enum_tasks_type" AS ENUM ('daily', 'bandwidth', 'proxy');`);
 
     // 2. 创建任务状态枚举
-    await queryInterface.sequelize.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_tasks_status') THEN
-          CREATE TYPE "enum_tasks_status" AS ENUM ('active', 'inactive');
-        END IF;
-      END
-      $$;
-    `);
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_tasks_status";`);
+    await queryInterface.sequelize.query(`CREATE TYPE "enum_tasks_status" AS ENUM ('active', 'inactive');`);
 
     // 3. 创建任务表
     await queryInterface.createTable('tasks', {
