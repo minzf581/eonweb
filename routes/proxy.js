@@ -412,7 +412,7 @@ router.post('/offline', authenticateToken, async (req, res) => {
 });
 
 // 获取节点统计
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/nodes/stats', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
 
