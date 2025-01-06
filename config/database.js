@@ -33,7 +33,11 @@ const developmentConfig = {
             rejectUnauthorized: false 
         }
     },
-    logging: console.log
+    logging: console.log,
+    retry: {
+        max: 5,
+        timeout: 3000
+    }
 };
 
 // Choose configuration based on environment
@@ -97,7 +101,13 @@ const sequelize = new Sequelize(
     currentConfig.database,
     currentConfig.username,
     currentConfig.password,
-    currentConfig
+    {
+        ...currentConfig,
+        retry: {
+            max: 5,
+            timeout: 3000
+        }
+    }
 );
 
 async function connectWithRetry(maxRetries = 5, delay = 5000) {
