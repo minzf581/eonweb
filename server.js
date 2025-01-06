@@ -145,43 +145,44 @@ async function cleanup() {
     }
 }
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// Get the database instance
+const db = require('./models');
 
 // 优雅关闭功能
 async function gracefulShutdown() {
-    console.log('Starting graceful shutdown...');
-    try {
-        // 关闭数据库连接
-        const db = require('./models');
-        if (db && typeof db.sequelize.close === 'function') {
-            await db.sequelize.close();
-            console.log('Database connection closed successfully');
-        } else {
-            console.log('No database connection to close');
-        }
-        
-        // 给服务器一些时间处理剩余的请求
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        process.exit(0);
-    } catch (error) {
-        console.error('Error during shutdown:', error);
-        process.exit(1);
+  console.log('Starting graceful shutdown...');
+  try {
+    if (db && db.sequelize) {
+      await db.sequelize.close();
+      console.log('Database connection closed successfully');
+    } else {
+      console.log('No database connection to close');
     }
+    
+    // 给服务器一些时间处理剩余的请求
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+    process.exit(1);
+  }
 }
 
-// 监听进程信号
-process.on('SIGTERM', async () => {
-    console.log('SIGTERM signal received');
-    await gracefulShutdown();
+// 监听关闭信号
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received');
+  gracefulShutdown();
 });
 
-process.on('SIGINT', async () => {
-    console.log('SIGINT signal received');
-    await gracefulShutdown();
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received');
+  gracefulShutdown();
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
 
 // 处理未捕获的 Promise 异常
