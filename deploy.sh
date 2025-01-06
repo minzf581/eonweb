@@ -9,11 +9,34 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 下载并设置 Cloud SQL Proxy
+echo "Setting up Cloud SQL Proxy..."
+wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+chmod +x cloud_sql_proxy
+
+# 启动 Cloud SQL Proxy
+echo "Starting Cloud SQL Proxy..."
+./cloud_sql_proxy -instances=eonhome-445809:asia-southeast2:eon-db=tcp:5432 &
+PROXY_PID=$!
+
+# 等待代理启动
+sleep 5
+
+# 设置环境变量
+export DB_HOST=localhost
+export DB_PORT=5432
+
 # 运行数据库迁移
 echo "Running database migrations..."
 NODE_ENV=development npx sequelize-cli db:migrate
 
-if [ $? -ne 0 ]; then
+MIGRATION_STATUS=$?
+
+# 停止 Cloud SQL Proxy
+echo "Stopping Cloud SQL Proxy..."
+kill $PROXY_PID
+
+if [ $MIGRATION_STATUS -ne 0 ]; then
     echo "Database migration failed. Please check the error message above."
     exit 1
 fi
@@ -50,9 +73,10 @@ if [ $? -eq 0 ]; then
     echo "Waiting for application to start..."
     sleep 5
     
-    # 显示日志
-    echo "Showing application logs..."
-    gcloud app logs tail
+    # 获取新版本的URL
+    NEW_VERSION_URL=$(gcloud app browse --no-launch-browser)
+    echo "New version is available at: $NEW_VERSION_URL"
 else
     echo "Deployment failed."
+    exit 1
 fi
