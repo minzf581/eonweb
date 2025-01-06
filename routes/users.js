@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { User, UserTask, Task } = require('../models');
-const { authenticate } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const { sequelize } = require('../config/sequelize');
 
 // 获取用户积分统计
-router.get('/points/stats', authenticate, async (req, res) => {
+router.get('/points/stats', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
