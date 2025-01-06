@@ -1,99 +1,98 @@
 const express = require('express');
 const router = express.Router();
-const { User, Task, Settings } = require('../models');
-const { Op } = require('sequelize');
-const bcrypt = require('bcryptjs');
+const { User } = require('../models');
+const { authenticateToken } = require('../middleware/auth');
 const crypto = require('crypto');
-const { authenticateToken, isAdmin } = require('../middleware/auth');
+const { Op } = require('sequelize');
 
-// Apply authentication and admin check to all routes
-router.use(authenticateToken);
-router.use(isAdmin);
+// Middleware to check if user is admin
+const isAdmin = (req, res, next) => {
+    if (!req.user || !req.user.is_admin) {
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied. Admin privileges required.'
+        });
+    }
+    next();
+};
 
-// Get admin statistics
-router.get('/stats', async (req, res) => {
+// Get system stats
+router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
-        console.log('[Admin API] Getting stats, user:', {
+        console.log('[Admin] Getting system stats. Requested by:', {
             id: req.user.id,
             email: req.user.email,
-            isadmin: req.user.isadmin
+            is_admin: req.user.is_admin
         });
 
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        const [totalusers, activeusers, totaltasks, currenttasks] = await Promise.all([
-            User.count(),
-            User.count({
-                where: {
-                    updatedat: {
-                        [Op.gte]: yesterday
-                    }
-                }
-            }),
-            Task.count({
-                where: {
-                    status: {
-                        [Op.in]: ['active', 'completed']
-                    }
-                }
-            }),
-            Task.count({
-                where: {
-                    status: 'active',
-                    isactive: true
-                }
-            })
-        ]);
+        // Get total users count
+        const total_users = await User.count();
 
-        const stats = {
-            totalusers,
-            activeusers,
-            totaltasks,
-            currenttasks,
-            currenttaskpercentage: totaltasks > 0 ? (currenttasks / totaltasks * 100).toFixed(1) : 0,
-            userparticipationrate: totalusers > 0 ? (activeusers / totalusers * 100).toFixed(1) : 0
-        };
+        // Get new users today
+        const new_users_today = await User.count({
+            where: {
+                created_at: {
+                    [Op.gte]: today
+                }
+            }
+        });
 
-        console.log('[Admin API] Stats:', stats);
-        res.json(stats);
+        console.log('[Admin] Stats retrieved:', {
+            total_users,
+            new_users_today
+        });
+
+        res.json({
+            success: true,
+            stats: {
+                total_users,
+                new_users_today
+            }
+        });
     } catch (error) {
-        console.error('[Admin API] Error getting stats:', error);
-        res.status(500).json({ 
+        console.error('[Admin] Error getting stats:', error);
+        res.status(500).json({
             success: false,
-            error: 'Failed to load stats',
-            details: error.message 
+            message: 'Error getting system stats',
+            error: error.message
         });
     }
 });
 
 // Get all users
-router.get('/users', async (req, res) => {
+router.get('/users', authenticateToken, isAdmin, async (req, res) => {
     try {
-        console.log('[Admin API] Getting all users, requested by:', {
+        console.log('[Admin] Getting all users. Requested by:', {
             id: req.user.id,
             email: req.user.email,
-            isadmin: req.user.isadmin
+            is_admin: req.user.is_admin
         });
 
         const users = await User.findAll({
-            attributes: ['id', 'email', 'points', 'referralcode', 'isadmin', 'createdat'],
-            order: [['createdat', 'DESC']]
+            attributes: ['id', 'email', 'points', 'referral_code', 'is_admin', 'created_at'],
+            order: [['created_at', 'DESC']]
         });
+
+        const formatted_users = users.map(user => ({
+            id: user.id,
+            email: user.email,
+            points: user.points,
+            referral_code: user.referral_code,
+            is_admin: user.is_admin,
+            created_at: user.created_at
+        }));
+
+        console.log(`[Admin] Retrieved ${users.length} users`);
 
         res.json({
             success: true,
-            users: users.map(user => ({
-                id: user.id,
-                email: user.email,
-                points: user.points,
-                referralcode: user.referralcode,
-                isadmin: user.isadmin,
-                createdat: user.createdat
-            }))
+            users: formatted_users
         });
     } catch (error) {
-        console.error('[Admin API] Error getting users:', error);
+        console.error('[Admin] Error getting users:', error);
         res.status(500).json({
             success: false,
             message: 'Error getting users',
@@ -102,17 +101,18 @@ router.get('/users', async (req, res) => {
     }
 });
 
-// Add new user
-router.post('/users', async (req, res) => {
+// Create new user
+router.post('/users', authenticateToken, isAdmin, async (req, res) => {
     try {
-        console.log('[Admin API] Creating user, requested by:', {
+        console.log('[Admin] Creating new user. Requested by:', {
             id: req.user.id,
             email: req.user.email,
-            isadmin: req.user.isadmin
+            is_admin: req.user.is_admin
         });
 
-        const { email, password, isadmin } = req.body;
+        const { email, password, is_admin } = req.body;
 
+        // Validate required fields
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
@@ -120,31 +120,31 @@ router.post('/users', async (req, res) => {
             });
         }
 
-        const existingUser = await User.findOne({
-            where: { email }
-        });
-
-        if (existingUser) {
+        // Check if email already exists
+        const existing_user = await User.findOne({ where: { email } });
+        if (existing_user) {
             return res.status(400).json({
                 success: false,
                 message: 'Email already registered'
             });
         }
 
-        const referralcode = crypto.randomBytes(4).toString('hex');
+        // Generate referral code
+        const referral_code = crypto.randomBytes(4).toString('hex');
 
+        // Create user
         const user = await User.create({
             email,
             password,
-            referralcode,
-            isadmin: !!isadmin,
+            referral_code,
+            is_admin: !!is_admin,
             points: 0
         });
 
-        console.log('[Admin API] User created:', {
+        console.log('[Admin] User created successfully:', {
             id: user.id,
             email: user.email,
-            isadmin: user.isadmin
+            is_admin: user.is_admin
         });
 
         res.status(201).json({
@@ -153,14 +153,14 @@ router.post('/users', async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                isadmin: user.isadmin,
+                is_admin: user.is_admin,
                 points: user.points,
-                referralcode: user.referralcode,
-                createdat: user.createdat
+                referral_code: user.referral_code,
+                created_at: user.created_at
             }
         });
     } catch (error) {
-        console.error('[Admin API] Error creating user:', error);
+        console.error('[Admin] Error creating user:', error);
         res.status(500).json({
             success: false,
             message: 'Error creating user',
@@ -169,208 +169,48 @@ router.post('/users', async (req, res) => {
     }
 });
 
-// Get all tasks
-router.get('/tasks', async (req, res) => {
+// Update user
+router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
-        console.log('[Admin API] Getting tasks');
-        const tasks = await Task.findAll({
-            attributes: ['id', 'title', 'description', 'points', 'type', 'status', 'startdate', 'isactive'],
-            order: [['createdat', 'DESC']]
-        });
-        
-        console.log('[Admin API] Found tasks:', tasks.length);
-        res.json(tasks);
-    } catch (error) {
-        console.error('[Admin API] Error getting tasks:', error);
-        res.status(500).json({ 
-            success: false,
-            error: 'Failed to load task list',
-            details: error.message 
-        });
-    }
-});
+        const { id } = req.params;
+        const updates = req.body;
 
-// Get system settings
-router.get('/settings', async (req, res) => {
-    try {
-        console.log('[Admin API] Getting settings, user:', {
-            id: req.user.id,
-            email: req.user.email,
-            isadmin: req.user.isadmin
-        });
-
-        const settings = await Settings.findAll();
-        console.log('[Admin API] Found settings:', settings.length);
-        res.json(settings);
-    } catch (error) {
-        console.error('[Admin API] Error getting settings:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Update system settings
-router.post('/settings', async (req, res) => {
-    try {
-        console.log('[Admin API] Updating settings, user:', {
-            id: req.user.id,
-            email: req.user.email,
-            isadmin: req.user.isadmin
-        });
-
-        const { referralpoints, taskpoints } = req.body;
-        
-        await Settings.upsert({
-            key: 'referralpoints',
-            value: referralpoints
-        });
-        
-        await Settings.upsert({
-            key: 'taskpoints',
-            value: taskpoints
-        });
-        
-        res.json({ success: true });
-    } catch (error) {
-        console.error('[Admin API] Error updating settings:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Delete user
-router.delete('/users/:id', async (req, res) => {
-    try {
-        console.log('[Admin API] Deleting user, admin:', {
-            id: req.user.id,
-            email: req.user.email,
-            isadmin: req.user.isadmin
-        });
-
-        const userid = req.params.id;
-
-        // Prevent self-deletion
-        if (userid === req.user.id.toString()) {
-            return res.status(400).json({
-                success: false,
-                error: 'Cannot delete your own account'
-            });
-        }
-
-        const user = await User.findByPk(userid);
+        const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({
                 success: false,
-                error: 'User not found'
+                message: 'User not found'
             });
         }
 
-        await user.destroy();
-        console.log('[Admin API] User deleted:', { id: userid });
+        // Update user fields
+        const allowed_updates = ['email', 'points', 'is_admin'];
+        Object.keys(updates).forEach(key => {
+            if (allowed_updates.includes(key)) {
+                user[key] = updates[key];
+            }
+        });
+
+        await user.save();
 
         res.json({
             success: true,
-            message: 'User deleted successfully'
-        });
-    } catch (error) {
-        console.error('[Admin API] Error deleting user:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to delete user',
-            details: error.message
-        });
-    }
-});
-
-// Update user
-router.patch('/users/:id', async (req, res) => {
-    try {
-        console.log('[Admin API] Updating user, admin:', {
-            id: req.user.id,
-            email: req.user.email,
-            isadmin: req.user.isadmin
-        });
-
-        const userid = req.params.id;
-        const updates = req.body;
-        
-        // Prevent updating sensitive fields
-        delete updates.password;
-        delete updates.email;
-        
-        const user = await User.findByPk(userid);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        
-        await user.update(updates);
-        res.json({
-            success: true,
+            message: 'User updated successfully',
             user: {
                 id: user.id,
                 email: user.email,
                 points: user.points,
-                referralcode: user.referralcode,
-                isadmin: user.isadmin,
-                createdat: user.createdat,
-                updatedat: user.updatedat
+                is_admin: user.is_admin,
+                referral_code: user.referral_code,
+                created_at: user.created_at
             }
         });
     } catch (error) {
-        console.error('[Admin API] Error updating user:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Get total number of users
-router.get('/users/count', async (req, res) => {
-    try {
-        console.log('[Admin API] Getting users count');
-        const count = await User.count();
-        console.log('[Admin API] Users count:', count);
-        res.json({ count });
-    } catch (error) {
-        console.error('[Admin API] Error getting users count:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to get users count',
-            details: error.message 
-        });
-    }
-});
-
-// Get total number of tasks
-router.get('/tasks/count', async (req, res) => {
-    try {
-        console.log('[Admin API] Getting tasks count');
-        const count = await Task.count();
-        console.log('[Admin API] Tasks count:', count);
-        res.json({ count });
-    } catch (error) {
-        console.error('[Admin API] Error getting tasks count:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to get tasks count',
-            details: error.message 
-        });
-    }
-});
-
-// Get number of completed tasks
-router.get('/tasks/completed/count', async (req, res) => {
-    try {
-        console.log('[Admin API] Getting completed tasks count');
-        const count = await Task.count({
-            where: {
-                status: 'completed'
-            }
-        });
-        console.log('[Admin API] Completed tasks count:', count);
-        res.json({ count });
-    } catch (error) {
-        console.error('[Admin API] Error getting completed tasks count:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to get completed tasks count',
-            details: error.message 
+        console.error('[Admin] Error updating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating user',
+            error: error.message
         });
     }
 });
