@@ -11,7 +11,7 @@ fi
 
 # 运行数据库迁移
 echo "Running database migrations..."
-NODE_ENV=production npx sequelize-cli db:migrate
+NODE_ENV=development npx sequelize-cli db:migrate
 
 if [ $? -ne 0 ]; then
     echo "Database migration failed. Please check the error message above."
