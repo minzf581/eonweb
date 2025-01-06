@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { User } = require('../models');  
+const { User, Op } = require('../models');  
 const { router: referralRouter, processReferral } = require('./referral');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -14,7 +14,7 @@ router.post('/register', async (req, res) => {
             email: req.body.email
         });
 
-        const { email, password, referralcode } = req.body;
+        const { email, password, referralcode, username } = req.body;
         
         // 检查必需字段
         if (!email || !password) {
@@ -41,18 +41,28 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // 检查邮箱是否已存在
-        const existingUser = await User.findOne({ where: { email } });
+        // Check if user already exists
+        const existingUser = await User.findOne({ 
+            where: { 
+                [Op.or]: [
+                    { email: req.body.email },
+                    { username: req.body.username || req.body.email.split('@')[0] }
+                ]
+            } 
+        });
+
         if (existingUser) {
-            return res.status(400).json({
+            const field = existingUser.email === req.body.email ? 'email' : 'username';
+            return res.status(400).json({ 
                 success: false,
-                message: 'Email already registered'
+                message: `User with this ${field} already exists` 
             });
         }
 
         // 创建新用户
         const user = await User.create({
             email,
+            username: req.body.username || req.body.email.split('@')[0],
             password,
             referral_code: referralcode,
             points: 0,
@@ -90,7 +100,8 @@ router.post('/register', async (req, res) => {
                 email: user.email,
                 is_admin: user.is_admin,
                 points: user.points,
-                referral_code: user.referral_code
+                referral_code: user.referral_code,
+                username: user.username
             }
         });
     } catch (error) {
@@ -123,7 +134,7 @@ router.post('/login', async (req, res) => {
         // 查找用户
         const user = await User.findOne({ 
             where: { email },
-            attributes: ['id', 'email', 'password', 'is_admin', 'points', 'referral_code']
+            attributes: ['id', 'email', 'password', 'is_admin', 'points', 'referral_code', 'username']
         });
 
         if (!user) {
@@ -178,7 +189,8 @@ router.post('/login', async (req, res) => {
                 email: user.email,
                 is_admin: user.is_admin,
                 points: user.points,
-                referral_code: user.referral_code
+                referral_code: user.referral_code,
+                username: user.username
             }
         };
 
@@ -227,7 +239,7 @@ router.get('/me', async (req, res) => {
         // 获取用户信息
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code']
+            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code', 'username']
         });
 
         if (!user) {
@@ -275,7 +287,7 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
         // 获取用户信息
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code']
+            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code', 'username']
         });
 
         if (!user) {
@@ -299,7 +311,8 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
                 email: user.email,
                 is_admin: user.is_admin,
                 points: user.points,
-                referral_code: user.referral_code
+                referral_code: user.referral_code,
+                username: user.username
             }
         });
     } catch (error) {

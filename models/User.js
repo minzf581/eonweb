@@ -28,7 +28,6 @@ class User extends Model {
 
     static associate(models) {
         // Define associations here if needed
-        // This method will be called in models/index.js
         User.hasMany(models.UserTask, {
             foreignKey: 'userid'
         });
@@ -41,6 +40,11 @@ const initUser = (sequelize) => {
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true
+        },
+        username: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true
         },
         email: {
             type: DataTypes.STRING,
@@ -95,8 +99,12 @@ const initUser = (sequelize) => {
                         console.log('Generated referral code:', referralCode);
                         user.referral_code = referralCode;
                     }
+                    // Generate username from email if not provided
+                    if (!user.username) {
+                        user.username = user.email.split('@')[0];
+                    }
                 } catch (error) {
-                    console.error('Error generating referral code:', error);
+                    console.error('Error in beforeCreate hook:', error);
                     throw error;
                 }
             }
