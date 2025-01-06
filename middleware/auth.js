@@ -38,7 +38,7 @@ const authenticateToken = async (req, res, next) => {
         // Get fresh user data from database
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'isadmin', 'points', 'referralcode']
+            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code']
         });
 
         if (!user) {
@@ -49,27 +49,14 @@ const authenticateToken = async (req, res, next) => {
             });
         }
 
-        // Update req.user with fresh data
-        req.user = {
-            id: user.id,
-            email: user.email,
-            isadmin: user.isadmin,
-            points: user.points,
-            referralcode: user.referralcode
-        };
-
-        console.log('[Auth] Authentication successful:', {
-            id: user.id,
-            email: user.email,
-            isadmin: user.isadmin
-        });
-
+        // Attach user to request
+        req.user = user;
         next();
     } catch (error) {
         console.error('[Auth] Authentication error:', error);
         return res.status(401).json({
             success: false,
-            message: 'Invalid token'
+            message: 'Authentication failed'
         });
     }
 };
@@ -121,7 +108,7 @@ const isAdmin = async (req, res, next) => {
         // Get fresh user data to ensure admin status is current
         const user = await User.findOne({
             where: { id: req.user.id },
-            attributes: ['id', 'email', 'isadmin']
+            attributes: ['id', 'email', 'is_admin']
         });
 
         if (!user) {
@@ -132,7 +119,7 @@ const isAdmin = async (req, res, next) => {
             });
         }
 
-        if (!user.isadmin) {
+        if (!user.is_admin) {
             console.log('[Auth] Access denied - not admin:', { id: user.id, email: user.email });
             return res.status(403).json({
                 success: false,
@@ -144,13 +131,13 @@ const isAdmin = async (req, res, next) => {
         req.user = {
             id: user.id,
             email: user.email,
-            isadmin: user.isadmin
+            is_admin: user.is_admin
         };
 
         console.log('[Auth] Admin check successful:', {
             id: user.id,
             email: user.email,
-            isadmin: user.isadmin
+            is_admin: user.is_admin
         });
 
         next();
@@ -165,7 +152,7 @@ const isAdmin = async (req, res, next) => {
 
 const isAdminSimple = (req, res, next) => {
     try {
-        if (!req.user.isadmin) {
+        if (!req.user.is_admin) {
             return res.status(403).json({
                 success: false,
                 message: 'Admin access required'

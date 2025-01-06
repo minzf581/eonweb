@@ -166,34 +166,19 @@ router.post('/login', async (req, res) => {
         }
 
         // 生成 JWT
-        const tokenPayload = {
+        const token = jwt.sign({
             id: user.id,
             email: user.email,
             is_admin: user.is_admin
-        };
+        }, process.env.JWT_SECRET, {
+            expiresIn: '24h'
+        });
 
-        console.log('[Auth] Generated token payload:', tokenPayload);
-
-        const token = jwt.sign(
-            tokenPayload,
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        // Create response payload
-        const responsePayload = {
-            success: true,
-            message: 'Login successful',
-            token,
-            user: {
-                id: user.id,
-                email: user.email,
-                is_admin: user.is_admin,
-                points: user.points,
-                referral_code: user.referral_code,
-                username: user.username
-            }
-        };
+        console.log('[Auth] Generated token payload:', {
+            id: user.id,
+            email: user.email,
+            is_admin: user.is_admin
+        });
 
         console.log('[Auth] Login successful:', {
             id: user.id,
@@ -201,7 +186,21 @@ router.post('/login', async (req, res) => {
             is_admin: user.is_admin
         });
 
-        res.json(responsePayload);
+        // Return success response
+        return res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            data: {
+                token,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    is_admin: user.is_admin,
+                    points: user.points,
+                    referral_code: user.referral_code
+                }
+            }
+        });
     } catch (error) {
         console.error('[Auth] Login error:', error);
         res.status(500).json({
