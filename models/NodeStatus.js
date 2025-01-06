@@ -2,113 +2,61 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
     const NodeStatus = sequelize.define('NodeStatus', {
-        device_id: {
-            type: DataTypes.STRING,
-            primaryKey: true,
-            allowNull: false,
-        },
-        username: {
+        nodeid: {
             type: DataTypes.STRING,
             allowNull: false,
-            comment: '节点所属用户名'
-        },
-        user_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
             references: {
-                model: 'Users',
-                key: 'id'
-            },
-            comment: '节点所属用户ID'
+                model: 'proxy_nodes',
+                key: 'nodeid'
+            }
         },
         status: {
-            type: DataTypes.ENUM('online', 'offline'),
-            allowNull: false,
-            defaultValue: 'offline',
-            comment: '节点状态'
+            type: DataTypes.ENUM('online', 'offline', 'active'),
+            allowNull: false
         },
-        ip_address: {
-            type: DataTypes.STRING,
-            allowNull: false,
+        bandwidth: {
+            type: DataTypes.BIGINT,
+            defaultValue: 0
         },
-        last_status_change: {
+        connections: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        },
+        uptime: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        },
+        timestamp: {
             type: DataTypes.DATE,
             allowNull: false,
-            defaultValue: DataTypes.NOW,
-            comment: '最后状态变更时间'
-        },
-        last_report_time: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: DataTypes.NOW,
-            comment: '最后上报时间'
-        },
-        last_report_type: {
-            type: DataTypes.ENUM('status_change', 'daily'),
-            allowNull: false,
-            defaultValue: 'status_change',
-            comment: '最后上报类型'
-        },
-        last_report_duration: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            defaultValue: 0,
-            comment: '上次上报到本次的在线时长(秒)'
-        },
-        last_report_upload: {
-            type: DataTypes.BIGINT,
-            allowNull: false,
-            defaultValue: 0,
-            comment: '上次上报到本次的上传流量(bytes)'
-        },
-        last_report_download: {
-            type: DataTypes.BIGINT,
-            allowNull: false,
-            defaultValue: 0,
-            comment: '上次上报到本次的下载流量(bytes)'
-        },
-        total_upload_bytes: {
-            type: DataTypes.BIGINT,
-            defaultValue: 0,
-            comment: '总上传流量(bytes)',
-        },
-        total_download_bytes: {
-            type: DataTypes.BIGINT,
-            defaultValue: 0,
-            comment: '总下载流量(bytes)',
-        },
-        total_online_time: {
-            type: DataTypes.INTEGER,
-            defaultValue: 0,
-            comment: '总在线时长(秒)',
-        },
-        proxy_backend_id: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            comment: 'IP代理后台的唯一标识',
+            defaultValue: DataTypes.NOW
         }
     }, {
+        sequelize,
+        modelName: 'NodeStatus',
+        tableName: 'node_statuses',
+        underscored: true,
+        timestamps: true,
+        createdAt: 'createdat',
+        updatedAt: 'updatedat',
         indexes: [
             {
-                fields: ['status', 'last_status_change']
+                fields: ['status', 'timestamp']
             },
             {
-                fields: ['last_report_time']
+                fields: ['timestamp']
             },
             {
-                fields: ['proxy_backend_id']
-            },
-            {
-                fields: ['user_id']
-            },
-            {
-                fields: ['username']
-            },
-            {
-                fields: ['ip_address']
+                fields: ['nodeid']
             }
         ]
     });
+
+    NodeStatus.associate = function(models) {
+        NodeStatus.belongsTo(models.ProxyNode, {
+            foreignKey: 'nodeid'
+        });
+    };
 
     return NodeStatus;
 };

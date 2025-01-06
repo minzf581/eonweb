@@ -6,6 +6,7 @@ const { validateBatchReport } = require('../validators/proxyValidator');
 const sequelize = require('../config/sequelize');
 const { ProxyNode } = require('../models');
 const { checkApiKey } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 
 // 计算积分的辅助函数
 const calculatePoints = (traffic, duration) => {
@@ -278,7 +279,7 @@ router.get('/nodes/:deviceId/stats', checkApiKey, async (req, res) => {
 });
 
 // Node online report
-router.post('/online', authenticateProxyBackend, async (req, res) => {
+router.post('/online', authenticateToken, async (req, res) => {
     try {
         const { nodeId, ip, port } = req.body;
         console.log(`[Proxy] Node online report - nodeId: ${nodeId}, ip: ${ip}, port: ${port}`);
@@ -325,7 +326,7 @@ router.post('/online', authenticateProxyBackend, async (req, res) => {
 });
 
 // Node daily report
-router.post('/daily', authenticateProxyBackend, async (req, res) => {
+router.post('/daily', authenticateToken, async (req, res) => {
     try {
         const { nodeId, bandwidth, connections, uptime } = req.body;
         console.log(`[Proxy] Node daily report - nodeId: ${nodeId}`);
@@ -374,7 +375,7 @@ router.post('/daily', authenticateProxyBackend, async (req, res) => {
 });
 
 // Node offline report
-router.post('/offline', authenticateProxyBackend, async (req, res) => {
+router.post('/offline', authenticateToken, async (req, res) => {
     try {
         const { nodeId } = req.body;
         console.log(`[Proxy] Node offline report - nodeId: ${nodeId}`);
@@ -418,7 +419,7 @@ router.post('/offline', authenticateProxyBackend, async (req, res) => {
 });
 
 // Get node statistics
-router.get('/stats', authenticateProxyBackend, async (req, res) => {
+router.get('/stats', authenticateToken, async (req, res) => {
     try {
         console.log('[Proxy] Fetching node statistics');
 
