@@ -13,7 +13,7 @@ module.exports = {
       $$;
     `);
 
-    await queryInterface.createTable('BandwidthTasks', {
+    await queryInterface.createTable('bandwidth_tasks', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -69,20 +69,25 @@ module.exports = {
       }
     });
 
-    // 添加字段注释
-    await queryInterface.sequelize.query(`
-      COMMENT ON COLUMN "BandwidthTasks"."upload_speed" IS '上传速度限制 (KB/s)';
-      COMMENT ON COLUMN "BandwidthTasks"."download_speed" IS '下载速度限制 (KB/s)';
-      COMMENT ON COLUMN "BandwidthTasks"."duration" IS '计划持续时间 (秒)';
-      COMMENT ON COLUMN "BandwidthTasks"."actual_duration" IS '实际持续时间 (秒)';
-    `);
+    // 添加字段注释，并添加错误处理
+    try {
+      await queryInterface.sequelize.query(`
+        COMMENT ON COLUMN "bandwidth_tasks"."upload_speed" IS '上传速度限制 (KB/s)';
+        COMMENT ON COLUMN "bandwidth_tasks"."download_speed" IS '下载速度限制 (KB/s)';
+        COMMENT ON COLUMN "bandwidth_tasks"."duration" IS '计划持续时间 (秒)';
+        COMMENT ON COLUMN "bandwidth_tasks"."actual_duration" IS '实际持续时间 (秒)';
+      `);
+    } catch (error) {
+      console.error('Error adding column comments:', error);
+      // Continue even if comments fail - they're not critical
+    }
 
-    await queryInterface.addIndex('BandwidthTasks', ['user_id']);
-    await queryInterface.addIndex('BandwidthTasks', ['status']);
+    await queryInterface.addIndex('bandwidth_tasks', ['user_id']);
+    await queryInterface.addIndex('bandwidth_tasks', ['status']);
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('BandwidthTasks');
+    await queryInterface.dropTable('bandwidth_tasks');
     await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_bandwidthtasks_status";`);
   }
 };
