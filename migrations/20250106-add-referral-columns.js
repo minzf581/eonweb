@@ -3,15 +3,15 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Add referralcode column to users table
-    await queryInterface.addColumn('users', 'referralcode', {
+    // Add referral_code column to users table
+    await queryInterface.addColumn('users', 'referral_code', {
       type: Sequelize.STRING,
       unique: true,
       allowNull: true
     });
 
-    // Add referredby column to users table
-    await queryInterface.addColumn('users', 'referredby', {
+    // Add referred_by column to users table
+    await queryInterface.addColumn('users', 'referred_by', {
       type: Sequelize.STRING,
       allowNull: true
     });
@@ -23,7 +23,7 @@ module.exports = {
         primaryKey: true,
         autoIncrement: true
       },
-      referrerid: {
+      referrer_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -31,7 +31,7 @@ module.exports = {
           key: 'id'
         }
       },
-      referredid: {
+      referred_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         unique: true,
@@ -40,7 +40,7 @@ module.exports = {
           key: 'id'
         }
       },
-      pointsearned: {
+      points_earned: {
         type: Sequelize.INTEGER,
         defaultValue: 0
       },
@@ -48,12 +48,12 @@ module.exports = {
         type: Sequelize.ENUM('pending', 'completed'),
         defaultValue: 'pending'
       },
-      createdat: {
+      created_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updatedat: {
+      updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -61,8 +61,8 @@ module.exports = {
     });
 
     // Add indexes
-    await queryInterface.addIndex('referrals', ['referrerid']);
-    await queryInterface.addIndex('referrals', ['referredid'], {
+    await queryInterface.addIndex('referrals', ['referrer_id']);
+    await queryInterface.addIndex('referrals', ['referred_id'], {
       unique: true
     });
   },
@@ -72,7 +72,7 @@ module.exports = {
     await queryInterface.dropTable('referrals');
 
     // Remove columns from users table
-    await queryInterface.removeColumn('users', 'referralcode');
-    await queryInterface.removeColumn('users', 'referredby');
+    await queryInterface.removeColumn('users', 'referral_code');
+    await queryInterface.removeColumn('users', 'referred_by');
   }
 };

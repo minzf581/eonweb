@@ -64,7 +64,7 @@ const initUser = (sequelize) => {
                 this.setDataValue('password', hash);
             }
         },
-        referralcode: {
+        referral_code: {
             type: DataTypes.STRING,
             unique: true,
             allowNull: true
@@ -73,7 +73,7 @@ const initUser = (sequelize) => {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
-        isadmin: {
+        is_admin: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
         }
@@ -83,17 +83,17 @@ const initUser = (sequelize) => {
         tableName: 'users',
         underscored: true,
         timestamps: true,
-        createdAt: 'createdat',
-        updatedAt: 'updatedat',
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
         hooks: {
             beforeCreate: async (user) => {
                 try {
                     console.log('Generating referral code...');
-                    if (!user.referralcode) {
+                    if (!user.referral_code) {
                         const randomBytes = crypto.randomBytes(4);
                         const referralCode = randomBytes.toString('hex').toUpperCase();
                         console.log('Generated referral code:', referralCode);
-                        user.referralcode = referralCode;
+                        user.referral_code = referralCode;
                     }
                 } catch (error) {
                     console.error('Error generating referral code:', error);
