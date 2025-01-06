@@ -3,8 +3,12 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // 1. 创建 user_tasks 表
-    await queryInterface.createTable('user_tasks', {
+    // 1. 创建用户任务状态枚举
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_user_tasks_status" CASCADE;`);
+    await queryInterface.sequelize.query(`CREATE TYPE "enum_user_tasks_status" AS ENUM ('pending', 'in_progress', 'completed', 'failed');`);
+
+    // 2. 创建用户任务表
+    await queryInterface.createTable('UserTasks', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -15,7 +19,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'users',
+          model: 'Users',
           key: 'id'
         }
       },
@@ -23,12 +27,12 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'tasks',
+          model: 'Tasks',
           key: 'id'
         }
       },
       status: {
-        type: Sequelize.ENUM('pending', 'in_progress', 'completed', 'failed'),
+        type: "enum_user_tasks_status",
         defaultValue: 'pending'
       },
       startTime: {
@@ -53,20 +57,17 @@ module.exports = {
       }
     });
 
-    // 2. 创建默认任务
-    await queryInterface.bulkInsert('tasks', [{
-      name: '每日签到',
-      description: '完成每日签到可获得积分奖励',
-      type: 'daily',
-      points: 10,
-      status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }], {});
+    // 3. 创建索引
+    await queryInterface.addIndex('UserTasks', ['userId']);
+    await queryInterface.addIndex('UserTasks', ['taskId']);
+    await queryInterface.addIndex('UserTasks', ['status']);
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('user_tasks');
-    await queryInterface.bulkDelete('tasks', { type: 'daily' }, {});
+    // 删除用户任务表
+    await queryInterface.dropTable('UserTasks');
+    
+    // 删除枚举类型
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_user_tasks_status" CASCADE;');
   }
 };

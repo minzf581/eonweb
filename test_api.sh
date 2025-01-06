@@ -174,24 +174,36 @@ curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/proxy/stats/${DEVICE_ID}" \
     -H "X-API-Key: ${API_KEY}"
 print_test_result $? "获取节点统计"
 
-# 3. 任务相关测试
-echo -e "\n=== 任务测试 ==="
+# 3. 测试任务相关接口
+echo "测试任务相关接口..."
 
 # 3.1 获取可用任务列表
-echo "获取任务列表..."
+echo "获取可用任务列表..."
 curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/tasks" \
     -H "Authorization: Bearer ${TOKEN}"
-print_test_result $? "获取任务列表"
+print_test_result $? "获取可用任务列表"
 
-# 3.2 开始任务
-echo "开始任务..."
-TASK_ID=1
-TASK_START_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/tasks/${TASK_ID}/start" \
+# 3.2 开始每日签到任务
+echo "开始每日签到任务..."
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/tasks/start" \
     -H "Authorization: Bearer ${TOKEN}" \
     -H "Content-Type: application/json" \
-    -H "Content-Length: 0")
-echo "$TASK_START_RESPONSE"
-print_test_result $? "开始任务"
+    -d '{
+        "taskId": 1
+    }'
+print_test_result $? "开始每日签到任务"
+
+# 3.3 获取用户任务列表
+echo "获取用户任务列表..."
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/tasks/user" \
+    -H "Authorization: Bearer ${TOKEN}"
+print_test_result $? "获取用户任务列表"
+
+# 3.4 获取用户积分统计
+echo "获取用户积分统计..."
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/points/stats" \
+    -H "Authorization: Bearer ${TOKEN}"
+print_test_result $? "获取用户积分统计"
 
 # 4. 积分相关测试
 echo -e "\n=== 积分测试 ==="
