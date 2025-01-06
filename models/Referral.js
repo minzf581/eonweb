@@ -4,29 +4,37 @@ class Referral extends Model {
     static associate(models) {
         // Define associations here if needed
         // This method will be called in models/index.js
+        Referral.belongsTo(models.User, {
+            as: 'referrer',
+            foreignKey: 'referrerid'
+        });
+        Referral.belongsTo(models.User, {
+            as: 'referred',
+            foreignKey: 'referredid'
+        });
     }
 }
 
 const initReferral = (sequelize) => {
     Referral.init({
-        referrerId: {
+        referrerid: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
-                model: 'Users',
+                model: 'users',
                 key: 'id'
             }
         },
-        referredId: {
+        referredid: {
             type: DataTypes.INTEGER,
             allowNull: false,
             unique: true,
             references: {
-                model: 'Users',
+                model: 'users',
                 key: 'id'
             }
         },
-        pointsEarned: {
+        pointsearned: {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
@@ -37,12 +45,17 @@ const initReferral = (sequelize) => {
     }, {
         sequelize,
         modelName: 'Referral',
+        tableName: 'referrals',
+        underscored: true,
+        timestamps: true,
+        createdAt: 'createdat',
+        updatedAt: 'updatedat',
         indexes: [
             {
-                fields: ['referrerId']
+                fields: ['referrerid']
             },
             {
-                fields: ['referredId'],
+                fields: ['referredid'],
                 unique: true
             }
         ]
