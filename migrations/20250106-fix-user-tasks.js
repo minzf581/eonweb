@@ -4,8 +4,8 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     // 1. 创建用户任务状态枚举
-    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_user_tasks_status" CASCADE;`);
-    await queryInterface.sequelize.query(`CREATE TYPE "enum_user_tasks_status" AS ENUM ('pending', 'in_progress', 'completed', 'failed');`);
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_UserTasks_status" CASCADE;`);
+    await queryInterface.sequelize.query(`CREATE TYPE "enum_UserTasks_status" AS ENUM ('pending', 'in_progress', 'completed', 'failed');`);
 
     // 2. 创建用户任务表
     await queryInterface.createTable('UserTasks', {
@@ -32,7 +32,7 @@ module.exports = {
         }
       },
       status: {
-        type: "enum_user_tasks_status",
+        type: "enum_UserTasks_status",
         defaultValue: 'pending'
       },
       startTime: {
@@ -68,6 +68,6 @@ module.exports = {
     await queryInterface.dropTable('UserTasks');
     
     // 删除枚举类型
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_user_tasks_status" CASCADE;');
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_UserTasks_status" CASCADE;');
   }
 };
