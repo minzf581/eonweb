@@ -9,7 +9,7 @@ class UserTask extends Model {
 
 const initUserTask = (sequelize) => {
     UserTask.init({
-        UserId: {
+        user_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -17,7 +17,7 @@ const initUserTask = (sequelize) => {
                 key: 'id'
             }
         },
-        TaskId: {
+        task_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -29,11 +29,11 @@ const initUserTask = (sequelize) => {
             type: DataTypes.ENUM('started', 'completed', 'failed'),
             defaultValue: 'started'
         },
-        startedAt: {
+        started_at: {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW
         },
-        completedAt: {
+        completed_at: {
             type: DataTypes.DATE
         }
     }, {
@@ -42,7 +42,7 @@ const initUserTask = (sequelize) => {
         indexes: [
             {
                 unique: true,
-                fields: ['UserId', 'TaskId']
+                fields: ['user_id', 'task_id']
             }
         ]
     });

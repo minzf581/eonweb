@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
     const NodeStatus = sequelize.define('NodeStatus', {
-        deviceId: {
+        device_id: {
             type: DataTypes.STRING,
             primaryKey: true,
             allowNull: false,
@@ -12,7 +12,7 @@ module.exports = (sequelize) => {
             allowNull: false,
             comment: '节点所属用户名'
         },
-        UserId: {
+        user_id: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: {
@@ -27,62 +27,62 @@ module.exports = (sequelize) => {
             defaultValue: 'offline',
             comment: '节点状态'
         },
-        ipAddress: {
+        ip_address: {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        lastStatusChange: {
+        last_status_change: {
             type: DataTypes.DATE,
             allowNull: false,
             defaultValue: DataTypes.NOW,
             comment: '最后状态变更时间'
         },
-        lastReportTime: {
+        last_report_time: {
             type: DataTypes.DATE,
             allowNull: false,
             defaultValue: DataTypes.NOW,
             comment: '最后上报时间'
         },
-        lastReportType: {
+        last_report_type: {
             type: DataTypes.ENUM('status_change', 'daily'),
             allowNull: false,
             defaultValue: 'status_change',
             comment: '最后上报类型'
         },
-        lastReportDuration: {
+        last_report_duration: {
             type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 0,
             comment: '上次上报到本次的在线时长(秒)'
         },
-        lastReportUpload: {
+        last_report_upload: {
             type: DataTypes.BIGINT,
             allowNull: false,
             defaultValue: 0,
             comment: '上次上报到本次的上传流量(bytes)'
         },
-        lastReportDownload: {
+        last_report_download: {
             type: DataTypes.BIGINT,
             allowNull: false,
             defaultValue: 0,
             comment: '上次上报到本次的下载流量(bytes)'
         },
-        totalUploadBytes: {
+        total_upload_bytes: {
             type: DataTypes.BIGINT,
             defaultValue: 0,
             comment: '总上传流量(bytes)',
         },
-        totalDownloadBytes: {
+        total_download_bytes: {
             type: DataTypes.BIGINT,
             defaultValue: 0,
             comment: '总下载流量(bytes)',
         },
-        totalOnlineTime: {
+        total_online_time: {
             type: DataTypes.INTEGER,
             defaultValue: 0,
             comment: '总在线时长(秒)',
         },
-        ProxyBackendId: {
+        proxy_backend_id: {
             type: DataTypes.STRING,
             allowNull: false,
             comment: 'IP代理后台的唯一标识',
@@ -90,22 +90,22 @@ module.exports = (sequelize) => {
     }, {
         indexes: [
             {
-                fields: ['status', 'lastStatusChange']
+                fields: ['status', 'last_status_change']
             },
             {
-                fields: ['lastReportTime']
+                fields: ['last_report_time']
             },
             {
-                fields: ['ProxyBackendId']
+                fields: ['proxy_backend_id']
             },
             {
-                fields: ['UserId']
+                fields: ['user_id']
             },
             {
                 fields: ['username']
             },
             {
-                fields: ['ipAddress']
+                fields: ['ip_address']
             }
         ]
     });
