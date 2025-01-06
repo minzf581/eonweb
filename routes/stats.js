@@ -22,7 +22,7 @@ router.get('/', authenticateToken, async (req, res) => {
         // 获取任务完成统计
         const totalTasks = await UserTask.count({
             where: {
-                userId: userId,
+                user_id: userId,
                 status: 'completed'
             }
         });
@@ -32,14 +32,15 @@ router.get('/', authenticateToken, async (req, res) => {
         today.setHours(0, 0, 0, 0);
         const dailyTasks = await UserTask.count({
             where: {
-                userId: userId,
+                user_id: userId,
                 status: 'completed',
-                endTime: {
+                end_time: {
                     [Op.gte]: today
                 }
             },
             include: [{
                 model: Task,
+                as: 'task',
                 where: {
                     type: 'daily'
                 }
@@ -49,7 +50,7 @@ router.get('/', authenticateToken, async (req, res) => {
         // 获取总积分
         const pointsEarned = await UserTask.sum('points', {
             where: {
-                userId: userId,
+                user_id: userId,
                 status: 'completed'
             }
         });
@@ -57,20 +58,35 @@ router.get('/', authenticateToken, async (req, res) => {
         // 获取今日积分
         const todayPoints = await UserTask.sum('points', {
             where: {
-                userId: userId,
+                user_id: userId,
                 status: 'completed',
-                endTime: {
+                end_time: {
                     [Op.gte]: today
                 }
             }
         });
 
+        // 获取带宽任务统计
+        const bandwidthTasks = await UserTask.count({
+            where: {
+                user_id: userId,
+                status: 'completed'
+            },
+            include: [{
+                model: Task,
+                as: 'task',
+                where: {
+                    type: 'bandwidth'
+                }
+            }]
+        });
+
         const stats = {
-            totalTasks,
-            dailyTasks,
-            pointsEarned: pointsEarned || 0,
-            todayPoints: todayPoints || 0,
-            currentPoints: user.points
+            total_tasks: totalTasks,
+            daily_tasks: dailyTasks,
+            points_earned: pointsEarned || 0,
+            today_points: todayPoints || 0,
+            current_points: user.points
         };
 
         console.log('Stats data:', stats);
