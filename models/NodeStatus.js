@@ -12,7 +12,7 @@ module.exports = (sequelize) => {
             allowNull: false,
             comment: '节点所属用户名'
         },
-        userId: {
+        UserId: {
             type: DataTypes.INTEGER,
             allowNull: true,
             references: {
@@ -82,7 +82,7 @@ module.exports = (sequelize) => {
             defaultValue: 0,
             comment: '总在线时长(秒)',
         },
-        proxyBackendId: {
+        ProxyBackendId: {
             type: DataTypes.STRING,
             allowNull: false,
             comment: 'IP代理后台的唯一标识',
@@ -96,10 +96,10 @@ module.exports = (sequelize) => {
                 fields: ['lastReportTime']
             },
             {
-                fields: ['proxyBackendId']
+                fields: ['ProxyBackendId']
             },
             {
-                fields: ['userId']
+                fields: ['UserId']
             },
             {
                 fields: ['username']

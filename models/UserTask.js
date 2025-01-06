@@ -9,7 +9,7 @@ class UserTask extends Model {
 
 const initUserTask = (sequelize) => {
     UserTask.init({
-        userId: {
+        UserId: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -17,7 +17,7 @@ const initUserTask = (sequelize) => {
                 key: 'id'
             }
         },
-        taskId: {
+        TaskId: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -42,7 +42,7 @@ const initUserTask = (sequelize) => {
         indexes: [
             {
                 unique: true,
-                fields: ['userId', 'taskId']
+                fields: ['UserId', 'TaskId']
             }
         ]
     });
