@@ -37,8 +37,8 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
         // 检查用户是否已经开始了这个任务
         const existingTask = await UserTask.findOne({
             where: {
-                userid: userId,
-                taskid: taskId,
+                userId: userId,
+                taskId: taskId,
                 status: ['pending', 'in_progress']
             }
         });
@@ -48,11 +48,11 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
 
         // 创建用户任务
         const userTask = await UserTask.create({
-            userid: userId,
-            taskid: taskId,
+            userId: userId,
+            taskId: taskId,
             status: 'in_progress',
-            starttime: new Date(),
-            endtime: null,
+            startTime: new Date(),
+            endTime: null,
             points: task.points
         });
 
@@ -63,7 +63,7 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
                 taskId: taskId,
                 userId: userId,
                 status: 'in_progress',
-                startTime: userTask.starttime
+                startTime: userTask.startTime
             }
         });
     } catch (error) {
@@ -78,7 +78,7 @@ router.get('/user/list', authenticateToken, async (req, res) => {
         const userId = req.user.id;
 
         const userTasks = await UserTask.findAll({
-            where: { userid: userId },
+            where: { userId: userId },
             include: [{
                 model: Task,
                 required: true
@@ -104,8 +104,8 @@ router.post('/:taskId/complete', authenticateToken, async (req, res) => {
         // 查找用户任务
         const userTask = await UserTask.findOne({
             where: {
-                userid: userId,
-                taskid: taskId,
+                userId: userId,
+                taskId: taskId,
                 status: 'in_progress'
             }
         });
@@ -117,7 +117,7 @@ router.post('/:taskId/complete', authenticateToken, async (req, res) => {
         // 更新任务状态
         await userTask.update({
             status: 'completed',
-            endtime: new Date()
+            endTime: new Date()
         });
 
         // 更新用户积分

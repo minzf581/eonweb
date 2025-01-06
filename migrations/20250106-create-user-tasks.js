@@ -18,7 +18,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userid: {
+      user_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -28,7 +28,7 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      taskid: {
+      task_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -42,22 +42,22 @@ module.exports = {
         type: "enum_user_tasks_status",
         defaultValue: 'pending'
       },
-      starttime: {
+      start_time: {
         type: Sequelize.DATE
       },
-      endtime: {
+      end_time: {
         type: Sequelize.DATE
       },
       points: {
         type: Sequelize.INTEGER,
         defaultValue: 0
       },
-      createdat: {
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updatedat: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')

@@ -3,17 +3,17 @@ const { Model, DataTypes } = require('sequelize');
 class UserTask extends Model {
     static associate(models) {
         UserTask.belongsTo(models.User, {
-            foreignKey: 'userid'
+            foreignKey: 'userId'
         });
         UserTask.belongsTo(models.Task, {
-            foreignKey: 'taskid'
+            foreignKey: 'taskId'
         });
     }
 }
 
 const initUserTask = (sequelize) => {
     UserTask.init({
-        userid: {
+        userId: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -21,7 +21,7 @@ const initUserTask = (sequelize) => {
                 key: 'id'
             }
         },
-        taskid: {
+        taskId: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -33,10 +33,10 @@ const initUserTask = (sequelize) => {
             type: DataTypes.ENUM('pending', 'in_progress', 'completed', 'failed'),
             defaultValue: 'pending'
         },
-        starttime: {
+        startTime: {
             type: DataTypes.DATE
         },
-        endtime: {
+        endTime: {
             type: DataTypes.DATE
         },
         points: {
@@ -49,8 +49,8 @@ const initUserTask = (sequelize) => {
         tableName: 'user_tasks',
         underscored: true,
         timestamps: true,
-        createdAt: 'createdat',
-        updatedAt: 'updatedat'
+        createdAt: 'createdAt',
+        updatedAt: 'updatedAt'
     });
 
     return UserTask;
