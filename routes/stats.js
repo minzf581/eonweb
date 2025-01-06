@@ -22,7 +22,7 @@ router.get('/', authenticateToken, async (req, res) => {
         // 获取任务完成统计
         const totalTasks = await UserTask.count({
             where: {
-                userid: userId,
+                userId: userId,
                 status: 'completed'
             }
         });
@@ -32,9 +32,9 @@ router.get('/', authenticateToken, async (req, res) => {
         today.setHours(0, 0, 0, 0);
         const dailyTasks = await UserTask.count({
             where: {
-                userid: userId,
+                userId: userId,
                 status: 'completed',
-                endtime: {
+                endTime: {
                     [Op.gte]: today
                 }
             },
@@ -49,7 +49,7 @@ router.get('/', authenticateToken, async (req, res) => {
         // 获取总积分
         const pointsEarned = await UserTask.sum('points', {
             where: {
-                userid: userId,
+                userId: userId,
                 status: 'completed'
             }
         });
@@ -57,9 +57,9 @@ router.get('/', authenticateToken, async (req, res) => {
         // 获取今日积分
         const todayPoints = await UserTask.sum('points', {
             where: {
-                userid: userId,
+                userId: userId,
                 status: 'completed',
-                endtime: {
+                endTime: {
                     [Op.gte]: today
                 }
             }
