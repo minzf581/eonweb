@@ -25,7 +25,7 @@ const developmentConfig = {
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD || 'eonprotocol',
-    host: process.env.DB_HOST || '34.101.146.171', 
+    host: process.env.DB_HOST || '34.101.146.171', // 主 IP
     port: process.env.DB_PORT || 5432,
     dialectOptions: {
         ssl: {
@@ -118,6 +118,7 @@ async function connectWithRetry(maxRetries = 5, delay = 5000) {
             console.log('Database connection has been established successfully.');
             break;
         } catch (error) {
+            console.error('Connection error:', error.message);
             retries++;
             if (retries === maxRetries) {
                 throw error;
