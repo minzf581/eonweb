@@ -27,7 +27,7 @@ router.get('/points/stats', authenticateToken, async (req, res) => {
         [sequelize.fn('SUM', sequelize.col('UserTask.points')), 'totalPoints'],
         [sequelize.col('Task.type'), 'taskType']
       ],
-      group: ['Task.type']
+      group: ['Task.type', 'Task.id']
     });
 
     res.json({
