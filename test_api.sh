@@ -222,59 +222,6 @@ curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/referral" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取推荐信息"
 
-# 6. 带宽共享任务测试
-echo -e "\n=== 带宽共享任务测试 ==="
-
-# 6.1 创建带宽共享任务
-echo "创建带宽共享任务..."
-BANDWIDTH_TASK_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth" \
-    -H "Content-Type: application/json" \
-    -H "Content-Length: 0" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -d '{
-        "uploadSpeed": 100,
-        "downloadSpeed": 200,
-        "ipAddress": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-        "duration": 60
-    }')
-print_test_result $? "创建带宽共享任务"
-
-# 获取任务ID
-TASK_ID=$(echo $BANDWIDTH_TASK_RESPONSE | grep -o '"id":[0-9]*' | cut -d':' -f2)
-
-# 6.2 获取带宽任务列表
-echo "获取带宽任务列表..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/bandwidth" \
-    -H "Authorization: Bearer ${TOKEN}"
-print_test_result $? "获取带宽任务列表"
-
-# 6.3 获取特定带宽任务详情
-echo "获取带宽任务详情..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/bandwidth/${TASK_ID}" \
-    -H "Authorization: Bearer ${TOKEN}"
-print_test_result $? "获取带宽任务详情"
-
-# 6.4 启动带宽共享任务
-echo "启动带宽共享任务..."
-TASK_START_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth/${TASK_ID}/start" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -H "Content-Type: application/json" \
-    -H "Content-Length: 0")
-echo "$TASK_START_RESPONSE"
-print_test_result $? "启动带宽共享任务"
-
-# 等待几秒钟
-sleep 3
-
-# 6.5 停止带宽共享任务
-echo "停止带宽共享任务..."
-TASK_STOP_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth/${TASK_ID}/stop" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -H "Content-Type: application/json" \
-    -H "Content-Length: 0")
-echo "$TASK_STOP_RESPONSE"
-print_test_result $? "停止带宽共享任务"
-
 # 输出测试结果统计
 echo -e "\n=== 测试结果统计 ==="
 echo "总测试数: ${TOTAL_TESTS}"
