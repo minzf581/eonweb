@@ -22,6 +22,8 @@ const adminRoutes = require('./routes/admin');
 const { authenticateToken, isAdmin } = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
+const proxyRoutes = require('./routes/proxy');
+const bandwidthRoutes = require('./routes/bandwidth');
 
 const app = express();
 
@@ -93,9 +95,11 @@ async function initializeApp() {
 
         // Routes
         app.use('/api/auth', authRoutes);
-        app.use('/api/referral', referralRoutes);
+        app.use('/api/proxy', proxyRoutes);
         app.use('/api/tasks', tasksRoutes);
         app.use('/api/stats', statsRoutes);
+        app.use('/api/referral', referralRoutes);
+        app.use('/api/bandwidth', bandwidthRoutes);
         app.use('/api/admin', adminRoutes);
 
         // Serve static files
@@ -146,48 +150,49 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-// Graceful shutdown
+// 优雅关闭功能
 async function gracefulShutdown() {
     console.log('Starting graceful shutdown...');
     try {
-        await sequelize.close();
-        console.log('Database connections closed');
-        
-        if (app.get('server')) {
-            await new Promise((resolve, reject) => {
-                app.get('server').close((err) => {
-                    if (err) reject(err);
-                    else resolve();
-                });
-            });
-            console.log('Server closed');
+        // 关闭数据库连接
+        const db = require('./models');
+        if (db.sequelize) {
+            await db.sequelize.close();
         }
+        
+        console.log('Database connections closed.');
+        process.exit(0);
     } catch (error) {
         console.error('Error during shutdown:', error);
-        throw error;
+        console.error('Error stack:', error.stack);
+        process.exit(1);
     }
 }
 
-// Handle uncaught errors
-process.on('unhandledRejection', (error) => {
-    console.error('Unhandled Promise Rejection:', error);
-    console.error('Error stack:', error.stack);
+// 监听进程信号
+process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received');
+    gracefulShutdown();
 });
 
+process.on('SIGINT', () => {
+    console.log('SIGINT signal received');
+    gracefulShutdown();
+});
+
+// 处理未捕获的 Promise 异常
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Promise Rejection:', reason);
+    if (reason.stack) {
+        console.error('Error stack:', reason.stack);
+    }
+});
+
+// Handle uncaught errors
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
     console.error('Error stack:', error.stack);
     process.exit(1);
-});
-
-// Handle graceful shutdown
-const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
-signals.forEach(signal => {
-    process.on(signal, async () => {
-        console.log(`${signal} signal received`);
-        await gracefulShutdown();
-        process.exit(0);
-    });
 });
 
 initializeApp();
