@@ -156,28 +156,30 @@ async function gracefulShutdown() {
     try {
         // 关闭数据库连接
         const db = require('./models');
-        if (db.sequelize) {
+        if (db && db.sequelize) {
             await db.sequelize.close();
+            console.log('Database connection closed successfully');
         }
         
-        console.log('Database connections closed.');
+        // 给服务器一些时间处理剩余的请求
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         process.exit(0);
     } catch (error) {
         console.error('Error during shutdown:', error);
-        console.error('Error stack:', error.stack);
         process.exit(1);
     }
 }
 
 // 监听进程信号
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
     console.log('SIGTERM signal received');
-    gracefulShutdown();
+    await gracefulShutdown();
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     console.log('SIGINT signal received');
-    gracefulShutdown();
+    await gracefulShutdown();
 });
 
 // 处理未捕获的 Promise 异常
