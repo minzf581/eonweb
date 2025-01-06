@@ -3,12 +3,14 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // 1. 创建任务类型枚举
-    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_tasks_type";`);
+    // 1. 先删除已存在的表（如果存在）
+    await queryInterface.dropTable('tasks', { cascade: true });
+    
+    // 2. 删除并重新创建枚举类型
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_tasks_type" CASCADE;`);
+    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_tasks_status" CASCADE;`);
+    
     await queryInterface.sequelize.query(`CREATE TYPE "enum_tasks_type" AS ENUM ('daily', 'bandwidth', 'proxy');`);
-
-    // 2. 创建任务状态枚举
-    await queryInterface.sequelize.query(`DROP TYPE IF EXISTS "enum_tasks_status";`);
     await queryInterface.sequelize.query(`CREATE TYPE "enum_tasks_status" AS ENUM ('active', 'inactive');`);
 
     // 3. 创建任务表
@@ -27,7 +29,7 @@ module.exports = {
         type: Sequelize.TEXT
       },
       type: {
-        type: Sequelize.ENUM('daily', 'bandwidth', 'proxy'),
+        type: "enum_tasks_type",
         allowNull: false
       },
       points: {
@@ -35,7 +37,7 @@ module.exports = {
         defaultValue: 0
       },
       status: {
-        type: Sequelize.ENUM('active', 'inactive'),
+        type: "enum_tasks_status",
         defaultValue: 'active'
       },
       createdAt: {
@@ -78,7 +80,7 @@ module.exports = {
     await queryInterface.dropTable('tasks');
     
     // 删除枚举类型
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_tasks_type";');
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_tasks_status";');
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_tasks_type" CASCADE;');
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_tasks_status" CASCADE;');
   }
 };
