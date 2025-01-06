@@ -35,21 +35,57 @@ const models = {
 };
 
 // Define associations
-User.hasMany(PointHistory);
-PointHistory.belongsTo(User);
+User.hasMany(PointHistory, {
+    foreignKey: 'userid',
+    as: 'pointHistory'
+});
+PointHistory.belongsTo(User, {
+    foreignKey: 'userid',
+    as: 'user'
+});
 
-User.hasMany(UserTask, { as: 'userTasks' });
-Task.hasMany(UserTask, { as: 'userTasks' });
-UserTask.belongsTo(User, { as: 'user' });
-UserTask.belongsTo(Task, { as: 'task' });
+User.hasMany(UserTask, {
+    foreignKey: 'userid',
+    as: 'userTasks'
+});
+Task.hasMany(UserTask, {
+    foreignKey: 'taskid',
+    as: 'userTasks'
+});
+UserTask.belongsTo(User, {
+    foreignKey: 'userid',
+    as: 'user'
+});
+UserTask.belongsTo(Task, {
+    foreignKey: 'taskid',
+    as: 'task'
+});
 
-User.hasMany(Referral, { foreignKey: 'referrerId', as: 'referrals' });
-User.hasMany(Referral, { foreignKey: 'referredId', as: 'referredBy' });
-Referral.belongsTo(User, { foreignKey: 'referrerId', as: 'referrer' });
-Referral.belongsTo(User, { foreignKey: 'referredId', as: 'referred' });
+User.hasMany(Referral, {
+    foreignKey: 'referrer_id',
+    as: 'referrals'
+});
+User.hasMany(Referral, {
+    foreignKey: 'referred_id',
+    as: 'referredUsers'  // Changed from referredBy to avoid naming collision
+});
+Referral.belongsTo(User, {
+    foreignKey: 'referrer_id',
+    as: 'referrer'
+});
+Referral.belongsTo(User, {
+    foreignKey: 'referred_id',
+    as: 'referred'
+});
 
-User.hasMany(NodeStatus, { foreignKey: 'userId', as: 'nodes' });
-NodeStatus.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(NodeStatus, {
+    foreignKey: 'userid',
+    as: 'nodes'
+});
+NodeStatus.belongsTo(User, {
+    foreignKey: 'userid',
+    as: 'user'
+});
 
 // Export models and sequelize instance
 module.exports = models;
