@@ -24,6 +24,10 @@ const productionConfig = {
     retry: {
         max: 5,
         timeout: 3000
+    },
+    define: {  
+        timestamps: true,
+        underscored: true
     }
 };
 
@@ -38,6 +42,10 @@ const developmentConfig = {
     retry: {
         max: 5,
         timeout: 3000
+    },
+    define: {  
+        timestamps: true,
+        underscored: true
     }
 };
 
@@ -66,53 +74,29 @@ if (!isLocal) {
     });
 }
 
-// 导出配置供 Sequelize CLI 使用
-module.exports = {
-    development: developmentConfig,
-    production: productionConfig,
-    dbConfig // 添加这一行，导出当前环境的配置
-};
-
 // 初始化 Sequelize 实例
 const { Sequelize } = require('sequelize');
 const sequelize = new Sequelize(
     dbConfig.database,
     dbConfig.username,
     dbConfig.password,
-    {
-        ...dbConfig,
-        retry: {
-            max: 5,
-            timeout: 3000
-        }
-    }
+    dbConfig  
 );
 
-async function connectWithRetry(maxRetries = 5, delay = 5000) {
-    let retries = 0;
-    while (retries < maxRetries) {
-        try {
-            await sequelize.authenticate();
-            console.log('Database connection has been established successfully.');
-            break;
-        } catch (error) {
-            console.error('Connection error:', error.message);
-            retries++;
-            if (retries === maxRetries) {
-                throw error;
-            }
-            console.log(`Failed to connect to database (attempt ${retries}/${maxRetries}). Retrying in ${delay/1000} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-}
-
-// Initialize connection
-connectWithRetry()
+// 测试数据库连接
+sequelize.authenticate()
+    .then(() => {
+        console.log('Database connection has been established successfully.');
+    })
     .catch(err => {
         console.error('Unable to connect to the database:', err);
         process.exit(1);
     });
 
-// 导出 sequelize 实例
-module.exports.sequelize = sequelize;
+// 导出配置和实例
+module.exports = {
+    development: developmentConfig,
+    production: productionConfig,
+    sequelize,
+    dbConfig
+};
