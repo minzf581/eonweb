@@ -37,33 +37,65 @@ echo "=== 认证测试 ==="
 
 # 1.1 注册测试
 echo "测试注册..."
-REGISTER_RESPONSE=$(curl -s -X POST "${API_URL}/auth/register" \
+echo "发送注册请求到: ${API_URL}/auth/register"
+REGISTER_RESPONSE=$(curl -v -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/register" \
     -H "Content-Type: application/json" \
     -d '{
-        "username": "'${TEST_USERNAME}'",
         "email": "'${TEST_EMAIL}'",
         "password": "password123",
         "referralCode": ""
-    }')
+    }' 2>&1)
 echo "Register Response: $REGISTER_RESPONSE"
-print_test_result $? "用户注册"
+
+# 检查是否包含错误信息
+if echo "$REGISTER_RESPONSE" | grep -q "Could not resolve host\|Connection refused\|No route to host"; then
+    echo "注册请求失败: 无法连接到服务器"
+    exit 1
+fi
+
+# 提取实际的响应内容（去除 curl 的调试输出）
+RESPONSE_BODY=$(echo "$REGISTER_RESPONSE" | sed -n '/^{/,/^}/p' || true)
+echo "Response Body: $RESPONSE_BODY"
+
+# 尝试解析 JSON
+if [ -n "$RESPONSE_BODY" ]; then
+    REGISTER_SUCCESS=$(echo "$RESPONSE_BODY" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print('true' if response.get('success') else 'false')" 2>/dev/null || echo "false")
+    if [ "$REGISTER_SUCCESS" = "true" ]; then
+        print_test_result 0 "用户注册"
+    else
+        print_test_result 1 "用户注册"
+        echo "注册失败，退出测试"
+        exit 1
+    fi
+else
+    echo "注册响应为空"
+    print_test_result 1 "用户注册"
+    exit 1
+fi
 
 # 等待一秒确保注册完成
 sleep 1
 
 # 1.2 登录测试
 echo "测试登录..."
-LOGIN_RESPONSE=$(curl -s -X POST "${API_URL}/auth/login" \
+LOGIN_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/login" \
     -H "Content-Type: application/json" \
     -d '{
         "email": "'${TEST_EMAIL}'",
         "password": "password123"
     }')
 echo "Login Response: $LOGIN_RESPONSE"
-print_test_result $? "用户登录"
+LOGIN_SUCCESS=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print('true' if response.get('success') else 'false')")
+if [ "$LOGIN_SUCCESS" = "true" ]; then
+    print_test_result 0 "用户登录"
+else
+    print_test_result 1 "用户登录"
+    echo "登录失败，退出测试"
+    exit 1
+fi
 
 # 从登录响应中提取token
-TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; print(json.loads(sys.stdin.read()).get('token', ''))")
+TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print(response.get('token', '') if response.get('success') else '')")
 echo "Token: $TOKEN"
 
 # 如果没有获取到token，退出测试
@@ -78,7 +110,7 @@ echo -e "\n=== 代理节点状态上报测试 ==="
 # 2.1 节点上线
 echo "测试节点上线上报..."
 DEVICE_ID="test_device_${TIMESTAMP}"
-curl -s -X POST "${API_URL}/proxy/report/batch" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
     -H "Content-Type: application/json" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
@@ -102,7 +134,7 @@ sleep 2
 
 # 2.2 节点每日上报
 echo "测试节点每日上报..."
-curl -s -X POST "${API_URL}/proxy/report/batch" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
     -H "Content-Type: application/json" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
@@ -123,7 +155,7 @@ print_test_result $? "节点每日上报"
 
 # 2.3 节点下线
 echo "测试节点下线上报..."
-curl -s -X POST "${API_URL}/proxy/report/batch" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/report/batch" \
     -H "Content-Type: application/json" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
@@ -144,7 +176,7 @@ print_test_result $? "节点下线上报"
 
 # 2.4 获取节点统计
 echo "测试获取节点统计..."
-curl -s -X GET "${API_URL}/proxy/stats" \
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/proxy/stats" \
     -H "X-API-Key: ${API_KEY}"
 print_test_result $? "获取节点统计"
 
@@ -153,13 +185,13 @@ echo -e "\n=== 任务测试 ==="
 
 # 3.1 获取可用任务列表
 echo "获取任务列表..."
-curl -s -X GET "${API_URL}/tasks" \
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/tasks" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取任务列表"
 
 # 3.2 开始任务
 echo "开始任务..."
-curl -s -X POST "${API_URL}/tasks/1/start" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/tasks/1/start" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "开始任务"
 
@@ -168,7 +200,7 @@ echo -e "\n=== 积分测试 ==="
 
 # 4.1 获取积分统计
 echo "获取积分统计..."
-curl -s -X GET "${API_URL}/stats" \
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/stats" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取积分统计"
 
@@ -177,7 +209,7 @@ echo -e "\n=== 推荐测试 ==="
 
 # 5.1 获取推荐信息
 echo "获取推荐信息..."
-curl -s -X GET "${API_URL}/referral" \
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/referral" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取推荐信息"
 
@@ -186,7 +218,7 @@ echo -e "\n=== 带宽共享任务测试 ==="
 
 # 6.1 创建带宽共享任务
 echo "创建带宽共享任务..."
-BANDWIDTH_TASK_RESPONSE=$(curl -s -X POST "${API_URL}/bandwidth" \
+BANDWIDTH_TASK_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${TOKEN}" \
     -d '{
@@ -202,19 +234,19 @@ TASK_ID=$(echo $BANDWIDTH_TASK_RESPONSE | grep -o '"id":[0-9]*' | cut -d':' -f2)
 
 # 6.2 获取带宽任务列表
 echo "获取带宽任务列表..."
-curl -s -X GET "${API_URL}/bandwidth" \
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/bandwidth" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取带宽任务列表"
 
 # 6.3 获取特定带宽任务详情
 echo "获取带宽任务详情..."
-curl -s -X GET "${API_URL}/bandwidth/${TASK_ID}" \
+curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/bandwidth/${TASK_ID}" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取带宽任务详情"
 
 # 6.4 启动带宽共享任务
 echo "启动带宽共享任务..."
-curl -s -X POST "${API_URL}/bandwidth/${TASK_ID}/start" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth/${TASK_ID}/start" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "启动带宽共享任务"
 
@@ -223,7 +255,7 @@ sleep 3
 
 # 6.5 停止带宽共享任务
 echo "停止带宽共享任务..."
-curl -s -X POST "${API_URL}/bandwidth/${TASK_ID}/stop" \
+curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/bandwidth/${TASK_ID}/stop" \
     -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "停止带宽共享任务"
 

@@ -91,6 +91,13 @@ async function initializeApp() {
         app.use(cookieParser());
         app.use(compression());
 
+        // Routes
+        app.use('/api/auth', authRoutes);
+        app.use('/api/referral', referralRoutes);
+        app.use('/api/tasks', tasksRoutes);
+        app.use('/api/stats', statsRoutes);
+        app.use('/api/admin', adminRoutes);
+
         // Serve static files
         const publicPath = process.env.NODE_ENV === 'production' 
             ? path.join(process.cwd(), 'public')  // App Engine environment
@@ -105,13 +112,6 @@ async function initializeApp() {
             console.log(`Serving index.html for path: ${req.path}`);
             res.sendFile(path.join(publicPath, 'index.html'));
         });
-
-        // Routes
-        app.use('/api/auth', authRoutes);
-        app.use('/api/referral', referralRoutes);
-        app.use('/api/tasks', tasksRoutes);
-        app.use('/api/stats', statsRoutes);
-        app.use('/api/admin', adminRoutes);
 
         // Global error handler - place this after all routes
         app.use((err, req, res, next) => {
