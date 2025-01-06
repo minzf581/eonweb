@@ -25,14 +25,8 @@ const developmentConfig = {
     database: process.env.DB_NAME || 'eon_protocol',
     username: process.env.DB_USER || 'eonuser',
     password: process.env.DB_PASSWORD || 'eonprotocol',
-    host: process.env.DB_HOST || '34.101.146.171', // 主 IP
+    host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
-    dialectOptions: {
-        ssl: {
-            require: true,
-            rejectUnauthorized: false 
-        }
-    },
     logging: console.log,
     retry: {
         max: 5,
