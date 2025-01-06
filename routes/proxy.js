@@ -3,7 +3,7 @@ const router = express.Router();
 const { authenticateProxyBackend } = require('../middleware/proxyAuth');
 const { NodeStatus, User, PointHistory, ProxyBackend } = require('../models');
 const { validateBatchReport } = require('../validators/proxyValidator');
-const sequelize = require('../config/database');
+const sequelize = require('../config/sequelize');
 
 // 计算积分的辅助函数
 const calculatePoints = (traffic, duration) => {

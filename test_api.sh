@@ -38,7 +38,7 @@ echo "=== 认证测试 ==="
 # 1.1 注册测试
 echo "测试注册..."
 echo "发送注册请求到: ${API_URL}/auth/register"
-REGISTER_RESPONSE=$(curl -v -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/register" \
+REGISTER_RESPONSE=$(curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/auth/register" \
     -H "Content-Type: application/json" \
     -d '{
         "email": "'${TEST_EMAIL}'",
@@ -54,12 +54,12 @@ if echo "$REGISTER_RESPONSE" | grep -q "Could not resolve host\|Connection refus
 fi
 
 # 提取实际的响应内容（去除 curl 的调试输出）
-RESPONSE_BODY=$(echo "$REGISTER_RESPONSE" | sed -n '/^{/,/^}/p' || true)
+RESPONSE_BODY=$(echo "$REGISTER_RESPONSE" | grep -v "^*\|^>\|^<\|^}\|^{" || true)
 echo "Response Body: $RESPONSE_BODY"
 
 # 尝试解析 JSON
-if [ -n "$RESPONSE_BODY" ]; then
-    REGISTER_SUCCESS=$(echo "$RESPONSE_BODY" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print('true' if response.get('success') else 'false')" 2>/dev/null || echo "false")
+if [ -n "$REGISTER_RESPONSE" ]; then
+    REGISTER_SUCCESS=$(echo "$REGISTER_RESPONSE" | python3 -c "import sys, json; response = json.loads(sys.stdin.read()); print('true' if response.get('success') else 'false')" 2>/dev/null || echo "false")
     if [ "$REGISTER_SUCCESS" = "true" ]; then
         print_test_result 0 "用户注册"
     else
