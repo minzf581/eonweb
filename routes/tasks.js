@@ -3,55 +3,6 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const { Task, UserTask, User } = require('../models');
 
-// Get tasks list
-router.get('/', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        console.log('[Tasks] Fetching tasks for user:', userId);
-
-        // Get all active tasks and their completion status
-        const tasks = await Task.findAll({
-            where: {
-                status: 'active'
-            },
-            include: [{
-                model: UserTask,
-                where: { userid: userId },
-                required: false
-            }]
-        });
-
-        console.log(`[Tasks] Found ${tasks.length} active tasks`);
-
-        const formattedTasks = tasks.map(task => {
-            const formatted = {
-                id: task.id,
-                name: task.name,
-                description: task.description,
-                points: task.points,
-                type: task.type,
-                completed: task.UserTasks && task.UserTasks.length > 0,
-                completedAt: task.UserTasks && task.UserTasks.length > 0 ? task.UserTasks[0].endtime : null
-            };
-            console.log(`[Tasks] Task ${task.id} formatted:`, formatted);
-            return formatted;
-        });
-
-        console.log('[Tasks] Sending response with formatted tasks');
-        res.json({
-            success: true,
-            data: formattedTasks
-        });
-    } catch (error) {
-        console.error('[Tasks] Error fetching tasks:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch tasks',
-            error: error.message
-        });
-    }
-});
-
 // 获取可用任务列表
 router.get('/available', authenticateToken, async (req, res) => {
     try {
@@ -100,28 +51,20 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
             userid: userId,
             taskid: taskId,
             status: 'in_progress',
-            starttime: new Date()
+            starttime: new Date(),
+            endtime: null,
+            points: task.points
         });
-
-        // 如果是每日签到任务，直接完成
-        if (task.type === 'daily') {
-            await userTask.update({
-                status: 'completed',
-                endtime: new Date(),
-                points: task.points
-            });
-
-            // 更新用户积分
-            await User.increment('points', {
-                by: task.points,
-                where: { id: userId }
-            });
-        }
 
         res.json({
             success: true,
             message: 'Task started successfully',
-            data: userTask
+            data: {
+                taskId: taskId,
+                userId: userId,
+                status: 'in_progress',
+                startTime: userTask.starttime
+            }
         });
     } catch (error) {
         console.error('Error in start task:', error);
@@ -138,9 +81,8 @@ router.get('/user/list', authenticateToken, async (req, res) => {
             where: { userid: userId },
             include: [{
                 model: Task,
-                attributes: ['name', 'description', 'type', 'points']
-            }],
-            order: [['createdat', 'DESC']]
+                required: true
+            }]
         });
 
         res.json({
@@ -153,51 +95,50 @@ router.get('/user/list', authenticateToken, async (req, res) => {
     }
 });
 
-// Get user tasks
-router.get('/user', authenticateToken, async (req, res) => {
+// 完成任务
+router.post('/:taskId/complete', authenticateToken, async (req, res) => {
     try {
+        const { taskId } = req.params;
         const userId = req.user.id;
-        console.log('[Tasks] Fetching user tasks for user:', userId);
 
-        const userTasks = await UserTask.findAll({
+        // 查找用户任务
+        const userTask = await UserTask.findOne({
             where: {
-                userid: userId
-            },
-            include: [{
-                model: Task,
-                attributes: ['name', 'description', 'type', 'points']
-            }],
-            order: [['createdat', 'DESC']]
+                userid: userId,
+                taskid: taskId,
+                status: 'in_progress'
+            }
         });
 
-        console.log(`[Tasks] Found ${userTasks.length} user tasks`);
+        if (!userTask) {
+            return res.status(404).json({ success: false, message: 'Task not found or not in progress' });
+        }
 
-        const formattedTasks = userTasks.map(userTask => ({
-            id: userTask.id,
-            taskId: userTask.taskid,
-            status: userTask.status,
-            startTime: userTask.starttime,
-            endTime: userTask.endtime,
-            points: userTask.points,
-            task: userTask.Task ? {
-                name: userTask.Task.name,
-                description: userTask.Task.description,
-                type: userTask.Task.type,
-                points: userTask.Task.points
-            } : null
-        }));
+        // 更新任务状态
+        await userTask.update({
+            status: 'completed',
+            endtime: new Date()
+        });
+
+        // 更新用户积分
+        await User.increment('points', {
+            by: userTask.points,
+            where: { id: userId }
+        });
 
         res.json({
             success: true,
-            data: formattedTasks
+            message: 'Task completed successfully',
+            data: {
+                taskId: taskId,
+                userId: userId,
+                status: 'completed',
+                points: userTask.points
+            }
         });
     } catch (error) {
-        console.error('[Tasks] Error fetching user tasks:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch user tasks',
-            error: error.message
-        });
+        console.error('Error in complete task:', error);
+        res.status(500).json({ success: false, message: 'Failed to complete task', error: error.message });
     }
 });
 

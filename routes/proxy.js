@@ -418,56 +418,28 @@ router.post('/offline', authenticateToken, async (req, res) => {
     }
 });
 
-// Get node statistics
+// 获取所有节点状态统计
 router.get('/stats', authenticateToken, async (req, res) => {
-    try {
-        console.log('[Proxy] Fetching node statistics');
+  try {
+    const stats = await ProxyNode.findAll({
+      attributes: [
+        'status',
+        [sequelize.fn('COUNT', sequelize.col('deviceId')), 'count'],
+        [sequelize.fn('SUM', sequelize.col('totalUploadBytes')), 'totalUploadBytes'],
+        [sequelize.fn('SUM', sequelize.col('totalDownloadBytes')), 'totalDownloadBytes'],
+        [sequelize.fn('SUM', sequelize.col('totalOnlineSeconds')), 'totalOnlineTime']
+      ],
+      group: ['status']
+    });
 
-        // Get all nodes with their latest status
-        const nodes = await ProxyNode.findAll({
-            attributes: [
-                'deviceId',
-                'ip',
-                'port',
-                'status',
-                'bandwidth',
-                'connections',
-                'uptime',
-                'lastSeenAt',
-                'lastOffline',
-                'lastReport'
-            ],
-            order: [['createdAt', 'DESC']]
-        });
-
-        // Get total statistics
-        const totalStats = await ProxyNode.findAll({
-            attributes: [
-                [sequelize.fn('COUNT', sequelize.col('deviceId')), 'totalNodes'],
-                [sequelize.fn('SUM', sequelize.col('bandwidth')), 'totalBandwidth'],
-                [sequelize.fn('SUM', sequelize.col('connections')), 'totalConnections'],
-                [sequelize.fn('AVG', sequelize.col('uptime')), 'averageUptime']
-            ],
-            where: {
-                status: 'online'
-            }
-        });
-
-        res.json({
-            success: true,
-            data: {
-                nodes,
-                stats: totalStats[0]
-            }
-        });
-    } catch (error) {
-        console.error('[Proxy] Error fetching node statistics:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch node statistics',
-            error: error.message
-        });
-    }
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error in getting stats:', error);
+    res.status(500).json({ success: false, message: 'Failed to get stats' });
+  }
 });
 
 module.exports = router;
