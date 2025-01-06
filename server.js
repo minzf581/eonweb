@@ -103,18 +103,18 @@ async function initializeApp() {
         app.use('/api/admin', adminRoutes);
 
         // Serve static files
-        const publicPath = process.env.NODE_ENV === 'production' 
-            ? path.join(process.cwd(), 'public')  // App Engine environment
-            : path.join(__dirname, 'public');  // Local environment
-        
-        console.log('Current working directory:', process.cwd());
-        console.log('Serving static files from:', publicPath);
-        app.use('/static', express.static(publicPath));
+        app.use('/static', express.static(path.join(__dirname, 'public/static')));
+        app.use(express.static(path.join(__dirname, 'public')));
+
+        // Serve index.html for root path
+        app.get('/', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public/index.html'));
+        });
 
         // Handle frontend routing for SPA
         app.get('/*', (req, res) => {
             console.log(`Serving index.html for path: ${req.path}`);
-            res.sendFile(path.join(publicPath, 'index.html'));
+            res.sendFile(path.join(__dirname, 'public/index.html'));
         });
 
         // Global error handler - place this after all routes
@@ -148,57 +148,50 @@ async function cleanup() {
 // Get the database instance
 const db = require('./models');
 
-// 优雅关闭功能
+// Graceful shutdown handler
 async function gracefulShutdown() {
-  console.log('Starting graceful shutdown...');
-  try {
-    if (db && db.sequelize) {
-      // Close all connections in the pool
-      await db.sequelize.connectionManager.close();
-      console.log('Database connection pool closed successfully');
-    } else {
-      console.log('No database connection to close');
+    console.log('Starting graceful shutdown...');
+    try {
+        // Close database connections
+        if (db.sequelize && db.sequelize.connectionManager) {
+            await db.sequelize.connectionManager.close();
+            console.log('Database connections closed successfully');
+        }
+
+        // Close server
+        if (server) {
+            server.close(() => {
+                console.log('Server closed successfully');
+                process.exit(0);
+            });
+        } else {
+            process.exit(0);
+        }
+    } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
     }
-    
-    // 给服务器一些时间处理剩余的请求
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    process.exit(0);
-  } catch (error) {
-    console.error('Error during shutdown:', error);
-    process.exit(1);
-  }
 }
 
-// 监听关闭信号
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received');
-  gracefulShutdown();
+// Handle shutdown signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('Unhandled Exception:', error);
+    gracefulShutdown();
 });
 
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received');
-  gracefulShutdown();
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Promise Rejection:', reason);
+    gracefulShutdown();
 });
 
 // Start server
-app.listen(PORT, () => {
+let server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-});
-
-// 处理未捕获的 Promise 异常
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Promise Rejection:', reason);
-    if (reason.stack) {
-        console.error('Error stack:', reason.stack);
-    }
-});
-
-// Handle uncaught errors
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-    console.error('Error stack:', error.stack);
-    process.exit(1);
 });
 
 initializeApp();
