@@ -40,12 +40,12 @@ module.exports = {
         type: "enum_tasks_status",
         defaultValue: 'active'
       },
-      createdAt: {
+      createdat: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      updatedAt: {
+      updatedat: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -60,8 +60,8 @@ module.exports = {
         type: 'daily',
         points: 10,
         status: 'active',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdat: new Date(),
+        updatedat: new Date()
       },
       {
         name: '代理节点共享',
@@ -69,8 +69,8 @@ module.exports = {
         type: 'proxy',
         points: 50,
         status: 'active',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdat: new Date(),
+        updatedat: new Date()
       }
     ]);
   },

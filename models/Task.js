@@ -18,7 +18,7 @@ const initTask = (sequelize) => {
             type: DataTypes.TEXT
         },
         type: {
-            type: DataTypes.ENUM('daily', 'weekly', 'monthly', 'one_time'),
+            type: DataTypes.ENUM('daily', 'bandwidth', 'proxy'),
             allowNull: false
         },
         points: {
