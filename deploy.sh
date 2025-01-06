@@ -75,24 +75,26 @@ fi
 
 # 部署新版本
 echo "Deploying new version..."
-gcloud app deploy --quiet --version=$TIMESTAMP
+gcloud app deploy --quiet --version=$TIMESTAMP --promote
 
 # 如果部署成功
 if [ $? -eq 0 ]; then
     echo "Deployment successful."
     
-    # 获取当前正在服务的版本
-    SERVING_VERSION=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT>0" --format="value(version.id)" | head -n 1)
-    if [ ! -z "$SERVING_VERSION" ]; then
-        echo "Cleaning up previous serving version: $SERVING_VERSION"
-        gcloud app versions delete $SERVING_VERSION --quiet
+    # 等待新版本完全启动并接管流量
+    echo "Waiting for new version to stabilize..."
+    sleep 30
+    
+    # 获取旧的服务版本（排除当前版本）
+    OLD_SERVING_VERSIONS=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT>0 AND NOT version.id=$TIMESTAMP" --format="value(version.id)")
+    if [ ! -z "$OLD_SERVING_VERSIONS" ]; then
+        echo "Cleaning up old serving versions: $OLD_SERVING_VERSIONS"
+        gcloud app versions delete $OLD_SERVING_VERSIONS --quiet
+    else
+        echo "No old serving versions to clean up."
     fi
     
     echo "Deployment and cleanup completed."
-    
-    # 等待5秒让应用完全启动
-    echo "Waiting for application to start..."
-    sleep 10
     
     # 获取新版本的URL
     NEW_VERSION_URL=$(gcloud app browse --no-launch-browser)
