@@ -54,9 +54,9 @@ router.post('/register', async (req, res) => {
         const user = await User.create({
             email,
             password,
-            referralcode,
+            referral_code: referralcode,
             points: 0,
-            isadmin: false
+            is_admin: false
         });
 
         // 处理推荐码关系
@@ -69,7 +69,7 @@ router.post('/register', async (req, res) => {
             { 
                 id: user.id, 
                 email: user.email,
-                isadmin: user.isadmin 
+                is_admin: user.is_admin 
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
@@ -78,7 +78,7 @@ router.post('/register', async (req, res) => {
         console.log('[Auth] Registration successful:', {
             id: user.id,
             email: user.email,
-            isadmin: user.isadmin
+            is_admin: user.is_admin
         });
 
         res.status(201).json({
@@ -88,9 +88,9 @@ router.post('/register', async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                isadmin: user.isadmin,
+                is_admin: user.is_admin,
                 points: user.points,
-                referralcode: user.referralcode
+                referral_code: user.referral_code
             }
         });
     } catch (error) {
@@ -123,7 +123,7 @@ router.post('/login', async (req, res) => {
         // 查找用户
         const user = await User.findOne({ 
             where: { email },
-            attributes: ['id', 'email', 'password', 'isadmin', 'points', 'referralcode']
+            attributes: ['id', 'email', 'password', 'is_admin', 'points', 'referral_code']
         });
 
         if (!user) {
@@ -157,7 +157,7 @@ router.post('/login', async (req, res) => {
         const tokenPayload = {
             id: user.id,
             email: user.email,
-            isadmin: user.isadmin
+            is_admin: user.is_admin
         };
 
         console.log('[Auth] Generated token payload:', tokenPayload);
@@ -176,16 +176,16 @@ router.post('/login', async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                isadmin: user.isadmin,
+                is_admin: user.is_admin,
                 points: user.points,
-                referralcode: user.referralcode
+                referral_code: user.referral_code
             }
         };
 
         console.log('[Auth] Login successful:', {
             id: user.id,
             email: user.email,
-            isadmin: user.isadmin
+            is_admin: user.is_admin
         });
 
         res.json(responsePayload);
@@ -221,13 +221,13 @@ router.get('/me', async (req, res) => {
         console.log('[Auth] Token decoded:', {
             id: decoded.id,
             email: decoded.email,
-            isadmin: decoded.isadmin
+            is_admin: decoded.is_admin
         });
         
         // 获取用户信息
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'isadmin', 'points', 'referralcode']
+            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code']
         });
 
         if (!user) {
@@ -241,7 +241,7 @@ router.get('/me', async (req, res) => {
         console.log('[Auth] User info retrieved:', {
             id: user.id,
             email: user.email,
-            isadmin: user.isadmin
+            is_admin: user.is_admin
         });
 
         res.json({
@@ -268,14 +268,14 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
         console.log('[Auth] Token decoded:', {
             id: decoded.id,
             email: decoded.email,
-            isadmin: decoded.isadmin,
+            is_admin: decoded.is_admin,
             exp: new Date(decoded.exp * 1000).toISOString()
         });
         
         // 获取用户信息
         const user = await User.findOne({
             where: { id: decoded.id },
-            attributes: ['id', 'email', 'isadmin', 'points', 'referralcode']
+            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code']
         });
 
         if (!user) {
@@ -289,7 +289,7 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
         console.log('[Auth] Token verification successful:', {
             id: user.id,
             email: user.email,
-            isadmin: user.isadmin
+            is_admin: user.is_admin
         });
 
         return res.json({
@@ -297,9 +297,9 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                isadmin: user.isadmin,
+                is_admin: user.is_admin,
                 points: user.points,
-                referralcode: user.referralcode
+                referral_code: user.referral_code
             }
         });
     } catch (error) {
