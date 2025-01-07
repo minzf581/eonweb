@@ -5,6 +5,7 @@ class AuthService {
             token: null,
             user: null
         };
+        this._ready = false;
         this.initFromStorage();
     }
 
@@ -31,10 +32,16 @@ class AuthService {
             } else {
                 this.logInfo('No auth data in storage');
             }
+            this._ready = true;
         } catch (error) {
             this.logError('Error initializing from storage:', error);
             this.clearAuth();
+            this._ready = true;
         }
+    }
+
+    isReady() {
+        return this._ready;
     }
 
     clearAuth() {
@@ -58,53 +65,28 @@ class AuthService {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                this.logError('Login failed:', error.message);
-                return {
-                    success: false,
-                    error: error.message || 'Login failed'
-                };
+                throw new Error('Login failed');
             }
 
             const data = await response.json();
+            this._data.token = data.token;
+            this._data.user = data.user;
+
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            this.logInfo('Login successful:', {
+                email: this._data.user.email,
+                isAdmin: this._data.user.isAdmin
+            });
+
+            // Redirect to dashboard
+            window.location.href = '/dashboard/index.html';
             
-            if (data.success && data.token && data.user) {
-                this.logInfo('Login successful:', {
-                    email: data.user.email,
-                    isAdmin: data.user.isAdmin
-                });
-
-                // Store auth data
-                this._data.token = data.token;
-                this._data.user = data.user;
-
-                // Save to localStorage
-                localStorage.setItem('authToken', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-
-                return {
-                    success: true,
-                    user: {
-                        id: data.user.id,
-                        email: data.user.email,
-                        isAdmin: data.user.isAdmin,
-                        points: data.user.points,
-                        referralCode: data.user.referralCode
-                    }
-                };
-            } else {
-                this.logError('Login failed:', data.message || 'Invalid response');
-                return {
-                    success: false,
-                    error: data.message || 'Login failed'
-                };
-            }
+            return true;
         } catch (error) {
             this.logError('Login error:', error);
-            return {
-                success: false,
-                error: 'Network error'
-            };
+            throw error;
         }
     }
 

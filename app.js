@@ -3,6 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs'); // Add this line
 const { sequelize } = require('./models');
 const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
@@ -216,6 +217,35 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/points', pointsRoutes);
 app.use('/api/proxy', cors(), proxyRoutes);
 app.use('/api/users', usersRoutes);
+
+// Serve static files with proper fallback
+app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api')) {
+        next();
+        return;
+    }
+
+    // Try to serve the exact file first
+    const filePath = path.join(__dirname, 'public', req.path);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        res.sendFile(filePath);
+        return;
+    }
+
+    // For /dashboard/ and /admin/ routes, serve their respective index.html
+    if (req.path.startsWith('/dashboard/')) {
+        res.sendFile(path.join(__dirname, 'public', 'dashboard', 'index.html'));
+        return;
+    }
+    if (req.path.startsWith('/admin/')) {
+        res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
+        return;
+    }
+
+    // For all other routes, serve the main index.html
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Handle favicon.ico
 app.get('/favicon.ico', (req, res) => {
