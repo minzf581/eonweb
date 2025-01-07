@@ -37,7 +37,7 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
         // 检查用户是否已经开始了这个任务
         const existingTask = await UserTask.findOne({
             where: {
-                user_id: userId,
+                userid: userId,
                 task_id: taskId,
                 status: ['pending', 'in_progress']
             }
@@ -48,7 +48,7 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
 
         // 创建用户任务
         const userTask = await UserTask.create({
-            user_id: userId,
+            userid: userId,
             task_id: taskId,
             status: 'in_progress',
             start_time: new Date(),
@@ -61,7 +61,7 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
             message: 'Task started successfully',
             data: {
                 task_id: taskId,
-                user_id: userId,
+                userid: userId,
                 status: 'in_progress',
                 start_time: userTask.start_time
             }
@@ -75,25 +75,21 @@ router.post('/:taskId/start', authenticateToken, async (req, res) => {
 // 获取用户任务列表
 router.get('/user/list', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
-
-        const userTasks = await UserTask.findAll({
-            where: { user_id: userId },
+        const tasks = await UserTask.findAll({
+            where: {
+                userid: req.user.id
+            },
             include: [{
                 model: Task,
-                as: 'task',
                 required: true
             }],
             order: [['created_at', 'DESC']]
         });
 
-        res.json({
-            success: true,
-            data: userTasks
-        });
+        res.json(tasks);
     } catch (error) {
         console.error('Error in get user tasks:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch user tasks', error: error.message });
+        res.status(500).json({ error: 'Failed to fetch user tasks' });
     }
 });
 
@@ -106,7 +102,7 @@ router.post('/:taskId/complete', authenticateToken, async (req, res) => {
         // 查找用户任务
         const userTask = await UserTask.findOne({
             where: {
-                user_id: userId,
+                userid: userId,
                 task_id: taskId,
                 status: 'in_progress'
             }
@@ -133,7 +129,7 @@ router.post('/:taskId/complete', authenticateToken, async (req, res) => {
             message: 'Task completed successfully',
             data: {
                 task_id: taskId,
-                user_id: userId,
+                userid: userId,
                 status: 'completed',
                 points: userTask.points
             }

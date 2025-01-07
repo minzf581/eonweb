@@ -41,18 +41,20 @@ router.get('/', authenticateToken, async (req, res) => {
         
         // 获取推荐统计
         const referralCount = await Referral.count({
-            where: { referrer_id: userId }
+            where: {
+                referrer_id: req.user.id
+            }
         });
         
         const totalPoints = await Referral.sum('points_earned', {
             where: {
-                referrer_id: userId
+                referrer_id: req.user.id
             }
         }) || 0; // 如果没有记录，返回0
 
         // 获取推荐历史
         const referrals = await Referral.findAll({
-            where: { referrer_id: userId },
+            where: { referrer_id: req.user.id },
             include: [{
                 model: User,
                 as: 'referred',

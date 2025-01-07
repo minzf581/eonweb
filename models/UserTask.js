@@ -23,22 +23,15 @@ module.exports = (sequelize) => {
     points: {
       type: DataTypes.INTEGER,
       defaultValue: 0
-    },
-    created_at: {
-      type: DataTypes.DATE
-    },
-    updated_at: {
-      type: DataTypes.DATE
-    },
-    deleted_at: {
-      type: DataTypes.DATE,
-      allowNull: true
     }
   }, {
     tableName: 'user_tasks',
     underscored: true,
     timestamps: true,
-    paranoid: true
+    paranoid: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    deletedAt: 'deleted_at'
   });
 
   UserTask.associate = (models) => {
