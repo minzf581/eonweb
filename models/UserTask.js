@@ -31,10 +31,10 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
-    start_time: {
+    starttime: {
       type: DataTypes.DATE
     },
-    end_time: {
+    endtime: {
       type: DataTypes.DATE
     }
   }, {
