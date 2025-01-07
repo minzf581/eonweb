@@ -320,9 +320,58 @@
                 opacity: 1;
             }
         }
+        
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-spinner {
+            border: 8px solid rgba(0, 0, 0, 0.1);
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .error-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: #fff;
+            background-color: #e74c3c;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <div id="loadingOverlay" class="loading-container">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div id="errorMessage" class="error-message"></div>
+
     <!-- Main dashboard content -->
     <div class="dashboard-layout">
         <div class="main-content">
@@ -429,30 +478,20 @@
                 // Update stats display
                 document.getElementById('totalCredits').textContent = data.credits || 0;
                 document.getElementById('completedTasks').textContent = data.completedTasks || 0;
-                
-                // Update both referral code displays
-                if (data.referralCode) {
-                    document.getElementById('referralCodeDisplay').textContent = data.referralCode;
-                    document.getElementById('referralCodeText').textContent = data.referralCode;
-                    
-                    // Enable copy buttons
-                    const copyButtons = document.querySelectorAll('.copy-button');
-                    copyButtons.forEach(button => {
+                document.getElementById('referralCodeDisplay').textContent = data.referralCode || '-';
+                document.getElementById('referralCodeText').textContent = data.referralCode || '-';
+
+                // Enable/disable copy buttons based on referral code
+                const copyButtons = document.querySelectorAll('.copy-button');
+                copyButtons.forEach(button => {
+                    if (data.referralCode) {
                         button.disabled = false;
                         button.style.opacity = '1';
-                    });
-                } else {
-                    const defaultText = 'No referral code';
-                    document.getElementById('referralCodeDisplay').textContent = defaultText;
-                    document.getElementById('referralCodeText').textContent = defaultText;
-                    
-                    // Disable copy buttons
-                    const copyButtons = document.querySelectorAll('.copy-button');
-                    copyButtons.forEach(button => {
+                    } else {
                         button.disabled = true;
                         button.style.opacity = '0.5';
-                    });
-                }
+                    }
+                });
 
                 console.log('Stats updated:', {
                     credits: data.credits,
@@ -542,7 +581,7 @@
             console.log('[Dashboard] Loading referral data...');
             
             try {
-                await waitForAuthService();
+                await window.authServiceUtils.waitForAuthService();
                 const token = window.authService.getToken();
                 console.log('[Dashboard] Token retrieved:', !!token);
 
@@ -563,12 +602,15 @@
                     throw new Error('Invalid referral data response');
                 }
 
-                document.getElementById('referralCodeDisplay').textContent = data.data.referralCode || 'N/A';
-                document.getElementById('referralCodeText').textContent = data.data.referralCode || 'N/A';
+                // Update referral code displays
+                document.getElementById('referralCodeDisplay').textContent = data.data.referralCode || '-';
+                document.getElementById('referralCodeText').textContent = data.data.referralCode || '-';
+
+                // Update referral stats
                 document.getElementById('referralCount').textContent = data.data.referralCount || 0;
                 document.getElementById('referralPoints').textContent = data.data.totalPoints || 0;
 
-                // Update referred users list if the element exists
+                // Update referred users list
                 const referredUsersElement = document.getElementById('referredUsers');
                 if (referredUsersElement && data.data.referredUsers) {
                     referredUsersElement.innerHTML = data.data.referredUsers.length > 0 
@@ -581,6 +623,18 @@
                         `).join('')
                         : '<p class="no-referrals">No referrals yet</p>';
                 }
+
+                // Enable/disable copy buttons based on referral code
+                const copyButtons = document.querySelectorAll('.copy-button');
+                copyButtons.forEach(button => {
+                    if (data.data.referralCode) {
+                        button.disabled = false;
+                        button.style.opacity = '1';
+                    } else {
+                        button.disabled = true;
+                        button.style.opacity = '0.5';
+                    }
+                });
             } catch (error) {
                 console.error('[Dashboard] Error loading referral data:', error);
                 if (attempt < maxAttempts) {
@@ -615,7 +669,7 @@
                 console.log('[Dashboard] Starting initialization...');
                 
                 // Wait for AuthService
-                await waitForAuthService();
+                await window.authServiceUtils.waitForAuthService();
                 
                 // Check if user is logged in
                 if (!window.authService.isLoggedIn()) {
@@ -623,6 +677,12 @@
                     window.location.href = '/auth/login.html';
                     return;
                 }
+
+                // Update user info
+                const user = window.authService.getUser();
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('referralCodeDisplay').textContent = user.referral_code || '-';
+                document.getElementById('referralCodeText').textContent = user.referral_code || 'Loading...';
 
                 // Show loading state
                 document.getElementById('loadingOverlay').style.display = 'flex';
