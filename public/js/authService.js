@@ -52,6 +52,36 @@ class AuthService {
         this.logInfo('Auth data cleared');
     }
 
+    async register(email, password, referralCode = '') {
+        this.logInfo('Registration attempt for:', email);
+        
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    email, 
+                    password,
+                    referralCode: referralCode || undefined
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Registration failed');
+            }
+
+            const data = await response.json();
+            this.logInfo('Registration successful');
+            return data;
+        } catch (error) {
+            this.logError('Registration error:', error);
+            throw error;
+        }
+    }
+
     async login(email, password) {
         this.logInfo('Login attempt for:', email);
         
@@ -65,7 +95,8 @@ class AuthService {
             });
 
             if (!response.ok) {
-                throw new Error('Login failed');
+                const error = await response.json();
+                throw new Error(error.message || 'Login failed');
             }
 
             const data = await response.json();
@@ -80,10 +111,7 @@ class AuthService {
                 isAdmin: this._data.user.isAdmin
             });
 
-            // Redirect to dashboard
-            window.location.href = '/dashboard/index.html';
-            
-            return true;
+            return data;
         } catch (error) {
             this.logError('Login error:', error);
             throw error;
@@ -92,61 +120,24 @@ class AuthService {
 
     async verifyToken() {
         if (!this._data.token) {
-            this.logInfo('No token available for verification');
             return false;
         }
 
-        this.logInfo('Verifying token');
-
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/api/auth/verify', {
                 headers: {
                     'Authorization': `Bearer ${this._data.token}`
                 }
             });
 
-            if (!response.ok) {
-                this.logError('Token verification failed:', response.status);
-                this.clearAuth();
-                return false;
-            }
-
-            const data = await response.json();
-            if (data.success && data.user) {
-                this.logInfo('Token verified, user:', {
-                    email: data.user.email,
-                    isAdmin: data.user.isAdmin
-                });
-
-                // Update user data
-                this._data.user = data.user;
-                localStorage.setItem('user', JSON.stringify(data.user));
-                return true;
-            }
-
-            this.logError('Token verification failed: Invalid response');
-            this.clearAuth();
-            return false;
+            return response.ok;
         } catch (error) {
             this.logError('Token verification error:', error);
-            this.clearAuth();
             return false;
         }
-    }
-
-    getToken() {
-        if (!this._data.token) {
-            this.logInfo('No token available');
-            return null;
-        }
-        return this._data.token;
     }
 
     getUser() {
-        if (!this._data.user) {
-            this.logInfo('No user data available');
-            return null;
-        }
         return this._data.user;
     }
 
@@ -155,15 +146,30 @@ class AuthService {
     }
 
     isAdmin() {
-        return this._data.user && this._data.user.isAdmin === true;
-    }
-
-    logout() {
-        this.logInfo('Logging out');
-        this.clearAuth();
-        window.location.href = '/';
+        return this._data.user?.isAdmin || false;
     }
 }
 
-// 创建全局实例
-window._authService = new AuthService();
+// Create global instance
+window.authService = new AuthService();
+
+// Create auth service utils
+window.authServiceUtils = {
+    waitForAuthService(timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
+            
+            function checkService() {
+                if (window.authService && window.authService.isReady()) {
+                    resolve(window.authService);
+                } else if (Date.now() - startTime > timeout) {
+                    reject(new Error('AuthService not available'));
+                } else {
+                    setTimeout(checkService, 100);
+                }
+            }
+            
+            checkService();
+        });
+    }
+};

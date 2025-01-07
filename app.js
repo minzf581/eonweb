@@ -53,26 +53,50 @@ app.use(morgan(':method :url :status :response-time ms'));
 app.use(bodyParser.json());
 app.use(cors());
 
-// Static files path
-const publicPath = path.join(__dirname, 'public');
-console.log(`[Static] Serving static files from: ${publicPath}`);
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve static files with logging
-app.use(express.static(publicPath, {
-    index: false,
-    extensions: ['html'],
-    fallthrough: true,
-    setHeaders: (res, path, stat) => {
-        res.set('x-timestamp', Date.now());
-    }
-}));
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/points', pointsRoutes);
+app.use('/api/proxy', proxyRoutes);
+app.use('/api/users', usersRoutes);
 
-// Log static file access
-app.use((req, res, next) => {
-    if (!req.path.startsWith('/api')) {
-        console.log(`[Static] Serving: ${req.path}`);
+// Handle SPA routes
+app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+        res.status(404).send('API endpoint not found');
+        return;
     }
-    next();
+
+    // For dashboard routes, serve dashboard/index.html
+    if (req.path.startsWith('/dashboard')) {
+        res.sendFile(path.join(__dirname, 'public', 'dashboard', 'index.html'));
+        return;
+    }
+
+    // For admin routes, serve admin/index.html
+    if (req.path.startsWith('/admin')) {
+        res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
+        return;
+    }
+
+    // For auth routes, try to serve the exact file
+    if (req.path.startsWith('/auth/')) {
+        const authFile = path.join(__dirname, 'public', req.path);
+        if (fs.existsSync(authFile)) {
+            res.sendFile(authFile);
+            return;
+        }
+    }
+
+    // For all other routes, serve index.html
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Health check endpoints - register these before any middleware
@@ -208,48 +232,9 @@ app.use('/api/*', async (req, res, next) => {
     next();
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/referral', referralRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/points', pointsRoutes);
-app.use('/api/proxy', cors(), proxyRoutes);
-app.use('/api/users', usersRoutes);
-
-// Serve static files with proper fallback
-app.get('*', (req, res, next) => {
-    // Skip API routes
-    if (req.path.startsWith('/api')) {
-        next();
-        return;
-    }
-
-    // Try to serve the exact file first
-    const filePath = path.join(__dirname, 'public', req.path);
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-        res.sendFile(filePath);
-        return;
-    }
-
-    // For /dashboard/ and /admin/ routes, serve their respective index.html
-    if (req.path.startsWith('/dashboard/')) {
-        res.sendFile(path.join(__dirname, 'public', 'dashboard', 'index.html'));
-        return;
-    }
-    if (req.path.startsWith('/admin/')) {
-        res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
-        return;
-    }
-
-    // For all other routes, serve the main index.html
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 // Handle favicon.ico
 app.get('/favicon.ico', (req, res) => {
-    const faviconPath = path.join(publicPath, 'favicon.ico');
+    const faviconPath = path.join(__dirname, 'public', 'favicon.ico');
     console.log(`[Static] Serving favicon from: ${faviconPath}`);
     res.sendFile(faviconPath, err => {
         if (err) {
@@ -257,53 +242,6 @@ app.get('/favicon.ico', (req, res) => {
             res.status(404).end();
         }
     });
-});
-
-// Handle root path
-app.get('/', async (req, res) => {
-    console.log('[Route] Serving index.html for root path');
-    const indexPath = path.join(publicPath, 'index.html');
-    
-    // If initialization is in progress, wait for it
-    if (state.isInitializing) {
-        try {
-            await state.initPromise;
-        } catch (error) {
-            console.error('[Route] Error waiting for initialization:', error);
-            return res.status(503).send('Service unavailable');
-        }
-    }
-    
-    // If not initialized, try to initialize
-    if (!state.isInitialized) {
-        try {
-            const success = await initialize();
-            if (!success) {
-                console.error('[Route] Service not ready - initialization failed');
-                return res.status(503).send('Service unavailable');
-            }
-        } catch (error) {
-            console.error('[Route] Error during initialization:', error);
-            return res.status(503).send('Service unavailable');
-        }
-    }
-    
-    // Serve the file
-    console.log(`[Route] Sending index.html from: ${indexPath}`);
-    res.sendFile(indexPath, err => {
-        if (err) {
-            console.error('[Route] Error serving index.html:', err);
-            res.status(500).send('Error serving index.html');
-        } else {
-            console.log('[Route] Successfully served index.html');
-        }
-    });
-});
-
-// Catch-all handler for other routes
-app.use((req, res) => {
-    console.log(`[Route] Not found: ${req.path}`);
-    res.status(404).send('Not Found');
 });
 
 // Initialize application with timeout

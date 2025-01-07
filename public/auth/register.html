@@ -5,141 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - EON Protocol</title>
     <script src="/js/authService.js"></script>
-    <script>
-        // 处理注册
-        async function handleRegister(event) {
-            event.preventDefault();
-            
-            // 获取表单数据
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const referralCode = document.getElementById('referralCode').value;
-
-            // 显示加载状态
-            const button = document.getElementById('registerButton');
-            const errorDiv = document.getElementById('error');
-            button.disabled = true;
-            errorDiv.style.display = 'none';
-
-            try {
-                // 基本验证
-                if (!email || !password || !confirmPassword) {
-                    throw new Error('Please fill in all required fields');
-                }
-
-                if (password !== confirmPassword) {
-                    throw new Error('Passwords do not match');
-                }
-
-                if (password.length < 6) {
-                    throw new Error('Password must be at least 6 characters long');
-                }
-
-                // 等待 auth service 初始化
-                const isReady = await waitForAuthServiceWithTimeout();
-                if (!isReady) {
-                    throw new Error('Authentication service not available');
-                }
-
-                // 调用注册接口，包含推荐码
-                await window.authService.register(email, password, referralCode);
-                
-                // 注册成功后自动登录
-                await window.authService.login(email, password);
-                
-                // 重定向到仪表板
-                window.location.href = '/dashboard/index.html';
-            } catch (error) {
-                console.error('Registration failed:', error);
-                errorDiv.textContent = error.message || 'Registration failed. Please try again.';
-                errorDiv.style.display = 'block';
-            } finally {
-                button.disabled = false;
-            }
-        }
-
-        async function waitForAuthServiceWithTimeout(timeoutMs = 5000) {
-            console.log('[Register] Waiting for auth service...');
-            
-            if (!window.authServiceUtils) {
-                console.error('[Register] AuthServiceUtils not available');
-                return false;
-            }
-
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Auth service initialization timeout')), timeoutMs);
-            });
-
-            try {
-                await Promise.race([
-                    window.authServiceUtils.waitForAuthService(),
-                    timeoutPromise
-                ]);
-                console.log('[Register] Auth service ready');
-                return true;
-            } catch (error) {
-                console.error('[Register] Auth service wait failed:', error);
-                return false;
-            }
-        }
-
-        // 初始化页面
-        async function initializeRegisterPage() {
-            console.log('[Register] Starting initialization...');
-            
-            try {
-                // 等待 auth service 初始化
-                const isReady = await waitForAuthServiceWithTimeout();
-                if (!isReady) {
-                    throw new Error('Authentication service not available');
-                }
-
-                // 检查是否已经登录
-                const isAuthenticated = await window.authService.verifyToken();
-                if (isAuthenticated) {
-                    window.location.href = '/dashboard/index.html';
-                    return;
-                }
-
-                // 显示注册表单
-                const form = document.getElementById('registerForm');
-                if (form) {
-                    form.style.display = 'block';
-                }
-            } catch (error) {
-                console.error('[Register] Initialization failed:', error);
-                const errorDiv = document.getElementById('error');
-                if (errorDiv) {
-                    errorDiv.textContent = 'Failed to initialize registration page. Please refresh and try again.';
-                    errorDiv.style.display = 'block';
-                }
-            }
-        }
-
-        // 页面加载时初始化
-        window.addEventListener('load', () => {
-            setTimeout(initializeRegisterPage, 100);
-        });
-    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #1a1a1a;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            color: #ffffff;
+            background-color: #f5f5f5;
         }
 
         .container {
-            background-color: #2a2a2a;
+            background-color: white;
             padding: 2rem;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
         }
@@ -147,7 +29,7 @@
         h1 {
             margin: 0 0 1.5rem;
             text-align: center;
-            color: #4A90E2;
+            color: #333;
         }
 
         .form-group {
@@ -157,105 +39,164 @@
         label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #ffffff;
+            color: #555;
         }
 
         input {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid #3a3a3a;
+            border: 1px solid #ddd;
             border-radius: 4px;
-            background-color: #333333;
-            color: #ffffff;
             font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #4A90E2;
         }
 
         button {
             width: 100%;
             padding: 0.75rem;
-            background-color: #4A90E2;
+            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
             font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover:not(:disabled) {
-            background-color: #357ABD;
         }
 
         button:disabled {
-            background-color: #666666;
+            background-color: #ccc;
             cursor: not-allowed;
         }
 
         .error {
-            background-color: rgba(220, 53, 69, 0.1);
             color: #dc3545;
-            padding: 0.75rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            border: 1px solid #dc3545;
+            margin-top: 1rem;
+            text-align: center;
             display: none;
         }
 
-        .login-link {
-            text-align: center;
-            margin-top: 1rem;
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
         }
 
-        .login-link a {
-            color: #4A90E2;
-            text-decoration: none;
+        .loading::after {
+            content: '';
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .login-link a:hover {
-            text-decoration: underline;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
+    <div class="loading" id="loading"></div>
     <div class="container">
         <h1>Register</h1>
-        <div id="error" class="error"></div>
-        <form id="registerForm" style="display: none;" onsubmit="handleRegister(event)">
+        <form id="registerForm">
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" required>
-                <div id="emailError" class="error-message" style="display: none;"></div>
             </div>
-            
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" required minlength="6">
-                <div id="passwordError" class="error-message" style="display: none;"></div>
+                <input type="password" id="password" required>
             </div>
-            
             <div class="form-group">
                 <label for="confirmPassword">Confirm Password</label>
-                <input type="password" id="confirmPassword" required minlength="6">
-                <div id="confirmPasswordError" class="error-message" style="display: none;"></div>
+                <input type="password" id="confirmPassword" required>
             </div>
-
             <div class="form-group">
                 <label for="referralCode">Referral Code (Optional)</label>
                 <input type="text" id="referralCode">
-                <div id="referralCodeError" class="error-message" style="display: none;"></div>
             </div>
-            
+            <div id="error" class="error"></div>
             <button type="submit" id="registerButton">Register</button>
-            <div class="login-link">
-                <a href="/auth/login.html">Already have an account? Login here</a>
-            </div>
+            <p style="text-align: center; margin-top: 1rem;">
+                Already have an account? <a href="/auth/login.html">Login</a>
+            </p>
         </form>
     </div>
+
+    <script>
+        // Initialize page
+        async function initializePage() {
+            try {
+                // Wait for auth service
+                await window.authServiceUtils.waitForAuthService();
+                
+                // Check if already logged in
+                if (window.authService.isLoggedIn()) {
+                    window.location.href = '/dashboard/index.html';
+                    return;
+                }
+
+                // Initialize form
+                const form = document.getElementById('registerForm');
+                const loading = document.getElementById('loading');
+                const error = document.getElementById('error');
+                const button = document.getElementById('registerButton');
+
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    error.style.display = 'none';
+                    loading.style.display = 'flex';
+                    button.disabled = true;
+
+                    try {
+                        const email = document.getElementById('email').value;
+                        const password = document.getElementById('password').value;
+                        const confirmPassword = document.getElementById('confirmPassword').value;
+                        const referralCode = document.getElementById('referralCode').value;
+
+                        // Validate passwords
+                        if (password !== confirmPassword) {
+                            throw new Error('Passwords do not match');
+                        }
+
+                        // Register
+                        await window.authService.register(email, password, referralCode);
+                        
+                        // Login after registration
+                        await window.authService.login(email, password);
+                        
+                        // Redirect to dashboard
+                        window.location.href = '/dashboard/index.html';
+                    } catch (err) {
+                        error.textContent = err.message;
+                        error.style.display = 'block';
+                    } finally {
+                        loading.style.display = 'none';
+                        button.disabled = false;
+                    }
+                });
+            } catch (err) {
+                console.error('Failed to initialize page:', err);
+                document.getElementById('error').textContent = 'Failed to initialize page. Please try again.';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        // Start initialization when page loads
+        window.addEventListener('load', initializePage);
+    </script>
 </body>
 </html>
