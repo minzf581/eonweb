@@ -48,6 +48,10 @@ for sql_file in migrations/sql/*.sql; do
     fi
 done
 
+# 初始化管理员账户
+echo "Initializing admin user..."
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -f scripts/init-admin.sql
+
 # 停止 Cloud SQL Proxy
 echo "Stopping Cloud SQL Proxy..."
 pkill -f cloud_sql_proxy || true
