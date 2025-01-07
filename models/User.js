@@ -20,7 +20,11 @@ module.exports = (sequelize) => {
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      set(value) {
+        // Store the original value temporarily
+        this.setDataValue('_password', value);
+      }
     },
     points: {
       type: DataTypes.INTEGER,
@@ -58,15 +62,20 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: 'users',
-    underscored: true,  // Use snake_case for auto-generated fields
+    underscored: true,
     timestamps: true,
     paranoid: true,
     hooks: {
-      beforeCreate: async (user) => {
-        if (user.password) {
+      beforeSave: async (user) => {
+        // Hash password if it has changed
+        if (user._password) {
           const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(user.password, salt);
+          user.password = await bcrypt.hash(user._password, salt);
+          // Clear the temporary password
+          delete user._password;
         }
+        
+        // Generate referral code if not exists
         if (!user.referral_code) {
           user.referral_code = crypto.randomBytes(4).toString('hex');
         }
@@ -76,17 +85,13 @@ module.exports = (sequelize) => {
 
   User.prototype.comparePassword = async function(password) {
     try {
-      console.log('Comparing passwords...');
-      console.log('Stored password hash:', this.password);
-      const isMatch = await bcrypt.compare(password, this.password);
-      console.log('Password match result:', isMatch);
-      return isMatch;
+      if (!this.password) {
+        console.error('No password hash stored for user');
+        return false;
+      }
+      return await bcrypt.compare(password, this.password);
     } catch (error) {
       console.error('Password comparison error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack
-      });
       throw error;
     }
   };
@@ -94,6 +99,7 @@ module.exports = (sequelize) => {
   User.prototype.toJSON = function() {
     const values = { ...this.get() };
     delete values.password;
+    delete values._password;
     return values;
   };
 
