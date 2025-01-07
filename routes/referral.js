@@ -21,7 +21,7 @@ router.get('/', authenticateToken, async (req, res) => {
         console.log('Fetching referral data for user:', userId);
         
         // 获取用户的推荐码
-        let user = await User.findByPk(userId);
+        let user = await User.findByPk(userId, { paranoid: false });
         
         // 如果用户没有推荐码，生成一个
         if (!user.referral_code) {
@@ -29,11 +29,11 @@ router.get('/', authenticateToken, async (req, res) => {
             do {
                 code = generateReferralCode();
                 // Check if code already exists
-                const existingUser = await User.findOne({ where: { referral_code: code } });
+                const existingUser = await User.findOne({ where: { referral_code: code }, paranoid: false });
                 if (!existingUser) {
                     await user.update({ referral_code: code });
                     // Refresh user data
-                    user = await User.findByPk(userId);
+                    user = await User.findByPk(userId, { paranoid: false });
                     break;
                 }
             } while (true);
@@ -42,23 +42,29 @@ router.get('/', authenticateToken, async (req, res) => {
         // 获取推荐统计
         const referralCount = await Referral.count({
             where: {
-                referrer_id: req.user.id
+                referrer_id: req.user.id,
+                deleted_at: null
             }
         });
         
         const totalPoints = await Referral.sum('points_earned', {
             where: {
-                referrer_id: req.user.id
+                referrer_id: req.user.id,
+                deleted_at: null
             }
         }) || 0; // 如果没有记录，返回0
 
         // 获取推荐历史
         const referrals = await Referral.findAll({
-            where: { referrer_id: req.user.id },
+            where: { 
+                referrer_id: req.user.id,
+                deleted_at: null
+            },
             include: [{
                 model: User,
                 as: 'referred',
-                attributes: ['email']
+                attributes: ['email'],
+                paranoid: false
             }],
             order: [['created_at', 'DESC']]
         });
@@ -96,7 +102,8 @@ async function processReferral(userId, referralCode) {
 
         // 查找推荐人
         const referrer = await User.findOne({
-            where: { referral_code: referralCode }
+            where: { referral_code: referralCode },
+            paranoid: false
         });
 
         if (!referrer) {
