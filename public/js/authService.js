@@ -63,7 +63,7 @@ class AuthService {
                 },
                 body: JSON.stringify({ 
                     email, 
-                    password,
+                    password: password, // Fix: Correctly send password
                     referralCode: referralCode || undefined
                 })
             });

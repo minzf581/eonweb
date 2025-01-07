@@ -15,10 +15,11 @@ router.post('/register', async (req, res) => {
             email: req.body.email
         });
 
-        const { email, password, referralcode, username } = req.body;
+        const { email, password, referralCode, username } = req.body;
         
         // 检查必需字段
         if (!email || !password) {
+            console.log('[Auth] Missing required fields:', { email: !!email, password: !!password });
             return res.status(400).json({
                 success: false,
                 message: 'Email and password are required'
@@ -28,6 +29,7 @@ router.post('/register', async (req, res) => {
         // 检查邮箱格式
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
+            console.log('[Auth] Invalid email format:', email);
             return res.status(400).json({
                 success: false,
                 message: 'Invalid email format'
@@ -36,6 +38,7 @@ router.post('/register', async (req, res) => {
 
         // 检查密码长度
         if (password.length < 6) {
+            console.log('[Auth] Password too short');
             return res.status(400).json({
                 success: false,
                 message: 'Password must be at least 6 characters long'
@@ -46,33 +49,38 @@ router.post('/register', async (req, res) => {
         const existingUser = await User.findOne({ 
             where: { 
                 [Op.or]: [
-                    { email: req.body.email },
-                    { username: req.body.username || req.body.email.split('@')[0] }
+                    { email },
+                    { username: username || email.split('@')[0] }
                 ]
             } 
         });
 
         if (existingUser) {
-            const field = existingUser.email === req.body.email ? 'email' : 'username';
+            const field = existingUser.email === email ? 'email' : 'username';
+            console.log('[Auth] User already exists:', { field });
             return res.status(400).json({ 
                 success: false,
                 message: `User with this ${field} already exists` 
             });
         }
 
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
         // 创建新用户
         const user = await User.create({
             email,
-            username: req.body.username || req.body.email.split('@')[0],
-            password,
-            referral_code: referralcode,
+            username: username || email.split('@')[0],
+            password: hashedPassword,
+            referral_code: crypto.randomBytes(4).toString('hex'),
             points: 0,
             is_admin: false
         });
 
         // 处理推荐码关系
-        if (referralcode) {
-            await processReferral(user.id, referralcode);
+        if (referralCode) {
+            await processReferral(user.id, referralCode);
         }
 
         // 生成 JWT
@@ -100,14 +108,12 @@ router.post('/register', async (req, res) => {
                 id: user.id,
                 email: user.email,
                 is_admin: user.is_admin,
-                points: user.points,
-                referral_code: user.referral_code,
-                username: user.username
+                referral_code: user.referral_code
             }
         });
     } catch (error) {
         console.error('[Auth] Registration error:', error);
-        res.status(500).json({
+        res.status(500).json({ 
             success: false,
             message: 'Registration failed',
             error: error.message
