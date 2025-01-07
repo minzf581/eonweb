@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const Referral = sequelize.define('Referral', {
@@ -19,16 +19,14 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       defaultValue: 'pending'
     },
-    points_awarded: {
+    points_earned: {
       type: DataTypes.INTEGER,
-      defaultValue: 0,
-      field: 'points_awarded'
+      defaultValue: 0
     }
   }, {
     tableName: 'referrals',
     paranoid: true,
-    timestamps: true,
-    underscored: true
+    timestamps: true
   });
 
   Referral.associate = (models) => {

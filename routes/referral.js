@@ -29,7 +29,10 @@ router.get('/', authenticateToken, async (req, res) => {
             do {
                 code = generateReferralCode();
                 // Check if code already exists
-                const existingUser = await User.findOne({ where: { referral_code: code }, paranoid: false });
+                const existingUser = await User.findOne({ 
+                    where: { referral_code: code },
+                    paranoid: false 
+                });
                 if (!existingUser) {
                     await user.update({ referral_code: code });
                     // Refresh user data
@@ -54,7 +57,7 @@ router.get('/', authenticateToken, async (req, res) => {
             }
         }) || 0; // 如果没有记录，返回0
 
-        // 获取推荐历史
+        // 获取推荐列表
         const referrals = await Referral.findAll({
             where: { 
                 referrer_id: req.user.id,
@@ -85,10 +88,10 @@ router.get('/', authenticateToken, async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching referral data:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch referral data',
-            error: error.message
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching referral data',
+            error: error.message 
         });
     }
 });
@@ -116,7 +119,10 @@ async function processReferral(userId, referralCode) {
 
         // 检查是否已经被推荐
         const existingReferral = await Referral.findOne({
-            where: { referred_id: userId }
+            where: { 
+                referred_id: userId,
+                deleted_at: null
+            }
         });
 
         if (existingReferral) {
