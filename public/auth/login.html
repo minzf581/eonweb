@@ -183,8 +183,12 @@
                         // Login
                         await window.authService.login(email, password);
                         
-                        // Redirect to dashboard
-                        window.location.href = '/dashboard/index.html';
+                        // Redirect based on user role
+                        if (window.authService.isAdmin()) {
+                            window.location.href = '/admin/dashboard.html';
+                        } else {
+                            window.location.href = '/dashboard/index.html';
+                        }
                     } catch (err) {
                         error.textContent = err.message;
                         error.style.display = 'block';
