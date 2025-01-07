@@ -456,6 +456,7 @@
         // Load user stats
         async function loadStats() {
             try {
+                console.log('[Dashboard] Loading user stats...');
                 const response = await fetch('/api/stats', {
                     headers: {
                         'Authorization': `Bearer ${window.authService.getToken()}`
@@ -467,7 +468,7 @@
                 }
 
                 const result = await response.json();
-                console.log('Stats loaded:', result);
+                console.log('[Dashboard] Stats loaded:', result);
                 
                 if (!result.success || !result.data) {
                     throw new Error('Invalid stats response');
@@ -478,8 +479,11 @@
                 // Update stats display
                 document.getElementById('totalCredits').textContent = data.credits || 0;
                 document.getElementById('completedTasks').textContent = data.completedTasks || 0;
-                document.getElementById('referralCodeDisplay').textContent = data.referralCode || '-';
-                document.getElementById('referralCodeText').textContent = data.referralCode || '-';
+
+                // Update referral code displays
+                const referralCode = data.referralCode || '-';
+                document.getElementById('referralCodeDisplay').textContent = referralCode;
+                document.getElementById('referralCodeText').textContent = referralCode;
 
                 // Enable/disable copy buttons based on referral code
                 const copyButtons = document.querySelectorAll('.copy-button');
@@ -493,7 +497,7 @@
                     }
                 });
 
-                console.log('Stats updated:', {
+                console.log('[Dashboard] Stats updated:', {
                     credits: data.credits,
                     completedTasks: data.completedTasks,
                     referralCode: data.referralCode

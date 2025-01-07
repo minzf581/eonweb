@@ -23,18 +23,36 @@ router.get('/available', authenticateToken, async (req, res) => {
 // 获取所有任务
 router.get('/', authenticateToken, async (req, res) => {
     try {
+        console.log('[Tasks] Fetching tasks for user:', req.user.id);
         const tasks = await Task.findAll({
+            attributes: [
+                'id', 'name', 'description', 'type', 'points', 'status',
+                'created_at', 'updated_at', 'deleted_at'
+            ],
             include: [{
                 model: UserTask,
                 as: 'userTasks',
+                attributes: [
+                    'id', 'userid', 'taskid', 'status', 'points',
+                    'created_at', 'updated_at', 'deleted_at'
+                ],
                 where: { userid: req.user.id },
                 required: false
             }]
         });
-        res.json(tasks);
+
+        console.log('[Tasks] Successfully fetched tasks');
+        res.json({
+            success: true,
+            data: tasks
+        });
     } catch (error) {
-        console.error('Error fetching tasks:', error);
-        res.status(500).json({ message: 'Error fetching tasks' });
+        console.error('[Tasks] Error fetching tasks:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching tasks',
+            error: error.message 
+        });
     }
 });
 
