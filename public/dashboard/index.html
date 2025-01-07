@@ -334,7 +334,7 @@
                     </div>
                     <span class="user-name" id="userEmail">Loading...</span>
                 </div>
-                <button onclick="window._authService.logout()" class="logout-btn">
+                <button onclick="window.authService.logout()" class="logout-btn">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -401,23 +401,7 @@
     <script>
         // Wait for AuthService to be initialized
         async function waitForAuthService() {
-            console.log('[Dashboard] Waiting for AuthService...');
-            const maxAttempts = 10;
-            let attempts = 0;
-
-            while (attempts < maxAttempts) {
-                if (window._authService) {
-                    console.log('[Dashboard] AuthService found');
-                    return true;
-                }
-
-                console.log('[Dashboard] AuthService not available yet, attempt', attempts + 1);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                attempts++;
-            }
-
-            console.error('[Dashboard] AuthService initialization timeout');
-            return false;
+            return window.authServiceUtils.waitForAuthService();
         }
 
         // Load user stats
@@ -425,7 +409,7 @@
             try {
                 const response = await fetch('/api/stats', {
                     headers: {
-                        'Authorization': `Bearer ${window._authService.getToken()}`
+                        'Authorization': `Bearer ${window.authService.getToken()}`
                     }
                 });
 
@@ -489,7 +473,7 @@
             
             try {
                 await waitForAuthService();
-                const token = window._authService.getToken();
+                const token = window.authService.getToken();
                 console.log('[Dashboard] Token retrieved for tasks:', token ? 'Token exists' : 'No token');
 
                 console.log('[Dashboard] Making request to /api/tasks');
@@ -556,14 +540,10 @@
         // Load referral data with retry logic
         async function loadReferralData(attempt = 1, maxAttempts = 3) {
             console.log('[Dashboard] Loading referral data...');
-            console.log('[Dashboard] AuthService state:', {
-                exists: !!window._authService,
-                hasGetToken: window._authService && typeof window._authService.getToken !== 'undefined'
-            });
-
+            
             try {
                 await waitForAuthService();
-                const token = window._authService.getToken();
+                const token = window.authService.getToken();
                 console.log('[Dashboard] Token retrieved:', !!token);
 
                 const response = await fetch('/api/referral', {
@@ -599,103 +579,80 @@
                                 <span class="points">${user.pointsEarned} points</span>
                             </div>
                         `).join('')
-                        : '<p>No referred users yet</p>';
+                        : '<p class="no-referrals">No referrals yet</p>';
                 }
             } catch (error) {
                 console.error('[Dashboard] Error loading referral data:', error);
                 if (attempt < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
                     return loadReferralData(attempt + 1, maxAttempts);
                 }
-                throw error;
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorMessage').textContent = 'Failed to load referral data. Please refresh the page.';
             }
         }
 
         // Copy referral code to clipboard
         async function copyReferralCode() {
-            const code = document.getElementById('referralCodeDisplay').textContent;
-            if (code && code !== 'No referral code') {
-                try {
-                    await navigator.clipboard.writeText(code);
-                    showToast('success', 'Referral code copied!');
-                } catch (err) {
-                    console.error('Copy failed:', err);
-                    showToast('error', 'Failed to copy referral code');
-                }
+            const code = document.getElementById('referralCodeText').textContent;
+            if (code === 'N/A') {
+                showToast('error', 'No referral code available');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(code);
+                showToast('success', 'Referral code copied to clipboard');
+            } catch (error) {
+                console.error('[Dashboard] Error copying referral code:', error);
+                showToast('error', 'Failed to copy referral code');
             }
         }
 
         // Initialize dashboard
         async function initializeDashboard() {
-            console.log('[Dashboard] Initializing dashboard...');
-            
             try {
-                console.log('[Dashboard] Waiting for AuthService...');
-                // Wait for AuthService and verify auth
+                console.log('[Dashboard] Starting initialization...');
+                
+                // Wait for AuthService
                 await waitForAuthService();
-                console.log('[Dashboard] AuthService found');
                 
-                if (!window._authService.isLoggedIn()) {
-                    console.log('[Dashboard] User not logged in, redirecting to login');
+                // Check if user is logged in
+                if (!window.authService.isLoggedIn()) {
+                    console.log('[Dashboard] User not logged in, redirecting to login page');
                     window.location.href = '/auth/login.html';
                     return;
                 }
 
-                // Verify token
-                const isValid = await window._authService.verifyToken();
-                if (!isValid) {
-                    console.log('[Dashboard] Token invalid, redirecting to login');
-                    window.location.href = '/auth/login.html';
-                    return;
-                }
+                // Show loading state
+                document.getElementById('loadingOverlay').style.display = 'flex';
 
-                // Get user info
-                const user = window._authService.getUser();
-                if (!user) {
-                    console.log('[Dashboard] No user found, redirecting to login');
-                    window.location.href = '/auth/login.html';
-                    return;
-                }
+                // Load all data
+                await Promise.all([
+                    loadStats(),
+                    loadTasks(),
+                    loadReferralData()
+                ]);
 
-                // Update user info in the UI
-                document.getElementById('userEmail').textContent = user.email;
-                
-                // Load all dashboard data
-                try {
-                    await Promise.all([
-                        loadStats(),
-                        loadTasks(),
-                        loadReferralData()
-                    ]);
-                } catch (dataError) {
-                    console.error('[Dashboard] Error loading dashboard data:', dataError);
-                    // Show error but don't redirect
-                    document.getElementById('errorMessage').style.display = 'block';
-                    document.getElementById('errorMessage').textContent = 'Some dashboard data failed to load. Please refresh the page.';
-                }
-
-                console.log('[Dashboard] Dashboard initialized successfully');
+                console.log('[Dashboard] All data loaded successfully');
             } catch (error) {
                 console.error('[Dashboard] Dashboard initialization failed:', error);
-                // Only redirect to login if it's an auth error
-                if (error.message && (error.message.includes('unauthorized') || error.message.includes('invalid token'))) {
-                    window.location.href = '/auth/login.html';
-                } else {
-                    document.getElementById('errorMessage').style.display = 'block';
-                    document.getElementById('errorMessage').textContent = 'Failed to load dashboard. Please refresh the page.';
-                }
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorMessage').textContent = 'Failed to initialize dashboard. Please refresh the page.';
+            } finally {
+                // Hide loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
 
         // Show toast message
         function showToast(type, message) {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+            const toast = document.getElementById('toast');
             toast.textContent = message;
-            document.body.appendChild(toast);
-            
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
             setTimeout(() => {
-                toast.remove();
+                toast.style.display = 'none';
             }, 3000);
         }
 

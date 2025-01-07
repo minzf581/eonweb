@@ -148,6 +148,16 @@ class AuthService {
     isAdmin() {
         return this._data.user?.isAdmin || false;
     }
+
+    async logout() {
+        this.logInfo('Logging out');
+        this.clearAuth();
+        window.location.href = '/auth/login.html';
+    }
+
+    getToken() {
+        return this._data.token;
+    }
 }
 
 // Create global instance
