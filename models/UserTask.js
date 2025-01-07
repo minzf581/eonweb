@@ -9,20 +9,33 @@ module.exports = (sequelize) => {
     },
     userid: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      }
     },
     taskid: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      references: {
+        model: 'tasks',
+        key: 'id'
+      }
     },
     status: {
       type: DataTypes.STRING,
-      allowNull: false,
       defaultValue: 'pending'
     },
     points: {
       type: DataTypes.INTEGER,
       defaultValue: 0
+    },
+    start_time: {
+      type: DataTypes.DATE
+    },
+    end_time: {
+      type: DataTypes.DATE
     }
   }, {
     tableName: 'user_tasks',
@@ -39,7 +52,8 @@ module.exports = (sequelize) => {
       foreignKey: 'userid'
     });
     UserTask.belongsTo(models.Task, {
-      foreignKey: 'taskid'
+      foreignKey: 'taskid',
+      as: 'task'
     });
   };
 

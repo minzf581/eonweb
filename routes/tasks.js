@@ -20,127 +20,101 @@ router.get('/available', authenticateToken, async (req, res) => {
     }
 });
 
-// 开始任务
-router.post('/:taskId/start', authenticateToken, async (req, res) => {
+// 获取所有任务
+router.get('/', authenticateToken, async (req, res) => {
     try {
-        const { taskId } = req.params;
-        const userId = req.user.id;
-
-        // 检查任务是否存在
-        const task = await Task.findOne({
-            where: { id: taskId, status: 'active' }
+        const tasks = await Task.findAll({
+            include: [{
+                model: UserTask,
+                as: 'userTasks',
+                where: { userid: req.user.id },
+                required: false
+            }]
         });
-        if (!task) {
-            return res.status(404).json({ success: false, message: 'Task not found' });
-        }
-
-        // 检查用户是否已经开始了这个任务
-        const existingTask = await UserTask.findOne({
-            where: {
-                userid: userId,
-                task_id: taskId,
-                status: ['pending', 'in_progress']
-            }
-        });
-        if (existingTask) {
-            return res.status(400).json({ success: false, message: 'Task already in progress' });
-        }
-
-        // 创建用户任务
-        const userTask = await UserTask.create({
-            userid: userId,
-            task_id: taskId,
-            status: 'in_progress',
-            start_time: new Date(),
-            end_time: null,
-            points: task.points
-        });
-
-        res.json({
-            success: true,
-            message: 'Task started successfully',
-            data: {
-                task_id: taskId,
-                userid: userId,
-                status: 'in_progress',
-                start_time: userTask.start_time
-            }
-        });
+        res.json(tasks);
     } catch (error) {
-        console.error('Error in start task:', error);
-        res.status(500).json({ success: false, message: 'Failed to start task', error: error.message });
+        console.error('Error fetching tasks:', error);
+        res.status(500).json({ message: 'Error fetching tasks' });
     }
 });
 
 // 获取用户任务列表
-router.get('/user/list', authenticateToken, async (req, res) => {
+router.get('/user', authenticateToken, async (req, res) => {
     try {
-        const tasks = await UserTask.findAll({
-            where: {
-                userid: req.user.id
-            },
+        const userTasks = await UserTask.findAll({
+            where: { userid: req.user.id },
             include: [{
                 model: Task,
-                as: 'task',
-                required: true
-            }],
-            order: [['created_at', 'DESC']]
+                as: 'task'
+            }]
+        });
+        res.json(userTasks);
+    } catch (error) {
+        console.error('Error fetching user tasks:', error);
+        res.status(500).json({ message: 'Error fetching user tasks' });
+    }
+});
+
+// 开始任务
+router.post('/start/:taskId', authenticateToken, async (req, res) => {
+    try {
+        const task = await Task.findByPk(req.params.taskId);
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        const [userTask, created] = await UserTask.findOrCreate({
+            where: {
+                userid: req.user.id,
+                taskid: task.id,
+                status: 'pending'
+            },
+            defaults: {
+                start_time: new Date(),
+                points: task.points
+            }
         });
 
-        res.json({
-            success: true,
-            data: tasks
-        });
+        if (!created) {
+            return res.status(400).json({ message: 'Task already started' });
+        }
+
+        res.json(userTask);
     } catch (error) {
-        console.error('Error in get user tasks:', error);
-        res.status(500).json({ error: 'Failed to fetch user tasks' });
+        console.error('Error starting task:', error);
+        res.status(500).json({ message: 'Error starting task' });
     }
 });
 
 // 完成任务
-router.post('/:taskId/complete', authenticateToken, async (req, res) => {
+router.post('/complete/:taskId', authenticateToken, async (req, res) => {
     try {
-        const { taskId } = req.params;
-        const userId = req.user.id;
-
-        // 查找用户任务
         const userTask = await UserTask.findOne({
             where: {
-                userid: userId,
-                task_id: taskId,
-                status: 'in_progress'
+                userid: req.user.id,
+                taskid: req.params.taskId,
+                status: 'pending'
             }
         });
 
         if (!userTask) {
-            return res.status(404).json({ success: false, message: 'Task not found or not in progress' });
+            return res.status(404).json({ message: 'Active task not found' });
         }
 
-        // 更新任务状态
-        await userTask.update({
-            status: 'completed',
-            end_time: new Date()
-        });
+        userTask.status = 'completed';
+        userTask.end_time = new Date();
+        await userTask.save();
 
         // 更新用户积分
         await User.increment('points', {
             by: userTask.points,
-            where: { id: userId }
+            where: { id: req.user.id }
         });
 
-        res.json({
-            success: true,
-            message: 'Task completed successfully',
-            data: {
-                task_id: taskId,
-                userid: userId,
-                status: 'completed',
-                points: userTask.points
-            }
-        });
+        res.json(userTask);
     } catch (error) {
-        console.error('Error in complete task:', error);
-        res.status(500).json({ success: false, message: 'Failed to complete task', error: error.message });
+        console.error('Error completing task:', error);
+        res.status(500).json({ message: 'Error completing task' });
     }
 });
 
