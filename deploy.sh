@@ -25,7 +25,7 @@ fi
 
 # 启动 Cloud SQL Proxy
 echo "Starting Cloud SQL Proxy..."
-./cloud_sql_proxy --unix-socket /cloudsql eonhome-445809:asia-southeast2:eon-db &
+./cloud_sql_proxy -instances=eonhome-445809:asia-southeast2:eon-db=tcp:5432 &
 sleep 5  # Give proxy time to establish connection
 
 # 设置环境变量
