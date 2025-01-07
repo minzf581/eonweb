@@ -81,12 +81,16 @@ router.get('/user/list', authenticateToken, async (req, res) => {
             },
             include: [{
                 model: Task,
+                as: 'task',
                 required: true
             }],
             order: [['created_at', 'DESC']]
         });
 
-        res.json(tasks);
+        res.json({
+            success: true,
+            data: tasks
+        });
     } catch (error) {
         console.error('Error in get user tasks:', error);
         res.status(500).json({ error: 'Failed to fetch user tasks' });
