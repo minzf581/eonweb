@@ -12,10 +12,12 @@ const { authenticateToken } = require('../middleware/auth');
 router.post('/register', async (req, res) => {
     try {
         console.log('[Auth] Registration request received:', {
-            email: req.body.email
+            email: req.body.email,
+            hasPassword: !!req.body.password,
+            hasReferralCode: !!req.body.referralCode
         });
 
-        const { email, password, referralCode, username } = req.body;
+        const { email, password, referralCode } = req.body;
         
         // 检查必需字段
         if (!email || !password) {
@@ -50,7 +52,7 @@ router.post('/register', async (req, res) => {
             where: { 
                 [Op.or]: [
                     { email },
-                    { username: username || email.split('@')[0] }
+                    { username: email.split('@')[0] }
                 ]
             } 
         });
@@ -68,19 +70,27 @@ router.post('/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // Generate referral code
+        const newReferralCode = crypto.randomBytes(4).toString('hex');
+
         // 创建新用户
         const user = await User.create({
             email,
-            username: username || email.split('@')[0],
+            username: email.split('@')[0],
             password: hashedPassword,
-            referral_code: crypto.randomBytes(4).toString('hex'),
+            referral_code: newReferralCode,
             points: 0,
             is_admin: false
         });
 
         // 处理推荐码关系
         if (referralCode) {
-            await processReferral(user.id, referralCode);
+            try {
+                await processReferral(user.id, referralCode);
+            } catch (error) {
+                console.error('[Auth] Failed to process referral:', error);
+                // Don't fail registration if referral processing fails
+            }
         }
 
         // 生成 JWT
@@ -97,7 +107,8 @@ router.post('/register', async (req, res) => {
         console.log('[Auth] Registration successful:', {
             id: user.id,
             email: user.email,
-            is_admin: user.is_admin
+            is_admin: user.is_admin,
+            referral_code: user.referral_code
         });
 
         res.status(201).json({

@@ -53,7 +53,7 @@ class AuthService {
     }
 
     async register(email, password, referralCode = '') {
-        this.logInfo('Registration attempt for:', email);
+        this.logInfo('Registration attempt for:', email, 'with referral code:', referralCode);
         
         try {
             const response = await fetch('/api/auth/register', {
@@ -63,8 +63,8 @@ class AuthService {
                 },
                 body: JSON.stringify({ 
                     email, 
-                    password: password, // Fix: Correctly send password
-                    referralCode: referralCode || undefined
+                    password,
+                    referralCode
                 })
             });
 

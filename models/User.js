@@ -22,8 +22,9 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
       set(value) {
-        // Store the original value temporarily
+        // Store both the temporary and actual password
         this.setDataValue('_password', value);
+        this.setDataValue('password', value);
       }
     },
     points: {
