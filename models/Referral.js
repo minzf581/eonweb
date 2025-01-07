@@ -26,12 +26,9 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: 'referrals',
-    underscored: true,
-    timestamps: true,
     paranoid: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-    deletedAt: 'deleted_at'
+    timestamps: true,
+    underscored: true
   });
 
   Referral.associate = (models) => {
