@@ -27,14 +27,14 @@ router.get('/', authenticateToken, async (req, res) => {
         const tasks = await Task.findAll({
             attributes: [
                 'id', 'name', 'description', 'type', 'points', 'status',
-                'created_at', 'updated_at', 'deleted_at'
+                'createdat', 'updatedat', 'deletedat'
             ],
             include: [{
                 model: UserTask,
                 as: 'userTasks',
                 attributes: [
                     'id', 'userid', 'taskid', 'status', 'points',
-                    'created_at', 'updated_at', 'deleted_at'
+                    'createdat', 'updatedat', 'deletedat'
                 ],
                 where: { userid: req.user.id },
                 required: false

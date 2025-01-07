@@ -2,7 +2,7 @@
 DO $$
 DECLARE
     hashed_password TEXT := '$2a$10$8HxmGZYqUYw69lsmL3CRPuPtk1GK4tZ0AX0jFfYkA1dW0Qx5T5Hmi'; -- 这是 'vijTo9-kehmet-cessis' 的 bcrypt hash
-    referral_code TEXT := encode(gen_random_bytes(4), 'hex');
+    referral_code TEXT := substr(md5(random()::text), 1, 8);
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'info@eon-protocol.com') THEN
         INSERT INTO users (
@@ -13,8 +13,8 @@ BEGIN
             points,
             credits,
             referral_code,
-            created_at,
-            updated_at
+            createdat,
+            updatedat
         ) VALUES (
             'info@eon-protocol.com',
             'info',
@@ -33,7 +33,7 @@ BEGIN
         SET 
             password = hashed_password,
             is_admin = true,
-            updated_at = CURRENT_TIMESTAMP
+            updatedat = CURRENT_TIMESTAMP
         WHERE email = 'info@eon-protocol.com';
         RAISE NOTICE 'Admin user updated successfully';
     END IF;
