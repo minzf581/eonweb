@@ -9,49 +9,44 @@ module.exports = (sequelize) => {
     },
     userid: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      field: 'userid'  // Explicitly map to database column
+      allowNull: false
     },
     taskid: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      field: 'taskid'  // Explicitly map to database column
+      allowNull: false
     },
     status: {
       type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'pending'
     },
-    startTime: {
-      type: DataTypes.DATE,
-      field: 'starttime'  // Explicitly map to database column
-    },
-    endTime: {
-      type: DataTypes.DATE,
-      field: 'endtime'  // Explicitly map to database column
-    },
     points: {
       type: DataTypes.INTEGER,
       defaultValue: 0
+    },
+    created_at: {
+      type: DataTypes.DATE
+    },
+    updated_at: {
+      type: DataTypes.DATE
+    },
+    deleted_at: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   }, {
     tableName: 'user_tasks',
-    underscored: true,  // Use snake_case for auto-generated fields
+    underscored: true,
     timestamps: true,
-    paranoid: true,
-    createdAt: 'createdat',  // Map to actual database column names
-    updatedAt: 'updatedat',
-    deletedAt: 'deletedat'
+    paranoid: true
   });
 
   UserTask.associate = (models) => {
     UserTask.belongsTo(models.User, {
-      foreignKey: 'userid',
-      as: 'user'
+      foreignKey: 'userid'
     });
     UserTask.belongsTo(models.Task, {
-      foreignKey: 'taskid',
-      as: 'task'
+      foreignKey: 'taskid'
     });
   };
 

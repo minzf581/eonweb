@@ -30,55 +30,45 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
-    isAdmin: {
+    is_admin: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      field: 'is_admin'
+      defaultValue: false
     },
-    referralCode: {
+    referral_code: {
       type: DataTypes.STRING,
-      unique: true,
-      field: 'referral_code'
+      unique: true
     },
-    referredBy: {
+    referred_by: {
       type: DataTypes.INTEGER,
-      allowNull: true,
-      field: 'referred_by'
+      allowNull: true
     },
-    lastLoginAt: {
+    last_login_at: {
       type: DataTypes.DATE,
-      allowNull: true,
-      field: 'last_login_at'
+      allowNull: true
     },
-    deletedAt: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      field: 'deleted_at'
+    created_at: {
+      type: DataTypes.DATE
     },
-    createdAt: {
-      type: DataTypes.DATE,
-      field: 'created_at'
+    updated_at: {
+      type: DataTypes.DATE
     },
-    updatedAt: {
+    deleted_at: {
       type: DataTypes.DATE,
-      field: 'updated_at'
+      allowNull: true
     }
   }, {
     tableName: 'users',
     underscored: true,  // Use snake_case for auto-generated fields
     timestamps: true,
     paranoid: true,
-    createdAt: 'createdat',  // Map to actual database column names
-    updatedAt: 'updatedat',
-    deletedAt: 'deletedat',
     hooks: {
       beforeCreate: async (user) => {
         if (user.password) {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }
-        if (!user.referralCode) {
-          user.referralCode = crypto.randomBytes(4).toString('hex');
+        if (!user.referral_code) {
+          user.referral_code = crypto.randomBytes(4).toString('hex');
         }
       }
     }
