@@ -830,51 +830,45 @@ footer p {
             margin-bottom: 2rem;
         }
 
+        /* 添加折叠按钮样式 */
         .collapsible {
-            background: rgba(255, 255, 255, 0.05);
-            border: none;
-            border-radius: 15px;
-            color: var(--primary-color);
+            background-color: #333;
+            color: white;
             cursor: pointer;
-            padding: 1.5rem 2rem;
+            padding: 18px;
             width: 100%;
+            border: none;
             text-align: left;
-            margin-bottom: 1rem;
-            position: relative;
-            transition: all 0.3s ease;
-            font-size: 1.8rem;
-            font-weight: bold;
+            outline: none;
+            font-size: 15px;
+            margin-top: 20px;
+            transition: 0.4s;
+            border-radius: 5px;
         }
 
         .collapsible:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background-color: #444;
         }
 
         .collapsible:after {
-            content: '+';
-            color: var(--primary-color);
+            content: '\002B';
+            color: white;
             font-weight: bold;
             float: right;
-            font-size: 1.8rem;
-            margin-left: 1rem;
+            margin-left: 5px;
         }
 
         .collapsible.active:after {
-            content: '-';
+            content: "\2212";
         }
 
         .collapsible-content {
+            padding: 0 18px;
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 0 0 15px 15px;
-            padding: 0 2rem;
-        }
-
-        .collapsible-content.show {
-            max-height: 2000px;
-            padding: 2rem;
+            transition: max-height 0.2s ease-out;
+            background-color: #1a1a1a;
+            border-radius: 0 0 5px 5px;
         }
 
         .contact-options {
@@ -1116,12 +1110,12 @@ footer p {
             <!-- Role Options -->
             <div class="role-options">
                 <div class="role-option">
-                    <h2>Explore Compliant Data</h2>
-                    <a href="/dashboard/ai-operator.html" class="cta-button">Explore</a>
+                    <h2></h2>
+                    <a href="/dashboard/ai-operator.html" class="cta-button">Explore Compliant Data</a>
                 </div>
                 <div class="role-option">
-                    <h2>Unlock Future with Your Data</h2>
-                    <a href="/dashboard/data-management.html" class="cta-button">Provide Data</a>
+                    <h2></h2>
+                    <a href="/dashboard/data-management.html" class="cta-button">Monetize Your Data Securely</a>
                 </div>
             </div>
         </div>
@@ -1131,7 +1125,7 @@ footer p {
 
     <!-- Projects Section -->
     <section id="projects" class="partners-section">
-        <h2>Eon Platform</h2>
+        <h2>EON Marketplace</h2>
         <div class="projects-grid">
             <div class="project-card">
                 <h3>Enterprise</h3>
@@ -1362,20 +1356,20 @@ footer p {
     <footer>
         <div class="social-links">
             <div class="social-links-container">
-                <a href="https://tiktok.com/@eon_protocol" class="social-link tiktok" target="_blank">
+               <!-- <a href="https://tiktok.com/@eon_protocol" class="social-link tiktok" target="_blank">
                     <i class="fab fa-tiktok"></i>
-                </a>
-                <a href="https://discord.gg/2Yt5eNdm" class="social-link discord" target="_blank">
-                    <i class="fab fa-discord"></i>
-                </a>
-                <a href="https://youtube.com/@eon_protocol" class="social-link youtube" target="_blank">
-                    <i class="fab fa-youtube"></i>
-                </a>
+                </a>-->
                 <a href="https://x.com/eon_protocol" class="social-link twitter" target="_blank">
                     <i class="fab fa-twitter"></i>
                 </a>
-                <a href="https://t.me/Lewismin" class="social-link telegram" target="_blank">
+                <a href="https://t.me/+GxIqux1-qm5iYmU1" class="social-link telegram" target="_blank">
                     <i class="fab fa-telegram"></i>
+                </a>
+                <a href="https://discord.gg/rDRuFxtb" class="social-link discord" target="_blank">
+                    <i class="fab fa-discord"></i>
+                </a>
+                <a href="https://linkedin.com/company/eon-protocol" class="social-link linkedin" target="_blank" rel="noopener">
+                    <i class="fab fa-linkedin"></i>
                 </a>
             </div>
             <p> 2024 EON Protocol. All rights reserved.</p>
@@ -1643,6 +1637,21 @@ footer p {
                 }
             });
         });
+    </script>
+    <script>
+        // 折叠按钮功能
+        var coll = document.getElementsByClassName("collapsible");
+        for (var i = 0; i < coll.length; i++) {
+            coll[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var content = this.nextElementSibling;
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
+        }
     </script>
 </body>
 </html>
