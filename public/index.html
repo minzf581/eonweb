@@ -832,43 +832,49 @@ footer p {
 
         /* 添加折叠按钮样式 */
         .collapsible {
-            background-color: #333;
-            color: white;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--primary-color);
             cursor: pointer;
-            padding: 18px;
+            padding: 1.5rem 2rem;
             width: 100%;
             border: none;
             text-align: left;
             outline: none;
-            font-size: 15px;
+            font-size: 1.8rem;
+            font-weight: bold;
             margin-top: 20px;
-            transition: 0.4s;
-            border-radius: 5px;
+            transition: all 0.3s ease;
+            border-radius: 15px;
         }
 
         .collapsible:hover {
-            background-color: #444;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .collapsible:after {
-            content: '\002B';
-            color: white;
+            content: '+';
+            color: var(--primary-color);
             font-weight: bold;
             float: right;
-            margin-left: 5px;
+            margin-left: 1rem;
+            font-size: 1.8rem;
         }
 
         .collapsible.active:after {
-            content: "\2212";
+            content: '-';
         }
 
         .collapsible-content {
-            padding: 0 18px;
+            padding: 0 2rem;
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.2s ease-out;
-            background-color: #1a1a1a;
-            border-radius: 0 0 5px 5px;
+            transition: max-height 0.3s ease-out;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 0 0 15px 15px;
+        }
+
+        .collapsible-content.show {
+            padding: 2rem;
         }
 
         .contact-options {
