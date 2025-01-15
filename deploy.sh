@@ -32,32 +32,43 @@ rm -rf node_modules package-lock.json
 rm -rf .gcloud .npm .config .build .deploy
 npm cache clean --force
 
-# 清理 Git 未跟踪的文件，但保留必要文件
-echo "Cleaning untracked files..."
-git clean -fdx -e cloud_sql_proxy -e .env.production -e node_modules
+# 删除所有未跟踪的文件和目录
+echo "Cleaning all untracked files..."
+git clean -fdx
 
 # 从 GitHub 强制同步最新代码
 echo "Force pulling latest changes from GitHub..."
 git fetch origin main
 git reset --hard origin/main
 
-# 检查 server.js 内容
-echo "Checking server.js content..."
-echo "=== server.js content start ==="
-cat server.js
-echo "=== server.js content end ==="
-echo "Line count: $(wc -l < server.js)"
-echo "Searching for proxyModule reference..."
-grep -n "proxyModule" server.js || echo "No proxyModule reference found"
+# 创建临时构建目录
+echo "Creating build directory..."
+BUILD_DIR=".deploy"
+rm -rf $BUILD_DIR
+mkdir -p $BUILD_DIR
 
-# 安装依赖
-echo "Installing dependencies..."
-npm install
-npm install --save-dev sequelize-cli
+# 复制所需文件到构建目录
+echo "Copying files to build directory..."
+cp -r app.yaml server.js package.json package-lock.json routes models middleware .env.production $BUILD_DIR/
+
+# 检查构建目录中的 server.js 内容
+echo "=== Verifying build server.js content ==="
+echo "File exists: $(ls -l $BUILD_DIR/server.js)"
+echo "File size: $(wc -c < $BUILD_DIR/server.js) bytes"
+echo "Line count: $(wc -l < $BUILD_DIR/server.js)"
+echo "MD5 hash: $(md5 $BUILD_DIR/server.js)"
+echo "Content preview:"
+head -n 10 $BUILD_DIR/server.js
+
+# 在构建目录中安装依赖
+echo "Installing dependencies in build directory..."
+cd $BUILD_DIR
+npm install --production
+cd ..
 
 # 清理 GCP 缓存和构建文件
 echo "Cleaning up GCP cache..."
-rm -rf .gcloud .build .deploy
+rm -rf .gcloud .build
 gcloud config set disable_file_logging true
 gcloud config set pass_credentials_to_gsutil false
 
@@ -65,16 +76,11 @@ gcloud config set pass_credentials_to_gsutil false
 TIMESTAMP=$(date +%Y%m%dt%H%M%S)
 echo "Current serving version: $TIMESTAMP"
 
-# 在部署前验证文件
-echo "=== Verifying local files ==="
-echo "Local server.js content:"
-cat server.js
-echo "Local server.js MD5:"
-md5sum server.js
-
-# 强制重新部署，不使用缓存
-echo "Deploying new version..."
+# 从构建目录部署
+echo "Deploying from build directory..."
+cd $BUILD_DIR
 gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache
+cd ..
 
 # 确保新版本接管所有流量并完全迁移
 echo "Setting traffic to new version..."
@@ -88,9 +94,8 @@ if [ ! -z "$OLD_VERSIONS" ]; then
     gcloud app versions delete $OLD_VERSIONS --quiet
 fi
 
-# 部署后检查文件
-echo "=== Checking deployed files ==="
-gcloud app ssh --command="cat /workspace/server.js" || true
-gcloud app ssh --command="md5sum /workspace/server.js" || true
+# 清理构建目录
+echo "Cleaning up build directory..."
+rm -rf $BUILD_DIR
 
 echo "Deployment completed successfully"
