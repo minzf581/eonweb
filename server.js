@@ -108,8 +108,20 @@ async function initializeApp() {
     console.log('[DEBUG] 开始注册 API 路由');
     const apiRouter = express.Router();
     
+    // 打印代理路由配置
+    console.log('[DEBUG] 代理路由配置:', {
+      routes: proxyRoutes.stack
+        .filter(r => r.route)
+        .map(r => ({
+          path: r.route.path,
+          methods: Object.keys(r.route.methods),
+          regexp: String(r.regexp)
+        }))
+    });
+    
     // 注册代理路由
-    apiRouter.use('/proxy', (req, res, next) => {
+    const proxyRouter = express.Router();
+    proxyRouter.use((req, res, next) => {
       console.log('[DEBUG] 代理路由中间件:', {
         requestId: req.requestId,
         originalUrl: req.originalUrl,
@@ -129,7 +141,8 @@ async function initializeApp() {
     });
     
     // 将代理路由注册到 API 路由器
-    apiRouter.use('/proxy', proxyRoutes);
+    proxyRouter.use('/', proxyRoutes);
+    apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
     apiRouter.use('/auth', authRoutes);
