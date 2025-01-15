@@ -49,8 +49,14 @@ mkdir -p $BUILD_DIR
 
 # 复制所需文件到构建目录
 echo "Copying files to build directory..."
-cp -r . $BUILD_DIR/
-rm -rf $BUILD_DIR/.git $BUILD_DIR/.github $BUILD_DIR/node_modules
+cp app.yaml $BUILD_DIR/
+cp server.js $BUILD_DIR/
+cp app.js $BUILD_DIR/
+cp package.json $BUILD_DIR/
+cp -r routes $BUILD_DIR/
+cp -r models $BUILD_DIR/
+cp -r middleware $BUILD_DIR/
+cp .env.production $BUILD_DIR/
 
 # 检查构建目录中的关键文件
 echo "Verifying key files in build directory..."
