@@ -65,6 +65,13 @@ gcloud config set pass_credentials_to_gsutil false
 TIMESTAMP=$(date +%Y%m%dt%H%M%S)
 echo "Current serving version: $TIMESTAMP"
 
+# 在部署前验证文件
+echo "=== Verifying local files ==="
+echo "Local server.js content:"
+cat server.js
+echo "Local server.js MD5:"
+md5sum server.js
+
 # 强制重新部署，不使用缓存
 echo "Deploying new version..."
 gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache
@@ -80,5 +87,10 @@ if [ ! -z "$OLD_VERSIONS" ]; then
     echo "Deleting old versions: $OLD_VERSIONS"
     gcloud app versions delete $OLD_VERSIONS --quiet
 fi
+
+# 部署后检查文件
+echo "=== Checking deployed files ==="
+gcloud app ssh --command="cat /workspace/server.js" || true
+gcloud app ssh --command="md5sum /workspace/server.js" || true
 
 echo "Deployment completed successfully"
