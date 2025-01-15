@@ -146,6 +146,15 @@ async function initializeApp() {
     // 注册代理路由
     const proxyRouter = express.Router({ mergeParams: true });
     
+    // 打印代理路由器的初始状态
+    console.log('[DEBUG] 代理路由器配置:', {
+      validateApiKey: typeof auth.validateApiKey,
+      handlers: {
+        getNodeStats: typeof proxyRoutes.handlers.getNodeStats,
+        postNodeReport: typeof proxyRoutes.handlers.postNodeReport
+      }
+    });
+    
     // 注册 API Key 验证中间件
     proxyRouter.use(auth.validateApiKey);
     

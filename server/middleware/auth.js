@@ -29,11 +29,27 @@ const validateApiKey = (req, res, next) => {
 };
 
 const authenticateToken = (req, res, next) => {
-  // ... 你的 authenticateToken 中间件代码
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    req.user = user;
+    next();
+  });
 };
 
 const isAdmin = (req, res, next) => {
-  // ... 你的 isAdmin 中间件代码
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ success: false, message: 'Admin access required' });
+  }
+  next();
 };
 
 module.exports = { 
