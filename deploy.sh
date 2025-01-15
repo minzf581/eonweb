@@ -48,7 +48,7 @@ mkdir -p .deploy
 
 # 复制文件到构建目录
 echo "Copying files to build directory..."
-rsync -av --exclude '.git' --exclude '.deploy' --exclude 'node_modules' . .deploy/
+tar --exclude='.git' --exclude='.deploy' --exclude='node_modules' -cf - . | (cd .deploy && tar -xf -)
 
 # 验证关键文件
 echo "Verifying key files in build directory..."
