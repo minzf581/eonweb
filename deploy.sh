@@ -9,6 +9,11 @@ fi
 # 打印环境变量进行确认
 echo "Deploying with API_KEY: ${API_KEY}"
 
+# 完全清理并重建
+echo "Performing complete cleanup..."
+rm -rf node_modules package-lock.json
+npm install
+
 # 清理未跟踪的文件
 echo "Cleaning up untracked files..."
 # 保留 cloud_sql_proxy，只清理其他未跟踪的文件
