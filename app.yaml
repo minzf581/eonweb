@@ -12,6 +12,9 @@ env_variables:
   DB_NAME: "eon_protocol"
   PORT: "8080"
   NODE_OPTIONS: "--max-old-space-size=512 --trace-warnings"
+  NPM_CONFIG_LOGLEVEL: "error"
+  NPM_CONFIG_PRODUCTION: "true"
+  NPM_CONFIG_REGISTRY: "https://registry.npmjs.org/"
 
 automatic_scaling:
   target_cpu_utilization: 0.65
@@ -31,7 +34,8 @@ readiness_check:
   success_threshold: 2
 
 entrypoint: |
-  npm config set unsafe-perm true &&
-  npm config set registry https://registry.npmjs.org/ &&
-  npm install --production --no-optional &&
+  rm -rf node_modules package-lock.json &&
+  mkdir -p node_modules &&
+  chmod -R 777 node_modules &&
+  npm install --production --no-optional --no-audit --no-package-lock &&
   node server.js
