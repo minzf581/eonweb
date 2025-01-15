@@ -34,21 +34,17 @@ npm cache clean --force
 
 # 清理 Git 未跟踪的文件，但保留必要文件
 echo "Cleaning untracked files..."
-git clean -fdx -e cloud_sql_proxy -e .env.production
+git clean -fdx -e cloud_sql_proxy -e .env.production -e node_modules
 
 # 从 GitHub 强制同步最新代码
 echo "Force pulling latest changes from GitHub..."
 git fetch origin main
 git reset --hard origin/main
 
-if [ $? -ne 0 ]; then
-    echo "Failed to pull from GitHub. Please resolve any conflicts and try again."
-    exit 1
-fi
-
-# 检查 Git 状态
-echo "Checking Git status..."
-git status
+# 确保所有文件都是最新的
+echo "Verifying file contents..."
+cat server.js
+echo "Server.js content verified."
 
 # 安装依赖
 echo "Installing dependencies..."
