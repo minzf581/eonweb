@@ -67,16 +67,26 @@ app.use(cors());
 // 注册所有 API 路由
 console.log('[DEBUG] 开始注册 API 路由');
 
-// 直接注册路由
-app.use('/api/proxy', (req, res, next) => {
+// 创建一个新的路由器来处理所有代理请求
+const apiRouter = express.Router();
+
+// 注册代理路由
+apiRouter.use('/proxy', (req, res, next) => {
   console.log('[DEBUG] 代理路由中间件:', {
     originalUrl: req.originalUrl,
     baseUrl: req.baseUrl,
     path: req.path,
-    method: req.method
+    method: req.method,
+    params: req.params
   });
   next();
-}, proxyRoutes);
+});
+
+// 将代理路由注册到 API 路由器
+apiRouter.use('/proxy', proxyRoutes);
+
+// 将 API 路由器注册到应用
+app.use('/api', apiRouter);
 
 // 验证路由模块
 if (!proxyRoutes || !proxyRoutes.stack) {
@@ -95,12 +105,14 @@ console.log('[DEBUG] 已配置的路由:', {
     }))
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/referral', referralRoutes);
-app.use('/api/bandwidth', bandwidthRoutes);
-app.use('/api/admin', adminRoutes);
+// 注册其他路由到 API 路由器
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/tasks', tasksRoutes);
+apiRouter.use('/stats', statsRoutes);
+apiRouter.use('/referral', referralRoutes);
+apiRouter.use('/bandwidth', bandwidthRoutes);
+apiRouter.use('/admin', adminRoutes);
+
 console.log('[DEBUG] API 路由注册完成');
 
 // 最后注册通用路由
@@ -121,7 +133,8 @@ app.use((req, res) => {
         type: r.route ? 'route' : 'middleware',
         path: r.route?.path || r.regexp?.toString(),
         methods: r.route ? Object.keys(r.route.methods) : undefined,
-        matched: r.regexp ? r.regexp.test(req.path) : false
+        matched: r.regexp ? r.regexp.test(req.path) : false,
+        stack: r.handle?.stack?.length
       }))
   });
   res.status(404).json({ 

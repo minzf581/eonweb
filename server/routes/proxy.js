@@ -17,6 +17,7 @@ router.use((req, res, next) => {
     path: req.path,
     baseUrl: req.baseUrl,
     originalUrl: req.originalUrl,
+    params: req.params,
     headers: req.headers,
     body: req.body
   });
@@ -86,7 +87,8 @@ console.log('[DEBUG] 代理路由配置完成:', {
       path: r.route.path,
       methods: Object.keys(r.route.methods),
       stack: r.route.stack.length,
-      fullPath: `/api/proxy${r.route.path}`
+      fullPath: `/api/proxy${r.route.path}`,
+      regexp: r.route.path.replace(/:(\w+)/g, '([^/]+)')
     }))
 });
 
