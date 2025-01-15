@@ -224,3 +224,43 @@ let server = app.listen(PORT, () => {
 });
 
 initializeApp();
+
+// 在应用程序开始处添加
+app.use((req, res, next) => {
+  console.log('收到请求:', {
+    method: req.method,
+    path: req.path,
+    headers: {
+      'x-api-key': req.headers['x-api-key'],
+      'authorization': req.headers['authorization']
+    }
+  });
+  next();
+});
+
+// 在代理节点路由处添加
+app.use('/api/proxy', (req, res, next) => {
+  console.log('代理节点请求:', {
+    method: req.method,
+    path: req.path,
+    body: req.body
+  });
+  next();
+});
+
+// 错误处理中间件
+app.use((err, req, res, next) => {
+  console.error('错误:', err);
+  res.status(500).json({ success: false, message: err.message });
+});
+
+// 服务器启动时检查必要的环境变量
+const requiredEnvVars = ['API_KEY', 'JWT_SECRET'];
+requiredEnvVars.forEach(varName => {
+  if (!process.env[varName]) {
+    console.error(`错误: 环境变量 ${varName} 未设置`);
+    process.exit(1);
+  }
+});
+
+console.log('环境变量检查通过，API_KEY:', process.env.API_KEY);

@@ -7,7 +7,7 @@ EON Project 是 EON Protocol 的官方展示平台，提供项目详情展示、
 - 前端：HTML5, CSS3, JavaScript
 - 后端服务：Express.js
 - 认证系统：JWT
-- 数据库：MongoDB
+- 数据库：Google Cloud SQL (MySQL)
 - 云服务：Google Cloud Platform (GCP)
 
 ## 主要功能
@@ -32,18 +32,25 @@ EON Project 是 EON Protocol 的官方展示平台，提供项目详情展示、
 
 ### GCP 部署
 1. 在 Google Cloud Console 创建新项目
-2. 配置 Cloud Run 服务：
+2. 配置 Cloud SQL：
+   - 创建 MySQL 实例
+   - 设置数据库用户和密码
+   - 配置网络访问权限
+3. 配置 Cloud Run 服务：
    - 设置容器镜像
    - 配置自动扩缩容
    - 设置环境变量
-3. 设置域名映射：
+4. 设置域名映射：
    - 配置 SSL 证书
    - 设置自定义域名
 
 ### 环境变量配置
 ```bash
 NODE_ENV=production
-MONGODB_URI=your_mongodb_uri
+DB_HOST=your_cloud_sql_host
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=your_db_name
 JWT_SECRET=your_jwt_secret
 API_VERSION=v1
 POINTS_SYSTEM_CONFIG=default

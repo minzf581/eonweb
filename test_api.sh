@@ -32,6 +32,9 @@ TEST_USERNAME="test_${TIMESTAMP}"
 TEST_EMAIL="test_${TIMESTAMP}@example.com"
 echo "使用测试用户名: ${TEST_USERNAME}"
 
+# 在脚本开始处添加
+echo "使用的 API_KEY: ${API_KEY}"
+
 # 1. 认证相关测试
 echo "=== 认证测试 ==="
 
@@ -118,12 +121,16 @@ fi
 
 # 2. 代理节点状态上报测试
 echo -e "\n=== 代理节点状态上报测试 ==="
+echo "请求头信息:"
+echo "Authorization: Bearer ${TOKEN}"
+echo "X-API-Key: ${API_KEY}"
 
 # 2.1 节点上线
 echo "测试节点上线上报..."
 DEVICE_ID="test_device_${TIMESTAMP}"
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/nodes/report" \
+curl -v -X POST "${API_URL}/proxy/nodes/report" \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${TOKEN}" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
         "deviceId": "'${DEVICE_ID}'",
@@ -144,8 +151,9 @@ sleep 2
 
 # 2.2 节点每日上报
 echo "测试节点每日上报..."
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/nodes/report" \
+curl -v -X POST "${API_URL}/proxy/nodes/report" \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${TOKEN}" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
         "deviceId": "'${DEVICE_ID}'",
@@ -163,8 +171,9 @@ print_test_result $? "节点每日上报"
 
 # 2.3 节点下线
 echo "测试节点下线上报..."
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/proxy/nodes/report" \
+curl -v -X POST "${API_URL}/proxy/nodes/report" \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${TOKEN}" \
     -H "X-API-Key: ${API_KEY}" \
     -d '{
         "deviceId": "'${DEVICE_ID}'",
@@ -182,7 +191,8 @@ print_test_result $? "节点下线上报"
 
 # 2.4 获取节点统计
 echo "测试获取节点统计..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/proxy/nodes/${DEVICE_ID}/stats" \
+curl -v -X GET "${API_URL}/proxy/nodes/${DEVICE_ID}/stats" \
+    -H "Authorization: Bearer ${TOKEN}" \
     -H "X-API-Key: ${API_KEY}"
 print_test_result $? "获取节点统计"
 
@@ -191,14 +201,14 @@ echo "测试任务相关接口..."
 
 # 3.1 获取可用任务列表
 echo "获取可用任务列表..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/tasks/available" \
-    -H "${AUTH_HEADER}"
+curl -v -X GET "${API_URL}/tasks/available" \
+    -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取可用任务列表"
 
 # 3.2 开始每日签到任务
 echo "开始每日签到任务..."
-curl -s -k --tlsv1.2 --http1.1 -X POST "${API_URL}/tasks/1/start" \
-    -H "${AUTH_HEADER}" \
+curl -v -X POST "${API_URL}/tasks/1/start" \
+    -H "Authorization: Bearer ${TOKEN}" \
     -H "Content-Type: application/json" \
     -H "Content-Length: 2" \
     -d '{}'
@@ -206,14 +216,14 @@ print_test_result $? "开始每日签到任务"
 
 # 3.3 获取用户任务列表
 echo "获取用户任务列表..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/tasks/user/list" \
-    -H "${AUTH_HEADER}"
+curl -v -X GET "${API_URL}/tasks/user/list" \
+    -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取用户任务列表"
 
 # 3.4 获取用户积分统计
 echo "获取用户积分统计..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/user/points/stats" \
-    -H "${AUTH_HEADER}"
+curl -v -X GET "${API_URL}/user/points/stats" \
+    -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取用户积分统计"
 
 # 4. 积分相关测试
@@ -221,8 +231,8 @@ echo -e "\n=== 积分测试 ==="
 
 # 4.1 获取积分统计
 echo "获取积分统计..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/stats" \
-    -H "${AUTH_HEADER}"
+curl -v -X GET "${API_URL}/stats" \
+    -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取积分统计"
 
 # 5. 推荐相关测试
@@ -230,8 +240,8 @@ echo -e "\n=== 推荐测试 ==="
 
 # 5.1 获取推荐信息
 echo "获取推荐信息..."
-curl -s -k --tlsv1.2 --http1.1 -X GET "${API_URL}/referral" \
-    -H "${AUTH_HEADER}"
+curl -v -X GET "${API_URL}/referral" \
+    -H "Authorization: Bearer ${TOKEN}"
 print_test_result $? "获取推荐信息"
 
 # 输出测试结果统计
