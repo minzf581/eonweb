@@ -153,10 +153,18 @@ async function initializeApp() {
         getNodeStats: typeof proxyRoutes.handlers?.getNodeStats,
         postNodeReport: typeof proxyRoutes.handlers?.postNodeReport,
         handlers: proxyRoutes.handlers
+      },
+      router: {
+        stack: proxyRoutes.router?.stack?.length,
+        routes: proxyRoutes.router?.stack?.map(r => ({
+          path: r.route?.path,
+          methods: r.route?.methods
+        }))
       }
     });
     
     // 注册 API Key 验证中间件
+    console.log('[DEBUG] 注册 API Key 验证中间件');
     proxyRouter.use(auth.validateApiKey);
     
     // 再注册中间件
@@ -181,15 +189,27 @@ async function initializeApp() {
       next();
     });
     
-    // 最后注册路由处理器
-    if (proxyRoutes.handlers) {
-      proxyRouter.get('/nodes/:deviceId/stats', proxyRoutes.handlers.getNodeStats);
-      proxyRouter.post('/nodes/report', proxyRoutes.handlers.postNodeReport);
-    } else {
-      console.error('[DEBUG] 代理路由处理器未定义');
-    }
+    // 使用代理路由器
+    console.log('[DEBUG] 注册代理路由器');
+    proxyRouter.use('/', proxyRoutes.router);
+    
+    // 打印代理路由器最终状态
+    console.log('[DEBUG] 代理路由器最终配置:', {
+      stack: proxyRouter.stack.map(r => ({
+        name: r.name,
+        regexp: String(r.regexp),
+        path: r.route?.path,
+        handle: r.handle?.name,
+        stack: r.handle?.stack?.map(s => ({
+          name: s.name,
+          regexp: String(s.regexp),
+          path: s.route?.path
+        }))
+      }))
+    });
     
     // 将代理路由器注册到 API 路由器
+    console.log('[DEBUG] 将代理路由器注册到 API 路由器');
     apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
