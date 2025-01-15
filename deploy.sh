@@ -52,6 +52,39 @@ rm -rf .gcloud .build .deploy
 gcloud config set disable_file_logging true
 gcloud config set pass_credentials_to_gsutil false
 
+# 修改 app.yaml 添加清理命令
+echo "Updating app.yaml with cleanup commands..."
+cat > app.yaml << EOF
+runtime: nodejs18
+
+env_variables:
+  NODE_ENV: "production"
+  DB_HOST: "/cloudsql/eonhome-445809:asia-southeast2:eon-db"
+  DB_USER: "eonuser"
+  DB_PASSWORD: "your_db_password"
+  DB_NAME: "eon_protocol"
+  JWT_SECRET: "your_jwt_secret"
+  API_KEY: "${API_KEY}"
+
+instance_class: F1
+
+automatic_scaling:
+  target_cpu_utilization: 0.65
+  min_instances: 1
+  max_instances: 10
+
+handlers:
+  - url: /.*
+    script: auto
+    secure: always
+
+entrypoint: |
+    rm -rf /workspace/server.js.bak || true
+    mv /workspace/server.js /workspace/server.js.bak || true
+    cp server.js /workspace/server.js
+    npm start
+EOF
+
 # 获取当前版本时间戳
 TIMESTAMP=$(date +%Y%m%dt%H%M%S)
 echo "Current serving version: $TIMESTAMP"
