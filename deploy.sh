@@ -79,7 +79,8 @@ echo "Current serving version: $TIMESTAMP"
 # 从构建目录部署
 echo "Deploying from build directory..."
 cd $BUILD_DIR
-gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache
+gcloud config set app/cloud_build_timeout 1800
+gcloud app deploy app.yaml --quiet --version=$TIMESTAMP --promote --no-cache
 cd ..
 
 # 确保新版本接管所有流量并完全迁移
@@ -97,5 +98,11 @@ fi
 # 清理构建目录
 echo "Cleaning up build directory..."
 rm -rf $BUILD_DIR
+
+# 验证构建目录中的文件
+echo "Verifying files in build directory..."
+ls -la $BUILD_DIR
+echo "Content of server.js in build directory:"
+cat $BUILD_DIR/server.js | wc -l
 
 echo "Deployment completed successfully"
