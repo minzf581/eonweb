@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 
+console.log('[DEBUG] 初始化 auth 中间件');
+
 const validateApiKey = (req, res, next) => {
   console.log('验证 API Key:', {
     path: req.path,
@@ -57,3 +59,7 @@ module.exports = {
   authenticateToken,
   isAdmin
 }; 
+
+console.log('[DEBUG] auth 中间件导出完成:', {
+  validateApiKey: typeof validateApiKey
+}); 

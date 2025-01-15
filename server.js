@@ -22,7 +22,7 @@ const adminRoutes = require('./routes/admin');
 const auth = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
-const proxyRoutes = require('./routes/proxy');
+const proxyRouter = require('./routes/proxy');
 const bandwidthRoutes = require('./routes/bandwidth');
 const fs = require('fs');
 
@@ -147,9 +147,9 @@ async function initializeApp() {
     const proxyRouter = express.Router({ mergeParams: true });
     
     // 先注册路由处理器
-    if (proxyRoutes.router) {
+    if (proxyRouter.router) {
       console.log('[DEBUG] 注册代理路由处理器');
-      proxyRouter.use('/', proxyRoutes.router);
+      proxyRouter.use('/', proxyRouter.router);
     } else {
       console.error('[DEBUG] 代理路由器未定义');
     }
@@ -158,13 +158,13 @@ async function initializeApp() {
     console.log('[DEBUG] 代理路由器配置:', {
       validateApiKey: typeof auth.validateApiKey,
       handlers: {
-        getNodeStats: typeof proxyRoutes.handlers?.getNodeStats,
-        postNodeReport: typeof proxyRoutes.handlers?.postNodeReport,
-        handlers: proxyRoutes.handlers
+        getNodeStats: typeof proxyRouter.handlers?.getNodeStats,
+        postNodeReport: typeof proxyRouter.handlers?.postNodeReport,
+        handlers: proxyRouter.handlers
       },
       router: {
-        stack: proxyRoutes.router?.stack?.length,
-        routes: proxyRoutes.router?.stack?.map(r => ({
+        stack: proxyRouter.router?.stack?.length,
+        routes: proxyRouter.router?.stack?.map(r => ({
           path: r.route?.path,
           methods: r.route?.methods
         }))
