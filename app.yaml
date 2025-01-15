@@ -24,19 +24,45 @@ handlers:
     secure: always
 
 entrypoint: |
+    echo "=== Step 1: Environment Setup ==="
     echo "Current directory: $(pwd)"
+    echo "Node version: $(node -v)"
+    echo "NPM version: $(npm -v)"
+    
+    echo "=== Step 2: Workspace Preparation ==="
     echo "Workspace directory before cleanup:"
     ls -la /workspace || true
     echo "Cleaning workspace directory..."
     rm -rf /workspace/* || true
+    mkdir -p /workspace
+    
+    echo "=== Step 3: File Copy ==="
     echo "Copying files to workspace..."
     cp -r . /workspace/
-    echo "Installing dependencies..."
     cd /workspace
-    npm install
-    echo "Workspace directory after setup:"
-    ls -la /workspace
-    echo "Server.js content:"
-    cat /workspace/server.js
-    echo "Starting application..."
+    echo "Verifying critical files..."
+    for file in server.js routes/proxy.js package.json; do
+      if [ ! -f "$file" ]; then
+        echo "Error: $file not found!"
+        exit 1
+      fi
+      echo "Found $file:"
+      cat "$file"
+      echo "=== End of $file ==="
+    done
+    
+    echo "=== Step 4: Dependencies ==="
+    echo "Installing dependencies..."
+    npm install --production
+    
+    echo "=== Step 5: Final Verification ==="
+    echo "Workspace directory structure:"
+    ls -R
+    echo "Server.js line count:"
+    wc -l server.js
+    echo "Proxy.js line count:"
+    wc -l routes/proxy.js
+    
+    echo "=== Step 6: Starting Application ==="
+    echo "Starting in directory: $(pwd)"
     npm start
