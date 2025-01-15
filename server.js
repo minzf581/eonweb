@@ -145,13 +145,14 @@ async function initializeApp() {
     
     // 注册代理路由
     console.log('[DEBUG] 注册代理路由');
-    if (!proxyModule.router) {
+    const { router: proxyRouter } = proxyModule;
+    if (!proxyRouter) {
       console.error('[DEBUG] 代理路由器未定义');
       throw new Error('代理路由器未定义');
     }
     
     console.log('[DEBUG] 代理路由配置:', {
-      stack: proxyModule.router.stack.map(r => ({
+      stack: proxyRouter.stack.map(r => ({
         path: r.route?.path,
         methods: r.route?.methods
       }))
@@ -159,7 +160,7 @@ async function initializeApp() {
     
     // 将代理路由器注册到 API 路由器
     console.log('[DEBUG] 将代理路由器注册到 API 路由器');
-    apiRouter.use('/proxy', proxyModule.router);
+    apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
     apiRouter.use('/auth', authRoutes);
@@ -257,7 +258,7 @@ async function initializeApp() {
           path: s.route?.path
         }))
       })),
-      proxy: proxyModule.router.stack.map(r => ({
+      proxy: proxyRouter.stack.map(r => ({
         name: r.name,
         regexp: String(r.regexp),
         path: r.route?.path,
@@ -287,10 +288,10 @@ initializeApp().catch(error => {
 });
 
 console.log('[DEBUG] 导入的代理模块:', {
-  type: typeof proxyModule,
-  router: typeof proxyModule.router,
-  handlers: typeof proxyModule.handlers,
-  routes: proxyModule.router?.stack?.map(r => ({
+  type: typeof proxyRouter,
+  router: typeof proxyRouter,
+  handlers: typeof proxyRouter.handlers,
+  routes: proxyRouter?.stack?.map(r => ({
     path: r.route?.path,
     methods: r.route?.methods
   }))
