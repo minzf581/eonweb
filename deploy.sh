@@ -138,6 +138,30 @@ echo "Current serving version: $TIMESTAMP"
 
 # 部署新版本
 echo "Deploying new version..."
+
+# 确保所有必要的文件都存在
+echo "Verifying required files..."
+required_files=(
+    "server.js"
+    "package.json"
+    "routes/proxy.js"
+    "middleware/auth.js"
+)
+
+for file in "${required_files[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "Error: Required file $file is missing!"
+        exit 1
+    fi
+done
+
+echo "All required files are present."
+
+# 列出将要部署的文件
+echo "Files to be deployed:"
+find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -name "*.md" -not -name "*.log"
+
+# 强制重新部署，不使用缓存
 gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache
 
 # 如果部署成功

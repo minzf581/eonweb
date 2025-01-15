@@ -1,12 +1,21 @@
+# Ignore development and version control files
 .git
 .gitignore
-node_modules/
-npm-debug.log
 .env
 .env.local
 *.test.js
 __tests__/
 coverage/
 .vscode/
-*.md
 .DS_Store
+
+# Do NOT ignore these files
+!routes/
+!models/
+!middleware/
+!config/
+!migrations/
+!scripts/
+!app.yaml
+!package.json
+!server.js
