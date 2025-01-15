@@ -6,9 +6,12 @@ const { validateApiKey } = require('../middleware/auth');
 router.use(validateApiKey);
 
 router.post('/nodes/report', async (req, res) => {
-  console.log('节点报告请求体:', req.body);
+  console.log('收到代理节点报告请求');
+  console.log('请求头:', req.headers);
+  console.log('请求体:', req.body);
   try {
     // 处理逻辑
+    res.json({ success: true, message: 'Report received' });
   } catch (error) {
     console.error('节点报告错误:', error);
     res.status(500).json({ success: false, message: error.message });

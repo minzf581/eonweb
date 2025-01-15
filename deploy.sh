@@ -52,12 +52,13 @@ instance_class: F1
 
 env_variables:
   NODE_ENV: "production"
-  API_KEY: "${API_KEY}"
+  API_KEY: "eon-api-key-2024"
   JWT_SECRET: "${JWT_SECRET}"
   DB_HOST: "/cloudsql/${PROJECT_ID}:${REGION}:eon-db"
   DB_USER: "${DB_USER}"
   DB_PASSWORD: "${DB_PASSWORD}"
   DB_NAME: "${DB_NAME}"
+  PORT: "8080"
 
 automatic_scaling:
   target_cpu_utilization: 0.65

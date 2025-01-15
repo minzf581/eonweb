@@ -29,13 +29,8 @@ const fs = require('fs');
 const app = express();
 
 // Force the server to use the PORT from environment variable
-const PORT = process.env.PORT || 8080;
-console.log('Environment variables:', {
-    NODE_ENV: process.env.NODE_ENV,
-    PORT: process.env.PORT,
-    JWT_SECRET: process.env.JWT_SECRET ? '[HIDDEN]' : 'NOT_SET'
-});
-console.log(`Configured to run on port ${PORT}`);
+const PORT = parseInt(process.env.PORT || '8080', 10);
+console.log('Starting server on port:', PORT);
 
 // Health check endpoints BEFORE any other middleware
 app.get('/_ah/start', (req, res) => {
@@ -218,10 +213,28 @@ process.on('unhandledRejection', (reason, promise) => {
     gracefulShutdown();
 });
 
-// Start server
-let server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// 在启动服务器之前检查端口是否被占用
+const net = require('net');
+const server = net.createServer();
+server.once('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`Port ${PORT} is busy, trying ${PORT + 1}`);
+    startServer(PORT + 1);
+  }
 });
+
+server.once('listening', () => {
+  server.close();
+  startServer(PORT);
+});
+
+server.listen(PORT);
+
+function startServer(port) {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
 
 initializeApp();
 
