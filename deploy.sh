@@ -16,11 +16,6 @@ rm -rf .gcloud
 rm -rf .npm
 rm -rf .config
 npm cache clean --force
-npm install
-
-# 清理未跟踪的文件
-echo "Cleaning up untracked files..."
-git clean -fdx -e cloud_sql_proxy -e .env.production
 
 # 从 GitHub 强制同步最新代码
 echo "Force pulling latest changes from GitHub..."
@@ -31,6 +26,15 @@ if [ $? -ne 0 ]; then
     echo "Failed to pull from GitHub. Please resolve any conflicts and try again."
     exit 1
 fi
+
+# 安装依赖
+echo "Installing dependencies..."
+npm install
+npm install -g sequelize-cli
+
+# 清理未跟踪的文件
+echo "Cleaning up untracked files..."
+git clean -fdx -e cloud_sql_proxy -e .env.production
 
 # 清理已存在的 Cloud SQL Proxy 进程
 echo "Cleaning up existing Cloud SQL Proxy processes..."
@@ -91,6 +95,7 @@ env_variables:
   DB_PASSWORD: "${DB_PASSWORD}"
   DB_NAME: "${DB_NAME}"
   PORT: "8080"
+  DEPLOY_VERSION: "$(date +%Y%m%dt%H%M%S)"
 
 automatic_scaling:
   target_cpu_utilization: 0.65
