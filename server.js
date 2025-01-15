@@ -79,9 +79,6 @@ app.use('/api/referral', referralRoutes);
 app.use('/api/bandwidth', bandwidthRoutes);
 app.use('/api/admin', adminRoutes);
 
-// 最后注册通用路由
-app.use('/', appRoutes);
-
 // Separate initialization function
 async function initializeApp() {
     try {
@@ -164,6 +161,18 @@ async function initializeApp() {
                 message: process.env.NODE_ENV === 'development' ? err.message : undefined
             });
         });
+
+        // API 路由注册
+        app.use('/api/auth', authRoutes);
+        app.use('/api/proxy', proxyRoutes);
+        app.use('/api/tasks', tasksRoutes);
+        app.use('/api/stats', statsRoutes);
+        app.use('/api/referral', referralRoutes);
+        app.use('/api/bandwidth', bandwidthRoutes);
+        app.use('/api/admin', adminRoutes);
+
+        // 最后注册通用路由
+        app.use('/', appRoutes);
 
         console.log('App initialization completed successfully');
     } catch (error) {
