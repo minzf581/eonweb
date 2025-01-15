@@ -11,7 +11,8 @@ echo "Deploying with API_KEY: ${API_KEY}"
 
 # 清理未跟踪的文件
 echo "Cleaning up untracked files..."
-git clean -f
+# 保留 cloud_sql_proxy，只清理其他未跟踪的文件
+git clean -f -e cloud_sql_proxy
 
 # 从 GitHub 同步最新代码
 echo "Pulling latest changes from GitHub..."
@@ -50,7 +51,7 @@ if ! kill -0 $PROXY_PID 2>/dev/null; then
 fi
 
 # 检查端口是否可用
-if ! nc -z localhost 5432; then
+if ! (echo > /dev/tcp/localhost/5432) 2>/dev/null; then
     echo "Cloud SQL Proxy port 5432 is not available"
     kill $PROXY_PID 2>/dev/null
     exit 1
