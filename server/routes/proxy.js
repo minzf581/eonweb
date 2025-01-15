@@ -27,7 +27,11 @@ router.use(validateApiKey);
 // 节点报告路由
 router.post('/nodes/report', async (req, res) => {
   console.log('[DEBUG] 进入节点报告路由处理');
-  console.log('收到代理节点报告请求');
+  console.log('收到代理节点报告请求:', {
+    path: req.path,
+    baseUrl: req.baseUrl,
+    originalUrl: req.originalUrl
+  });
   try {
     console.log('处理节点报告:', req.body);
     res.json({ 

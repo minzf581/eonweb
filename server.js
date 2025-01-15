@@ -73,7 +73,7 @@ const printRouteDetails = (prefix, router) => {
     stack: router.stack
       .filter(r => r.route)
       .map(r => ({
-        path: `${prefix}${r.route.path}`,
+        path: r.route.path,
         methods: Object.keys(r.route.methods),
         middleware: r.route.stack.length
       }))
@@ -81,7 +81,10 @@ const printRouteDetails = (prefix, router) => {
 };
 
 printRouteDetails('/api/proxy', proxyRoutes);
-app.use('/api/proxy', proxyRoutes);
+// 确保路由处理器能正确处理路径
+const proxyRouter = express.Router();
+proxyRouter.use('/', proxyRoutes);
+app.use('/api/proxy', proxyRouter);
 
 // 验证路由模块
 if (!proxyRoutes || !proxyRoutes.stack) {
@@ -122,7 +125,8 @@ app.use((req, res) => {
       .map(r => ({
         type: r.route ? 'route' : 'middleware',
         path: r.route?.path || r.regexp?.toString(),
-        methods: r.route ? Object.keys(r.route.methods) : undefined
+        methods: r.route ? Object.keys(r.route.methods) : undefined,
+        matched: r.regexp ? r.regexp.test(req.path) : false
       }))
   });
   res.status(404).json({ 
