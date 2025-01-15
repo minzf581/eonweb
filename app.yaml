@@ -5,13 +5,13 @@ instance_class: F1
 env_variables:
   NODE_ENV: "production"
   PORT: "8080"
-  JWT_SECRET: "eon-jwt-secret-2024"
+  JWT_SECRET: "${JWT_SECRET}"
   JWT_EXPIRES_IN: "24h"
   API_KEY: "eon-api-key-2024"
-  DB_HOST: "/cloudsql/eonhome-445809:asia-southeast2:eon-db"
-  DB_USER: "eonuser"
-  DB_PASSWORD: "eonprotocol"
-  DB_NAME: "eon_protocol"
+  DB_HOST: "/cloudsql/${PROJECT_ID}:${REGION}:eon-db"
+  DB_USER: "${DB_USER}"
+  DB_PASSWORD: "${DB_PASSWORD}"
+  DB_NAME: "${DB_NAME}"
   DB_PORT: "5432"
   CORS_ORIGIN: "*"
 

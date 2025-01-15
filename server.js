@@ -57,6 +57,29 @@ app.get('/_ah/stop', (req, res) => {
     });
 });
 
+// 在应用程序开始处添加日志中间件
+app.use((req, res, next) => {
+  console.log('收到请求:', {
+    method: req.method,
+    path: req.path,
+    headers: {
+      'x-api-key': req.headers['x-api-key'],
+      'authorization': req.headers['authorization']
+    }
+  });
+  next();
+});
+
+// 先注册 API 路由
+app.use('/api/auth', authRoutes);
+app.use('/api/proxy', proxyRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/bandwidth', bandwidthRoutes);
+app.use('/api/admin', adminRoutes);
+
+// 最后注册通用路由
 app.use('/', appRoutes);
 
 // Separate initialization function
@@ -88,15 +111,6 @@ async function initializeApp() {
         app.use(express.json());
         app.use(cookieParser());
         app.use(compression());
-
-        // Routes
-        app.use('/api/auth', authRoutes);
-        app.use('/api/proxy', proxyRoutes);
-        app.use('/api/tasks', tasksRoutes);
-        app.use('/api/stats', statsRoutes);
-        app.use('/api/referral', referralRoutes);
-        app.use('/api/bandwidth', bandwidthRoutes);
-        app.use('/api/admin', adminRoutes);
 
         // Configure static file serving
         const publicPath = path.join(__dirname, 'public');
@@ -237,19 +251,6 @@ function startServer(port) {
 }
 
 initializeApp();
-
-// 在应用程序开始处添加
-app.use((req, res, next) => {
-  console.log('收到请求:', {
-    method: req.method,
-    path: req.path,
-    headers: {
-      'x-api-key': req.headers['x-api-key'],
-      'authorization': req.headers['authorization']
-    }
-  });
-  next();
-});
 
 // 在代理节点路由处添加
 app.use('/api/proxy', (req, res, next) => {
