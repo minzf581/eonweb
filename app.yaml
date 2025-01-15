@@ -56,6 +56,9 @@ entrypoint: |
     npm install --production
     
     echo "=== Step 5: Final Verification ==="
+    echo "Checking server.js line 294 and surrounding context:"
+    echo "Lines 290-300 of server.js:"
+    sed -n '290,300p' server.js || true
     echo "Workspace directory structure:"
     ls -R
     echo "Server.js line count:"
@@ -63,6 +66,10 @@ entrypoint: |
     echo "Proxy.js line count:"
     wc -l routes/proxy.js
     
-    echo "=== Step 6: Starting Application ==="
+    echo "=== Step 6: File Permissions ==="
+    echo "Setting correct permissions..."
+    chmod -R 755 .
+    
+    echo "=== Step 7: Starting Application ==="
     echo "Starting in directory: $(pwd)"
-    npm start
+    NODE_OPTIONS="--trace-warnings" npm start

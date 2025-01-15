@@ -22,7 +22,7 @@ const adminRoutes = require('./routes/admin');
 const auth = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
-const proxyRouter = require('./routes/proxy');
+const proxyRoutes = require('./routes/proxy');
 const bandwidthRoutes = require('./routes/bandwidth');
 const fs = require('fs');
 
@@ -141,7 +141,7 @@ async function initializeApp() {
     
     // 注册代理路由
     console.log('[DEBUG] 注册代理路由');
-    apiRouter.use('/proxy', proxyRouter);
+    apiRouter.use('/proxy', proxyRoutes);
     
     // 注册其他路由到 API 路由器
     apiRouter.use('/auth', authRoutes);
