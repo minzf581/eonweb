@@ -140,12 +140,22 @@ async function initializeApp() {
     const apiRouter = express.Router();
     
     // 注册基础中间件
-    apiRouter.use(express.json());
-    apiRouter.use(express.urlencoded({ extended: true }));
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    app.use(cors());
+    app.use(cookieParser());
+    app.use(compression());
     
     // 创建代理路由器
     console.log('[DEBUG] 创建代理路由器');
     const proxyRouter = createProxyRouter();
+    
+    // 验证路由器
+    if (!proxyRouter || typeof proxyRouter.use !== 'function') {
+      throw new Error('代理路由器无效');
+    }
+    
+    // 注册路由
     apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
