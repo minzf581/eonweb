@@ -2,6 +2,14 @@ const express = require('express');
 const router = express.Router();
 const { validateApiKey } = require('../middleware/auth');
 
+// 导出路由之前先打印路由信息
+console.log('[DEBUG] 代理路由配置:', {
+  routes: router.stack.map(r => ({
+    path: r.route?.path,
+    methods: r.route?.methods
+  }))
+});
+
 // 调试中间件
 router.use((req, res, next) => {
   console.log('代理路由收到请求:', {
@@ -57,4 +65,5 @@ router.get('/nodes/:deviceId/stats', async (req, res) => {
   }
 });
 
+// 确保正确导出 Router 实例
 module.exports = router; 

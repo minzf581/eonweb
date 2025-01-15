@@ -66,8 +66,20 @@ app.use(cors());
 
 // 注册所有 API 路由
 console.log('[DEBUG] 开始注册 API 路由');
-console.log('[DEBUG] proxyRoutes:', Object.keys(proxyRoutes));
-console.log('[DEBUG] authRoutes:', Object.keys(authRoutes));
+
+// 验证路由模块
+if (!proxyRoutes || !proxyRoutes.stack) {
+  console.error('[DEBUG] proxyRoutes 不是有效的 Router 实例');
+  process.exit(1);
+}
+
+// 打印路由信息
+console.log('[DEBUG] 已配置的路由:', {
+  proxy: proxyRoutes.stack.map(r => ({
+    path: r.route?.path,
+    methods: r.route?.methods
+  })).filter(r => r.path)
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/proxy', proxyRoutes);
@@ -158,13 +170,29 @@ function startServer(port) {
 async function initializeApp() {
   try {
     console.log('[DEBUG] 开始初始化应用');
-    // 验证数据库连接
-    if (!sequelize || typeof sequelize.authenticate !== 'function') {
-      throw new Error('数据库实例未正确初始化');
-    }
-    // 连接数据库
-    await sequelize.authenticate();
-    console.log('[DEBUG] 数据库连接成功');
+    // 等待数据库连接
+    await new Promise((resolve, reject) => {
+      const maxAttempts = 5;
+      let attempts = 0;
+      
+      const tryConnect = async () => {
+        try {
+          await sequelize.authenticate();
+          console.log('[DEBUG] 数据库连接成功');
+          resolve();
+        } catch (error) {
+          attempts++;
+          if (attempts >= maxAttempts) {
+            reject(new Error(`数据库连接失败，已重试 ${attempts} 次: ${error.message}`));
+          } else {
+            console.log(`[DEBUG] 数据库连接失败，${attempts} 次重试: ${error.message}`);
+            setTimeout(tryConnect, 1000);
+          }
+        }
+      };
+      
+      tryConnect();
+    });
     
     console.log('[DEBUG] 应用初始化完成');
   } catch (error) {
