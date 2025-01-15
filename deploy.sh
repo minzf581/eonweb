@@ -106,7 +106,7 @@ EOF
 
 # 运行数据库迁移
 echo "Running database migrations..."
-NODE_ENV=production ./node_modules/.bin/sequelize-cli db:migrate
+NODE_ENV=production npx sequelize-cli db:migrate
 
 # 运行原生 SQL 迁移脚本
 echo "Running SQL migrations..."
