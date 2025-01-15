@@ -53,14 +53,16 @@ cp app.yaml $BUILD_DIR/
 cp server.js $BUILD_DIR/
 cp app.js $BUILD_DIR/
 cp package.json $BUILD_DIR/
+cp health.js $BUILD_DIR/ || echo "Warning: health.js not found"
 cp -r routes $BUILD_DIR/
 cp -r models $BUILD_DIR/
 cp -r middleware $BUILD_DIR/
+cp -r config $BUILD_DIR/ || echo "Warning: config directory not found"
 cp .env.production $BUILD_DIR/
 
 # 检查构建目录中的关键文件
 echo "Verifying key files in build directory..."
-for file in server.js app.js routes/proxy.js; do
+for file in server.js app.js routes/proxy.js models/index.js; do
     if [ -f "$BUILD_DIR/$file" ]; then
         echo "$file exists and has $(wc -l < $BUILD_DIR/$file) lines"
     else
