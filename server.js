@@ -84,7 +84,7 @@ async function initializeApp() {
       tryConnect();
     });
     
-    // 先注册基础中间件
+    // 注册所有中间件
     console.log('[DEBUG] 注册基础中间件');
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
@@ -138,13 +138,6 @@ async function initializeApp() {
     // 创建一个新的路由器来处理所有 API 请求
     console.log('[DEBUG] 开始注册 API 路由');
     const apiRouter = express.Router();
-    
-    // 注册基础中间件（只注册一次）
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
-    app.use(cors());
-    app.use(cookieParser());
-    app.use(compression());
     
     // 注册代理路由
     console.log('[DEBUG] 创建代理路由器');
