@@ -62,12 +62,33 @@ cat > .gcloudignore << EOF
 .git
 .gitignore
 .env
-.env.local
+.env.*
 *.test.js
 __tests__/
 coverage/
 .vscode/
 .DS_Store
+*.log
+*.md
+*.pdf
+*.pages
+tests/
+public/images/
+deploy*.sh
+cloud_sql_proxy*
+*.bak
+*.sql
+Dockerfile
+railway.toml
+Procfile
+jest.config.js
+seeders/
+*.config.js
+test*.js
+check-deployment.js
+generateHash.js
+resetAdmin.js
+resetPassword*
 
 # Do NOT ignore these files
 !routes/
@@ -75,7 +96,7 @@ coverage/
 !middleware/
 !config/
 !migrations/
-!scripts/
+!scripts/init-admin.js
 !app.yaml
 !package.json
 !server.js
@@ -136,7 +157,7 @@ find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -name "*.md
 
 # 强制重新部署，不使用缓存
 echo "Deploying new version..."
-gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache --no-keep-archived-files
+gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache
 
 # 确保新版本接管所有流量
 echo "Setting traffic to new version..."
