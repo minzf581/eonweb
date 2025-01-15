@@ -150,8 +150,9 @@ async function initializeApp() {
     console.log('[DEBUG] 代理路由器配置:', {
       validateApiKey: typeof auth.validateApiKey,
       handlers: {
-        getNodeStats: typeof proxyRoutes.handlers.getNodeStats,
-        postNodeReport: typeof proxyRoutes.handlers.postNodeReport
+        getNodeStats: typeof proxyRoutes.handlers?.getNodeStats,
+        postNodeReport: typeof proxyRoutes.handlers?.postNodeReport,
+        handlers: proxyRoutes.handlers
       }
     });
     
@@ -181,8 +182,12 @@ async function initializeApp() {
     });
     
     // 最后注册路由处理器
-    proxyRouter.get('/nodes/:deviceId/stats', proxyRoutes.handlers.getNodeStats);
-    proxyRouter.post('/nodes/report', proxyRoutes.handlers.postNodeReport);
+    if (proxyRoutes.handlers) {
+      proxyRouter.get('/nodes/:deviceId/stats', proxyRoutes.handlers.getNodeStats);
+      proxyRouter.post('/nodes/report', proxyRoutes.handlers.postNodeReport);
+    } else {
+      console.error('[DEBUG] 代理路由处理器未定义');
+    }
     
     // 将代理路由器注册到 API 路由器
     apiRouter.use('/proxy', proxyRouter);
