@@ -139,7 +139,7 @@ async function initializeApp() {
     console.log('[DEBUG] 开始注册 API 路由');
     const apiRouter = express.Router();
     
-    // 注册基础中间件
+    // 注册基础中间件（只注册一次）
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(cors());
@@ -147,7 +147,7 @@ async function initializeApp() {
     app.use(compression());
     
     // 注册代理路由
-    console.log('[DEBUG] 注册代理路由');
+    console.log('[DEBUG] 创建代理路由器');
     app.use('/api/proxy', proxyRoutes);
     
     // 注册其他路由到 API 路由器
