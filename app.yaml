@@ -4,50 +4,20 @@ instance_class: F1
 
 env_variables:
   NODE_ENV: "production"
-  PORT: "8080"
-  JWT_SECRET: "${JWT_SECRET}"
-  JWT_EXPIRES_IN: "24h"
   API_KEY: "eon-api-key-2024"
-  DB_HOST: "/cloudsql/${PROJECT_ID}:${REGION}:eon-db"
-  DB_USER: "${DB_USER}"
-  DB_PASSWORD: "${DB_PASSWORD}"
-  DB_NAME: "${DB_NAME}"
-  DB_PORT: "5432"
-  CORS_ORIGIN: "*"
-
-beta_settings:
-  cloud_sql_instances: "eonhome-445809:asia-southeast2:eon-db"
-
-handlers:
-  - url: /static
-    static_dir: public
-    secure: always
-
-  - url: /.*
-    script: auto
-    secure: always
-
-entrypoint: node server.js
+  JWT_SECRET: "eon-jwt-secret-2024"
+  DB_HOST: "/cloudsql/eonhome-445809:asia-southeast2:eon-db"
+  DB_USER: "eonuser"
+  DB_PASSWORD: "eonprotocol"
+  DB_NAME: "eon_protocol"
+  PORT: "8080"
 
 automatic_scaling:
   target_cpu_utilization: 0.65
   min_instances: 1
   max_instances: 10
 
-readiness_check:
-  path: "/_ah/health"
-  check_interval_sec: 5
-  timeout_sec: 4
-  failure_threshold: 2
-  success_threshold: 2
-  app_start_timeout_sec: 300
-
-liveness_check:
-  path: "/_ah/health"
-  check_interval_sec: 30
-  timeout_sec: 4
-  failure_threshold: 2
-  success_threshold: 2
-
-inbound_services:
-- warmup
+handlers:
+  - url: /.*
+    script: auto
+    secure: always

@@ -150,7 +150,7 @@ async function initializeApp() {
     });
     
     // 注册代理路由
-    const proxyRouter = express.Router();
+    const proxyRouter = express.Router({ mergeParams: true });
     
     // 打印代理路由器的初始状态
     console.log('[DEBUG] 代理路由器初始状态:', {
@@ -162,8 +162,12 @@ async function initializeApp() {
       }))
     });
     
+    // 先注册路由处理器
+    proxyRouter.get('/nodes/:deviceId/stats', proxyRoutes.handlers.getNodeStats);
+    proxyRouter.post('/nodes/report', proxyRoutes.handlers.postNodeReport);
+    
+    // 再注册中间件
     proxyRouter.use((req, res, next) => {
-      // 打印请求信息
       console.log('[DEBUG] 代理路由中间件收到请求:', {
         requestId: req.requestId,
         method: req.method,
@@ -173,30 +177,21 @@ async function initializeApp() {
         headers: req.headers,
         params: req.params,
         query: req.query,
-        body: req.body
-      });
-      
-      // 打印路由栈信息
-      console.log('[DEBUG] 代理路由栈:', {
-        proxyRoutes: proxyRoutes.stack.map(r => ({
-          route: r.route?.path,
-          regexp: String(r.regexp),
-          methods: r.route?.methods,
-          stack: r.route?.stack?.length
-        })),
-        proxyRouter: proxyRouter.stack.map(r => ({
+        body: req.body,
+        stack: proxyRouter.stack.map(r => ({
           name: r.name,
           regexp: String(r.regexp),
           path: r.route?.path,
           handle: r.handle?.name
         }))
       });
-      
       next();
     });
     
-    // 将代理路由注册到 API 路由器
-    proxyRouter.use('/', proxyRoutes);
+    // 注册 API Key 验证中间件
+    proxyRouter.use(validateApiKey);
+    
+    // 将代理路由器注册到 API 路由器
     apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
@@ -207,7 +202,7 @@ async function initializeApp() {
     apiRouter.use('/bandwidth', bandwidthRoutes);
     apiRouter.use('/admin', adminRoutes);
     
-    // 注册 API 路由器
+    // 将 API 路由器注册到应用
     app.use('/api', apiRouter);
     
     // 注册 404 处理
