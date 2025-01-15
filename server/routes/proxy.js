@@ -19,10 +19,7 @@ router.use(validateApiKey);
 // 节点报告路由
 router.post('/nodes/report', async (req, res) => {
   console.log('收到代理节点报告请求');
-  console.log('请求头:', req.headers);
-  console.log('请求体:', req.body);
   try {
-    // 处理逻辑
     res.json({ 
       success: true, 
       message: 'Report received',
@@ -56,16 +53,6 @@ router.get('/nodes/:deviceId/stats', async (req, res) => {
     console.error('获取节点统计错误:', error);
     res.status(500).json({ success: false, message: error.message });
   }
-});
-
-// 404 处理
-router.use((req, res) => {
-  console.log('代理路由 404:', req.path);
-  res.status(404).json({ 
-    success: false, 
-    message: 'API endpoint not found',
-    path: req.path
-  });
 });
 
 module.exports = router; 

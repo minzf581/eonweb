@@ -28,6 +28,16 @@ const fs = require('fs');
 
 const app = express();
 
+// 在最开始添加请求日志中间件
+app.use((req, res, next) => {
+  console.log('收到请求:', {
+    method: req.method,
+    path: req.path,
+    headers: req.headers
+  });
+  next();
+});
+
 // Force the server to use the PORT from environment variable
 const PORT = parseInt(process.env.PORT || '8080', 10);
 console.log('Starting server on port:', PORT);
@@ -57,27 +67,75 @@ app.get('/_ah/stop', (req, res) => {
     });
 });
 
-// 在应用程序开始处添加日志中间件
-app.use((req, res, next) => {
-  console.log('收到请求:', {
-    method: req.method,
-    path: req.path,
-    headers: {
-      'x-api-key': req.headers['x-api-key'],
-      'authorization': req.headers['authorization']
-    }
-  });
-  next();
+// Middleware setup
+const corsOptions = {
+    origin: [
+        'http://localhost:8080',
+        'http://localhost:3000',
+        'https://eonhome-445809.et.r.appspot.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
+app.use(compression());
+
+// Configure static file serving
+const publicPath = path.join(__dirname, 'public');
+console.log('[Static] Serving static files from:', publicPath);
+
+// Serve static files from /static path
+app.use('/static', express.static(path.join(publicPath, 'static')));
+
+// Serve static files from root path
+app.use(express.static(publicPath));
+
+// Serve index.html for root path
+app.get('/', (req, res) => {
+    console.log('[Route] Serving index.html for root path');
+    const indexPath = path.join(publicPath, 'index.html');
+    console.log('[Route] Sending index.html from:', indexPath);
+    res.sendFile(indexPath, (err) => {
+        if (err) {
+            console.error('[Route] Error sending index.html:', err);
+            res.status(500).send('Error loading index.html');
+        } else {
+            console.log('[Route] Successfully served index.html');
+        }
+    });
 });
 
-// 先注册 API 路由
-app.use('/api/auth', authRoutes);
-app.use('/api/proxy', proxyRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/referral', referralRoutes);
-app.use('/api/bandwidth', bandwidthRoutes);
-app.use('/api/admin', adminRoutes);
+// Handle SPA routing
+app.get('/*', (req, res) => {
+    // Log the request
+    console.log('[Route] Handling SPA route:', req.path);
+    
+    // First try to serve as a static file
+    const staticPath = path.join(publicPath, req.path);
+    if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
+        console.log('[Static] Serving:', req.path);
+        res.sendFile(staticPath);
+        return;
+    }
+    
+    // If not a static file, serve index.html
+    console.log('[Route] Not found:', req.path);
+    res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+// Global error handler - place this after all routes
+app.use((err, req, res, next) => {
+    console.error('Global error handler caught:', err);
+    console.error('Error stack:', err.stack);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
 
 // Separate initialization function
 async function initializeApp() {
@@ -92,77 +150,7 @@ async function initializeApp() {
             next();
         });
 
-        // Middleware setup
-        const corsOptions = {
-            origin: [
-                'http://localhost:8080',
-                'http://localhost:3000',
-                'https://eonhome-445809.et.r.appspot.com'
-            ],
-            methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization'],
-            credentials: true
-        };
-
-        app.use(cors(corsOptions));
-        app.use(express.json());
-        app.use(cookieParser());
-        app.use(compression());
-
-        // Configure static file serving
-        const publicPath = path.join(__dirname, 'public');
-        console.log('[Static] Serving static files from:', publicPath);
-
-        // Serve static files from /static path
-        app.use('/static', express.static(path.join(publicPath, 'static')));
-
-        // Serve static files from root path
-        app.use(express.static(publicPath));
-
-        // Serve index.html for root path
-        app.get('/', (req, res) => {
-            console.log('[Route] Serving index.html for root path');
-            const indexPath = path.join(publicPath, 'index.html');
-            console.log('[Route] Sending index.html from:', indexPath);
-            res.sendFile(indexPath, (err) => {
-                if (err) {
-                    console.error('[Route] Error sending index.html:', err);
-                    res.status(500).send('Error loading index.html');
-                } else {
-                    console.log('[Route] Successfully served index.html');
-                }
-            });
-        });
-
-        // Handle SPA routing
-        app.get('/*', (req, res) => {
-            // Log the request
-            console.log('[Route] Handling SPA route:', req.path);
-            
-            // First try to serve as a static file
-            const staticPath = path.join(publicPath, req.path);
-            if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
-                console.log('[Static] Serving:', req.path);
-                res.sendFile(staticPath);
-                return;
-            }
-            
-            // If not a static file, serve index.html
-            console.log('[Route] Not found:', req.path);
-            res.sendFile(path.join(publicPath, 'index.html'));
-        });
-
-        // Global error handler - place this after all routes
-        app.use((err, req, res, next) => {
-            console.error('Global error handler caught:', err);
-            console.error('Error stack:', err.stack);
-            res.status(500).json({
-                error: 'Internal server error',
-                message: process.env.NODE_ENV === 'development' ? err.message : undefined
-            });
-        });
-
-        // API 路由注册
+        // 在这里注册所有路由
         app.use('/api/auth', authRoutes);
         app.use('/api/proxy', proxyRoutes);
         app.use('/api/tasks', tasksRoutes);
@@ -170,10 +158,26 @@ async function initializeApp() {
         app.use('/api/referral', referralRoutes);
         app.use('/api/bandwidth', bandwidthRoutes);
         app.use('/api/admin', adminRoutes);
-
-        // 最后注册通用路由
+        
+        // 最后注册通用路由和错误处理
         app.use('/', appRoutes);
-
+        
+        // 404 处理
+        app.use((req, res) => {
+          console.log('404 Not Found:', req.path);
+          res.status(404).json({ 
+            success: false, 
+            message: 'API endpoint not found',
+            path: req.path
+          });
+        });
+        
+        // 错误处理
+        app.use((err, req, res, next) => {
+          console.error('Error:', err);
+          res.status(500).json({ success: false, message: err.message });
+        });
+        
         console.log('App initialization completed successfully');
     } catch (error) {
         console.error('Failed to initialize app:', error);
@@ -269,17 +273,6 @@ app.use('/api/proxy', (req, res, next) => {
     body: req.body
   });
   next();
-});
-
-// 错误处理中间件
-app.use((req, res, next) => {
-  console.log('404 Not Found:', req.path);
-  res.status(404).json({ success: false, message: 'API endpoint not found' });
-});
-
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ success: false, message: err.message });
 });
 
 // 服务器启动时检查必要的环境变量
