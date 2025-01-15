@@ -29,122 +29,10 @@ const fs = require('fs');
 const app = express();
 const PORT = parseInt(process.env.PORT || '8080', 10);
 
-// 在最开始添加请求日志中间件
-app.use((req, res, next) => {
-  req.requestId = crypto.randomBytes(4).toString('hex');
-  console.log('[DEBUG] 收到请求:', {
-    requestId: req.requestId,
-    method: req.method,
-    path: req.path,
-    headers: {
-      'x-api-key': req.headers['x-api-key'],
-      'content-type': req.headers['content-type']
-    },
-    body: req.body,
-    query: req.query,
-    params: req.params
-  });
-  
-  // 监听请求结束
-  res.on('finish', () => {
-    console.log('[DEBUG] 请求处理完成:', {
-      requestId: req.requestId,
-      method: req.method,
-      path: req.path,
-      statusCode: res.statusCode
-    });
-  });
-  
-  next();
-});
-
-// Health check endpoints
-app.get('/_ah/start', (req, res) => {
-  console.log('[DEBUG] 收到启动检查请求');
-  res.status(200).send('Ok');
-});
-
-app.get('/_ah/health', (req, res) => {
-  console.log('[DEBUG] 收到健康检查请求');
-  res.status(200).send('Ok');
-});
-
-// 添加基础中间件
-console.log('[DEBUG] 注册基础中间件');
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(compression());
-app.use(cors());
-
-// 注册所有 API 路由
-console.log('[DEBUG] 开始注册 API 路由');
-
-// 创建一个新的路由器来处理所有 API 请求
-const apiRouter = express.Router();
-
-// 先注册基础中间件
-apiRouter.use(express.json());
-apiRouter.use(express.urlencoded({ extended: true }));
-
-// 注册代理路由
-apiRouter.use('/proxy', (req, res, next) => {
-  console.log('[DEBUG] 代理路由中间件:', {
-    requestId: req.requestId,
-    originalUrl: req.originalUrl,
-    baseUrl: req.baseUrl,
-    path: req.path,
-    method: req.method,
-    params: req.params,
-    stack: new Error().stack
-  });
-  next();
-});
-
-// 将代理路由注册到 API 路由器
-apiRouter.use('/proxy', proxyRoutes);
-
-// 注册其他路由到 API 路由器
-apiRouter.use('/auth', authRoutes);
-apiRouter.use('/tasks', tasksRoutes);
-apiRouter.use('/stats', statsRoutes);
-apiRouter.use('/referral', referralRoutes);
-apiRouter.use('/bandwidth', bandwidthRoutes);
-apiRouter.use('/admin', adminRoutes);
-
-// 打印路由信息
-console.log('[DEBUG] API 路由配置:', {
-  routes: apiRouter.stack
-    .filter(r => r.name === 'router')
-    .map(r => ({
-      path: r.regexp.toString(),
-      name: r.name,
-      handle: r.handle?.stack?.length
-    }))
-});
-
 // 初始化应用
 async function initializeApp() {
   try {
     console.log('[DEBUG] 开始初始化应用');
-    
-    // 先注册基础中间件
-    app.use((req, res, next) => {
-      req.requestId = crypto.randomBytes(4).toString('hex');
-      console.log('[DEBUG] 收到请求:', {
-        requestId: req.requestId,
-        method: req.method,
-        path: req.path,
-        headers: req.headers,
-        query: req.query,
-        body: req.body
-      });
-      next();
-    });
-    
-    // 注册健康检查路由
-    app.get('/_ah/start', (req, res) => res.send('Ok'));
-    app.get('/_ah/health', (req, res) => res.send('Ok'));
     
     // 先连接数据库
     await new Promise((resolve, reject) => {
@@ -170,6 +58,81 @@ async function initializeApp() {
       tryConnect();
     });
     
+    // 先注册基础中间件
+    console.log('[DEBUG] 注册基础中间件');
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    app.use(cookieParser());
+    app.use(compression());
+    app.use(cors());
+    
+    app.use((req, res, next) => {
+      req.requestId = crypto.randomBytes(4).toString('hex');
+      console.log('[DEBUG] 收到请求:', {
+        requestId: req.requestId,
+        method: req.method,
+        path: req.path,
+        headers: {
+          'x-api-key': req.headers['x-api-key'],
+          'content-type': req.headers['content-type']
+        },
+        query: req.query,
+        body: req.body
+      });
+      
+      // 监听请求结束
+      res.on('finish', () => {
+        console.log('[DEBUG] 请求处理完成:', {
+          requestId: req.requestId,
+          method: req.method,
+          path: req.path,
+          statusCode: res.statusCode
+        });
+      });
+      
+      next();
+    });
+    
+    // 注册健康检查路由
+    app.get('/_ah/start', (req, res) => {
+      console.log('[DEBUG] 收到启动检查请求');
+      res.status(200).send('Ok');
+    });
+    
+    app.get('/_ah/health', (req, res) => {
+      console.log('[DEBUG] 收到健康检查请求');
+      res.status(200).send('Ok');
+    });
+    
+    // 创建一个新的路由器来处理所有 API 请求
+    console.log('[DEBUG] 开始注册 API 路由');
+    const apiRouter = express.Router();
+    
+    // 注册代理路由
+    apiRouter.use('/proxy', (req, res, next) => {
+      console.log('[DEBUG] 代理路由中间件:', {
+        requestId: req.requestId,
+        originalUrl: req.originalUrl,
+        baseUrl: req.baseUrl,
+        path: req.path,
+        method: req.method,
+        params: req.params,
+        stack: new Error().stack
+      });
+      next();
+    });
+    
+    // 将代理路由注册到 API 路由器
+    apiRouter.use('/proxy', proxyRoutes);
+    
+    // 注册其他路由到 API 路由器
+    apiRouter.use('/auth', authRoutes);
+    apiRouter.use('/tasks', tasksRoutes);
+    apiRouter.use('/stats', statsRoutes);
+    apiRouter.use('/referral', referralRoutes);
+    apiRouter.use('/bandwidth', bandwidthRoutes);
+    apiRouter.use('/admin', adminRoutes);
+    
     // 注册 API 路由器
     app.use('/api', apiRouter);
     
@@ -179,7 +142,10 @@ async function initializeApp() {
         requestId: req.requestId,
         path: req.path,
         method: req.method,
-        headers: req.headers
+        headers: {
+          'x-api-key': req.headers['x-api-key'],
+          'content-type': req.headers['content-type']
+        }
       });
       res.status(404).json({
         success: false,
