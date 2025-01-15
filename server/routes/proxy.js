@@ -5,6 +5,11 @@ const { validateApiKey } = require('../middleware/auth');
 function createProxyRouter() {
   const router = express.Router();
   
+  // 先注册中间件
+  if (validateApiKey) {
+    router.use(validateApiKey);
+  }
+
   // 定义路由处理器
   const handlers = {
     getNodeStats: (req, res) => {
@@ -35,14 +40,9 @@ function createProxyRouter() {
     }
   };
 
-  // 注册路由
+  // 然后注册路由
   router.get('/nodes/:deviceId/stats', handlers.getNodeStats);
   router.post('/nodes/report', handlers.postNodeReport);
-
-  // 注册中间件
-  if (validateApiKey) {
-    router.use(validateApiKey);
-  }
 
   console.log('[DEBUG] 创建代理路由器:', {
     routes: router.stack.map(r => ({
