@@ -1,3 +1,5 @@
+const jwt = require('jsonwebtoken');
+
 const validateApiKey = (req, res, next) => {
   console.log('验证 API Key:', {
     path: req.path,
@@ -24,6 +26,14 @@ const validateApiKey = (req, res, next) => {
 
   console.log('API Key 验证通过');
   next();
+};
+
+const authenticateToken = (req, res, next) => {
+  // ... 你的 authenticateToken 中间件代码
+};
+
+const isAdmin = (req, res, next) => {
+  // ... 你的 isAdmin 中间件代码
 };
 
 module.exports = { 

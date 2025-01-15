@@ -19,7 +19,7 @@ const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
-const { authenticateToken, isAdmin, validateApiKey } = require('./middleware/auth');
+const auth = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
 const proxyRoutes = require('./routes/proxy');
@@ -143,23 +143,11 @@ async function initializeApp() {
     apiRouter.use(express.json());
     apiRouter.use(express.urlencoded({ extended: true }));
     
-    // 注册 API Key 验证中间件
-    apiRouter.use((req, res, next) => {
-      console.log('[DEBUG] API 路由中间件收到请求:', {
-        requestId: req.requestId,
-        method: req.method,
-        path: req.path,
-        baseUrl: req.baseUrl,
-        originalUrl: req.originalUrl
-      });
-      next();
-    });
-    
     // 注册代理路由
     const proxyRouter = express.Router({ mergeParams: true });
     
     // 注册 API Key 验证中间件
-    proxyRouter.use(validateApiKey);
+    proxyRouter.use(auth.validateApiKey);
     
     // 再注册中间件
     proxyRouter.use((req, res, next) => {
