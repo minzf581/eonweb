@@ -96,7 +96,7 @@ console.log('[DEBUG] 代理路由配置:', {
   }))
 });
 
-// 导出路由器
-module.exports = router;
+// 导出路由器和处理器
+module.exports = { router, handlers };
 
 console.log('[DEBUG] 代理路由模块导出完成'); 

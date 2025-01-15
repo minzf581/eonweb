@@ -188,9 +188,13 @@ async function initializeApp() {
       console.error('[DEBUG] API Key 验证中间件未定义');
     }
     
-    // 注册代理路由处理器
-    console.log('[DEBUG] 注册代理路由处理器');
-    proxyRouter.use('/', proxyRouter);
+    // 注册代理路由
+    if (proxyRouter) {
+      console.log('[DEBUG] 注册代理路由');
+      proxyRouter.use('/', proxyRouter.router);
+    } else {
+      console.error('[DEBUG] 代理路由未定义');
+    }
     
     // 打印代理路由器最终状态
     console.log('[DEBUG] 代理路由器最终配置:', {
