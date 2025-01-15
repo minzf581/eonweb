@@ -146,6 +146,14 @@ async function initializeApp() {
     // 注册代理路由
     const proxyRouter = express.Router({ mergeParams: true });
     
+    // 先注册路由处理器
+    if (proxyRoutes.router) {
+      console.log('[DEBUG] 注册代理路由处理器');
+      proxyRouter.use('/', proxyRoutes.router);
+    } else {
+      console.error('[DEBUG] 代理路由器未定义');
+    }
+    
     // 打印代理路由器的初始状态
     console.log('[DEBUG] 代理路由器配置:', {
       validateApiKey: typeof auth.validateApiKey,
@@ -162,10 +170,6 @@ async function initializeApp() {
         }))
       }
     });
-    
-    // 注册 API Key 验证中间件
-    console.log('[DEBUG] 注册 API Key 验证中间件');
-    proxyRouter.use(auth.validateApiKey);
     
     // 再注册中间件
     proxyRouter.use((req, res, next) => {
@@ -189,9 +193,13 @@ async function initializeApp() {
       next();
     });
     
-    // 使用代理路由器
-    console.log('[DEBUG] 注册代理路由器');
-    proxyRouter.use('/', proxyRoutes.router);
+    // 最后注册 API Key 验证中间件
+    if (auth.validateApiKey) {
+      console.log('[DEBUG] 注册 API Key 验证中间件');
+      proxyRouter.use(auth.validateApiKey);
+    } else {
+      console.error('[DEBUG] API Key 验证中间件未定义');
+    }
     
     // 打印代理路由器最终状态
     console.log('[DEBUG] 代理路由器最终配置:', {
