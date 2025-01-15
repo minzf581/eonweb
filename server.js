@@ -163,55 +163,19 @@ async function initializeApp() {
     
     // 注册 404 处理
     app.use((req, res) => {
-      req.requestPath.push({
-        stage: '404Handler',
-        timestamp: Date.now(),
-        path: req.path,
-        baseUrl: req.baseUrl
-      });
-      
-      console.log('[DEBUG] 404 处理触发:', {
-        requestId: req.requestId,
-        path: req.path,
-        method: req.method,
-        headers: {
-          'x-api-key': req.headers['x-api-key'],
-          'content-type': req.headers['content-type']
-        },
-        requestPath: req.requestPath,
-        matchAttempts: app._router.stack
-          .filter(r => r.route || r.name === 'router')
-          .map(r => {
-            const regexp = r.regexp || (r.route && new RegExp(r.route.path));
-            return {
-              type: r.route ? 'route' : 'middleware',
-              path: r.route?.path || r.regexp?.toString(),
-              matched: regexp ? regexp.test(req.path) : false,
-              methods: r.route?.methods || {},
-              methodMatched: r.route ? r.route.methods[req.method.toLowerCase()] : null
-            };
-          })
-      });
       res.status(404).json({
         success: false,
         message: 'API endpoint not found',
-        path: req.path,
-        requestId: req.requestId
+        path: req.path
       });
     });
     
     // 注册错误处理
     app.use((err, req, res, next) => {
-      console.error('[DEBUG] 错误处理触发:', {
-        requestId: req.requestId,
-        error: err.message,
-        stack: err.stack,
-        path: req.path
-      });
+      console.error('[ERROR] 错误处理触发:', err);
       res.status(500).json({
         success: false,
-        message: err.message,
-        requestId: req.requestId
+        message: err.message
       });
     });
     
@@ -237,25 +201,8 @@ async function initializeApp() {
     console.log('[DEBUG] 最终路由配置:', {
       api: apiRouter.stack.map(r => ({
         name: r.name,
-        regexp: String(r.regexp),
         path: r.route?.path,
-        handle: r.handle?.name,
-        stack: r.handle?.stack?.map(s => ({
-          name: s.name,
-          regexp: String(s.regexp),
-          path: s.route?.path
-        }))
-      })),
-      proxy: proxyRouter.stack.map(r => ({
-        name: r.name,
-        regexp: String(r.regexp),
-        path: r.route?.path,
-        handle: r.handle?.name,
-        stack: r.handle?.stack?.map(s => ({
-          name: s.name,
-          regexp: String(s.regexp),
-          path: s.route?.path
-        }))
+        methods: r.route?.methods
       }))
     });
     
@@ -274,3 +221,5 @@ initializeApp().catch(error => {
   console.error('[DEBUG] 应用启动失败:', error);
   process.exit(1);
 });
+
+module.exports = { app, initializeApp, initializationPromise };
