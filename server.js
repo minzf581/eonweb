@@ -147,9 +147,14 @@ async function initializeApp() {
     console.log('[DEBUG] 创建代理路由器');
     const { router: proxyRouter, handlers: proxyHandlers } = createProxyRouter();
     
-    if (!proxyRouter) {
-      console.error('[DEBUG] 代理路由器未定义');
-      throw new Error('代理路由器未定义');
+    // 验证路由器
+    if (!proxyRouter || typeof proxyRouter.use !== 'function') {
+      console.error('[DEBUG] 代理路由器无效:', {
+        type: typeof proxyRouter,
+        hasUse: proxyRouter?.use,
+        stack: proxyRouter?.stack
+      });
+      throw new Error('代理路由器无效');
     }
     
     console.log('[DEBUG] 代理路由配置:', {
