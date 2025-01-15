@@ -68,38 +68,9 @@ const handlers = {
   }
 };
 
-// 注册 API Key 验证中间件
-if (validateApiKey) {
-  console.log('[DEBUG] 在代理路由中注册 API Key 验证中间件');
-  router.use(validateApiKey);
-} else {
-  console.error('[DEBUG] API Key 验证中间件未定义');
-}
-
 // 注册路由
 router.get('/nodes/:deviceId/stats', handlers.getNodeStats);
 router.post('/nodes/report', handlers.postNodeReport);
 
-// 打印路由配置
-console.log('[DEBUG] 代理路由配置:', {
-  stack: router.stack.map(r => ({
-    route: {
-      path: r.route?.path,
-      methods: r.route?.methods,
-      stack: r.route?.stack?.map(h => ({
-        name: h.name,
-        method: h.method
-      }))
-    }
-  }))
-});
-
 // 导出路由器和处理器
-module.exports = { router, handlers };
-
-console.log('[DEBUG] 代理路由模块导出完成:', {
-  router: typeof router,
-  handlers: typeof handlers,
-  getNodeStats: typeof handlers.getNodeStats,
-  postNodeReport: typeof handlers.postNodeReport
-}); 
+module.exports = { router, handlers }; 

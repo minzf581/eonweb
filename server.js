@@ -22,7 +22,7 @@ const adminRoutes = require('./routes/admin');
 const auth = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
-const proxyModule = require('./routes/proxy');
+const { router: proxyRouter, handlers: proxyHandlers } = require('./routes/proxy');
 const bandwidthRoutes = require('./routes/bandwidth');
 const fs = require('fs');
 
@@ -144,82 +144,17 @@ async function initializeApp() {
     apiRouter.use(express.urlencoded({ extended: true }));
     
     // 注册代理路由
-    const localProxyRouter = express.Router({ mergeParams: true });
-    
-    // 打印代理路由器的初始状态
-    console.log('[DEBUG] 代理路由器配置:', {
-      validateApiKey: typeof auth.validateApiKey,
-      proxyRouter: {
-        stack: localProxyRouter.stack?.length,
-        routes: localProxyRouter.stack?.map(r => ({
-          path: r.route?.path,
-          methods: r.route?.methods
-        }))
-      }
-    });
-    
-    // 获取导入的路由器
-    const importedRouter = localProxyRouter.router;
-    console.log('[DEBUG] 导入的路由器配置:', {
-      stack: importedProxyRouter?.stack?.map(r => ({
+    console.log('[DEBUG] 注册代理路由');
+    console.log('[DEBUG] 代理路由配置:', {
+      stack: proxyRouter.stack.map(r => ({
         path: r.route?.path,
         methods: r.route?.methods
       }))
     });
     
-    // 再注册中间件
-    localProxyRouter.use((req, res, next) => {
-      console.log('[DEBUG] 代理路由中间件收到请求:', {
-        requestId: req.requestId,
-        method: req.method,
-        path: req.path,
-        baseUrl: req.baseUrl,
-        originalUrl: req.originalUrl,
-        headers: req.headers,
-        params: req.params,
-        query: req.query,
-        body: req.body,
-        stack: localProxyRouter.stack.map(r => ({
-          name: r.name,
-          regexp: String(r.regexp),
-          path: r.route?.path,
-          handle: r.handle?.name
-        }))
-      });
-      next();
-    });
-    
-    // 最后注册 API Key 验证中间件
-    if (auth.validateApiKey) {
-      console.log('[DEBUG] 注册 API Key 验证中间件');
-      localProxyRouter.use(auth.validateApiKey);
-    } else {
-      console.error('[DEBUG] API Key 验证中间件未定义');
-    }
-    
-    // 直接注册路由处理器
-    console.log('[DEBUG] 注册代理路由处理器');
-    localProxyRouter.get('/nodes/:deviceId/stats', proxyModule.handlers.getNodeStats);
-    localProxyRouter.post('/nodes/report', proxyModule.handlers.postNodeReport);
-    
-    // 打印代理路由器最终状态
-    console.log('[DEBUG] 代理路由器最终配置:', {
-      stack: localProxyRouter.stack.map(r => ({
-        name: r.name,
-        regexp: String(r.regexp),
-        path: r.route?.path,
-        handle: r.handle?.name,
-        stack: r.handle?.stack?.map(s => ({
-          name: s.name,
-          regexp: String(s.regexp),
-          path: s.route?.path
-        }))
-      }))
-    });
-    
     // 将代理路由器注册到 API 路由器
     console.log('[DEBUG] 将代理路由器注册到 API 路由器');
-    apiRouter.use('/proxy', localProxyRouter);
+    apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
     apiRouter.use('/auth', authRoutes);
@@ -317,7 +252,7 @@ async function initializeApp() {
           path: s.route?.path
         }))
       })),
-      proxy: localProxyRouter.stack.map(r => ({
+      proxy: proxyRouter.stack.map(r => ({
         name: r.name,
         regexp: String(r.regexp),
         path: r.route?.path,
