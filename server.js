@@ -12,7 +12,7 @@ const compression = require('compression');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
-const sequelize = require('./config/database');
+const { sequelize } = require('./models');
 const { User, Task, UserTask, PointHistory, Settings } = require('./models');
 const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
@@ -45,6 +45,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoints
+app.get('/_ah/start', (req, res) => {
+  console.log('[DEBUG] 收到启动检查请求');
+  res.status(200).send('Ok');
+});
+
+app.get('/_ah/health', (req, res) => {
+  console.log('[DEBUG] 收到健康检查请求');
+  res.status(200).send('Ok');
+});
+
 // 添加基础中间件
 console.log('[DEBUG] 注册基础中间件');
 app.use(express.json());
@@ -55,6 +66,9 @@ app.use(cors());
 
 // 注册所有 API 路由
 console.log('[DEBUG] 开始注册 API 路由');
+console.log('[DEBUG] proxyRoutes:', Object.keys(proxyRoutes));
+console.log('[DEBUG] authRoutes:', Object.keys(authRoutes));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/proxy', proxyRoutes);
 app.use('/api/tasks', tasksRoutes);
@@ -96,17 +110,6 @@ app.use((err, req, res, next) => {
 });
 
 console.log('Starting server on port:', PORT);
-
-// Health check endpoints
-app.get('/_ah/start', (req, res) => {
-  console.log('[DEBUG] 收到启动检查请求');
-  res.status(200).send('Ok');
-});
-
-app.get('/_ah/health', (req, res) => {
-  console.log('[DEBUG] 收到健康检查请求');
-  res.status(200).send('Ok');
-});
 
 // 服务器启动时检查必要的环境变量
 console.log('[DEBUG] 开始检查环境变量');
@@ -155,6 +158,10 @@ function startServer(port) {
 async function initializeApp() {
   try {
     console.log('[DEBUG] 开始初始化应用');
+    // 验证数据库连接
+    if (!sequelize || typeof sequelize.authenticate !== 'function') {
+      throw new Error('数据库实例未正确初始化');
+    }
     // 连接数据库
     await sequelize.authenticate();
     console.log('[DEBUG] 数据库连接成功');
