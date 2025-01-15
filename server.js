@@ -22,7 +22,7 @@ const adminRoutes = require('./routes/admin');
 const auth = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
-const { router: importedProxyRouter, handlers: proxyHandlers } = require('./routes/proxy');
+const proxyModule = require('./routes/proxy');
 const bandwidthRoutes = require('./routes/bandwidth');
 const fs = require('fs');
 
@@ -199,8 +199,8 @@ async function initializeApp() {
     
     // 直接注册路由处理器
     console.log('[DEBUG] 注册代理路由处理器');
-    localProxyRouter.get('/nodes/:deviceId/stats', proxyHandlers.getNodeStats);
-    localProxyRouter.post('/nodes/report', proxyHandlers.postNodeReport);
+    localProxyRouter.get('/nodes/:deviceId/stats', proxyModule.handlers.getNodeStats);
+    localProxyRouter.post('/nodes/report', proxyModule.handlers.postNodeReport);
     
     // 打印代理路由器最终状态
     console.log('[DEBUG] 代理路由器最终配置:', {
