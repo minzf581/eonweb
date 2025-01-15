@@ -49,7 +49,19 @@ mkdir -p $BUILD_DIR
 
 # 复制所需文件到构建目录
 echo "Copying files to build directory..."
-cp -r app.yaml server.js package.json package-lock.json routes models middleware .env.production $BUILD_DIR/
+cp -r . $BUILD_DIR/
+rm -rf $BUILD_DIR/.git $BUILD_DIR/.github $BUILD_DIR/node_modules
+
+# 检查构建目录中的关键文件
+echo "Verifying key files in build directory..."
+for file in server.js app.js routes/proxy.js; do
+    if [ -f "$BUILD_DIR/$file" ]; then
+        echo "$file exists and has $(wc -l < $BUILD_DIR/$file) lines"
+    else
+        echo "Error: $file is missing in build directory!"
+        exit 1
+    fi
+done
 
 # 检查构建目录中的 server.js 内容
 echo "=== Verifying build server.js content ==="

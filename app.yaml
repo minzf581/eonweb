@@ -24,9 +24,12 @@ handlers:
     secure: always
 
 entrypoint: |
+  echo "=== Current directory structure ===" &&
+  ls -la &&
   echo "=== Deployed server.js content ===" && 
   cat server.js && 
   echo "=== Deployed server.js MD5 ===" && 
   md5sum server.js && 
   echo "=== Starting application ===" && 
-  NODE_OPTIONS="--trace-warnings" npm start
+  npm install &&
+  NODE_OPTIONS="--trace-warnings" node server.js
