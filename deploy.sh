@@ -6,16 +6,35 @@ if [ -f .env.production ]; then
     export $(cat .env.production | grep -v '^#' | xargs)
 fi
 
-# 打印环境变量进行确认
+# 打印当前工作目录和环境变量
+echo "Current working directory: $(pwd)"
 echo "Deploying with API_KEY: ${API_KEY}"
+
+# 检查必要文件是否存在
+echo "Verifying required files..."
+required_files=(
+    "app.yaml"
+    "server.js"
+    "package.json"
+    "routes/proxy.js"
+)
+
+for file in "${required_files[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "Error: Required file $file not found!"
+        exit 1
+    fi
+done
 
 # 完全清理并重建
 echo "Performing complete cleanup..."
 rm -rf node_modules package-lock.json
-rm -rf .gcloud
-rm -rf .npm
-rm -rf .config
+rm -rf .gcloud .npm .config .build
 npm cache clean --force
+
+# 清理 Git 未跟踪的文件，但保留必要文件
+echo "Cleaning untracked files..."
+git clean -fdx -e cloud_sql_proxy -e .env.production
 
 # 从 GitHub 强制同步最新代码
 echo "Force pulling latest changes from GitHub..."
@@ -27,10 +46,40 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 检查 Git 状态
+echo "Checking Git status..."
+git status
+
 # 安装依赖
 echo "Installing dependencies..."
 npm install
 npm install --save-dev sequelize-cli
+
+# 确保 .gcloudignore 正确配置
+echo "Configuring .gcloudignore..."
+cat > .gcloudignore << EOF
+# Ignore development and version control files
+.git
+.gitignore
+.env
+.env.local
+*.test.js
+__tests__/
+coverage/
+.vscode/
+.DS_Store
+
+# Do NOT ignore these files
+!routes/
+!models/
+!middleware/
+!config/
+!migrations/
+!scripts/
+!app.yaml
+!package.json
+!server.js
+EOF
 
 # 清理 GCP 缓存和构建文件
 echo "Cleaning up GCP cache..."
@@ -46,86 +95,31 @@ sleep 2
 
 # 下载并设置 Cloud SQL Proxy
 echo "Setting up Cloud SQL Proxy..."
-# Download and setup Cloud SQL Proxy if not exists
 if [ ! -f cloud_sql_proxy ]; then
     curl -o cloud_sql_proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.1/cloud-sql-proxy.linux.amd64
     chmod +x cloud_sql_proxy
 fi
 
-# 启动 Cloud SQL Proxy
+# 启动 Cloud SQL Proxy 并记录日志
 echo "Starting Cloud SQL Proxy..."
-./cloud_sql_proxy eonhome-445809:asia-southeast2:eon-db --port 5432 &
+./cloud_sql_proxy eonhome-445809:asia-southeast2:eon-db --port 5432 > proxy.log 2>&1 &
 PROXY_PID=$!
 
 # 等待代理启动
-sleep 5  # Give proxy time to establish connection
+sleep 5
 
 # 检查代理是否正在运行
 if ! kill -0 $PROXY_PID 2>/dev/null; then
     echo "Failed to start Cloud SQL Proxy"
-    exit 1
-fi
-
-# 检查端口是否可用
-if ! (echo > /dev/tcp/localhost/5432) 2>/dev/null; then
-    echo "Cloud SQL Proxy port 5432 is not available"
-    kill $PROXY_PID 2>/dev/null
+    cat proxy.log
     exit 1
 fi
 
 echo "Cloud SQL Proxy started successfully"
 
-# 设置环境变量
-export NODE_ENV=production
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=eon_protocol
-export DB_USER=eonuser
-export DB_PASSWORD=eonprotocol
-
-# 更新 app.yaml 中的环境变量
-cat > app.yaml << EOF
-runtime: nodejs18
-env: standard
-instance_class: F1
-
-env_variables:
-  NODE_ENV: "production"
-  API_KEY: "eon-api-key-2024"
-  JWT_SECRET: "${JWT_SECRET}"
-  DB_HOST: "/cloudsql/${PROJECT_ID}:${REGION}:eon-db"
-  DB_USER: "${DB_USER}"
-  DB_PASSWORD: "${DB_PASSWORD}"
-  DB_NAME: "${DB_NAME}"
-  PORT: "8080"
-  DEPLOY_VERSION: "$(date +%Y%m%dt%H%M%S)"
-
-automatic_scaling:
-  target_cpu_utilization: 0.65
-  min_instances: 1
-  max_instances: 10
-
-handlers:
-  - url: /.*
-    script: auto
-    secure: always
-EOF
-
 # 运行数据库迁移
 echo "Running database migrations..."
 NODE_ENV=production npx sequelize-cli db:migrate
-
-# 运行原生 SQL 迁移脚本
-echo "Running SQL migrations..."
-for sql_file in migrations/sql/*.sql; do
-    if [ -f "$sql_file" ]; then
-        PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -f "$sql_file"
-    fi
-done
-
-# 初始化管理员账户
-echo "Initializing admin user..."
-PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -f scripts/init-admin.sql
 
 # 停止 Cloud SQL Proxy
 echo "Stopping Cloud SQL Proxy..."
@@ -136,64 +130,28 @@ sleep 2
 TIMESTAMP=$(date +%Y%m%dt%H%M%S)
 echo "Current serving version: $TIMESTAMP"
 
-# 部署新版本
-echo "Deploying new version..."
-
-# 确保所有必要的文件都存在
-echo "Verifying required files..."
-required_files=(
-    "server.js"
-    "package.json"
-    "routes/proxy.js"
-    "middleware/auth.js"
-)
-
-for file in "${required_files[@]}"; do
-    if [ ! -f "$file" ]; then
-        echo "Error: Required file $file is missing!"
-        exit 1
-    fi
-done
-
-echo "All required files are present."
-
 # 列出将要部署的文件
 echo "Files to be deployed:"
 find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -name "*.md" -not -name "*.log"
 
 # 强制重新部署，不使用缓存
-gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache
+echo "Deploying new version..."
+gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache --no-keep-archived-files
 
-# 如果部署成功
-if [ $? -eq 0 ]; then
-    echo "Deployment successful."
-    
-    # 等待新版本完全启动并接管流量
-    echo "Waiting for new version to stabilize..."
-    sleep 30
-    
-    # 获取旧的服务版本（排除当前版本）
-    OLD_SERVING_VERSIONS=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT>0 AND NOT version.id=$TIMESTAMP" --format="value(version.id)")
-    if [ ! -z "$OLD_SERVING_VERSIONS" ]; then
-        echo "Cleaning up old serving versions: $OLD_SERVING_VERSIONS"
-        gcloud app versions delete $OLD_SERVING_VERSIONS --quiet
-    else
-        echo "No old serving versions to clean up."
-    fi
-    
-    # 获取旧版本
-    OLD_VERSIONS=$(gcloud app versions list --sort-by=~version.id --filter="TRAFFIC_SPLIT=0" --format="value(version.id)")
-    if [ ! -z "$OLD_VERSIONS" ]; then
-        echo "Deleting versions: $OLD_VERSIONS"
-        gcloud app versions delete $OLD_VERSIONS --quiet
-    fi
-    
-    echo "Deployment and cleanup completed."
-    
-    # 获取新版本的URL
-    NEW_VERSION_URL=$(gcloud app browse --no-launch-browser)
-    echo "New version is available at: $NEW_VERSION_URL"
-else
-    echo "Deployment failed."
-    exit 1
+# 确保新版本接管所有流量
+echo "Setting traffic to new version..."
+gcloud app services set-traffic default --splits=$TIMESTAMP=1
+
+# 验证部署
+echo "Verifying deployment..."
+gcloud app browse --no-launch-browser
+
+# 清理旧版本
+echo "Cleaning up old versions..."
+OLD_VERSIONS=$(gcloud app versions list --sort-by=~version.id --filter="NOT version.id=$TIMESTAMP" --format="value(version.id)")
+if [ ! -z "$OLD_VERSIONS" ]; then
+    echo "Deleting old versions: $OLD_VERSIONS"
+    gcloud app versions delete $OLD_VERSIONS --quiet
 fi
+
+echo "Deployment completed successfully"
