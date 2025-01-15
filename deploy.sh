@@ -12,17 +12,20 @@ echo "Deploying with API_KEY: ${API_KEY}"
 # 完全清理并重建
 echo "Performing complete cleanup..."
 rm -rf node_modules package-lock.json
+rm -rf .gcloud
+rm -rf .npm
+rm -rf .config
 npm cache clean --force
 npm install
 
 # 清理未跟踪的文件
 echo "Cleaning up untracked files..."
-# 保留 cloud_sql_proxy，只清理其他未跟踪的文件
-git clean -f -e cloud_sql_proxy
+git clean -fdx -e cloud_sql_proxy -e .env.production
 
-# 从 GitHub 同步最新代码
-echo "Pulling latest changes from GitHub..."
-git pull origin main
+# 从 GitHub 强制同步最新代码
+echo "Force pulling latest changes from GitHub..."
+git fetch origin main
+git reset --hard origin/main
 
 if [ $? -ne 0 ]; then
     echo "Failed to pull from GitHub. Please resolve any conflicts and try again."
