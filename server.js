@@ -19,7 +19,7 @@ const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
-const { authenticateToken, isAdmin } = require('./middleware/auth');
+const { authenticateToken, isAdmin, validateApiKey } = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
 const proxyRoutes = require('./routes/proxy');
@@ -138,6 +138,10 @@ async function initializeApp() {
     // 创建一个新的路由器来处理所有 API 请求
     console.log('[DEBUG] 开始注册 API 路由');
     const apiRouter = express.Router();
+    
+    // 注册基础中间件
+    apiRouter.use(express.json());
+    apiRouter.use(express.urlencoded({ extended: true }));
     
     // 注册 API Key 验证中间件
     apiRouter.use((req, res, next) => {
