@@ -4,6 +4,14 @@ const router = express.Router();
 
 console.log('[DEBUG] 初始化代理路由模块');
 
+// 注册 API Key 验证中间件
+if (validateApiKey) {
+  console.log('[DEBUG] 在代理路由中注册 API Key 验证中间件');
+  router.use(validateApiKey);
+} else {
+  console.error('[DEBUG] API Key 验证中间件未定义');
+}
+
 // 定义路由处理器
 const handlers = {
   getNodeStats: (req, res) => {
@@ -71,6 +79,13 @@ const handlers = {
 // 注册路由
 router.get('/nodes/:deviceId/stats', handlers.getNodeStats);
 router.post('/nodes/report', handlers.postNodeReport);
+
+console.log('[DEBUG] 代理路由配置:', {
+  routes: router.stack.map(r => ({
+    path: r.route?.path,
+    methods: r.route?.methods
+  }))
+});
 
 // 导出路由器和处理器
 module.exports = { router, handlers }; 
