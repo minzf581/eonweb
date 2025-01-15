@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management - EON Protocol</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Core Scripts -->
+    <script src="../js/authService.js"></script>
+    <script src="../js/dataManagement.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4dabf7;
+            --secondary-color: #adb5bd;
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            margin-bottom: 2rem;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 50px;
+            object-fit: contain;
+        }
+
+        nav {
+            margin-top: 2rem;
+        }
+
+        nav a {
+            display: block;
+            padding: 1rem;
+            border-radius: 8px;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        nav a:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        nav a.active {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            padding: 2rem;
+        }
+
+        section {
+            display: none;
+        }
+
+        section.active-section {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .stat-card i {
+            font-size: 24px;
+            margin-bottom: 1rem;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .chart {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        /* Upload Section */
+        .upload-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .upload-area {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 10px;
+            border: 2px dashed var(--secondary-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(77, 171, 247, 0.1);
+        }
+
+        .upload-btn {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .upload-list {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .data-preview {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        /* Encryption Section */
+        .encryption-status {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .encryption-logs {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        /* Permissions Section */
+        .permissions-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .permission-rules {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .add-rule-btn {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .permission-requests {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        /* Storage Section */
+        .storage-overview {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .storage-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .storage-details {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        /* Analytics Section */
+        .analytics-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .usage-chart {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .access-logs {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        /* Settings Section */
+        .settings-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1rem;
+        }
+
+        .settings-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input[type="text"], .form-group input[type="email"] {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .form-group input[type="text"]:focus, .form-group input[type="email"]:focus {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-settings {
+            margin-top: 1rem;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .api-keys {
+            margin-top: 1rem;
+        }
+
+        .api-key-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .api-key-item input[type="text"] {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .copy-btn, .regenerate-btn {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .generate-key-btn {
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.success {
+            background: var(--success-color);
+        }
+
+        .toast.error {
+            background: var(--danger-color);
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* 新增样式 */
+        .metadata-form {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .metadata-form .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .metadata-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .metadata-form input,
+        .metadata-form select,
+        .metadata-form textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+        }
+
+        .upload-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 1rem;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+        }
+
+        .data-info {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .data-actions button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 0.5rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .data-actions button:hover {
+            opacity: 1;
+        }
+
+        .status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .status.active {
+            background: var(--success-color);
+        }
+
+        .status.inactive {
+            background: var(--danger-color);
+        }
+
+        .audit-log {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+        }
+
+        .audit-log-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .audit-log-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <img src="../images/enologo.jpg" alt="EON Protocol Logo" style="height: 50px;">
+            </div>
+            <nav>
+                <a href="#overview" class="active"><i class="fas fa-home"></i> Overview</a>
+                <a href="#upload"><i class="fas fa-upload"></i> Data Upload</a>
+                <a href="#encryption"><i class="fas fa-lock"></i> Encryption</a>
+                <a href="#permissions"><i class="fas fa-key"></i> Permissions</a>
+                <a href="#storage"><i class="fas fa-database"></i> Storage</a>
+                <a href="#tracking"><i class="fas fa-chart-line"></i> Analytics</a>
+                <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Overview Section -->
+            <section id="overview" class="active-section">
+                <h2>Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-database"></i>
+                        <h3>Total Data</h3>
+                        <p>0 GB</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-lock"></i>
+                        <h3>Encrypted Data</h3>
+                        <p>0 GB</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3>Active Users</h3>
+                        <p>0</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-key"></i>
+                        <h3>Active Permissions</h3>
+                        <p>0</p>
+                    </div>
+                </div>
+                <div class="charts-container">
+                    <div class="chart">
+                        <canvas id="accessChart"></canvas>
+                    </div>
+                    <div class="chart">
+                        <canvas id="storageChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upload Section -->
+            <section id="upload">
+                <h2>Data Upload</h2>
+                <div class="upload-container">
+                    <div class="upload-area" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag and drop files here or</p>
+                        <button class="upload-btn">Choose Files</button>
+                        <input type="file" id="fileInput" multiple hidden>
+                    </div>
+                    <div class="metadata-form">
+                        <h3>Dataset Metadata</h3>
+                        <form id="metadataForm">
+                            <div class="form-group">
+                                <label>Dataset Name</label>
+                                <input type="text" name="datasetName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea name="description" rows="3" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select name="category" required>
+                                    <option value="financial">Financial Data</option>
+                                    <option value="healthcare">Healthcare Data</option>
+                                    <option value="scientific">Scientific Data</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Price (Credits)</label>
+                                <input type="number" name="price" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Privacy Level</label>
+                                <select name="privacyLevel" required>
+                                    <option value="public">Public</option>
+                                    <option value="private">Private</option>
+                                    <option value="restricted">Restricted</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="upload-list">
+                        <h3>Upload Queue</h3>
+                        <div id="uploadQueue"></div>
+                    </div>
+                </div>
+                <div class="data-preview">
+                    <h3>Data Preview</h3>
+                    <div id="previewContent"></div>
+                </div>
+            </section>
+
+            <!-- Encryption Section -->
+            <section id="encryption">
+                <h2>Data Encryption</h2>
+                <div class="encryption-status">
+                    <div class="status-card">
+                        <h3>Encryption Status</h3>
+                        <div class="status-list" id="encryptionStatus">
+                            <div class="status-item">
+                                <span class="status active">Active</span>
+                                <span>AES-256 Encryption</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status active">Active</span>
+                                <span>Key Management</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="encryption-logs">
+                        <h3>Encryption Logs</h3>
+                        <div class="log-list" id="encryptionLogs"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Permissions Section -->
+            <section id="permissions">
+                <h2>Data Permissions</h2>
+                <div class="permissions-container">
+                    <div class="permission-rules">
+                        <h3>Permission Rules</h3>
+                        <button class="add-rule-btn"><i class="fas fa-plus"></i> Add New Rule</button>
+                        <div class="rules-list" id="permissionRules">
+                            <!-- Permission rules will be added here -->
+                        </div>
+                    </div>
+                    <div class="permission-requests">
+                        <h3>Access Requests</h3>
+                        <div class="requests-list" id="accessRequests">
+                            <!-- Access requests will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Storage Section -->
+            <section id="storage">
+                <h2>Data Storage</h2>
+                <div class="storage-overview">
+                    <div class="storage-card">
+                        <h3>Storage Usage</h3>
+                        <canvas id="storageUsageChart"></canvas>
+                    </div>
+                    <div class="storage-details">
+                        <h3>Data Files</h3>
+                        <div class="data-list" id="dataFiles"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="tracking">
+                <h2>Usage Analytics</h2>
+                <div class="analytics-container">
+                    <div class="usage-chart">
+                        <canvas id="usageChart"></canvas>
+                    </div>
+                    <div class="audit-log">
+                        <h3>Audit Log</h3>
+                        <div id="auditLog"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings">
+                <h2>System Settings</h2>
+                <div class="settings-container">
+                    <div class="settings-card">
+                        <h3>Account Settings</h3>
+                        <form id="accountForm">
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" name="username" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" name="email">
+                            </div>
+                            <button type="submit">Update Account</button>
+                        </form>
+                    </div>
+                    <div class="settings-card">
+                        <h3>Notification Settings</h3>
+                        <div class="notification-settings">
+                            <label class="switch">
+                                <input type="checkbox" id="emailNotifications">
+                                <span class="slider"></span>
+                                Email Notifications
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="smsNotifications">
+                                <span class="slider"></span>
+                                SMS Notifications
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <h3>API Settings</h3>
+                        <div class="api-keys">
+                            <div class="api-key-item">
+                                <input type="text" readonly value="••••••••••••••••">
+                                <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                                <button class="regenerate-btn"><i class="fas fa-sync"></i></button>
+                            </div>
+                            <button class="generate-key-btn">Generate New API Key</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Navigation Handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all navigation links
+            const navLinks = document.querySelectorAll('nav a');
+            
+            // Add click event to each link
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Get the section id from href
+                    const sectionId = this.getAttribute('href').substring(1);
+                    
+                    // Hide all sections
+                    document.querySelectorAll('section').forEach(section => {
+                        section.style.display = 'none';
+                        section.classList.remove('active-section');
+                    });
+                    
+                    // Show the selected section
+                    const targetSection = document.getElementById(sectionId);
+                    if (targetSection) {
+                        targetSection.style.display = 'block';
+                        targetSection.classList.add('active-section');
+                    }
+                });
+            });
+
+            // Initialize first section as visible
+            const firstSection = document.querySelector('section');
+            if (firstSection) {
+                firstSection.style.display = 'block';
+                firstSection.classList.add('active-section');
+            }
+        });
+
+        // File Upload Handling
+        const dropzone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const toast = document.getElementById('toast');
+
+        // Drag and Drop Events
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        dropzone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                uploadFile(file);
+            });
+        }
+
+        function uploadFile(file) {
+            // Simulate file upload with encryption
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    showToast('File uploaded and encrypted successfully!', 'success');
+                    setTimeout(() => {
+                        addDataItem(file.name);
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        function showToast(message, type) {
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function addDataItem(filename) {
+            const dataItems = document.getElementById('dataFiles');
+            const item = document.createElement('div');
+            item.className = 'data-item';
+            item.innerHTML = `
+                <i class="fas fa-file-alt"></i>
+                <span style="margin-left: 1rem;">${filename}</span>
+            `;
+            
+            // Add click event to show details
+            item.addEventListener('click', () => {
+                const details = item.querySelector('.data-item-details');
+                if (details) {
+                    details.style.display = details.style.display === 'none' ? 'block' : 'none';
+                } else {
+                    const detailsElement = document.createElement('div');
+                    detailsElement.className = 'data-item-details';
+                    detailsElement.innerHTML = `
+                        <h3>File Details</h3>
+                        <p>Name: ${filename}</p>
+                        <p>Size: 2.4 MB</p>
+                        <p>Uploaded: ${new Date().toLocaleDateString()}</p>
+                        <div class="permission-manager">
+                            <h4>Manage Permissions</h4>
+                            <div class="user-list">
+                                <div class="user-item" draggable="true">User A</div>
+                                <div class="user-item" draggable="true">User B</div>
+                                <div class="user-item" draggable="true">User C</div>
+                            </div>
+                        </div>
+                    `;
+                    item.appendChild(detailsElement);
+                }
+            });
+            
+            dataItems.appendChild(item);
+        }
+
+        // Initialize Charts
+        function initCharts() {
+            // Usage Chart
+            const usageCtx = document.getElementById('usageChart').getContext('2d');
+            new Chart(usageCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Active', 'Archived', 'Pending'],
+                    datasets: [{
+                        data: [12, 19, 3],
+                        backgroundColor: [
+                            'rgba(77, 171, 247, 0.8)',
+                            'rgba(173, 181, 189, 0.8)',
+                            'rgba(255, 193, 7, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Data Usage Distribution',
+                            color: 'white'
+                        }
+                    }
+                }
+            });
+
+            // Access Chart
+            const accessCtx = document.getElementById('accessChart').getContext('2d');
+            new Chart(accessCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    datasets: [{
+                        label: 'Data Access Requests',
+                        data: [65, 59, 80, 81, 56],
+                        backgroundColor: 'rgba(77, 171, 247, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Storage Chart
+            const storageCtx = document.getElementById('storageChart').getContext('2d');
+            new Chart(storageCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    datasets: [{
+                        label: 'Storage Usage',
+                        data: [65, 59, 80, 81, 56],
+                        backgroundColor: 'rgba(77, 171, 247, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Storage Usage Chart
+            const storageUsageCtx = document.getElementById('storageUsageChart').getContext('2d');
+            new Chart(storageUsageCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Used', 'Available'],
+                    datasets: [{
+                        data: [30, 70],
+                        backgroundColor: [
+                            'rgba(77, 171, 247, 0.8)',
+                            'rgba(173, 181, 189, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Storage Usage',
+                            color: 'white'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize charts when page loads
+        initCharts();
+    </script>
+</body>
+</html>
