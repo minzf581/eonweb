@@ -1,8 +1,4 @@
-const express = require('express');
 const { validateApiKey } = require('../middleware/auth');
-
-// 创建路由器
-const router = express.Router();
 
 // 代理路由处理器
 const proxyHandlers = {
@@ -52,20 +48,26 @@ const proxyHandlers = {
   }
 };
 
-// 注册中间件
-if (typeof validateApiKey === 'function') {
-  router.use(validateApiKey);
+// 注册代理路由
+function registerProxyRoutes(app) {
+  const basePath = '/api/proxy';
+  
+  // 注册中间件
+  if (typeof validateApiKey === 'function') {
+    app.use(basePath, validateApiKey);
+  }
+
+  // 注册路由
+  app.get(`${basePath}/nodes/:deviceId/stats`, proxyHandlers.getNodeStats);
+  app.post(`${basePath}/nodes/report`, proxyHandlers.postNodeReport);
+
+  console.log('[DEBUG] 代理路由注册完成:', {
+    basePath,
+    routes: [
+      { method: 'GET', path: `${basePath}/nodes/:deviceId/stats` },
+      { method: 'POST', path: `${basePath}/nodes/report` }
+    ]
+  });
 }
 
-// 注册路由
-router.get('/nodes/:deviceId/stats', proxyHandlers.getNodeStats);
-router.post('/nodes/report', proxyHandlers.postNodeReport);
-
-console.log('[DEBUG] 代理路由注册完成:', {
-  routes: [
-    { method: 'GET', path: '/nodes/:deviceId/stats' },
-    { method: 'POST', path: '/nodes/report' }
-  ]
-});
-
-module.exports = router; 
+module.exports = registerProxyRoutes; 
