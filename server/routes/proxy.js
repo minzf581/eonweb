@@ -76,6 +76,22 @@ const handlers = {
 
 // 调试中间件
 router.use((req, res, next) => {
+  req.requestPath.push({
+    stage: 'proxyRouteHandler',
+    timestamp: Date.now(),
+    path: req.path,
+    baseUrl: req.baseUrl,
+    stack: router.stack
+      .filter(r => r.route)
+      .map(r => ({
+        path: r.route.path,
+        regexp: String(r.regexp),
+        matched: r.regexp.test(req.path),
+        methods: r.route.methods,
+        methodMatched: r.route.methods[req.method.toLowerCase()]
+      }))
+  });
+  
   console.log('[DEBUG] 代理路由收到请求:', {
     requestId: req.requestId,
     method: req.method,

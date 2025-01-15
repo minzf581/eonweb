@@ -68,6 +68,9 @@ async function initializeApp() {
     
     app.use((req, res, next) => {
       req.requestId = crypto.randomBytes(4).toString('hex');
+      req.startTime = Date.now();
+      req.requestPath = [];  // 用于追踪请求经过的路径
+      
       console.log('[DEBUG] 收到请求:', {
         requestId: req.requestId,
         method: req.method,
@@ -86,7 +89,9 @@ async function initializeApp() {
           requestId: req.requestId,
           method: req.method,
           path: req.path,
-          statusCode: res.statusCode
+          statusCode: res.statusCode,
+          duration: Date.now() - req.startTime,
+          requestPath: req.requestPath
         });
       });
       
@@ -122,6 +127,13 @@ async function initializeApp() {
     // 注册代理路由
     const proxyRouter = express.Router();
     proxyRouter.use((req, res, next) => {
+      req.requestPath.push({
+        stage: 'proxyRouter',
+        timestamp: Date.now(),
+        path: req.path,
+        baseUrl: req.baseUrl
+      });
+      
       console.log('[DEBUG] 代理路由中间件:', {
         requestId: req.requestId,
         originalUrl: req.originalUrl,
@@ -157,6 +169,13 @@ async function initializeApp() {
     
     // 注册 404 处理
     app.use((req, res) => {
+      req.requestPath.push({
+        stage: '404Handler',
+        timestamp: Date.now(),
+        path: req.path,
+        baseUrl: req.baseUrl
+      });
+      
       console.log('[DEBUG] 404 处理触发:', {
         requestId: req.requestId,
         path: req.path,
@@ -164,7 +183,20 @@ async function initializeApp() {
         headers: {
           'x-api-key': req.headers['x-api-key'],
           'content-type': req.headers['content-type']
-        }
+        },
+        requestPath: req.requestPath,
+        matchAttempts: app._router.stack
+          .filter(r => r.route || r.name === 'router')
+          .map(r => {
+            const regexp = r.regexp || (r.route && new RegExp(r.route.path));
+            return {
+              type: r.route ? 'route' : 'middleware',
+              path: r.route?.path || r.regexp?.toString(),
+              matched: regexp ? regexp.test(req.path) : false,
+              methods: r.route?.methods || {},
+              methodMatched: r.route ? r.route.methods[req.method.toLowerCase()] : null
+            };
+          })
       });
       res.status(404).json({
         success: false,
