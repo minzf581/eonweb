@@ -32,6 +32,13 @@ echo "Installing dependencies..."
 npm install
 npm install --save-dev sequelize-cli
 
+# 清理 GCP 缓存和构建文件
+echo "Cleaning up GCP cache..."
+rm -rf .gcloud
+rm -rf .build
+gcloud config set disable_file_logging true
+gcloud config set pass_credentials_to_gsutil false
+
 # 清理已存在的 Cloud SQL Proxy 进程
 echo "Cleaning up existing Cloud SQL Proxy processes..."
 pkill -f cloud_sql_proxy || true
@@ -131,7 +138,7 @@ echo "Current serving version: $TIMESTAMP"
 
 # 部署新版本
 echo "Deploying new version..."
-gcloud app deploy --quiet --version=$TIMESTAMP --promote
+gcloud app deploy --quiet --version=$TIMESTAMP --promote --no-cache
 
 # 如果部署成功
 if [ $? -eq 0 ]; then
