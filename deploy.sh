@@ -26,106 +26,89 @@ for file in "${required_files[@]}"; do
     fi
 done
 
-# 完全清理并重建
+# 完全清理
 echo "Performing complete cleanup..."
-rm -rf node_modules package-lock.json
-rm -rf .gcloud .npm .config .build .deploy
-npm cache clean --force
+rm -rf node_modules
+rm -rf .deploy
+rm -f package-lock.json
 
-# 删除所有未跟踪的文件和目录
+# 清理所有未跟踪的文件
 echo "Cleaning all untracked files..."
 git clean -fdx
 
-# 从 GitHub 强制同步最新代码
+# 强制拉取最新更改
 echo "Force pulling latest changes from GitHub..."
-git fetch origin main
+git fetch origin
 git reset --hard origin/main
 
-# 创建临时构建目录
+# 创建构建目录
 echo "Creating build directory..."
-BUILD_DIR=".deploy"
-rm -rf $BUILD_DIR
-mkdir -p $BUILD_DIR
+mkdir -p .deploy
 
-# 复制所需文件到构建目录
+# 复制文件到构建目录
 echo "Copying files to build directory..."
-cp app.yaml $BUILD_DIR/
-cp server.js $BUILD_DIR/
-cp app.js $BUILD_DIR/
-cp package.json $BUILD_DIR/
-cp health.js $BUILD_DIR/ || echo "Warning: health.js not found"
-cp -r routes $BUILD_DIR/
-cp -r models $BUILD_DIR/
-cp -r middleware $BUILD_DIR/
-cp -r config $BUILD_DIR/ || echo "Warning: config directory not found"
-cp .env.production $BUILD_DIR/
+cp -r * .deploy/ 2>/dev/null || :
+cp .env* .deploy/ 2>/dev/null || :
 
-# 检查构建目录中的关键文件
+# 验证关键文件
 echo "Verifying key files in build directory..."
 for file in server.js app.js routes/proxy.js models/index.js; do
-    if [ -f "$BUILD_DIR/$file" ]; then
-        echo "$file exists and has $(wc -l < $BUILD_DIR/$file) lines"
+    if [ -f ".deploy/$file" ]; then
+        lines=$(wc -l < ".deploy/$file")
+        echo "$file exists and has $lines lines"
     else
-        echo "Error: $file is missing in build directory!"
+        echo "ERROR: $file is missing!"
         exit 1
     fi
 done
 
-# 检查构建目录中的 server.js 内容
+# 验证server.js内容
 echo "=== Verifying build server.js content ==="
-echo "File exists: $(ls -l $BUILD_DIR/server.js)"
-echo "File size: $(wc -c < $BUILD_DIR/server.js) bytes"
-echo "Line count: $(wc -l < $BUILD_DIR/server.js)"
-echo "MD5 hash: $(md5 $BUILD_DIR/server.js)"
+ls -l .deploy/server.js
+echo "File size: $(wc -c < .deploy/server.js) bytes"
+echo "Line count: $(wc -l < .deploy/server.js)"
+echo "MD5 hash: $(md5sum .deploy/server.js 2>/dev/null || md5 .deploy/server.js 2>/dev/null)"
 echo "Content preview:"
-head -n 10 $BUILD_DIR/server.js
+head -n 10 .deploy/server.js
 
 # 在构建目录中安装依赖
 echo "Installing dependencies in build directory..."
-cd $BUILD_DIR
-rm -rf node_modules package-lock.json
-mkdir -p node_modules
-chmod -R 777 node_modules
-npm install --production --no-optional
-cd ..
+cd .deploy
+npm install --production --force
 
-# 清理 GCP 缓存和构建文件
+# 清理GCP缓存
 echo "Cleaning up GCP cache..."
-rm -rf .gcloud .build
-gcloud config set disable_file_logging true
-gcloud config set pass_credentials_to_gsutil false
+gcloud config set core/disable_file_logging true
+gcloud config set core/pass_credentials_to_gsutil true
 
-# 获取当前版本时间戳
-TIMESTAMP=$(date +%Y%m%dt%H%M%S)
-echo "Current serving version: $TIMESTAMP"
+# 获取当前版本
+current_version=$(gcloud app versions list --sort-by=~version.id --limit=1 --format="value(version.id)")
+echo "Current serving version: $current_version"
 
 # 从构建目录部署
 echo "Deploying from build directory..."
-cd $BUILD_DIR
 gcloud config set app/cloud_build_timeout 1800
-gcloud app deploy app.yaml --quiet --version=$TIMESTAMP --promote --no-cache
-cd ..
+gcloud app deploy
 
-# 确保新版本接管所有流量并完全迁移
+# 设置流量到新版本
 echo "Setting traffic to new version..."
-gcloud app services set-traffic default --splits=$TIMESTAMP=1 --migrate
+new_version=$(gcloud app versions list --sort-by=~version.id --limit=1 --format="value(version.id)")
+gcloud app services set-traffic default --splits=$new_version=1
 
-# 删除所有旧版本
+# 清理旧版本
 echo "Cleaning up old versions..."
-OLD_VERSIONS=$(gcloud app versions list --sort-by=~version.id --filter="NOT version.id=$TIMESTAMP" --format="value(version.id)")
-if [ ! -z "$OLD_VERSIONS" ]; then
-    echo "Deleting old versions: $OLD_VERSIONS"
-    gcloud app versions delete $OLD_VERSIONS --quiet
+if [ ! -z "$current_version" ] && [ "$current_version" != "$new_version" ]; then
+    echo "Deleting old versions: $current_version"
+    gcloud app versions delete $current_version
 fi
 
 # 清理构建目录
 echo "Cleaning up build directory..."
-rm -rf $BUILD_DIR
+cd ..
+rm -rf .deploy
 
-# 验证构建目录中的文件
+# 验证文件
 echo "Verifying files in build directory..."
-ls -la $BUILD_DIR
-echo "Content of server.js in build directory:"
-cat $BUILD_DIR/server.js | wc -l
+ls -la .deploy
 
 echo "Deployment completed successfully"
