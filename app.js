@@ -46,22 +46,19 @@ app.use(morgan(':method :url :status :response-time ms'));
 app.use(bodyParser.json());
 app.use(cors());
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(`[Error] Unhandled error on instance ${instanceId}: ${err.message}`);
-    if (!res.headersSent) {
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
-
 // API routes
 console.log('[DEBUG] 开始注册 API 路由');
-
-// 创建API路由器
 const apiRouter = express.Router();
+
+// API路由调试中间件
+apiRouter.use((req, res, next) => {
+    console.log('[DEBUG] API请求:', {
+        path: req.path,
+        baseUrl: req.baseUrl,
+        originalUrl: req.originalUrl
+    });
+    next();
+});
 
 // 注册各个模块的路由
 apiRouter.use('/auth', authRoutes);
@@ -76,12 +73,8 @@ apiRouter.use('/users', usersRoutes);
 // 将API路由器挂载到/api路径
 app.use('/api', apiRouter);
 
-// 打印路由配置
-console.log('[DEBUG] API路由配置:', {
-    auth: authRoutes.stack,
-    proxy: proxyRoutes.stack,
-    users: usersRoutes.stack
-});
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle SPA routes
 app.get('*', (req, res) => {

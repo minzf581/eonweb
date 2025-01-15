@@ -19,5 +19,5 @@ You carefully provide accurate, factual, thoughtful answers, and excel at reason
 - If I ask for adjustments to code, do not repeat all of my code unnecessarily. Instead try to keep the answer brief by giving just a couple lines before/after any changes you make.
 
 - The project involves modifying code locally, uploading it to GitHub, and syncing it with GCP via GitHub. Deployment to GCP is done using the deploy.sh script in the root directory.
-- When debugging issues, make sure to include version identifiers and timestamps, pay attention to whether the changes or debugging information added are effective.
+- When debugging issues, pay attention to whether the changes or debugging information added are effective.
 - If the changes are not effective, provide timely reminders and identify the issue promptly.

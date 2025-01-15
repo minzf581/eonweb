@@ -58,14 +58,30 @@ app.use((err, req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/referral', referralRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/points', pointsRoutes);
-app.use('/api/proxy', proxyRoutes);
-app.use('/api/users', usersRoutes);
+console.log('[DEBUG] 开始注册 API 路由');
+
+// 创建API路由器
+const apiRouter = express.Router();
+
+// 注册各个模块的路由
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/referral', referralRoutes);
+apiRouter.use('/tasks', tasksRoutes);
+apiRouter.use('/stats', statsRoutes);
+apiRouter.use('/admin', adminRoutes);
+apiRouter.use('/points', pointsRoutes);
+apiRouter.use('/proxy', proxyRoutes);
+apiRouter.use('/users', usersRoutes);
+
+// 将API路由器挂载到/api路径
+app.use('/api', apiRouter);
+
+// 打印路由配置
+console.log('[DEBUG] API路由配置:', {
+    auth: authRoutes.stack,
+    proxy: proxyRoutes.stack,
+    users: usersRoutes.stack
+});
 
 // Handle SPA routes
 app.get('*', (req, res) => {

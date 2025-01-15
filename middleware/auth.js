@@ -86,34 +86,6 @@ const authenticateToken = async (req, res, next) => {
     }
 };
 
-const authenticateApiKey = async (req, res, next) => {
-    try {
-        const apiKey = req.headers['x-api-key'];
-        if (!apiKey) {
-            return res.status(401).json({
-                success: false,
-                message: 'API key required'
-            });
-        }
-
-        // TODO: Implement API key validation
-        if (apiKey !== process.env.PROXY_API_KEY) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid API key'
-            });
-        }
-
-        next();
-    } catch (error) {
-        console.error('[Auth] API key authentication error:', error);
-        return res.status(401).json({
-            success: false,
-            message: 'Authentication failed'
-        });
-    }
-};
-
 const isAdmin = async (req, res, next) => {
     try {
         // Get fresh user data to ensure admin status is current
@@ -158,7 +130,6 @@ const isAdminSimple = (req, res, next) => {
 
 module.exports = {
     authenticateToken,
-    authenticateApiKey,
     isAdmin,
     isAdminSimple,
     validateApiKey
