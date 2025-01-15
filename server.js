@@ -31,7 +31,9 @@ const PORT = parseInt(process.env.PORT || '8080', 10);
 
 // 在最开始添加请求日志中间件
 app.use((req, res, next) => {
+  req.requestId = crypto.randomBytes(4).toString('hex');
   console.log('[DEBUG] 收到请求:', {
+    requestId: req.requestId,
     method: req.method,
     path: req.path,
     headers: {
@@ -42,6 +44,17 @@ app.use((req, res, next) => {
     query: req.query,
     params: req.params
   });
+  
+  // 监听请求结束
+  res.on('finish', () => {
+    console.log('[DEBUG] 请求处理完成:', {
+      requestId: req.requestId,
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode
+    });
+  });
+  
   next();
 });
 
@@ -73,11 +86,13 @@ const apiRouter = express.Router();
 // 注册代理路由
 apiRouter.use('/proxy', (req, res, next) => {
   console.log('[DEBUG] 代理路由中间件:', {
+    requestId: req.requestId,
     originalUrl: req.originalUrl,
     baseUrl: req.baseUrl,
     path: req.path,
     method: req.method,
-    params: req.params
+    params: req.params,
+    stack: new Error().stack
   });
   next();
 });
@@ -121,6 +136,7 @@ app.use('/', appRoutes);
 // 404 处理
 app.use((req, res) => {
   console.log('[DEBUG] 404 处理触发:', {
+    requestId: req.requestId,
     path: req.path,
     method: req.method,
     headers: {
@@ -134,13 +150,17 @@ app.use((req, res) => {
         path: r.route?.path || r.regexp?.toString(),
         methods: r.route ? Object.keys(r.route.methods) : undefined,
         matched: r.regexp ? r.regexp.test(req.path) : false,
-        stack: r.handle?.stack?.length
+        stack: r.handle?.stack?.length,
+        name: r.name,
+        keys: r.keys?.map(k => k.name),
+        regexp: r.regexp?.toString()
       }))
   });
   res.status(404).json({ 
     success: false, 
     message: 'API endpoint not found',
-    path: req.path
+    path: req.path,
+    requestId: req.requestId
   });
 });
 

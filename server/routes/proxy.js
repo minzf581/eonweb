@@ -13,13 +13,15 @@ console.log('[DEBUG] 代理路由配置:', {
 // 调试中间件
 router.use((req, res, next) => {
   console.log('[DEBUG] 代理路由收到请求:', {
+    requestId: req.requestId,
     method: req.method,
     path: req.path,
     baseUrl: req.baseUrl,
     originalUrl: req.originalUrl,
     params: req.params,
     headers: req.headers,
-    body: req.body
+    body: req.body,
+    stack: new Error().stack
   });
   next();
 });
@@ -29,22 +31,28 @@ router.use(validateApiKey);
 
 // 节点报告路由
 router.post('/nodes/report', async (req, res) => {
-  console.log('[DEBUG] 进入节点报告路由处理');
-  console.log('收到代理节点报告请求:', {
+  console.log('[DEBUG] 进入节点报告路由处理:', {
+    requestId: req.requestId,
     path: req.path,
     baseUrl: req.baseUrl,
-    originalUrl: req.originalUrl
+    originalUrl: req.originalUrl,
+    stack: new Error().stack
   });
   try {
     console.log('处理节点报告:', req.body);
     res.json({ 
       success: true, 
       message: 'Report received',
-      data: req.body
+      data: req.body,
+      requestId: req.requestId
     });
   } catch (error) {
     console.error('节点报告错误:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      requestId: req.requestId
+    });
   }
 });
 
@@ -88,7 +96,12 @@ console.log('[DEBUG] 代理路由配置完成:', {
       methods: Object.keys(r.route.methods),
       stack: r.route.stack.length,
       fullPath: `/api/proxy${r.route.path}`,
-      regexp: r.route.path.replace(/:(\w+)/g, '([^/]+)')
+      regexp: r.route.path.replace(/:(\w+)/g, '([^/]+)'),
+      keys: r.keys?.map(k => k.name),
+      layer: {
+        name: r.name,
+        regexp: String(r.regexp)
+      }
     }))
 });
 
