@@ -139,32 +139,23 @@ async function initializeApp() {
     console.log('[DEBUG] 开始注册 API 路由');
     const apiRouter = express.Router();
     
-    // 打印 API 路由器的初始状态
-    console.log('[DEBUG] API 路由器初始状态:', {
-      stack: apiRouter.stack.map(r => ({
-        name: r.name,
-        regexp: String(r.regexp),
-        path: r.route?.path,
-        handle: r.handle?.name
-      }))
+    // 注册 API Key 验证中间件
+    apiRouter.use((req, res, next) => {
+      console.log('[DEBUG] API 路由中间件收到请求:', {
+        requestId: req.requestId,
+        method: req.method,
+        path: req.path,
+        baseUrl: req.baseUrl,
+        originalUrl: req.originalUrl
+      });
+      next();
     });
     
     // 注册代理路由
     const proxyRouter = express.Router({ mergeParams: true });
     
-    // 打印代理路由器的初始状态
-    console.log('[DEBUG] 代理路由器初始状态:', {
-      stack: proxyRouter.stack.map(r => ({
-        name: r.name,
-        regexp: String(r.regexp),
-        path: r.route?.path,
-        handle: r.handle?.name
-      }))
-    });
-    
-    // 先注册路由处理器
-    proxyRouter.get('/nodes/:deviceId/stats', proxyRoutes.handlers.getNodeStats);
-    proxyRouter.post('/nodes/report', proxyRoutes.handlers.postNodeReport);
+    // 注册 API Key 验证中间件
+    proxyRouter.use(validateApiKey);
     
     // 再注册中间件
     proxyRouter.use((req, res, next) => {
@@ -188,8 +179,9 @@ async function initializeApp() {
       next();
     });
     
-    // 注册 API Key 验证中间件
-    proxyRouter.use(validateApiKey);
+    // 最后注册路由处理器
+    proxyRouter.get('/nodes/:deviceId/stats', proxyRoutes.handlers.getNodeStats);
+    proxyRouter.post('/nodes/report', proxyRoutes.handlers.postNodeReport);
     
     // 将代理路由器注册到 API 路由器
     apiRouter.use('/proxy', proxyRouter);
