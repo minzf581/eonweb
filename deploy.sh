@@ -17,6 +17,7 @@ required_files=(
     "server.js"
     "package.json"
     "routes/proxy.js"
+    "routes/users.js"
 )
 
 for file in "${required_files[@]}"; do
@@ -47,12 +48,11 @@ mkdir -p .deploy
 
 # 复制文件到构建目录
 echo "Copying files to build directory..."
-cp -r * .deploy/ 2>/dev/null || :
-cp .env* .deploy/ 2>/dev/null || :
+rsync -av --exclude '.git' --exclude '.deploy' --exclude 'node_modules' . .deploy/
 
 # 验证关键文件
 echo "Verifying key files in build directory..."
-for file in server.js app.js routes/proxy.js models/index.js; do
+for file in server.js app.js routes/proxy.js models/index.js routes/users.js; do
     if [ -f ".deploy/$file" ]; then
         lines=$(wc -l < ".deploy/$file")
         echo "$file exists and has $lines lines"
