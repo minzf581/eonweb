@@ -135,42 +135,12 @@ requiredEnvVars.forEach(varName => {
 
 console.log('环境变量检查通过，API_KEY:', process.env.API_KEY);
 
-// 在启动服务器之前检查端口是否被占用
-const net = require('net');
-const server = net.createServer();
-
-server.once('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.log(`Port ${PORT} is busy, trying ${PORT + 1}`);
-    startServer(PORT + 1);
-  }
-});
-
-server.once('listening', () => {
-  server.close();
-  startServer(PORT);
-});
-
-server.listen(PORT);
-
-function startServer(port) {
-  app.listen(port, () => {
-    console.log(`[DEBUG] 服务器启动在端口 ${port}`);
-    console.log('[DEBUG] 当前注册的路由:', app._router.stack
-      .filter(r => r.route)
-      .map(r => ({
-        path: r.route.path,
-        methods: Object.keys(r.route.methods)
-      }))
-    );
-  });
-}
-
 // 初始化应用
 async function initializeApp() {
   try {
     console.log('[DEBUG] 开始初始化应用');
-    // 等待数据库连接
+    
+    // 先连接数据库
     await new Promise((resolve, reject) => {
       const maxAttempts = 5;
       let attempts = 0;
@@ -193,6 +163,43 @@ async function initializeApp() {
       
       tryConnect();
     });
+    
+    // 启动服务器
+    const port = await new Promise((resolve, reject) => {
+      const tryPort = (p) => {
+        const server = app.listen(p, () => {
+          console.log(`[DEBUG] 服务器启动在端口 ${p}`);
+          resolve(p);
+        }).on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            console.log(`[DEBUG] 端口 ${p} 被占用，尝试 ${p + 1}`);
+            tryPort(p + 1);
+          } else {
+            reject(err);
+          }
+        });
+      };
+      tryPort(PORT);
+    });
+    
+    // 打印路由信息
+    console.log('[DEBUG] 当前注册的所有路由:', app._router.stack
+      .filter(r => r.route || (r.name === 'router'))
+      .map(r => {
+        if (r.route) {
+          return {
+            type: 'route',
+            path: r.route.path,
+            methods: Object.keys(r.route.methods)
+          };
+        }
+        return {
+          type: 'middleware',
+          name: r.name,
+          regexp: r.regexp?.toString()
+        };
+      })
+    );
     
     console.log('[DEBUG] 应用初始化完成');
   } catch (error) {
