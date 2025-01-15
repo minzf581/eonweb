@@ -128,6 +128,24 @@ async function initializeApp() {
   try {
     console.log('[DEBUG] 开始初始化应用');
     
+    // 先注册基础中间件
+    app.use((req, res, next) => {
+      req.requestId = crypto.randomBytes(4).toString('hex');
+      console.log('[DEBUG] 收到请求:', {
+        requestId: req.requestId,
+        method: req.method,
+        path: req.path,
+        headers: req.headers,
+        query: req.query,
+        body: req.body
+      });
+      next();
+    });
+    
+    // 注册健康检查路由
+    app.get('/_ah/start', (req, res) => res.send('Ok'));
+    app.get('/_ah/health', (req, res) => res.send('Ok'));
+    
     // 先连接数据库
     await new Promise((resolve, reject) => {
       const maxAttempts = 5;
@@ -155,6 +173,37 @@ async function initializeApp() {
     // 注册 API 路由器
     app.use('/api', apiRouter);
     
+    // 注册 404 处理
+    app.use((req, res) => {
+      console.log('[DEBUG] 404 处理触发:', {
+        requestId: req.requestId,
+        path: req.path,
+        method: req.method,
+        headers: req.headers
+      });
+      res.status(404).json({
+        success: false,
+        message: 'API endpoint not found',
+        path: req.path,
+        requestId: req.requestId
+      });
+    });
+    
+    // 注册错误处理
+    app.use((err, req, res, next) => {
+      console.error('[DEBUG] 错误处理触发:', {
+        requestId: req.requestId,
+        error: err.message,
+        stack: err.stack,
+        path: req.path
+      });
+      res.status(500).json({
+        success: false,
+        message: err.message,
+        requestId: req.requestId
+      });
+    });
+    
     // 启动服务器
     const port = await new Promise((resolve, reject) => {
       const tryPort = (p) => {
@@ -171,6 +220,19 @@ async function initializeApp() {
         });
       };
       tryPort(PORT);
+    });
+    
+    // 打印最终路由配置
+    console.log('[DEBUG] 最终路由配置:', {
+      routes: app._router.stack
+        .filter(r => r.route || r.name === 'router')
+        .map(r => ({
+          type: r.route ? 'route' : 'middleware',
+          path: r.route?.path || r.regexp?.toString(),
+          methods: r.route?.methods,
+          name: r.name,
+          handle: r.handle?.stack?.length
+        }))
     });
     
     console.log('[DEBUG] 应用初始化完成');
