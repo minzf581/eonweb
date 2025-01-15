@@ -73,7 +73,6 @@ coverage/
 *.pdf
 *.pages
 tests/
-public/images/
 deploy*.sh
 cloud_sql_proxy*
 *.bak
@@ -83,7 +82,6 @@ railway.toml
 Procfile
 jest.config.js
 seeders/
-*.config.js
 test*.js
 check-deployment.js
 generateHash.js
@@ -91,15 +89,17 @@ resetAdmin.js
 resetPassword*
 
 # Do NOT ignore these files
-!routes/
-!models/
-!middleware/
-!config/
-!migrations/
+!routes/**/*
+!models/**/*
+!middleware/**/*
+!config/**/*
+!migrations/**/*.js
 !scripts/init-admin.js
 !app.yaml
 !package.json
 !server.js
+!services/**/*
+!validators/**/*
 EOF
 
 # 清理 GCP 缓存和构建文件
