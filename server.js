@@ -22,7 +22,6 @@ const adminRoutes = require('./routes/admin');
 const auth = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
-const proxyRoutes = require('./routes/proxy');
 const bandwidthRoutes = require('./routes/bandwidth');
 const fs = require('fs');
 
@@ -138,10 +137,6 @@ async function initializeApp() {
     // 创建一个新的路由器来处理所有 API 请求
     console.log('[DEBUG] 开始注册 API 路由');
     const apiRouter = express.Router();
-    
-    // 注册代理路由
-    console.log('[DEBUG] 注册代理路由');
-    apiRouter.use('/proxy', proxyRoutes);
     
     // 注册其他路由到 API 路由器
     apiRouter.use('/auth', authRoutes);
