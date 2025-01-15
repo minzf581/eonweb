@@ -22,3 +22,12 @@ handlers:
   - url: /.*
     script: auto
     secure: always
+
+entrypoint: |
+    echo "Current server.js content:"
+    cat /workspace/server.js
+    echo "=== End of server.js ==="
+    rm -rf /workspace/server.js.bak || true
+    mv /workspace/server.js /workspace/server.js.bak || true
+    cp server.js /workspace/server.js
+    npm start
