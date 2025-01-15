@@ -285,3 +285,13 @@ initializeApp().catch(error => {
   console.error('[DEBUG] 应用启动失败:', error);
   process.exit(1);
 });
+
+console.log('[DEBUG] 导入的代理模块:', {
+  type: typeof proxyModule,
+  router: typeof proxyModule.router,
+  handlers: typeof proxyModule.handlers,
+  routes: proxyModule.router?.stack?.map(r => ({
+    path: r.route?.path,
+    methods: r.route?.methods
+  }))
+});

@@ -80,6 +80,7 @@ const handlers = {
 router.get('/nodes/:deviceId/stats', handlers.getNodeStats);
 router.post('/nodes/report', handlers.postNodeReport);
 
+// 打印路由配置
 console.log('[DEBUG] 代理路由配置:', {
   routes: router.stack.map(r => ({
     path: r.route?.path,
@@ -88,4 +89,15 @@ console.log('[DEBUG] 代理路由配置:', {
 });
 
 // 导出路由器和处理器
-module.exports = { router, handlers }; 
+const exports = { router, handlers };
+
+console.log('[DEBUG] 代理路由模块导出:', {
+  router: typeof exports.router,
+  handlers: typeof exports.handlers,
+  routes: exports.router.stack.map(r => ({
+    path: r.route?.path,
+    methods: r.route?.methods
+  }))
+});
+
+module.exports = exports; 
