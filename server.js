@@ -38,6 +38,34 @@ app.use((req, res, next) => {
   next();
 });
 
+// 注册所有 API 路由
+app.use('/api/auth', authRoutes);
+app.use('/api/proxy', proxyRoutes);
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/bandwidth', bandwidthRoutes);
+app.use('/api/admin', adminRoutes);
+
+// 最后注册通用路由
+app.use('/', appRoutes);
+
+// 404 处理
+app.use((req, res) => {
+  console.log('404 Not Found:', req.path);
+  res.status(404).json({ 
+    success: false, 
+    message: 'API endpoint not found',
+    path: req.path
+  });
+});
+
+// 错误处理
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ success: false, message: err.message });
+});
+
 // Force the server to use the PORT from environment variable
 const PORT = parseInt(process.env.PORT || '8080', 10);
 console.log('Starting server on port:', PORT);
@@ -148,34 +176,6 @@ async function initializeApp() {
                 console.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
             });
             next();
-        });
-
-        // 在这里注册所有路由
-        app.use('/api/auth', authRoutes);
-        app.use('/api/proxy', proxyRoutes);
-        app.use('/api/tasks', tasksRoutes);
-        app.use('/api/stats', statsRoutes);
-        app.use('/api/referral', referralRoutes);
-        app.use('/api/bandwidth', bandwidthRoutes);
-        app.use('/api/admin', adminRoutes);
-        
-        // 最后注册通用路由和错误处理
-        app.use('/', appRoutes);
-        
-        // 404 处理
-        app.use((req, res) => {
-          console.log('404 Not Found:', req.path);
-          res.status(404).json({ 
-            success: false, 
-            message: 'API endpoint not found',
-            path: req.path
-          });
-        });
-        
-        // 错误处理
-        app.use((err, req, res, next) => {
-          console.error('Error:', err);
-          res.status(500).json({ success: false, message: err.message });
         });
         
         console.log('App initialization completed successfully');

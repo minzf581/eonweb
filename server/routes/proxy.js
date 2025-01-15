@@ -20,6 +20,7 @@ router.use(validateApiKey);
 router.post('/nodes/report', async (req, res) => {
   console.log('收到代理节点报告请求');
   try {
+    console.log('处理节点报告:', req.body);
     res.json({ 
       success: true, 
       message: 'Report received',
@@ -35,6 +36,7 @@ router.post('/nodes/report', async (req, res) => {
 router.get('/nodes/:deviceId/stats', async (req, res) => {
   console.log('获取节点统计:', req.params.deviceId);
   try {
+    console.log('返回节点统计数据');
     res.json({
       success: true,
       data: {
