@@ -22,7 +22,7 @@ const adminRoutes = require('./routes/admin');
 const auth = require('./middleware/auth');
 const crypto = require('crypto');
 const appRoutes = require('./app');
-const proxyModule = require('./routes/proxy');
+const createProxyRouter = require('./routes/proxy');
 const bandwidthRoutes = require('./routes/bandwidth');
 const fs = require('fs');
 
@@ -143,9 +143,10 @@ async function initializeApp() {
     apiRouter.use(express.json());
     apiRouter.use(express.urlencoded({ extended: true }));
     
-    // 注册代理路由
-    console.log('[DEBUG] 注册代理路由');
-    const { router: proxyRouter } = proxyModule;
+    // 创建代理路由器
+    console.log('[DEBUG] 创建代理路由器');
+    const { router: proxyRouter, handlers: proxyHandlers } = createProxyRouter();
+    
     if (!proxyRouter) {
       console.error('[DEBUG] 代理路由器未定义');
       throw new Error('代理路由器未定义');
