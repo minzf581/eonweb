@@ -145,16 +145,22 @@ async function initializeApp() {
     
     // 创建代理路由器
     console.log('[DEBUG] 创建代理路由器');
-    const { router: proxyRouter, handlers: proxyHandlers } = createProxyRouter();
-    
-    // 验证路由器
-    if (!proxyRouter || typeof proxyRouter.use !== 'function') {
-      console.error('[DEBUG] 代理路由器无效:', {
-        type: typeof proxyRouter,
-        hasUse: proxyRouter?.use,
-        stack: proxyRouter?.stack
-      });
-      throw new Error('代理路由器无效');
+    let proxyRouter;
+    try {
+      const result = createProxyRouter();
+      proxyRouter = result.router;
+      
+      // 验证路由器
+      if (!proxyRouter || typeof proxyRouter.use !== 'function') {
+        throw new Error('代理路由器无效');
+      }
+      
+      // 注册到 API 路由器
+      console.log('[DEBUG] 注册代理路由到 API 路由器');
+      apiRouter.use('/proxy', proxyRouter);
+    } catch (error) {
+      console.error('[ERROR] 代理路由器创建失败:', error);
+      throw error;
     }
     
     console.log('[DEBUG] 代理路由配置:', {
@@ -163,10 +169,6 @@ async function initializeApp() {
         methods: r.route?.methods
       }))
     });
-    
-    // 将代理路由器注册到 API 路由器
-    console.log('[DEBUG] 将代理路由器注册到 API 路由器');
-    apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
     apiRouter.use('/auth', authRoutes);
