@@ -1,5 +1,7 @@
 const express = require('express');
 const { validateApiKey } = require('../middleware/auth');
+
+// 创建路由器
 const router = express.Router();
 
 console.log('[DEBUG] 初始化代理路由模块');
@@ -88,14 +90,20 @@ console.log('[DEBUG] 代理路由配置:', {
   }))
 });
 
-// 导出路由器和处理器
-module.exports = { router, handlers };
+// 导出对象
+const proxyModule = {
+  router,
+  handlers
+};
 
 console.log('[DEBUG] 代理路由模块导出:', {
-  router: typeof router,
-  handlers: typeof handlers,
-  routes: router.stack.map(r => ({
+  type: typeof proxyModule,
+  router: typeof proxyModule.router,
+  handlers: typeof proxyModule.handlers,
+  routes: proxyModule.router.stack.map(r => ({
     path: r.route?.path,
     methods: r.route?.methods
   }))
-}); 
+});
+
+module.exports = proxyModule; 
