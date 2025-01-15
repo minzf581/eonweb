@@ -3,8 +3,10 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const path = require('path');
-const fs = require('fs'); // Add this line
+const fs = require('fs');
 const { sequelize } = require('./models');
+
+// 导入路由
 const authRoutes = require('./routes/auth');
 const { router: referralRoutes } = require('./routes/referral');
 const tasksRoutes = require('./routes/tasks');
@@ -12,13 +14,13 @@ const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 const pointsRoutes = require('./routes/points');
 const proxyRoutes = require('./routes/proxy');
-const usersRoutes = require('./routes/users'); // 新增路由
+const usersRoutes = require('./routes/users');
 
-// Constants - define these at the very top
-const INIT_TIMEOUT = 30000;  // 30 seconds for initialization
+// Constants
+const INIT_TIMEOUT = 30000;
 const INIT_MAX_RETRIES = 3;
-const INIT_COOLDOWN = 5000;  // 5 seconds between retries
-const INSTANCE_FRESH_TIME = 240000;  // 4 minutes
+const INIT_COOLDOWN = 5000;
+const INSTANCE_FRESH_TIME = 240000;
 
 // Generate instance ID
 const instanceId = Math.random().toString(36).substring(7);
@@ -39,19 +41,18 @@ const state = {
 const app = express();
 const port = process.env.PORT || 8081;
 
-// Error handling middleware - must be first
-app.use((err, req, res, next) => {
-    console.error(`[Error] Unhandled error on instance ${instanceId}: ${err.message}`);
-    // Only send response if headers haven't been sent
-    if (!res.headersSent) {
-        res.status(500).send('Internal Server Error');
-    }
-});
-
 // Basic middleware
 app.use(morgan(':method :url :status :response-time ms'));
 app.use(bodyParser.json());
 app.use(cors());
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(`[Error] Unhandled error on instance ${instanceId}: ${err.message}`);
+    if (!res.headersSent) {
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));

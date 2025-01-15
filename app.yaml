@@ -34,3 +34,13 @@ readiness_check:
   success_threshold: 2
 
 entrypoint: node server.js
+
+# 添加临时目录配置
+volumes:
+  - name: ramdisk
+    volume_type: tmpfs
+    size_gb: 0.5
+
+# 添加文件系统配置
+beta_settings:
+  cloud_sql_instances: eonhome-445809:asia-southeast2:eon-db
