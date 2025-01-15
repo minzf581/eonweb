@@ -37,8 +37,27 @@ fi
 
 # 启动 Cloud SQL Proxy
 echo "Starting Cloud SQL Proxy..."
-./cloud_sql_proxy -instances=eonhome-445809:asia-southeast2:eon-db=tcp:5432 &
+if ! ./cloud_sql_proxy eonhome-445809:asia-southeast2:eon-db --port 5432 &; then
+    echo "Failed to start Cloud SQL Proxy"
+    exit 1
+fi
+
+# 等待代理启动
 sleep 5  # Give proxy time to establish connection
+
+# 检查代理是否正在运行
+if ! pgrep -f cloud_sql_proxy > /dev/null; then
+    echo "Cloud SQL Proxy failed to start"
+    exit 1
+fi
+
+# 检查端口是否可用
+if ! nc -z localhost 5432; then
+    echo "Cloud SQL Proxy port 5432 is not available"
+    exit 1
+fi
+
+echo "Cloud SQL Proxy started successfully"
 
 # 设置环境变量
 export NODE_ENV=production
