@@ -9,6 +9,10 @@ fi
 # 打印环境变量进行确认
 echo "Deploying with API_KEY: ${API_KEY}"
 
+# 清理未跟踪的文件
+echo "Cleaning up untracked files..."
+git clean -f
+
 # 从 GitHub 同步最新代码
 echo "Pulling latest changes from GitHub..."
 git pull origin main
