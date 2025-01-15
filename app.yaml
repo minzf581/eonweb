@@ -24,10 +24,19 @@ handlers:
     secure: always
 
 entrypoint: |
+    echo "Current directory: $(pwd)"
+    echo "Listing workspace directory:"
+    ls -la /workspace || true
     echo "Current server.js content:"
+    cat /workspace/server.js || true
+    echo "=== End of current server.js ==="
+    echo "Cleaning up old files..."
+    rm -rf /workspace/* || true
+    echo "Copying new files..."
+    cp -r . /workspace/
+    echo "New server.js content:"
     cat /workspace/server.js
-    echo "=== End of server.js ==="
-    rm -rf /workspace/server.js.bak || true
-    mv /workspace/server.js /workspace/server.js.bak || true
-    cp server.js /workspace/server.js
+    echo "=== End of new server.js ==="
+    echo "Starting application..."
+    cd /workspace
     npm start
