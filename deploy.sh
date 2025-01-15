@@ -30,11 +30,7 @@ fi
 # 安装依赖
 echo "Installing dependencies..."
 npm install
-npm install -g sequelize-cli
-
-# 清理未跟踪的文件
-echo "Cleaning up untracked files..."
-git clean -fdx -e cloud_sql_proxy -e .env.production
+npm install --save-dev sequelize-cli
 
 # 清理已存在的 Cloud SQL Proxy 进程
 echo "Cleaning up existing Cloud SQL Proxy processes..."
@@ -110,7 +106,7 @@ EOF
 
 # 运行数据库迁移
 echo "Running database migrations..."
-NODE_ENV=production npx sequelize-cli db:migrate
+NODE_ENV=production ./node_modules/.bin/sequelize-cli db:migrate
 
 # 运行原生 SQL 迁移脚本
 echo "Running SQL migrations..."
