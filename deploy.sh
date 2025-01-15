@@ -12,6 +12,7 @@ echo "Deploying with API_KEY: ${API_KEY}"
 # 完全清理并重建
 echo "Performing complete cleanup..."
 rm -rf node_modules package-lock.json
+npm cache clean --force
 npm install
 
 # 清理未跟踪的文件
