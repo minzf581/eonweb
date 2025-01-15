@@ -31,15 +31,22 @@ const PORT = parseInt(process.env.PORT || '8080', 10);
 
 // 在最开始添加请求日志中间件
 app.use((req, res, next) => {
-  console.log('收到请求:', {
+  console.log('[DEBUG] 收到请求:', {
     method: req.method,
     path: req.path,
-    headers: req.headers
+    headers: {
+      'x-api-key': req.headers['x-api-key'],
+      'content-type': req.headers['content-type']
+    },
+    body: req.body,
+    query: req.query,
+    params: req.params
   });
   next();
 });
 
 // 添加基础中间件
+console.log('[DEBUG] 注册基础中间件');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -47,6 +54,7 @@ app.use(compression());
 app.use(cors());
 
 // 注册所有 API 路由
+console.log('[DEBUG] 开始注册 API 路由');
 app.use('/api/auth', authRoutes);
 app.use('/api/proxy', proxyRoutes);
 app.use('/api/tasks', tasksRoutes);
@@ -54,13 +62,21 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/referral', referralRoutes);
 app.use('/api/bandwidth', bandwidthRoutes);
 app.use('/api/admin', adminRoutes);
+console.log('[DEBUG] API 路由注册完成');
 
 // 最后注册通用路由
 app.use('/', appRoutes);
 
 // 404 处理
 app.use((req, res) => {
-  console.log('404 Not Found:', req.path);
+  console.log('[DEBUG] 404 处理触发:', {
+    path: req.path,
+    method: req.method,
+    headers: {
+      'x-api-key': req.headers['x-api-key'],
+      'content-type': req.headers['content-type']
+    }
+  });
   res.status(404).json({ 
     success: false, 
     message: 'API endpoint not found',
@@ -70,26 +86,34 @@ app.use((req, res) => {
 
 // 错误处理
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('[DEBUG] 错误处理触发:', {
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  });
   res.status(500).json({ success: false, message: err.message });
 });
 
 console.log('Starting server on port:', PORT);
 
-// Health check endpoints BEFORE any other middleware
+// Health check endpoints
 app.get('/_ah/start', (req, res) => {
+  console.log('[DEBUG] 收到启动检查请求');
   res.status(200).send('Ok');
 });
 
 app.get('/_ah/health', (req, res) => {
+  console.log('[DEBUG] 收到健康检查请求');
   res.status(200).send('Ok');
 });
 
 // 服务器启动时检查必要的环境变量
+console.log('[DEBUG] 开始检查环境变量');
 const requiredEnvVars = ['API_KEY', 'JWT_SECRET'];
 requiredEnvVars.forEach(varName => {
   if (!process.env[varName]) {
-    console.error(`错误: 环境变量 ${varName} 未设置`);
+    console.error(`[DEBUG] 环境变量 ${varName} 未设置`);
     process.exit(1);
   }
 });
@@ -116,20 +140,28 @@ server.listen(PORT);
 
 function startServer(port) {
   app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`[DEBUG] 服务器启动在端口 ${port}`);
+    console.log('[DEBUG] 当前注册的路由:', app._router.stack
+      .filter(r => r.route)
+      .map(r => ({
+        path: r.route.path,
+        methods: Object.keys(r.route.methods)
+      }))
+    );
   });
 }
 
 // 初始化应用
 async function initializeApp() {
   try {
+    console.log('[DEBUG] 开始初始化应用');
     // 连接数据库
     await sequelize.authenticate();
-    console.log('Database connection has been established successfully.');
+    console.log('[DEBUG] 数据库连接成功');
     
-    console.log('App initialization completed successfully');
+    console.log('[DEBUG] 应用初始化完成');
   } catch (error) {
-    console.error('Failed to initialize app:', error);
+    console.error('[DEBUG] 应用初始化失败:', error);
     throw error;
   }
 }
