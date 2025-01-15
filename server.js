@@ -67,24 +67,16 @@ app.use(cors());
 // 注册所有 API 路由
 console.log('[DEBUG] 开始注册 API 路由');
 
-// 打印每个路由的详细信息
-const printRouteDetails = (prefix, router) => {
-  console.log(`[DEBUG] ${prefix} 路由详情:`, {
-    stack: router.stack
-      .filter(r => r.route)
-      .map(r => ({
-        path: r.route.path,
-        methods: Object.keys(r.route.methods),
-        middleware: r.route.stack.length
-      }))
+// 直接注册路由
+app.use('/api/proxy', (req, res, next) => {
+  console.log('[DEBUG] 代理路由中间件:', {
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl,
+    path: req.path,
+    method: req.method
   });
-};
-
-printRouteDetails('/api/proxy', proxyRoutes);
-// 确保路由处理器能正确处理路径
-const proxyRouter = express.Router();
-proxyRouter.use('/', proxyRoutes);
-app.use('/api/proxy', proxyRouter);
+  next();
+}, proxyRoutes);
 
 // 验证路由模块
 if (!proxyRoutes || !proxyRoutes.stack) {
@@ -94,10 +86,13 @@ if (!proxyRoutes || !proxyRoutes.stack) {
 
 // 打印路由信息
 console.log('[DEBUG] 已配置的路由:', {
-  proxy: proxyRoutes.stack.map(r => ({
-    path: r.route?.path,
-    methods: r.route?.methods
-  })).filter(r => r.path)
+  proxy: proxyRoutes.stack
+    .filter(r => r.route)
+    .map(r => ({
+      path: r.route.path,
+      methods: Object.keys(r.route.methods),
+      fullPath: `/api/proxy${r.route.path}`
+    }))
 });
 
 app.use('/api/auth', authRoutes);

@@ -12,9 +12,11 @@ console.log('[DEBUG] 代理路由配置:', {
 
 // 调试中间件
 router.use((req, res, next) => {
-  console.log('代理路由收到请求:', {
+  console.log('[DEBUG] 代理路由收到请求:', {
     method: req.method,
     path: req.path,
+    baseUrl: req.baseUrl,
+    originalUrl: req.originalUrl,
     headers: req.headers,
     body: req.body
   });
@@ -48,7 +50,12 @@ router.post('/nodes/report', async (req, res) => {
 // 节点统计路由
 router.get('/nodes/:deviceId/stats', async (req, res) => {
   console.log('[DEBUG] 进入节点统计路由处理');
-  console.log('获取节点统计:', req.params.deviceId);
+  console.log('获取节点统计:', {
+    deviceId: req.params.deviceId,
+    path: req.path,
+    baseUrl: req.baseUrl,
+    originalUrl: req.originalUrl
+  });
   try {
     console.log('返回节点统计数据');
     res.json({
@@ -78,7 +85,8 @@ console.log('[DEBUG] 代理路由配置完成:', {
     .map(r => ({
       path: r.route.path,
       methods: Object.keys(r.route.methods),
-      stack: r.route.stack.length
+      stack: r.route.stack.length,
+      fullPath: `/api/proxy${r.route.path}`
     }))
 });
 
