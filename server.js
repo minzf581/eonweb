@@ -117,7 +117,13 @@ async function initializeApp() {
         path: req.path,
         method: req.method,
         params: req.params,
-        stack: new Error().stack
+        stack: new Error().stack,
+        matchedRoute: proxyRoutes.stack
+          .filter(r => r.route)
+          .find(r => {
+            const regexp = new RegExp(`^${r.route.path.replace(/:[^/]+/g, '[^/]+')}$`);
+            return regexp.test(req.path) && r.route.methods[req.method.toLowerCase()];
+          })
       });
       next();
     });
