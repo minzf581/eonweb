@@ -263,8 +263,13 @@ app.use('/api/proxy', (req, res, next) => {
 });
 
 // 错误处理中间件
+app.use((req, res, next) => {
+  console.log('404 Not Found:', req.path);
+  res.status(404).json({ success: false, message: 'API endpoint not found' });
+});
+
 app.use((err, req, res, next) => {
-  console.error('错误:', err);
+  console.error('Error:', err);
   res.status(500).json({ success: false, message: err.message });
 });
 
