@@ -103,6 +103,34 @@ router.use((req, res, next) => {
     body: req.body,
     stack: new Error().stack
   });
+  
+  // 检查路由是否匹配
+  const matchedRoute = router.stack
+    .filter(r => r.route)
+    .find(r => {
+      const matched = r.regexp.test(req.path);
+      const methodMatched = r.route.methods[req.method.toLowerCase()];
+      console.log('[DEBUG] 路由匹配检查:', {
+        requestId: req.requestId,
+        path: req.path,
+        routePath: r.route.path,
+        regexp: String(r.regexp),
+        matched,
+        method: req.method,
+        methodMatched,
+        methods: Object.keys(r.route.methods)
+      });
+      return matched && methodMatched;
+    });
+  
+  if (!matchedRoute) {
+    console.log('[DEBUG] 未找到匹配的路由:', {
+      requestId: req.requestId,
+      path: req.path,
+      method: req.method
+    });
+  }
+  
   next();
 });
 

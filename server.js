@@ -29,10 +29,36 @@ const fs = require('fs');
 const app = express();
 const PORT = parseInt(process.env.PORT || '8080', 10);
 
+// 创建一个 Promise 来追踪应用初始化状态
+let appInitialized = false;
+const initializationPromise = new Promise((resolve, reject) => {
+  app.initializeApp = resolve;
+  app.initializationFailed = reject;
+});
+
 // 初始化应用
 async function initializeApp() {
   try {
     console.log('[DEBUG] 开始初始化应用');
+    
+    // 添加等待初始化的中间件
+    app.use(async (req, res, next) => {
+      if (!appInitialized) {
+        console.log('[DEBUG] 等待应用初始化完成...');
+        try {
+          await initializationPromise;
+          console.log('[DEBUG] 应用初始化已完成，继续处理请求');
+        } catch (error) {
+          console.error('[DEBUG] 应用初始化失败:', error);
+          return res.status(503).json({
+            success: false,
+            message: 'Application is initializing',
+            requestId: req.requestId
+          });
+        }
+      }
+      next();
+    });
     
     // 先连接数据库
     await new Promise((resolve, reject) => {
@@ -253,8 +279,11 @@ async function initializeApp() {
     });
     
     console.log('[DEBUG] 应用初始化完成');
+    appInitialized = true;
+    app.initializeApp();
   } catch (error) {
     console.error('[DEBUG] 应用初始化失败:', error);
+    app.initializationFailed(error);
     throw error;
   }
 }
