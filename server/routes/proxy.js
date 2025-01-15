@@ -76,17 +76,21 @@ const handlers = {
 
 // 调试中间件
 router.use((req, res, next) => {
+  // 移除前缀以匹配路由
+  const path = req.path.replace(/^\/api\/proxy/, '');
+  
   req.requestPath.push({
     stage: 'proxyRouteHandler',
     timestamp: Date.now(),
     path: req.path,
+    strippedPath: path,
     baseUrl: req.baseUrl,
     stack: router.stack
       .filter(r => r.route)
       .map(r => ({
         path: r.route.path,
         regexp: String(r.regexp),
-        matched: r.regexp.test(req.path),
+        matched: r.regexp.test(path),
         methods: r.route.methods,
         methodMatched: r.route.methods[req.method.toLowerCase()]
       }))
@@ -96,6 +100,7 @@ router.use((req, res, next) => {
     requestId: req.requestId,
     method: req.method,
     path: req.path,
+    strippedPath: path,
     baseUrl: req.baseUrl,
     originalUrl: req.originalUrl,
     params: req.params,
@@ -108,11 +113,11 @@ router.use((req, res, next) => {
   const matchedRoute = router.stack
     .filter(r => r.route)
     .find(r => {
-      const matched = r.regexp.test(req.path);
+      const matched = r.regexp.test(path);
       const methodMatched = r.route.methods[req.method.toLowerCase()];
       console.log('[DEBUG] 路由匹配检查:', {
         requestId: req.requestId,
-        path: req.path,
+        path: path,
         routePath: r.route.path,
         regexp: String(r.regexp),
         matched,
@@ -126,7 +131,7 @@ router.use((req, res, next) => {
   if (!matchedRoute) {
     console.log('[DEBUG] 未找到匹配的路由:', {
       requestId: req.requestId,
-      path: req.path,
+      path: path,
       method: req.method
     });
   }

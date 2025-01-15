@@ -153,10 +153,14 @@ async function initializeApp() {
     // 注册代理路由
     const proxyRouter = express.Router();
     proxyRouter.use((req, res, next) => {
+      // 移除前缀以匹配路由
+      const path = req.path.replace(/^\/api\/proxy/, '');
+      
       req.requestPath.push({
         stage: 'proxyRouter',
         timestamp: Date.now(),
         path: req.path,
+        strippedPath: path,
         baseUrl: req.baseUrl
       });
       
@@ -165,6 +169,7 @@ async function initializeApp() {
         originalUrl: req.originalUrl,
         baseUrl: req.baseUrl,
         path: req.path,
+        strippedPath: path,
         method: req.method,
         params: req.params,
         stack: new Error().stack,
@@ -172,14 +177,24 @@ async function initializeApp() {
           .filter(r => r.route)
           .find(r => {
             const regexp = new RegExp(`^${r.route.path.replace(/:[^/]+/g, '[^/]+')}$`);
-            return regexp.test(req.path) && r.route.methods[req.method.toLowerCase()];
+            const matched = regexp.test(path);
+            console.log('[DEBUG] 路由匹配检查:', {
+              requestId: req.requestId,
+              path: path,
+              routePath: r.route.path,
+              regexp: regexp.toString(),
+              matched,
+              method: req.method,
+              methodMatched: r.route.methods[req.method.toLowerCase()]
+            });
+            return matched && r.route.methods[req.method.toLowerCase()];
           })
       });
       next();
     });
     
     // 将代理路由注册到 API 路由器
-    proxyRouter.use('/', proxyRoutes);
+    proxyRouter.use(proxyRoutes);
     apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
