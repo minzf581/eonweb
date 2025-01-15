@@ -33,9 +33,4 @@ readiness_check:
   failure_threshold: 2
   success_threshold: 2
 
-entrypoint: |
-  rm -rf node_modules package-lock.json &&
-  mkdir -p node_modules &&
-  chmod -R 777 node_modules &&
-  npm install --production --no-optional --no-audit --no-package-lock &&
-  node server.js
+entrypoint: node server.js
