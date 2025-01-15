@@ -141,7 +141,7 @@ async function initializeApp() {
     
     // 注册代理路由
     console.log('[DEBUG] 注册代理路由');
-    app.use('/api/proxy', proxyRouter);  // 直接在 app 上注册代理路由
+    apiRouter.use('/proxy', proxyRouter);  // 将代理路由注册到 apiRouter
     
     // 注册其他路由到 API 路由器
     apiRouter.use('/auth', authRoutes);
