@@ -67,6 +67,22 @@ app.use(cors());
 // 注册所有 API 路由
 console.log('[DEBUG] 开始注册 API 路由');
 
+// 打印每个路由的详细信息
+const printRouteDetails = (prefix, router) => {
+  console.log(`[DEBUG] ${prefix} 路由详情:`, {
+    stack: router.stack
+      .filter(r => r.route)
+      .map(r => ({
+        path: `${prefix}${r.route.path}`,
+        methods: Object.keys(r.route.methods),
+        middleware: r.route.stack.length
+      }))
+  });
+};
+
+printRouteDetails('/api/proxy', proxyRoutes);
+app.use('/api/proxy', proxyRoutes);
+
 // 验证路由模块
 if (!proxyRoutes || !proxyRoutes.stack) {
   console.error('[DEBUG] proxyRoutes 不是有效的 Router 实例');
@@ -82,7 +98,6 @@ console.log('[DEBUG] 已配置的路由:', {
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/proxy', proxyRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/referral', referralRoutes);
@@ -101,7 +116,14 @@ app.use((req, res) => {
     headers: {
       'x-api-key': req.headers['x-api-key'],
       'content-type': req.headers['content-type']
-    }
+    },
+    matchedRoutes: app._router.stack
+      .filter(r => r.route || r.name === 'router')
+      .map(r => ({
+        type: r.route ? 'route' : 'middleware',
+        path: r.route?.path || r.regexp?.toString(),
+        methods: r.route ? Object.keys(r.route.methods) : undefined
+      }))
   });
   res.status(404).json({ 
     success: false, 
