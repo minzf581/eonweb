@@ -27,6 +27,7 @@ const bandwidthRoutes = require('./routes/bandwidth');
 const fs = require('fs');
 
 const app = express();
+const PORT = parseInt(process.env.PORT || '8080', 10);
 
 // 在最开始添加请求日志中间件
 app.use((req, res, next) => {
@@ -37,6 +38,13 @@ app.use((req, res, next) => {
   });
   next();
 });
+
+// 添加基础中间件
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(compression());
+app.use(cors());
 
 // 注册所有 API 路由
 app.use('/api/auth', authRoutes);
@@ -66,183 +74,32 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: err.message });
 });
 
-// Force the server to use the PORT from environment variable
-const PORT = parseInt(process.env.PORT || '8080', 10);
 console.log('Starting server on port:', PORT);
 
 // Health check endpoints BEFORE any other middleware
 app.get('/_ah/start', (req, res) => {
-    console.log('Received App Engine start request');
-    res.status(200).send('OK');
-});
-
-app.get('/_ah/warmup', (req, res) => {
-    console.log('Received App Engine warmup request');
-    res.status(200).send('OK');
+  res.status(200).send('Ok');
 });
 
 app.get('/_ah/health', (req, res) => {
-    console.log('Received health check request');
-    res.status(200).send('OK');
+  res.status(200).send('Ok');
 });
 
-app.get('/_ah/stop', (req, res) => {
-    console.log('Received App Engine stop request');
-    res.status(200).send('OK');
-    // Cleanup in the background
-    cleanup().catch(err => {
-        console.error('Failed to cleanup:', err);
-    });
+// 服务器启动时检查必要的环境变量
+const requiredEnvVars = ['API_KEY', 'JWT_SECRET'];
+requiredEnvVars.forEach(varName => {
+  if (!process.env[varName]) {
+    console.error(`错误: 环境变量 ${varName} 未设置`);
+    process.exit(1);
+  }
 });
 
-// Middleware setup
-const corsOptions = {
-    origin: [
-        'http://localhost:8080',
-        'http://localhost:3000',
-        'https://eonhome-445809.et.r.appspot.com'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-};
-
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(cookieParser());
-app.use(compression());
-
-// Configure static file serving
-const publicPath = path.join(__dirname, 'public');
-console.log('[Static] Serving static files from:', publicPath);
-
-// Serve static files from /static path
-app.use('/static', express.static(path.join(publicPath, 'static')));
-
-// Serve static files from root path
-app.use(express.static(publicPath));
-
-// Serve index.html for root path
-app.get('/', (req, res) => {
-    console.log('[Route] Serving index.html for root path');
-    const indexPath = path.join(publicPath, 'index.html');
-    console.log('[Route] Sending index.html from:', indexPath);
-    res.sendFile(indexPath, (err) => {
-        if (err) {
-            console.error('[Route] Error sending index.html:', err);
-            res.status(500).send('Error loading index.html');
-        } else {
-            console.log('[Route] Successfully served index.html');
-        }
-    });
-});
-
-// Handle SPA routing
-app.get('/*', (req, res) => {
-    // Log the request
-    console.log('[Route] Handling SPA route:', req.path);
-    
-    // First try to serve as a static file
-    const staticPath = path.join(publicPath, req.path);
-    if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
-        console.log('[Static] Serving:', req.path);
-        res.sendFile(staticPath);
-        return;
-    }
-    
-    // If not a static file, serve index.html
-    console.log('[Route] Not found:', req.path);
-    res.sendFile(path.join(publicPath, 'index.html'));
-});
-
-// Global error handler - place this after all routes
-app.use((err, req, res, next) => {
-    console.error('Global error handler caught:', err);
-    console.error('Error stack:', err.stack);
-    res.status(500).json({
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
-
-// Separate initialization function
-async function initializeApp() {
-    try {
-        // Request logging middleware
-        app.use((req, res, next) => {
-            const start = Date.now();
-            res.on('finish', () => {
-                const duration = Date.now() - start;
-                console.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
-            });
-            next();
-        });
-        
-        console.log('App initialization completed successfully');
-    } catch (error) {
-        console.error('Failed to initialize app:', error);
-        throw error;
-    }
-}
-
-// Cleanup function
-async function cleanup() {
-    try {
-        await sequelize.close();
-        console.log('Database connection closed successfully');
-    } catch (error) {
-        console.error('Error during cleanup:', error);
-        throw error;
-    }
-}
-
-// Get the database instance
-const db = require('./models');
-
-// Graceful shutdown handler
-async function gracefulShutdown() {
-    console.log('Starting graceful shutdown...');
-    try {
-        // Close database connections
-        if (db.sequelize && db.sequelize.connectionManager) {
-            await db.sequelize.connectionManager.close();
-            console.log('Database connections closed successfully');
-        }
-
-        // Close server
-        if (server) {
-            server.close(() => {
-                console.log('Server closed successfully');
-                process.exit(0);
-            });
-        } else {
-            process.exit(0);
-        }
-    } catch (error) {
-        console.error('Error during shutdown:', error);
-        process.exit(1);
-    }
-}
-
-// Handle shutdown signals
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-    console.error('Unhandled Exception:', error);
-    gracefulShutdown();
-});
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Promise Rejection:', reason);
-    gracefulShutdown();
-});
+console.log('环境变量检查通过，API_KEY:', process.env.API_KEY);
 
 // 在启动服务器之前检查端口是否被占用
 const net = require('net');
 const server = net.createServer();
+
 server.once('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.log(`Port ${PORT} is busy, trying ${PORT + 1}`);
@@ -263,25 +120,18 @@ function startServer(port) {
   });
 }
 
-initializeApp();
-
-// 在代理节点路由处添加
-app.use('/api/proxy', (req, res, next) => {
-  console.log('代理节点请求:', {
-    method: req.method,
-    path: req.path,
-    body: req.body
-  });
-  next();
-});
-
-// 服务器启动时检查必要的环境变量
-const requiredEnvVars = ['API_KEY', 'JWT_SECRET'];
-requiredEnvVars.forEach(varName => {
-  if (!process.env[varName]) {
-    console.error(`错误: 环境变量 ${varName} 未设置`);
-    process.exit(1);
+// 初始化应用
+async function initializeApp() {
+  try {
+    // 连接数据库
+    await sequelize.authenticate();
+    console.log('Database connection has been established successfully.');
+    
+    console.log('App initialization completed successfully');
+  } catch (error) {
+    console.error('Failed to initialize app:', error);
+    throw error;
   }
-});
+}
 
-console.log('环境变量检查通过，API_KEY:', process.env.API_KEY);
+initializeApp();
