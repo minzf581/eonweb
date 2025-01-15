@@ -139,62 +139,64 @@ async function initializeApp() {
     console.log('[DEBUG] 开始注册 API 路由');
     const apiRouter = express.Router();
     
-    // 打印代理路由配置
-    console.log('[DEBUG] 代理路由配置:', {
-      routes: proxyRoutes.stack
-        .filter(r => r.route)
-        .map(r => ({
-          path: r.route.path,
-          methods: Object.keys(r.route.methods),
-          regexp: String(r.regexp)
-        }))
+    // 打印 API 路由器的初始状态
+    console.log('[DEBUG] API 路由器初始状态:', {
+      stack: apiRouter.stack.map(r => ({
+        name: r.name,
+        regexp: String(r.regexp),
+        path: r.route?.path,
+        handle: r.handle?.name
+      }))
     });
     
     // 注册代理路由
     const proxyRouter = express.Router();
+    
+    // 打印代理路由器的初始状态
+    console.log('[DEBUG] 代理路由器初始状态:', {
+      stack: proxyRouter.stack.map(r => ({
+        name: r.name,
+        regexp: String(r.regexp),
+        path: r.route?.path,
+        handle: r.handle?.name
+      }))
+    });
+    
     proxyRouter.use((req, res, next) => {
-      // 移除前缀以匹配路由
-      const path = req.path.replace(/^\/api\/proxy/, '');
-      
-      req.requestPath.push({
-        stage: 'proxyRouter',
-        timestamp: Date.now(),
-        path: req.path,
-        strippedPath: path,
-        baseUrl: req.baseUrl
-      });
-      
-      console.log('[DEBUG] 代理路由中间件:', {
+      // 打印请求信息
+      console.log('[DEBUG] 代理路由中间件收到请求:', {
         requestId: req.requestId,
-        originalUrl: req.originalUrl,
-        baseUrl: req.baseUrl,
-        path: req.path,
-        strippedPath: path,
         method: req.method,
+        path: req.path,
+        baseUrl: req.baseUrl,
+        originalUrl: req.originalUrl,
+        headers: req.headers,
         params: req.params,
-        stack: new Error().stack,
-        matchedRoute: proxyRoutes.stack
-          .filter(r => r.route)
-          .find(r => {
-            const regexp = new RegExp(`^${r.route.path.replace(/:[^/]+/g, '[^/]+')}$`);
-            const matched = regexp.test(path);
-            console.log('[DEBUG] 路由匹配检查:', {
-              requestId: req.requestId,
-              path: path,
-              routePath: r.route.path,
-              regexp: regexp.toString(),
-              matched,
-              method: req.method,
-              methodMatched: r.route.methods[req.method.toLowerCase()]
-            });
-            return matched && r.route.methods[req.method.toLowerCase()];
-          })
+        query: req.query,
+        body: req.body
       });
+      
+      // 打印路由栈信息
+      console.log('[DEBUG] 代理路由栈:', {
+        proxyRoutes: proxyRoutes.stack.map(r => ({
+          route: r.route?.path,
+          regexp: String(r.regexp),
+          methods: r.route?.methods,
+          stack: r.route?.stack?.length
+        })),
+        proxyRouter: proxyRouter.stack.map(r => ({
+          name: r.name,
+          regexp: String(r.regexp),
+          path: r.route?.path,
+          handle: r.handle?.name
+        }))
+      });
+      
       next();
     });
     
     // 将代理路由注册到 API 路由器
-    proxyRouter.use(proxyRoutes);
+    proxyRouter.use('/', proxyRoutes);
     apiRouter.use('/proxy', proxyRouter);
     
     // 注册其他路由到 API 路由器
@@ -280,17 +282,30 @@ async function initializeApp() {
       tryPort(PORT);
     });
     
-    // 打印最终路由配置
+    // 打印最终的路由配置
     console.log('[DEBUG] 最终路由配置:', {
-      routes: app._router.stack
-        .filter(r => r.route || r.name === 'router')
-        .map(r => ({
-          type: r.route ? 'route' : 'middleware',
-          path: r.route?.path || r.regexp?.toString(),
-          methods: r.route?.methods,
-          name: r.name,
-          handle: r.handle?.stack?.length
+      api: apiRouter.stack.map(r => ({
+        name: r.name,
+        regexp: String(r.regexp),
+        path: r.route?.path,
+        handle: r.handle?.name,
+        stack: r.handle?.stack?.map(s => ({
+          name: s.name,
+          regexp: String(s.regexp),
+          path: s.route?.path
         }))
+      })),
+      proxy: proxyRouter.stack.map(r => ({
+        name: r.name,
+        regexp: String(r.regexp),
+        path: r.route?.path,
+        handle: r.handle?.name,
+        stack: r.handle?.stack?.map(s => ({
+          name: s.name,
+          regexp: String(s.regexp),
+          path: s.route?.path
+        }))
+      }))
     });
     
     console.log('[DEBUG] 应用初始化完成');
