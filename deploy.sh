@@ -83,7 +83,10 @@ head -n 10 $BUILD_DIR/server.js
 # 在构建目录中安装依赖
 echo "Installing dependencies in build directory..."
 cd $BUILD_DIR
-npm install --production
+rm -rf node_modules package-lock.json
+mkdir -p node_modules
+chmod -R 777 node_modules
+npm install --production --no-optional
 cd ..
 
 # 清理 GCP 缓存和构建文件
