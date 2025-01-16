@@ -57,6 +57,11 @@ apiRouter.use((req, res, next) => {
         path: req.path,
         baseUrl: req.baseUrl,
         originalUrl: req.originalUrl,
+        method: req.method,
+        headers: {
+            'x-api-key': req.headers['x-api-key'] ? '***' : undefined,
+            'content-type': req.headers['content-type']
+        },
         timestamp
     });
     next();
@@ -65,7 +70,7 @@ apiRouter.use((req, res, next) => {
 // API Routes middleware - check initialization
 apiRouter.use(async (req, res, next) => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}][API] 请求 ${req.path}`);
+    console.log(`[${timestamp}][API] 请求 ${req.method} ${req.path}`);
     if (!state.isInitialized) {
         try {
             const success = await initialize();
@@ -82,17 +87,37 @@ apiRouter.use(async (req, res, next) => {
 });
 
 // 注册各个模块的路由
+console.log(`[${new Date().toISOString()}][DEBUG] 开始注册模块路由`);
+
 apiRouter.use('/auth', authRoutes);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/auth 路由`);
+
 apiRouter.use('/referral', referralRoutes);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/referral 路由`);
+
 apiRouter.use('/tasks', tasksRoutes);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/tasks 路由`);
+
 apiRouter.use('/stats', statsRoutes);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/stats 路由`);
+
 apiRouter.use('/admin', adminRoutes);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/admin 路由`);
+
 apiRouter.use('/points', pointsRoutes);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/points 路由`);
+
 apiRouter.use('/proxy', proxyRoutes);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/proxy 路由`);
+
 apiRouter.use('/users', usersRoutes);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/users 路由`);
+
+console.log(`[${new Date().toISOString()}][DEBUG] 模块路由注册完成`);
 
 // 将API路由器挂载到/api路径
 app.use('/api', apiRouter);
+console.log(`[${new Date().toISOString()}][DEBUG] API路由已挂载到 /api 路径`);
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
