@@ -26,7 +26,7 @@ const validateApiKey = (req, res, next) => {
         logWithTimestamp('验证失败：缺少 API Key', { version });
         res.status(401).json({
             success: false,
-            message: 'API key is required'
+            message: 'API key not provided'
         });
         return;
     }
