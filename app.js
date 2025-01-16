@@ -46,6 +46,24 @@ app.use(morgan(':method :url :status :response-time ms'));
 app.use(bodyParser.json());
 app.use(cors());
 
+// API Routes middleware - check initialization
+app.use('/api/*', async (req, res, next) => {
+    console.log(`[API] Request to ${req.path} at ${new Date().toISOString()}`);
+    if (!state.isInitialized) {
+        try {
+            const success = await initialize();
+            if (!success) {
+                console.error('[API] Service not ready - initialization failed');
+                return res.status(503).json({ error: 'Service unavailable' });
+            }
+        } catch (error) {
+            console.error('[API] Error during initialization:', error);
+            return res.status(503).json({ error: 'Service unavailable' });
+        }
+    }
+    next();
+});
+
 // API routes
 console.log('[DEBUG] 开始注册 API 路由');
 const apiRouter = express.Router();
@@ -55,7 +73,8 @@ apiRouter.use((req, res, next) => {
     console.log('[DEBUG] API请求:', {
         path: req.path,
         baseUrl: req.baseUrl,
-        originalUrl: req.originalUrl
+        originalUrl: req.originalUrl,
+        timestamp: new Date().toISOString()
     });
     next();
 });
@@ -222,24 +241,6 @@ app.get('/_ah/ready', (req, res) => {
         console.log('[Health Check] Ready check failed - not initialized');
         res.status(503).send('Not ready');
     }
-});
-
-// API Routes middleware - check initialization
-app.use('/api/*', async (req, res, next) => {
-    console.log(`[API] Request to ${req.path}`);
-    if (!state.isInitialized) {
-        try {
-            const success = await initialize();
-            if (!success) {
-                console.error('[API] Service not ready - initialization failed');
-                return res.status(503).json({ error: 'Service unavailable' });
-            }
-        } catch (error) {
-            console.error('[API] Error during initialization:', error);
-            return res.status(503).json({ error: 'Service unavailable' });
-        }
-    }
-    next();
 });
 
 // Handle favicon.ico
