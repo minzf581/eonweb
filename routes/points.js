@@ -5,8 +5,20 @@ const { authenticateApiKey } = require('../middleware/auth');
 const { isIP } = require('net');
 const sequelize = require('../config/database');
 
+console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011602');
+console.log('[Points Router] 已加载的依赖:', {
+    express: !!express,
+    router: !!router,
+    User: !!User,
+    PointHistory: !!PointHistory,
+    authenticateApiKey: !!authenticateApiKey,
+    isIP: !!isIP,
+    sequelize: !!sequelize
+});
+
 // Validate IP address
 const validateIP = (ipv4, ipv6) => {
+    console.log('[Points Router] 验证IP地址:', { ipv4, ipv6 });
     const errors = [];
     
     if (!ipv4 && !ipv6) {
@@ -25,7 +37,9 @@ const validateIP = (ipv4, ipv6) => {
 };
 
 // Update user points from bandwidth sharing plugin
+console.log('[Points Router] 注册 /update 路由');
 router.post('/update', authenticateApiKey, async (req, res) => {
+    console.log('[Points Router] 处理 /update 请求');
     try {
         console.log('[Points] Received update request:', req.body);
         

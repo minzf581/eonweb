@@ -58,12 +58,19 @@ for file in server.js app.js routes/proxy.js routes/points.js models/index.js ro
         echo "File size: $(wc -c < ".deploy/$file") bytes"
         echo "Line count: $(wc -l < ".deploy/$file")"
         echo "MD5 hash: $(md5sum ".deploy/$file" 2>/dev/null || md5 ".deploy/$file")"
-        echo "Last modified: $(stat -f "%Sm" ".deploy/$file")"
+        echo "Last modified: $(stat -f "%Sm" ".deploy/$file" 2>/dev/null || stat ".deploy/$file")"
         echo "Content preview (first 10 lines):"
         head -n 10 ".deploy/$file"
         echo "Content preview (lines 25-35):"
         sed -n '25,35p' ".deploy/$file"
-        echo "----------------------------------------"
+        
+        # 特别检查 points.js 文件
+        if [ "$file" = "routes/points.js" ]; then
+            echo "=== Special verification for points.js ==="
+            echo "Checking route definitions:"
+            grep -A 5 "router\..*(" ".deploy/$file" || echo "No route definitions found!"
+            echo "----------------------------------------"
+        fi
     else
         echo "ERROR: $file is missing!"
         exit 1
