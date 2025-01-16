@@ -2,33 +2,36 @@ const express = require('express');
 const { validateApiKey } = require('../middleware/auth');
 
 const router = express.Router();
-console.log('[Proxy] 创建路由实例');
+const version = '2024011626';
+const timestamp = new Date().toISOString();
+console.log(`[${timestamp}][Proxy] 创建路由实例 version=${version}`);
 
 // 调试中间件
 router.use((req, res, next) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}][Proxy] 收到请求:`, {
-        version: '2024011601',
+    const reqTimestamp = new Date().toISOString();
+    console.log(`[${reqTimestamp}][Proxy] 收到请求:`, {
+        version,
         path: req.path,
         method: req.method,
         baseUrl: req.baseUrl,
         originalUrl: req.originalUrl,
         params: req.params,
         query: req.query,
-        headers: req.headers
+        headers: {
+            'x-api-key': req.headers['x-api-key'] ? '***' : undefined,
+            'content-type': req.headers['content-type']
+        }
     });
     next();
 });
 
-console.log('[Proxy] 注册 GET /nodes/:deviceId/stats 路由');
-// 获取节点统计信息
-router.get('/nodes/:deviceId/stats', validateApiKey, async (req, res) => {
-    const timestamp = new Date().toISOString();
+// 定义路由处理函数
+const getNodeStats = async (req, res) => {
+    const fnTimestamp = new Date().toISOString();
     try {
-        console.log(`[${timestamp}][Proxy] 处理节点统计请求:`, {
-            version: '2024011601',
-            params: req.params,
-            headers: req.headers
+        console.log(`[${fnTimestamp}][Proxy] 处理节点统计请求:`, {
+            version,
+            params: req.params
         });
         res.json({
             success: true,
@@ -46,45 +49,51 @@ router.get('/nodes/:deviceId/stats', validateApiKey, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(`[${timestamp}][Proxy] 获取节点统计失败:`, error);
+        console.error(`[${fnTimestamp}][Proxy] 获取节点统计失败:`, error);
         res.status(500).json({
             success: false,
             message: error.message
         });
     }
-});
+};
 
-console.log('[Proxy] 注册 POST /nodes/report 路由');
-// 处理节点报告
-router.post('/nodes/report', validateApiKey, async (req, res) => {
-    const timestamp = new Date().toISOString();
+const handleNodeReport = async (req, res) => {
+    const fnTimestamp = new Date().toISOString();
     try {
-        console.log(`[${timestamp}][Proxy] 处理节点报告:`, {
-            version: '2024011601',
-            body: req.body,
-            headers: req.headers
+        console.log(`[${fnTimestamp}][Proxy] 处理节点报告:`, {
+            version,
+            body: req.body
         });
         res.json({
             success: true,
             message: 'Report received'
         });
     } catch (error) {
-        console.error(`[${timestamp}][Proxy] 处理节点报告失败:`, error);
+        console.error(`[${fnTimestamp}][Proxy] 处理节点报告失败:`, error);
         res.status(500).json({
             success: false,
             message: error.message
         });
     }
-});
+};
+
+// 注册路由
+console.log(`[${timestamp}][Proxy] 开始注册路由`);
+
+console.log(`[${timestamp}][Proxy] 注册 GET /nodes/:deviceId/stats 路由`);
+router.get('/nodes/:deviceId/stats', validateApiKey, getNodeStats);
+
+console.log(`[${timestamp}][Proxy] 注册 POST /nodes/report 路由`);
+router.post('/nodes/report', validateApiKey, handleNodeReport);
 
 // 打印路由配置
-console.log('[Proxy] 路由配置完成，注册的路由:', 
-    router.stack
-        .filter(r => r.route)
-        .map(r => ({
-            path: r.route.path,
-            methods: Object.keys(r.route.methods)
-        }))
-);
+const routes = router.stack
+    .filter(r => r.route)
+    .map(r => ({
+        path: r.route.path,
+        methods: Object.keys(r.route.methods)
+    }));
+
+console.log(`[${timestamp}][Proxy] 路由配置完成，注册的路由:`, routes);
 
 module.exports = router;

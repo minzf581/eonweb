@@ -89,35 +89,57 @@ apiRouter.use(async (req, res, next) => {
 // 注册各个模块的路由
 console.log(`[${new Date().toISOString()}][DEBUG] 开始注册模块路由`);
 
+// 获取路由信息的辅助函数
+function getRouteInfo(router) {
+    return router.stack
+        .filter(layer => layer.route)
+        .map(layer => ({
+            path: layer.route.path,
+            methods: Object.keys(layer.route.methods)
+        }));
+}
+
+// 注册路由并记录信息
 apiRouter.use('/auth', authRoutes);
-console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/auth 路由`);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/auth 路由:`, getRouteInfo(authRoutes));
 
 apiRouter.use('/referral', referralRoutes);
-console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/referral 路由`);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/referral 路由:`, getRouteInfo(referralRoutes));
 
 apiRouter.use('/tasks', tasksRoutes);
-console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/tasks 路由`);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/tasks 路由:`, getRouteInfo(tasksRoutes));
 
 apiRouter.use('/stats', statsRoutes);
-console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/stats 路由`);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/stats 路由:`, getRouteInfo(statsRoutes));
 
 apiRouter.use('/admin', adminRoutes);
-console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/admin 路由`);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/admin 路由:`, getRouteInfo(adminRoutes));
 
 apiRouter.use('/points', pointsRoutes);
-console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/points 路由`);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/points 路由:`, getRouteInfo(pointsRoutes));
 
 apiRouter.use('/proxy', proxyRoutes);
-console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/proxy 路由`);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/proxy 路由:`, getRouteInfo(proxyRoutes));
 
 apiRouter.use('/users', usersRoutes);
-console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/users 路由`);
+console.log(`[${new Date().toISOString()}][DEBUG] 已注册 /api/users 路由:`, getRouteInfo(usersRoutes));
 
 console.log(`[${new Date().toISOString()}][DEBUG] 模块路由注册完成`);
 
 // 将API路由器挂载到/api路径
 app.use('/api', apiRouter);
 console.log(`[${new Date().toISOString()}][DEBUG] API路由已挂载到 /api 路径`);
+
+// 打印最终路由配置
+console.log(`[${new Date().toISOString()}][DEBUG] 最终路由配置:`, {
+    api: app._router.stack
+        .filter(layer => layer.name === 'router')
+        .map(layer => ({
+            name: layer.name,
+            regexp: layer.regexp.toString(),
+            path: layer.regexp.toString().replace('/^\\/?(?=\\/|$)/i', '')
+        }))
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));

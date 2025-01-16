@@ -8,31 +8,44 @@ function logWithTimestamp(message, data = '') {
 
 const validateApiKey = (req, res, next) => {
     const timestamp = new Date().toISOString();
-    logWithTimestamp('验证 API Key', { 
+    const version = '2024011626';
+    
+    logWithTimestamp('开始验证 API Key', { 
+        version,
         path: req.path,
         method: req.method,
-        headers: req.headers,
+        headers: {
+            'x-api-key': req.headers['x-api-key'] ? '***' : undefined,
+            'content-type': req.headers['content-type']
+        },
         timestamp
     });
     
     const apiKey = req.headers['x-api-key'];
     if (!apiKey) {
-        logWithTimestamp('缺少 API Key');
-        return res.status(401).json({
+        logWithTimestamp('验证失败：缺少 API Key', { version });
+        res.status(401).json({
             success: false,
             message: 'API key is required'
         });
+        return;
     }
 
     if (apiKey !== process.env.API_KEY) {
-        logWithTimestamp('无效的 API Key');
-        return res.status(401).json({
+        logWithTimestamp('验证失败：无效的 API Key', { version });
+        res.status(401).json({
             success: false,
             message: 'Invalid API key'
         });
+        return;
     }
 
-    logWithTimestamp('API Key 验证成功');
+    logWithTimestamp('API Key 验证成功', { 
+        version,
+        path: req.path,
+        method: req.method 
+    });
+    
     next();
 };
 
