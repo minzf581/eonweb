@@ -1,31 +1,33 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
-const validateApiKey = async (req, res, next) => {
-    try {
-        const apiKey = req.headers['x-api-key'];
-        if (!apiKey) {
-            return res.status(401).json({
-                success: false,
-                message: 'API key is required'
-            });
-        }
+function logWithTimestamp(message, data = '') {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}][Auth] ${message}`, data);
+}
 
-        if (apiKey !== process.env.API_KEY) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid API key'
-            });
-        }
-
-        next();
-    } catch (error) {
-        console.error('[Auth] API key validation error:', error);
-        res.status(500).json({
+const validateApiKey = (req, res, next) => {
+    logWithTimestamp('验证 API Key', { headers: req.headers });
+    
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+        logWithTimestamp('缺少 API Key');
+        return res.status(401).json({
             success: false,
-            message: 'Internal server error'
+            message: 'API key is required'
         });
     }
+
+    if (apiKey !== process.env.API_KEY) {
+        logWithTimestamp('无效的 API Key');
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid API key'
+        });
+    }
+
+    logWithTimestamp('API Key 验证成功');
+    next();
 };
 
 const authenticateToken = async (req, res, next) => {
