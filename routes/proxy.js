@@ -2,10 +2,12 @@ const express = require('express');
 const { validateApiKey } = require('../middleware/auth');
 
 const router = express.Router();
+console.log('[Proxy] 创建路由实例');
 
 // 调试中间件
 router.use((req, res, next) => {
-    console.log('[DEBUG][Proxy] 收到请求:', {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}][Proxy] 收到请求:`, {
         version: '2024011601',
         path: req.path,
         method: req.method,
@@ -18,10 +20,12 @@ router.use((req, res, next) => {
     next();
 });
 
+console.log('[Proxy] 注册 GET /nodes/:deviceId/stats 路由');
 // 获取节点统计信息
 router.get('/nodes/:deviceId/stats', validateApiKey, async (req, res) => {
+    const timestamp = new Date().toISOString();
     try {
-        console.log('[DEBUG][Proxy] 处理节点统计请求:', {
+        console.log(`[${timestamp}][Proxy] 处理节点统计请求:`, {
             version: '2024011601',
             params: req.params,
             headers: req.headers
@@ -42,7 +46,7 @@ router.get('/nodes/:deviceId/stats', validateApiKey, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('[ERROR][Proxy] 获取节点统计失败:', error);
+        console.error(`[${timestamp}][Proxy] 获取节点统计失败:`, error);
         res.status(500).json({
             success: false,
             message: error.message
@@ -50,10 +54,12 @@ router.get('/nodes/:deviceId/stats', validateApiKey, async (req, res) => {
     }
 });
 
+console.log('[Proxy] 注册 POST /nodes/report 路由');
 // 处理节点报告
 router.post('/nodes/report', validateApiKey, async (req, res) => {
+    const timestamp = new Date().toISOString();
     try {
-        console.log('[DEBUG][Proxy] 处理节点报告:', {
+        console.log(`[${timestamp}][Proxy] 处理节点报告:`, {
             version: '2024011601',
             body: req.body,
             headers: req.headers
@@ -63,12 +69,22 @@ router.post('/nodes/report', validateApiKey, async (req, res) => {
             message: 'Report received'
         });
     } catch (error) {
-        console.error('[ERROR][Proxy] 处理节点报告失败:', error);
+        console.error(`[${timestamp}][Proxy] 处理节点报告失败:`, error);
         res.status(500).json({
             success: false,
             message: error.message
         });
     }
 });
+
+// 打印路由配置
+console.log('[Proxy] 路由配置完成，注册的路由:', 
+    router.stack
+        .filter(r => r.route)
+        .map(r => ({
+            path: r.route.path,
+            methods: Object.keys(r.route.methods)
+        }))
+);
 
 module.exports = router;
