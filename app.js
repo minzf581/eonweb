@@ -176,16 +176,20 @@ app.get('*', (req, res) => {
     if (req.path.startsWith('/dashboard')) {
         const dashboardPath = path.join(__dirname, 'public', 'dashboard', 'index.html');
         console.log(`[${new Date().toISOString()}][Static] 提供dashboard页面: ${dashboardPath}`);
-        res.sendFile(dashboardPath);
-        return;
+        if (fs.existsSync(dashboardPath)) {
+            res.sendFile(dashboardPath);
+            return;
+        }
     }
 
     // For admin routes, serve admin/index.html
     if (req.path.startsWith('/admin')) {
         const adminPath = path.join(__dirname, 'public', 'admin', 'index.html');
         console.log(`[${new Date().toISOString()}][Static] 提供admin页面: ${adminPath}`);
-        res.sendFile(adminPath);
-        return;
+        if (fs.existsSync(adminPath)) {
+            res.sendFile(adminPath);
+            return;
+        }
     }
 
     // For auth routes, try to serve the exact file
@@ -201,12 +205,12 @@ app.get('*', (req, res) => {
     // For root path or all other routes, serve index.html
     const indexPath = path.join(__dirname, 'public', 'index.html');
     console.log(`[${new Date().toISOString()}][Static] 提供默认页面: ${indexPath}`);
-    res.sendFile(indexPath, err => {
-        if (err) {
-            console.error(`[${new Date().toISOString()}][Static] 错误: ${err.message}`);
-            res.status(404).json({ error: 'File not found' });
-        }
-    });
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        console.error(`[${new Date().toISOString()}][Static] 错误: index.html 不存在`);
+        res.status(404).json({ error: 'File not found' });
+    }
 });
 
 // Health check endpoints - register these before any middleware
