@@ -30,8 +30,24 @@ mkdir -p .deploy
 
 # 复制文件到构建目录
 echo "Copying files to build directory..."
-cp -r app.js server.js package.json package-lock.json models routes middleware config utils .deploy/
-cp -r public .deploy/ 2>/dev/null || true
+# 复制必需的文件
+cp app.js server.js package.json package-lock.json .deploy/ || echo "Some files not found"
+
+# 复制必需的目录（如果存在）
+for dir in models routes middleware config; do
+    if [ -d "$dir" ]; then
+        echo "Copying directory: $dir"
+        cp -r "$dir" .deploy/
+    else
+        echo "Directory not found: $dir"
+    fi
+done
+
+# 复制可选目录（如果存在）
+if [ -d "public" ]; then
+    echo "Copying directory: public"
+    cp -r public .deploy/
+fi
 
 # 验证文件复制
 echo "Verifying file copy..."
