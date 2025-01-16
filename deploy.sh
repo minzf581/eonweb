@@ -25,6 +25,20 @@ echo "Force pulling latest changes from GitHub..."
 git fetch origin
 git reset --hard origin/main
 
+# 清理所有运行中的版本
+echo "Cleaning up all running versions..."
+running_versions=$(gcloud app versions list --service=default --format="value(version.id)")
+if [ ! -z "$running_versions" ]; then
+    echo "Found running versions: $running_versions"
+    echo "Stopping all versions..."
+    for version in $running_versions; do
+        echo "Stopping version $version..."
+        gcloud app versions stop $version --service=default --quiet || true
+    done
+    echo "Deleting all versions..."
+    gcloud app versions delete $running_versions --service=default --quiet || true
+fi
+
 # 创建构建目录
 echo "Creating build directory..."
 mkdir -p .deploy
@@ -49,6 +63,31 @@ for file in server.js app.js routes/proxy.js routes/points.js models/index.js ro
         head -n 10 ".deploy/$file"
         echo "Content preview (lines 25-35):"
         sed -n '25,35p' ".deploy/$file"
+        
+        # 特别检查 points.js 的路由定义
+        if [[ "$file" == "routes/points.js" ]]; then
+            echo "Checking route definitions in points.js..."
+            echo "=== Route Definitions ==="
+            grep -A 2 "router\." ".deploy/$file" || true
+            echo "=== Function Definitions ==="
+            grep -A 2 "const.*= *async.*=>" ".deploy/$file" || true
+            
+            # 验证路由处理函数
+            echo "=== Verifying route handler exports ==="
+            if ! grep -q "module.exports = router;" ".deploy/$file"; then
+                echo "ERROR: Missing router export in points.js"
+                exit 1
+            fi
+            if ! grep -q "const updatePoints = async" ".deploy/$file"; then
+                echo "ERROR: Missing updatePoints handler in points.js"
+                exit 1
+            fi
+            if ! grep -q "const getBalance = async" ".deploy/$file"; then
+                echo "ERROR: Missing getBalance handler in points.js"
+                exit 1
+            fi
+        fi
+        
         echo "----------------------------------------"
     else
         echo "ERROR: $file is missing!"
@@ -61,14 +100,17 @@ echo "Installing dependencies in build directory..."
 cd .deploy
 npm install --production --force
 
+# 验证依赖安装
+echo "Verifying dependencies..."
+if [ ! -d "node_modules/express" ] || [ ! -d "node_modules/sequelize" ]; then
+    echo "ERROR: Critical dependencies are missing!"
+    exit 1
+fi
+
 # 清理 GCP 缓存
 echo "Cleaning up GCP cache..."
 gcloud config set core/disable_file_logging true
 gcloud config set core/pass_credentials_to_gsutil true
-
-# 获取当前版本
-current_version=$(gcloud app versions list --service=default --sort-by=~version.id --limit=1 --format="value(version.id)")
-echo "Current serving version: $current_version"
 
 # 从构建目录部署
 echo "Deploying from build directory..."
@@ -89,13 +131,33 @@ echo "Checking new version status..."
 status=$(gcloud app versions describe $new_version --service=default --format="value(servingStatus)")
 echo "New version status: $status"
 
-# 清理旧版本
-if [ ! -z "$current_version" ] && [ "$current_version" != "$new_version" ]; then
-    echo "Cleaning up old version: $current_version"
-    gcloud app versions delete $current_version --service=default --quiet
+if [ "$status" != "SERVING" ]; then
+    echo "ERROR: New version is not serving!"
+    echo "Checking logs for potential issues..."
+    gcloud app logs tail --service=default --version=$new_version --limit=50
+    exit 1
 fi
+
+# 验证新版本可访问性
+echo "Verifying new version accessibility..."
+app_url="https://${new_version}-dot-eonhome-445809.et.r.appspot.com"
+echo "Testing URL: $app_url"
+curl -s -o /dev/null -w "Response Code: %{http_code}\n" "$app_url"
+
+# 确保只有新版本在运行
+echo "Ensuring only new version is running..."
+running_versions=$(gcloud app versions list --service=default --format="value(version.id)")
+for version in $running_versions; do
+    if [ "$version" != "$new_version" ]; then
+        echo "Stopping and deleting old version: $version"
+        gcloud app versions stop $version --service=default --quiet || true
+        gcloud app versions delete $version --service=default --quiet || true
+    fi
+done
 
 cd ..
 rm -rf .deploy
 
 echo "Deployment completed successfully"
+echo "New version $new_version is now serving"
+echo "You can view logs using: gcloud app logs tail -s default"
