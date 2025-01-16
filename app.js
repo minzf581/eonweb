@@ -48,16 +48,17 @@ app.use(cors());
 
 // API Routes middleware - check initialization
 app.use('/api/*', async (req, res, next) => {
-    console.log(`[API] Request to ${req.path} at ${new Date().toISOString()}`);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}][API] 请求 ${req.path}`);
     if (!state.isInitialized) {
         try {
             const success = await initialize();
             if (!success) {
-                console.error('[API] Service not ready - initialization failed');
+                console.error(`[${timestamp}][API] 服务未就绪 - 初始化失败`);
                 return res.status(503).json({ error: 'Service unavailable' });
             }
         } catch (error) {
-            console.error('[API] Error during initialization:', error);
+            console.error(`[${timestamp}][API] 初始化过程出错:`, error);
             return res.status(503).json({ error: 'Service unavailable' });
         }
     }
@@ -65,16 +66,17 @@ app.use('/api/*', async (req, res, next) => {
 });
 
 // API routes
-console.log('[DEBUG] 开始注册 API 路由');
+console.log(`[${new Date().toISOString()}][DEBUG] 开始注册 API 路由`);
 const apiRouter = express.Router();
 
 // API路由调试中间件
 apiRouter.use((req, res, next) => {
-    console.log('[DEBUG] API请求:', {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}][DEBUG] API请求:`, {
         path: req.path,
         baseUrl: req.baseUrl,
         originalUrl: req.originalUrl,
-        timestamp: new Date().toISOString()
+        timestamp
     });
     next();
 });

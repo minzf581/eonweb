@@ -15,7 +15,7 @@ function logWithTimestamp(message, data = '') {
 
 // 初始化日志
 logWithTimestamp('初始化 points.js 路由', {
-    version: '2024011621',
+    version: '2024011622',
     deployTime: new Date().toISOString()
 });
 
@@ -33,11 +33,8 @@ function validateIP(ipv4, ipv6) {
     return { valid: true };
 }
 
-// 使用API密钥验证中间件
-router.use(validateApiKey);
-
-// 更新用户积分
-router.post('/update', async (req, res) => {
+// 定义路由处理函数
+async function handleUpdatePoints(req, res) {
     logWithTimestamp('处理 /update 请求开始');
     try {
         const { 
@@ -122,10 +119,9 @@ router.post('/update', async (req, res) => {
             error: error.message
         });
     }
-});
+}
 
-// 获取用户积分余额
-router.get('/balance/:email', async (req, res) => {
+async function handleGetBalance(req, res) {
     logWithTimestamp('处理 /balance/:email 请求开始');
     try {
         const { email } = req.params;
@@ -159,7 +155,27 @@ router.get('/balance/:email', async (req, res) => {
             error: error.message
         });
     }
+}
+
+// 使用API密钥验证中间件
+router.use(validateApiKey);
+
+// 验证处理函数已定义
+logWithTimestamp('验证处理函数', {
+    updatePoints: typeof handleUpdatePoints,
+    getBalance: typeof handleGetBalance
 });
+
+// 注册路由
+logWithTimestamp('开始注册路由');
+
+// 更新用户积分
+router.post('/update', handleUpdatePoints);
+logWithTimestamp('已注册 /update 路由');
+
+// 获取用户积分余额
+router.get('/balance/:email', handleGetBalance);
+logWithTimestamp('已注册 /balance/:email 路由');
 
 logWithTimestamp('路由注册完成');
 
