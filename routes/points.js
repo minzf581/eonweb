@@ -5,7 +5,8 @@ const { authenticateApiKey } = require('../middleware/auth');
 const { isIP } = require('net');
 const sequelize = require('../config/database');
 
-console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011603');
+console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011604');
+console.log('[Points Router] 模块加载顺序验证 #1');
 
 // Validate IP address
 const validateIP = (ipv4, ipv6) => {
@@ -26,6 +27,8 @@ const validateIP = (ipv4, ipv6) => {
     
     return errors;
 };
+
+console.log('[Points Router] 模块加载顺序验证 #2');
 
 // Update user points handler
 const updatePoints = async (req, res) => {
@@ -135,6 +138,8 @@ const updatePoints = async (req, res) => {
     }
 };
 
+console.log('[Points Router] 模块加载顺序验证 #3');
+
 // Get balance handler
 const getBalance = async (req, res) => {
     try {
@@ -168,9 +173,17 @@ const getBalance = async (req, res) => {
     }
 };
 
+console.log('[Points Router] 模块加载顺序验证 #4');
+console.log('[Points Router] updatePoints 函数类型:', typeof updatePoints);
+console.log('[Points Router] getBalance 函数类型:', typeof getBalance);
+
 // Register routes
 console.log('[Points Router] 注册路由');
+console.log('[Points Router] 注册 /update 路由');
 router.post('/update', authenticateApiKey, updatePoints);
+console.log('[Points Router] 注册 /balance/:email 路由');
 router.get('/balance/:email', authenticateApiKey, getBalance);
+
+console.log('[Points Router] 模块加载顺序验证 #5');
 
 module.exports = router;
