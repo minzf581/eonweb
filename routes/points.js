@@ -11,17 +11,33 @@ function logWithTimestamp(message, data = '') {
     console.log(`[${timestamp}][Points Router] ${message}`, data);
 }
 
-logWithTimestamp('初始化 points.js 路由', { version: '2024011619', deployTime: new Date().toISOString() });
+// 初始化日志
+logWithTimestamp('初始化 points.js 路由', {
+    version: '2024011620',
+    deployTime: new Date().toISOString()
+});
 
-// 先注册中间件
+// 验证IP地址
+function validateIP(ipv4, ipv6) {
+    if (!ipv4 && !ipv6) {
+        return { valid: false, message: '至少需要提供一个IP地址' };
+    }
+    if (ipv4 && !isIP(ipv4, 4)) {
+        return { valid: false, message: 'IPv4地址格式无效' };
+    }
+    if (ipv6 && !isIP(ipv6, 6)) {
+        return { valid: false, message: 'IPv6地址格式无效' };
+    }
+    return { valid: true };
+}
+
+// 使用API密钥验证中间件
 router.use(validateApiKey);
 
-// 直接在路由定义中实现处理逻辑
+// 更新用户积分
 router.post('/update', async (req, res) => {
-    logWithTimestamp('处理 /update 请求');
+    logWithTimestamp('处理 /update 请求开始');
     try {
-        logWithTimestamp('收到更新请求', req.body);
-        
         const { 
             email, 
             points, 
@@ -31,129 +47,101 @@ router.post('/update', async (req, res) => {
             metadata = {} 
         } = req.body;
 
-        // Validate required fields
+        // 验证必填字段
         if (!email || typeof points !== 'number') {
-            logWithTimestamp('验证失败', { email, points });
+            logWithTimestamp('缺少必填字段');
             return res.status(400).json({
                 success: false,
-                message: 'Invalid request. Email and points are required.'
+                message: '邮箱和积分是必填字段'
             });
         }
 
-        // Validate IP addresses
-        const errors = [];
-        if (!ipv4 && !ipv6) {
-            errors.push('At least one IP address (IPv4 or IPv6) is required');
-        }
-        if (ipv4 && isIP(ipv4) !== 4) {
-            errors.push('Invalid IPv4 address');
-        }
-        if (ipv6 && isIP(ipv6) !== 6) {
-            errors.push('Invalid IPv6 address');
-        }
-        
-        if (errors.length > 0) {
-            logWithTimestamp('IP验证失败', errors);
+        // 验证IP地址
+        const ipValidation = validateIP(ipv4, ipv6);
+        if (!ipValidation.valid) {
+            logWithTimestamp('IP地址验证失败', ipValidation.message);
             return res.status(400).json({
                 success: false,
-                message: 'IP validation failed',
-                errors
+                message: ipValidation.message
             });
         }
 
-        // Start transaction
-        await sequelize.transaction(async (t) => {
-            logWithTimestamp('开始事务处理', { email });
-            
-            // Find user
-            const user = await User.findOne({
+        // 开始数据库事务
+        const transaction = await sequelize.transaction();
+        try {
+            // 查找或创建用户
+            const [user] = await User.findOrCreate({
                 where: { email },
-                transaction: t
+                defaults: { points: 0 },
+                transaction
             });
 
-            if (!user) {
-                logWithTimestamp('用户未找到', { email });
-                throw new Error('User not found');
-            }
-
-            logWithTimestamp('找到用户', { id: user.id, currentPoints: user.points });
-
-            // Update user points
-            const updatedUser = await user.update({
-                points: user.points + points
-            }, { transaction: t });
-
-            logWithTimestamp('更新用户积分', { 
-                id: user.id, 
-                oldPoints: user.points, 
-                addedPoints: points, 
-                newPoints: updatedUser.points 
+            // 更新用户积分
+            await user.increment('points', { 
+                by: points,
+                transaction 
             });
 
-            // Create point history record
-            const pointHistory = await PointHistory.create({
+            // 创建积分历史记录
+            await PointHistory.create({
                 userId: user.id,
                 points,
                 type,
-                metadata: JSON.stringify({
+                metadata: {
                     ...metadata,
-                    ipv4: ipv4 || null,
-                    ipv6: ipv6 || null,
-                    timestamp: new Date().toISOString()
-                }),
-                status: 'completed'
-            }, { transaction: t });
+                    ipv4,
+                    ipv6
+                }
+            }, { transaction });
 
-            logWithTimestamp('创建积分历史记录', { id: pointHistory.id });
-            logWithTimestamp('积分更新成功', { 
-                email,
-                points,
-                ipv4: ipv4 || 'N/A',
-                ipv6: ipv6 || 'N/A'
-            });
+            // 提交事务
+            await transaction.commit();
             
-            return res.json({
+            logWithTimestamp('积分更新成功', { email, points });
+            res.json({
                 success: true,
+                message: '积分更新成功',
                 data: {
-                    email: updatedUser.email,
-                    totalPoints: updatedUser.points,
-                    ipv4: ipv4 || null,
-                    ipv6: ipv6 || null
+                    email,
+                    points,
+                    newBalance: user.points + points
                 }
             });
-        });
+        } catch (error) {
+            // 回滚事务
+            await transaction.rollback();
+            throw error;
+        }
     } catch (error) {
-        logWithTimestamp('积分更新错误', error);
-        logWithTimestamp('错误堆栈', error.stack);
-        logWithTimestamp('请求数据', req.body);
-        
+        logWithTimestamp('积分更新失败', error.message);
         res.status(500).json({
             success: false,
-            message: 'Failed to update points',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+            message: '积分更新失败',
+            error: error.message
         });
     }
 });
 
+// 获取用户积分余额
 router.get('/balance/:email', async (req, res) => {
+    logWithTimestamp('处理 /balance/:email 请求开始');
     try {
         const { email } = req.params;
-        logWithTimestamp('查询积分余额', { email });
-
-        const user = await User.findOne({
+        
+        const user = await User.findOne({ 
             where: { email },
             attributes: ['email', 'points']
         });
 
         if (!user) {
-            logWithTimestamp('用户未找到', { email });
+            logWithTimestamp('用户不存在', { email });
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: '用户不存在'
             });
         }
 
-        logWithTimestamp('查询积分成功', { email: user.email, points: user.points });
+        logWithTimestamp('获取积分余额成功', { email, points: user.points });
         res.json({
             success: true,
             data: {
@@ -162,10 +150,11 @@ router.get('/balance/:email', async (req, res) => {
             }
         });
     } catch (error) {
-        logWithTimestamp('查询积分错误', error);
+        logWithTimestamp('获取积分余额失败', error.message);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch points balance'
+            message: '获取积分余额失败',
+            error: error.message
         });
     }
 });
