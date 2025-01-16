@@ -31,7 +31,13 @@ mkdir -p .deploy
 # 复制文件到构建目录
 echo "Copying files to build directory..."
 # 复制必需的文件
-cp app.js server.js package.json package-lock.json .deploy/ || echo "Some files not found"
+cp app.js server.js package.json package-lock.json app.yaml .deploy/ || echo "Some files not found"
+
+# 验证 app.yaml 是否存在
+if [ ! -f ".deploy/app.yaml" ]; then
+    echo "ERROR: app.yaml not found!"
+    exit 1
+fi
 
 # 复制必需的目录（如果存在）
 for dir in models routes middleware config; do
