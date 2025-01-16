@@ -11,7 +11,7 @@ function logWithTimestamp(message, data = '') {
     console.log(`[${timestamp}][Points Router] ${message}`, data);
 }
 
-logWithTimestamp('初始化 points.js 路由', { version: '2024011610', deployTime: new Date().toISOString() });
+logWithTimestamp('初始化 points.js 路由', { version: '2024011611', deployTime: new Date().toISOString() });
 
 // 辅助函数
 function validateIP(ipv4, ipv6) {
@@ -34,7 +34,7 @@ function validateIP(ipv4, ipv6) {
 }
 
 // 路由处理函数
-function updatePoints(req, res) {
+async function updatePoints(req, res) {
     logWithTimestamp('处理 /update 请求');
     try {
         logWithTimestamp('收到更新请求', req.body);
@@ -69,66 +69,70 @@ function updatePoints(req, res) {
         }
 
         // Start transaction
-        sequelize.transaction(async (t) => {
-            logWithTimestamp('开始事务处理', { email });
-            
-            // Find user
-            const user = await User.findOne({
-                where: { email },
-                transaction: t
-            });
+        try {
+            const result = await sequelize.transaction(async (t) => {
+                logWithTimestamp('开始事务处理', { email });
+                
+                // Find user
+                const user = await User.findOne({
+                    where: { email },
+                    transaction: t
+                });
 
-            if (!user) {
-                logWithTimestamp('用户未找到', { email });
-                throw new Error('User not found');
-            }
+                if (!user) {
+                    logWithTimestamp('用户未找到', { email });
+                    throw new Error('User not found');
+                }
 
-            logWithTimestamp('找到用户', { id: user.id, currentPoints: user.points });
+                logWithTimestamp('找到用户', { id: user.id, currentPoints: user.points });
 
-            // Update user points
-            const updatedUser = await user.update({
-                points: user.points + points
-            }, { transaction: t });
+                // Update user points
+                const updatedUser = await user.update({
+                    points: user.points + points
+                }, { transaction: t });
 
-            logWithTimestamp('更新用户积分', { 
-                id: user.id, 
-                oldPoints: user.points, 
-                addedPoints: points, 
-                newPoints: updatedUser.points 
-            });
+                logWithTimestamp('更新用户积分', { 
+                    id: user.id, 
+                    oldPoints: user.points, 
+                    addedPoints: points, 
+                    newPoints: updatedUser.points 
+                });
 
-            // Create point history record
-            const pointHistory = await PointHistory.create({
-                userId: user.id,
-                points,
-                type,
-                metadata: JSON.stringify({
-                    ...metadata,
-                    ipv4: ipv4 || null,
-                    ipv6: ipv6 || null,
-                    timestamp: new Date().toISOString()
-                }),
-                status: 'completed'
-            }, { transaction: t });
+                // Create point history record
+                const pointHistory = await PointHistory.create({
+                    userId: user.id,
+                    points,
+                    type,
+                    metadata: JSON.stringify({
+                        ...metadata,
+                        ipv4: ipv4 || null,
+                        ipv6: ipv6 || null,
+                        timestamp: new Date().toISOString()
+                    }),
+                    status: 'completed'
+                }, { transaction: t });
 
-            logWithTimestamp('创建积分历史记录', { id: pointHistory.id });
-            logWithTimestamp('积分更新成功', { 
-                email,
-                points,
-                ipv4: ipv4 || 'N/A',
-                ipv6: ipv6 || 'N/A'
-            });
-            
-            res.json({
-                success: true,
-                data: {
+                logWithTimestamp('创建积分历史记录', { id: pointHistory.id });
+                logWithTimestamp('积分更新成功', { 
+                    email,
+                    points,
+                    ipv4: ipv4 || 'N/A',
+                    ipv6: ipv6 || 'N/A'
+                });
+                
+                return {
                     email: updatedUser.email,
                     totalPoints: updatedUser.points,
                     ipv4: ipv4 || null,
                     ipv6: ipv6 || null
-                }
+                };
             });
-        }).catch(error => {
+
+            res.json({
+                success: true,
+                data: result
+            });
+        } catch (error) {
             logWithTimestamp('积分更新错误', error);
             logWithTimestamp('错误堆栈', error.stack);
             logWithTimestamp('请求数据', req.body);
@@ -138,7 +142,7 @@ function updatePoints(req, res) {
                 message: 'Failed to update points',
                 error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
             });
-        });
+        }
     } catch (error) {
         logWithTimestamp('积分更新错误', error);
         logWithTimestamp('错误堆栈', error.stack);
@@ -152,37 +156,31 @@ function updatePoints(req, res) {
     }
 }
 
-function getBalance(req, res) {
+async function getBalance(req, res) {
     try {
         const { email } = req.params;
         logWithTimestamp('查询积分余额', { email });
 
-        User.findOne({
+        const user = await User.findOne({
             where: { email },
             attributes: ['email', 'points']
-        }).then(user => {
-            if (!user) {
-                logWithTimestamp('用户未找到', { email });
-                return res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-            }
+        });
 
-            logWithTimestamp('查询积分成功', { email: user.email, points: user.points });
-            res.json({
-                success: true,
-                data: {
-                    email: user.email,
-                    points: user.points
-                }
-            });
-        }).catch(error => {
-            logWithTimestamp('查询积分错误', error);
-            res.status(500).json({
+        if (!user) {
+            logWithTimestamp('用户未找到', { email });
+            return res.status(404).json({
                 success: false,
-                message: 'Failed to fetch points balance'
+                message: 'User not found'
             });
+        }
+
+        logWithTimestamp('查询积分成功', { email: user.email, points: user.points });
+        res.json({
+            success: true,
+            data: {
+                email: user.email,
+                points: user.points
+            }
         });
     } catch (error) {
         logWithTimestamp('查询积分错误', error);
@@ -193,25 +191,12 @@ function getBalance(req, res) {
     }
 }
 
-// 验证处理函数存在
-logWithTimestamp('验证处理函数', {
-    updatePoints: typeof updatePoints === 'function',
-    getBalance: typeof getBalance === 'function'
-});
-
-// 导出处理函数
-module.exports = {
-    router,
-    updatePoints,
-    getBalance
-};
-
 // 注册路由
 logWithTimestamp('开始注册路由');
-const handlers = module.exports;
-router.post('/update', authenticateApiKey, handlers.updatePoints);
+router.post('/update', authenticateApiKey, updatePoints);
 logWithTimestamp('/update 路由注册完成');
-router.get('/balance/:email', authenticateApiKey, handlers.getBalance);
+router.get('/balance/:email', authenticateApiKey, getBalance);
 logWithTimestamp('/balance/:email 路由注册完成');
 
+// 导出路由
 module.exports = router;
