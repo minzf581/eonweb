@@ -67,17 +67,17 @@ gcloud config set core/disable_file_logging true
 gcloud config set core/pass_credentials_to_gsutil true
 
 # 获取当前版本
-current_version=$(gcloud app versions list --sort-by=~version.id --limit=1 --format="value(version.id)")
+current_version=$(gcloud app versions list --service=default --sort-by=~version.id --limit=1 --format="value(version.id)")
 echo "Current serving version: $current_version"
 
 # 从构建目录部署
 echo "Deploying from build directory..."
 gcloud config set app/cloud_build_timeout 1800
-gcloud app deploy --no-cache --no-promote
+gcloud app deploy --no-cache
 
 # 验证新版本
 echo "Verifying new version..."
-new_version=$(gcloud app versions list --sort-by=~version.id --limit=1 --format="value(version.id)")
+new_version=$(gcloud app versions list --service=default --sort-by=~version.id --limit=1 --format="value(version.id)")
 echo "New version: $new_version"
 
 # 等待新版本启动
@@ -86,16 +86,13 @@ sleep 30
 
 # 检查新版本状态
 echo "Checking new version status..."
-gcloud app versions describe $new_version --format="value(servingStatus)"
-
-# 如果检查通过，迁移流量
-echo "Migrating traffic to new version..."
-gcloud app services set-traffic default --splits=$new_version=1 --migrate
+status=$(gcloud app versions describe $new_version --service=default --format="value(servingStatus)")
+echo "New version status: $status"
 
 # 清理旧版本
 if [ ! -z "$current_version" ] && [ "$current_version" != "$new_version" ]; then
     echo "Cleaning up old version: $current_version"
-    gcloud app versions delete $current_version --quiet
+    gcloud app versions delete $current_version --service=default --quiet
 fi
 
 cd ..
