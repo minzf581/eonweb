@@ -10,23 +10,6 @@ fi
 echo "Current working directory: $(pwd)"
 echo "Deploying with API_KEY: ${API_KEY}"
 
-# 检查必要文件是否存在
-echo "Verifying required files..."
-required_files=(
-    "app.yaml"
-    "server.js"
-    "package.json"
-    "routes/proxy.js"
-    "routes/users.js"
-)
-
-for file in "${required_files[@]}"; do
-    if [ ! -f "$file" ]; then
-        echo "Error: Required file $file not found!"
-        exit 1
-    fi
-done
-
 # 完全清理
 echo "Performing complete cleanup..."
 rm -rf node_modules
@@ -48,7 +31,7 @@ mkdir -p .deploy
 
 # 复制文件到构建目录
 echo "Copying files to build directory..."
-tar --exclude='.git' --exclude='.deploy' --exclude='node_modules' -cf - . | (cd .deploy && tar -xf -)
+rsync -av --progress . .deploy/ --exclude .git --exclude node_modules --exclude .deploy
 
 # 验证关键文件
 echo "Verifying key files in build directory..."
@@ -58,19 +41,11 @@ for file in server.js app.js routes/proxy.js routes/points.js models/index.js ro
         echo "File size: $(wc -c < ".deploy/$file") bytes"
         echo "Line count: $(wc -l < ".deploy/$file")"
         echo "MD5 hash: $(md5sum ".deploy/$file" 2>/dev/null || md5 ".deploy/$file")"
-        echo "Last modified: $(stat -f "%Sm" ".deploy/$file" 2>/dev/null || stat ".deploy/$file")"
         echo "Content preview (first 10 lines):"
         head -n 10 ".deploy/$file"
         echo "Content preview (lines 25-35):"
         sed -n '25,35p' ".deploy/$file"
-        
-        # 特别检查 points.js 文件
-        if [ "$file" = "routes/points.js" ]; then
-            echo "=== Special verification for points.js ==="
-            echo "Checking route definitions:"
-            grep -A 5 "router\..*(" ".deploy/$file" || echo "No route definitions found!"
-            echo "----------------------------------------"
-        fi
+        echo "----------------------------------------"
     else
         echo "ERROR: $file is missing!"
         exit 1
@@ -82,7 +57,7 @@ echo "Installing dependencies in build directory..."
 cd .deploy
 npm install --production --force
 
-# 清理GCP缓存
+# 清理 GCP 缓存
 echo "Cleaning up GCP cache..."
 gcloud config set core/disable_file_logging true
 gcloud config set core/pass_credentials_to_gsutil true
@@ -94,36 +69,32 @@ echo "Current serving version: $current_version"
 # 从构建目录部署
 echo "Deploying from build directory..."
 gcloud config set app/cloud_build_timeout 1800
-gcloud app deploy
+gcloud app deploy --no-cache --no-promote
 
-# 设置流量到新版本
-echo "Setting traffic to new version..."
+# 验证新版本
+echo "Verifying new version..."
 new_version=$(gcloud app versions list --sort-by=~version.id --limit=1 --format="value(version.id)")
-gcloud app services set-traffic default --splits=$new_version=1
+echo "New version: $new_version"
+
+# 等待新版本启动
+echo "Waiting for new version to start..."
+sleep 30
+
+# 检查新版本状态
+echo "Checking new version status..."
+gcloud app versions describe $new_version --format="value(servingStatus)"
+
+# 如果检查通过，迁移流量
+echo "Migrating traffic to new version..."
+gcloud app services set-traffic default --splits=$new_version=1 --migrate
 
 # 清理旧版本
-echo "Cleaning up old versions..."
 if [ ! -z "$current_version" ] && [ "$current_version" != "$new_version" ]; then
-    echo "Deleting old versions: $current_version"
-    gcloud app versions delete $current_version
+    echo "Cleaning up old version: $current_version"
+    gcloud app versions delete $current_version --quiet
 fi
 
-# 清理构建目录
-echo "Cleaning up build directory..."
 cd ..
 rm -rf .deploy
-
-# 验证文件
-echo "Verifying files in build directory..."
-ls -la .deploy
-
-# 验证points.js文件
-echo "=== Verifying build points.js content ==="
-ls -l .deploy/routes/points.js
-echo "File size: $(wc -c < .deploy/routes/points.js) bytes"
-echo "Line count: $(wc -l < .deploy/routes/points.js)"
-echo "MD5 hash: $(md5sum .deploy/routes/points.js)"
-echo "Content preview:"
-head -n 10 .deploy/routes/points.js
 
 echo "Deployment completed successfully"
