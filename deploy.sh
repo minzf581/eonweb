@@ -52,21 +52,23 @@ tar --exclude='.git' --exclude='.deploy' --exclude='node_modules' -cf - . | (cd 
 
 # 验证关键文件
 echo "Verifying key files in build directory..."
-echo "server.js exists and has $(wc -l < .deploy/server.js) lines"
-echo "app.js exists and has $(wc -l < .deploy/app.js) lines"
-echo "routes/proxy.js exists and has $(wc -l < .deploy/routes/proxy.js) lines"
-echo "routes/points.js exists and has $(wc -l < .deploy/routes/points.js) lines"
-echo "models/index.js exists and has $(wc -l < .deploy/models/index.js) lines"
-echo "routes/users.js exists and has $(wc -l < .deploy/routes/users.js) lines"
-
-# 验证server.js内容
-echo "=== Verifying build server.js content ==="
-ls -l .deploy/server.js
-echo "File size: $(wc -c < .deploy/server.js) bytes"
-echo "Line count: $(wc -l < .deploy/server.js)"
-echo "MD5 hash: $(md5sum .deploy/server.js 2>/dev/null || md5 .deploy/server.js 2>/dev/null)"
-echo "Content preview:"
-head -n 10 .deploy/server.js
+for file in server.js app.js routes/proxy.js routes/points.js models/index.js routes/users.js; do
+    if [ -f ".deploy/$file" ]; then
+        echo "=== Verifying $file ==="
+        echo "File size: $(wc -c < ".deploy/$file") bytes"
+        echo "Line count: $(wc -l < ".deploy/$file")"
+        echo "MD5 hash: $(md5sum ".deploy/$file" 2>/dev/null || md5 ".deploy/$file")"
+        echo "Last modified: $(stat -f "%Sm" ".deploy/$file")"
+        echo "Content preview (first 10 lines):"
+        head -n 10 ".deploy/$file"
+        echo "Content preview (lines 25-35):"
+        sed -n '25,35p' ".deploy/$file"
+        echo "----------------------------------------"
+    else
+        echo "ERROR: $file is missing!"
+        exit 1
+    fi
+done
 
 # 在构建目录中安装依赖
 echo "Installing dependencies in build directory..."
