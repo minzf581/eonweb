@@ -5,16 +5,7 @@ const { authenticateApiKey } = require('../middleware/auth');
 const { isIP } = require('net');
 const sequelize = require('../config/database');
 
-console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011602');
-console.log('[Points Router] 已加载的依赖:', {
-    express: !!express,
-    router: !!router,
-    User: !!User,
-    PointHistory: !!PointHistory,
-    authenticateApiKey: !!authenticateApiKey,
-    isIP: !!isIP,
-    sequelize: !!sequelize
-});
+console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011603');
 
 // Validate IP address
 const validateIP = (ipv4, ipv6) => {
@@ -36,9 +27,8 @@ const validateIP = (ipv4, ipv6) => {
     return errors;
 };
 
-// Update user points from bandwidth sharing plugin
-console.log('[Points Router] 注册 /update 路由');
-router.post('/update', authenticateApiKey, async (req, res) => {
+// Update user points handler
+const updatePoints = async (req, res) => {
     console.log('[Points Router] 处理 /update 请求');
     try {
         console.log('[Points] Received update request:', req.body);
@@ -143,10 +133,10 @@ router.post('/update', authenticateApiKey, async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
-});
+};
 
-// Get user points balance
-router.get('/balance/:email', authenticateApiKey, async (req, res) => {
+// Get balance handler
+const getBalance = async (req, res) => {
     try {
         const { email } = req.params;
 
@@ -176,6 +166,11 @@ router.get('/balance/:email', authenticateApiKey, async (req, res) => {
             message: 'Failed to fetch points balance'
         });
     }
-});
+};
+
+// Register routes
+console.log('[Points Router] 注册路由');
+router.post('/update', authenticateApiKey, updatePoints);
+router.get('/balance/:email', authenticateApiKey, getBalance);
 
 module.exports = router;
