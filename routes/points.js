@@ -199,11 +199,19 @@ logWithTimestamp('验证处理函数', {
     getBalance: typeof getBalance === 'function'
 });
 
+// 导出处理函数
+module.exports = {
+    router,
+    updatePoints,
+    getBalance
+};
+
 // 注册路由
 logWithTimestamp('开始注册路由');
-router.post('/update', authenticateApiKey, updatePoints);
+const handlers = module.exports;
+router.post('/update', authenticateApiKey, handlers.updatePoints);
 logWithTimestamp('/update 路由注册完成');
-router.get('/balance/:email', authenticateApiKey, getBalance);
+router.get('/balance/:email', authenticateApiKey, handlers.getBalance);
 logWithTimestamp('/balance/:email 路由注册完成');
 
 module.exports = router;
