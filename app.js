@@ -46,8 +46,24 @@ app.use(morgan(':method :url :status :response-time ms'));
 app.use(bodyParser.json());
 app.use(cors());
 
+// API routes
+const apiRouter = express.Router();
+console.log(`[${new Date().toISOString()}][DEBUG] 开始注册 API 路由`);
+
+// API路由调试中间件
+apiRouter.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}][DEBUG] API请求:`, {
+        path: req.path,
+        baseUrl: req.baseUrl,
+        originalUrl: req.originalUrl,
+        timestamp
+    });
+    next();
+});
+
 // API Routes middleware - check initialization
-app.use('/api/*', async (req, res, next) => {
+apiRouter.use(async (req, res, next) => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}][API] 请求 ${req.path}`);
     if (!state.isInitialized) {
@@ -62,22 +78,6 @@ app.use('/api/*', async (req, res, next) => {
             return res.status(503).json({ error: 'Service unavailable' });
         }
     }
-    next();
-});
-
-// API routes
-console.log(`[${new Date().toISOString()}][DEBUG] 开始注册 API 路由`);
-const apiRouter = express.Router();
-
-// API路由调试中间件
-apiRouter.use((req, res, next) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}][DEBUG] API请求:`, {
-        path: req.path,
-        baseUrl: req.baseUrl,
-        originalUrl: req.originalUrl,
-        timestamp
-    });
     next();
 });
 
