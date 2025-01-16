@@ -5,7 +5,7 @@ const { authenticateApiKey } = require('../middleware/auth');
 const { isIP } = require('net');
 const sequelize = require('../config/database');
 
-console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011604');
+console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011605');
 console.log('[Points Router] 模块加载顺序验证 #1');
 
 // Validate IP address
@@ -180,6 +180,19 @@ console.log('[Points Router] getBalance 函数类型:', typeof getBalance);
 // Register routes
 console.log('[Points Router] 注册路由');
 console.log('[Points Router] 注册 /update 路由');
+
+// 确保路由处理函数存在
+if (typeof updatePoints !== 'function') {
+    console.error('[Points Router] ERROR: updatePoints 不是一个函数!');
+    process.exit(1);
+}
+
+if (typeof getBalance !== 'function') {
+    console.error('[Points Router] ERROR: getBalance 不是一个函数!');
+    process.exit(1);
+}
+
+// 注册路由
 router.post('/update', authenticateApiKey, updatePoints);
 console.log('[Points Router] 注册 /balance/:email 路由');
 router.get('/balance/:email', authenticateApiKey, getBalance);
