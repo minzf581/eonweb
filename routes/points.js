@@ -5,33 +5,10 @@ const { authenticateApiKey } = require('../middleware/auth');
 const { isIP } = require('net');
 const sequelize = require('../config/database');
 
-console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011605');
-console.log('[Points Router] 模块加载顺序验证 #1');
+console.log('[Points Router] 初始化 points.js 路由, 版本: 2024011606');
 
-// Validate IP address
-const validateIP = (ipv4, ipv6) => {
-    console.log('[Points Router] 验证IP地址:', { ipv4, ipv6 });
-    const errors = [];
-    
-    if (!ipv4 && !ipv6) {
-        errors.push('At least one IP address (IPv4 or IPv6) is required');
-    }
-    
-    if (ipv4 && isIP(ipv4) !== 4) {
-        errors.push('Invalid IPv4 address');
-    }
-    
-    if (ipv6 && isIP(ipv6) !== 6) {
-        errors.push('Invalid IPv6 address');
-    }
-    
-    return errors;
-};
-
-console.log('[Points Router] 模块加载顺序验证 #2');
-
-// Update user points handler
-const updatePoints = async (req, res) => {
+// 路由处理函数声明
+async function updatePoints(req, res) {
     console.log('[Points Router] 处理 /update 请求');
     try {
         console.log('[Points] Received update request:', req.body);
@@ -136,12 +113,9 @@ const updatePoints = async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
-};
+}
 
-console.log('[Points Router] 模块加载顺序验证 #3');
-
-// Get balance handler
-const getBalance = async (req, res) => {
+async function getBalance(req, res) {
     try {
         const { email } = req.params;
 
@@ -171,32 +145,37 @@ const getBalance = async (req, res) => {
             message: 'Failed to fetch points balance'
         });
     }
-};
+}
 
-console.log('[Points Router] 模块加载顺序验证 #4');
+// Validate IP address
+function validateIP(ipv4, ipv6) {
+    console.log('[Points Router] 验证IP地址:', { ipv4, ipv6 });
+    const errors = [];
+    
+    if (!ipv4 && !ipv6) {
+        errors.push('At least one IP address (IPv4 or IPv6) is required');
+    }
+    
+    if (ipv4 && isIP(ipv4) !== 4) {
+        errors.push('Invalid IPv4 address');
+    }
+    
+    if (ipv6 && isIP(ipv6) !== 6) {
+        errors.push('Invalid IPv6 address');
+    }
+    
+    return errors;
+}
+
+console.log('[Points Router] 函数定义完成');
 console.log('[Points Router] updatePoints 函数类型:', typeof updatePoints);
 console.log('[Points Router] getBalance 函数类型:', typeof getBalance);
 
-// Register routes
-console.log('[Points Router] 注册路由');
-console.log('[Points Router] 注册 /update 路由');
-
-// 确保路由处理函数存在
-if (typeof updatePoints !== 'function') {
-    console.error('[Points Router] ERROR: updatePoints 不是一个函数!');
-    process.exit(1);
-}
-
-if (typeof getBalance !== 'function') {
-    console.error('[Points Router] ERROR: getBalance 不是一个函数!');
-    process.exit(1);
-}
-
 // 注册路由
+console.log('[Points Router] 开始注册路由');
 router.post('/update', authenticateApiKey, updatePoints);
-console.log('[Points Router] 注册 /balance/:email 路由');
+console.log('[Points Router] /update 路由注册完成');
 router.get('/balance/:email', authenticateApiKey, getBalance);
-
-console.log('[Points Router] 模块加载顺序验证 #5');
+console.log('[Points Router] /balance/:email 路由注册完成');
 
 module.exports = router;
