@@ -158,8 +158,19 @@ console.log(`[${new Date().toISOString()}][DEBUG] 最终路由配置:`, {
 });
 
 // Serve static files
-app.use('/static', express.static(path.join(__dirname, 'public/static')));
-app.use(express.static(path.join(__dirname, 'public')));
+console.log(`[${new Date().toISOString()}][Static] 配置静态文件服务`);
+console.log(`[${new Date().toISOString()}][Static] 静态文件根目录: ${path.join(__dirname, 'public')}`);
+
+// 添加静态文件中间件
+app.use('/static', (req, res, next) => {
+    console.log(`[${new Date().toISOString()}][Static] 访问 /static 路径: ${req.path}`);
+    next();
+}, express.static(path.join(__dirname, 'public/static')));
+
+app.use('/', (req, res, next) => {
+    console.log(`[${new Date().toISOString()}][Static] 访问根路径: ${req.path}`);
+    next();
+}, express.static(path.join(__dirname, 'public')));
 
 // Handle SPA routes
 app.get('*', (req, res) => {
@@ -175,21 +186,25 @@ app.get('*', (req, res) => {
     // For dashboard routes, serve dashboard/index.html
     if (req.path.startsWith('/dashboard')) {
         const dashboardPath = path.join(__dirname, 'public', 'dashboard', 'index.html');
-        console.log(`[${new Date().toISOString()}][Static] 提供dashboard页面: ${dashboardPath}`);
+        console.log(`[${new Date().toISOString()}][Static] 尝试提供dashboard页面: ${dashboardPath}`);
         if (fs.existsSync(dashboardPath)) {
+            console.log(`[${new Date().toISOString()}][Static] 找到dashboard页面`);
             res.sendFile(dashboardPath);
             return;
         }
+        console.log(`[${new Date().toISOString()}][Static] dashboard页面不存在`);
     }
 
     // For admin routes, serve admin/index.html
     if (req.path.startsWith('/admin')) {
         const adminPath = path.join(__dirname, 'public', 'admin', 'index.html');
-        console.log(`[${new Date().toISOString()}][Static] 提供admin页面: ${adminPath}`);
+        console.log(`[${new Date().toISOString()}][Static] 尝试提供admin页面: ${adminPath}`);
         if (fs.existsSync(adminPath)) {
+            console.log(`[${new Date().toISOString()}][Static] 找到admin页面`);
             res.sendFile(adminPath);
             return;
         }
+        console.log(`[${new Date().toISOString()}][Static] admin页面不存在`);
     }
 
     // For auth routes, try to serve the exact file
@@ -197,19 +212,33 @@ app.get('*', (req, res) => {
         const authFile = path.join(__dirname, 'public', req.path);
         console.log(`[${new Date().toISOString()}][Static] 尝试提供auth文件: ${authFile}`);
         if (fs.existsSync(authFile)) {
+            console.log(`[${new Date().toISOString()}][Static] 找到auth文件`);
             res.sendFile(authFile);
             return;
         }
+        console.log(`[${new Date().toISOString()}][Static] auth文件不存在`);
     }
 
     // For root path or all other routes, serve index.html
     const indexPath = path.join(__dirname, 'public', 'index.html');
-    console.log(`[${new Date().toISOString()}][Static] 提供默认页面: ${indexPath}`);
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        console.error(`[${new Date().toISOString()}][Static] 错误: index.html 不存在`);
-        res.status(404).json({ error: 'File not found' });
+    console.log(`[${new Date().toISOString()}][Static] 尝试提供默认页面: ${indexPath}`);
+    
+    try {
+        if (fs.existsSync(indexPath)) {
+            console.log(`[${new Date().toISOString()}][Static] 找到index.html`);
+            res.sendFile(indexPath, (err) => {
+                if (err) {
+                    console.error(`[${new Date().toISOString()}][Static] 发送文件错误:`, err);
+                    res.status(500).json({ error: 'Internal server error' });
+                }
+            });
+        } else {
+            console.error(`[${new Date().toISOString()}][Static] index.html不存在: ${indexPath}`);
+            res.status(404).json({ error: 'File not found' });
+        }
+    } catch (error) {
+        console.error(`[${new Date().toISOString()}][Static] 检查文件时出错:`, error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
