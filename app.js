@@ -158,6 +158,7 @@ console.log(`[${new Date().toISOString()}][DEBUG] 最终路由配置:`, {
 });
 
 // Serve static files
+app.use('/static', express.static(path.join(__dirname, 'public/static')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle SPA routes
