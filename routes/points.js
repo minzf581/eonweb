@@ -1,9 +1,11 @@
 const express = require('express');
-const router = express.Router();
 const { User, PointHistory } = require('../models');
 const { validateApiKey } = require('../middleware/auth');
 const { isIP } = require('net');
 const sequelize = require('../config/database');
+
+// 创建路由实例
+const router = express.Router();
 
 // 添加日志时间戳函数
 function logWithTimestamp(message, data = '') {
@@ -13,7 +15,7 @@ function logWithTimestamp(message, data = '') {
 
 // 初始化日志
 logWithTimestamp('初始化 points.js 路由', {
-    version: '2024011620',
+    version: '2024011621',
     deployTime: new Date().toISOString()
 });
 
@@ -161,4 +163,5 @@ router.get('/balance/:email', async (req, res) => {
 
 logWithTimestamp('路由注册完成');
 
+// 导出路由
 module.exports = router;
