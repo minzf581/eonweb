@@ -70,17 +70,33 @@ apiRouter.use((req, res, next) => {
 // API Routes middleware - check initialization
 apiRouter.use(async (req, res, next) => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}][API] 请求 ${req.method} ${req.path}`);
+    console.log(`[${timestamp}][API] 请求 ${req.method} ${req.path}`, {
+        isInitialized: state.isInitialized,
+        isInitializing: state.isInitializing,
+        serverStarted: state.serverStarted,
+        startupComplete: state.startupComplete,
+        initAttempts: state.initAttempts,
+        instanceAge: Date.now() - state.instanceStartTime
+    });
+    
     if (!state.isInitialized) {
         try {
+            console.log(`[${timestamp}][API] 服务未初始化，尝试初始化...`);
             const success = await initialize();
             if (!success) {
                 console.error(`[${timestamp}][API] 服务未就绪 - 初始化失败`);
-                return res.status(503).json({ error: 'Service unavailable' });
+                return res.status(503).json({ 
+                    error: 'Service unavailable',
+                    details: '服务初始化失败'
+                });
             }
+            console.log(`[${timestamp}][API] 初始化成功`);
         } catch (error) {
             console.error(`[${timestamp}][API] 初始化过程出错:`, error);
-            return res.status(503).json({ error: 'Service unavailable' });
+            return res.status(503).json({ 
+                error: 'Service unavailable',
+                details: '初始化过程出错: ' + error.message
+            });
         }
     }
     next();
@@ -146,35 +162,50 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle SPA routes
 app.get('*', (req, res) => {
+    console.log(`[${new Date().toISOString()}][Static] 处理请求路径: ${req.path}`);
+    
     // Skip API routes
     if (req.path.startsWith('/api/')) {
-        res.status(404).send('API endpoint not found');
+        console.log(`[${new Date().toISOString()}][Static] API路由未找到: ${req.path}`);
+        res.status(404).json({ error: 'API endpoint not found' });
         return;
     }
 
     // For dashboard routes, serve dashboard/index.html
     if (req.path.startsWith('/dashboard')) {
-        res.sendFile(path.join(__dirname, 'public', 'dashboard', 'index.html'));
+        const dashboardPath = path.join(__dirname, 'public', 'dashboard', 'index.html');
+        console.log(`[${new Date().toISOString()}][Static] 提供dashboard页面: ${dashboardPath}`);
+        res.sendFile(dashboardPath);
         return;
     }
 
     // For admin routes, serve admin/index.html
     if (req.path.startsWith('/admin')) {
-        res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
+        const adminPath = path.join(__dirname, 'public', 'admin', 'index.html');
+        console.log(`[${new Date().toISOString()}][Static] 提供admin页面: ${adminPath}`);
+        res.sendFile(adminPath);
         return;
     }
 
     // For auth routes, try to serve the exact file
     if (req.path.startsWith('/auth/')) {
         const authFile = path.join(__dirname, 'public', req.path);
+        console.log(`[${new Date().toISOString()}][Static] 尝试提供auth文件: ${authFile}`);
         if (fs.existsSync(authFile)) {
             res.sendFile(authFile);
             return;
         }
     }
 
-    // For all other routes, serve index.html
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    // For root path or all other routes, serve index.html
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    console.log(`[${new Date().toISOString()}][Static] 提供默认页面: ${indexPath}`);
+    res.sendFile(indexPath, err => {
+        if (err) {
+            console.error(`[${new Date().toISOString()}][Static] 错误: ${err.message}`);
+            res.status(404).json({ error: 'File not found' });
+        }
+    });
 });
 
 // Health check endpoints - register these before any middleware

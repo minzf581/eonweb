@@ -82,8 +82,9 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Version status: $status"
 if [ "$status" != "SERVING" ]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: New version is not serving!"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking logs for potential issues..."
-    echo "Looking for logs after timestamp: $deploy_timestamp"
-    gcloud app logs tail --service=default --version=$new_version --limit=50
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 检查最近日志..."
+    echo "查找时间戳之后的日志: $deploy_timestamp"
+    gcloud app logs tail -s default
     exit 1
 fi
 
@@ -96,8 +97,9 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Response code: $response_code"
 if [ "$response_code" != "200" ]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: Application returned non-200 status code"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking recent logs..."
-    echo "Looking for logs after timestamp: $deploy_timestamp"
-    gcloud app logs tail --service=default --limit=50
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 检查最近日志..."
+    echo "查找时间戳之后的日志: $deploy_timestamp"
+    gcloud app logs tail -s default
 fi
 
 # 检查日志中是否包含新的时间戳
