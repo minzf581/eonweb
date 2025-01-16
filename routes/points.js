@@ -11,7 +11,7 @@ function logWithTimestamp(message, data = '') {
     console.log(`[${timestamp}][Points Router] ${message}`, data);
 }
 
-logWithTimestamp('初始化 points.js 路由', { version: '2024011614', deployTime: new Date().toISOString() });
+logWithTimestamp('初始化 points.js 路由', { version: '2024011615', deployTime: new Date().toISOString() });
 
 // 辅助函数
 function validateIP(ipv4, ipv6) {
@@ -33,11 +33,8 @@ function validateIP(ipv4, ipv6) {
     return errors;
 }
 
-// 注册路由
-logWithTimestamp('开始注册路由');
-
-// POST /update 路由
-router.post('/update', authenticateApiKey, async (req, res) => {
+// 路由处理中间件
+const updatePointsMiddleware = async (req, res) => {
     logWithTimestamp('处理 /update 请求');
     try {
         logWithTimestamp('收到更新请求', req.body);
@@ -157,11 +154,9 @@ router.post('/update', authenticateApiKey, async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
-});
-logWithTimestamp('/update 路由注册完成');
+};
 
-// GET /balance/:email 路由
-router.get('/balance/:email', authenticateApiKey, async (req, res) => {
+const getBalanceMiddleware = async (req, res) => {
     try {
         const { email } = req.params;
         logWithTimestamp('查询积分余额', { email });
@@ -194,7 +189,13 @@ router.get('/balance/:email', authenticateApiKey, async (req, res) => {
             message: 'Failed to fetch points balance'
         });
     }
-});
+};
+
+// 注册路由
+logWithTimestamp('开始注册路由');
+router.post('/update', [authenticateApiKey], updatePointsMiddleware);
+logWithTimestamp('/update 路由注册完成');
+router.get('/balance/:email', [authenticateApiKey], getBalanceMiddleware);
 logWithTimestamp('/balance/:email 路由注册完成');
 
 // 导出路由
