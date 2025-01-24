@@ -141,3 +141,8 @@ fi
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment verification complete!"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] New version $new_version is now serving"
 echo "Deployment complete!"
+
+# 清理部署目录
+echo "Cleaning up deployment directory..."
+rm -rf .deploy
+echo "Cleanup complete!"
