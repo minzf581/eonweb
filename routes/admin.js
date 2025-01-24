@@ -28,27 +28,37 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
         // Get total users count
-        const total_users = await User.count();
+        const totalUsers = await User.count();
 
-        // Get new users today
-        const new_users_today = await User.count({
+        // Get active users (logged in within last 7 days)
+        const activeUsers = await User.count({
             where: {
-                created_at: {
-                    [Op.gte]: today
+                last_login_at: {
+                    [Op.gte]: new Date(now - 7 * 24 * 60 * 60 * 1000)
                 }
             }
         });
 
+        // Get total tasks count
+        const totalTasks = await User.sum('tasks_completed') || 0;
+
+        // Get total credits
+        const totalCredits = await User.sum('credits') || 0;
+
         console.log('[Admin] Stats retrieved:', {
-            total_users,
-            new_users_today
+            totalUsers,
+            activeUsers,
+            totalTasks,
+            totalCredits
         });
 
         res.json({
             success: true,
-            stats: {
-                total_users,
-                new_users_today
+            data: {
+                totalUsers,
+                activeUsers,
+                totalTasks,
+                totalCredits
             }
         });
     } catch (error) {
