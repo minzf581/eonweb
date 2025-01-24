@@ -54,25 +54,39 @@ if [ -d "public" ]; then
     echo "Copying directory: public"
     mkdir -p .deploy/public
     
-    # 复制所有文件和目录，除了static/js
+    # 复制所有文件和目录，除了static
     for item in public/*; do
         if [ "$item" != "public/static" ]; then
             cp -r "$item" .deploy/public/
         fi
     done
     
-    # 单独处理static/js目录
-    if [ -d "public/static/js" ]; then
-        echo "Copying JS files..."
-        mkdir -p .deploy/public/static/js
-        # 只复制authService.js
+    # 创建static目录结构
+    mkdir -p .deploy/public/static/js
+    mkdir -p .deploy/public/static/css
+    
+    # 复制 JS 文件
+    if [ -f "public/static/js/authService.js" ]; then
+        echo "Copying authService.js..."
         cp public/static/js/authService.js .deploy/public/static/js/
+    else
+        echo "ERROR: authService.js not found!"
+        exit 1
+    fi
+    
+    # 复制 CSS 文件
+    if [ -f "public/static/css/styles.css" ]; then
+        echo "Copying styles.css..."
+        cp public/static/css/styles.css .deploy/public/static/css/
+    else
+        echo "ERROR: styles.css not found!"
+        exit 1
     fi
     
     # 复制其他static目录
     if [ -d "public/static" ]; then
         for item in public/static/*; do
-            if [ "$item" != "public/static/js" ]; then
+            if [ "$item" != "public/static/js" ] && [ "$item" != "public/static/css" ]; then
                 cp -r "$item" .deploy/public/static/
             fi
         done

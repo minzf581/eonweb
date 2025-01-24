@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eon Protocol</title>
+    <title>EON Protocol - Decentralized Network Infrastructure</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Core Scripts -->
     <script src="/static/js/authService.js"></script>
-    <script src="/static/js/admin.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
     
     <style>
@@ -1383,7 +1382,8 @@ footer p {
     </footer>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/particles.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             particlesJS('particles-js', {
@@ -1485,63 +1485,6 @@ footer p {
                 "retina_detect": true
             });
         });
-    </script>
-    <!-- 添加Font Awesome图标 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="/static/js/auth.js"></script>
-    <script>
-        async function loadTasks() {
-            try {
-                console.log('Loading tasks...');
-                const token = window.authService.getToken();
-                if (!token) {
-                    console.error('No auth token available');
-                    return;
-                }
-                console.log('Token retrieved:', !!token);
-
-                const response = await fetch('/api/tasks', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to load tasks');
-                }
-
-                const result = await response.json();
-                console.log('Tasks loaded successfully');
-
-                if (!result.success) {
-                    throw new Error(result.message || 'Failed to load tasks');
-                }
-
-                const taskList = document.getElementById('taskList');
-                if (!taskList) {
-                    console.warn('Task list element not found');
-                    return;
-                }
-
-                taskList.innerHTML = result.data.map(task => `
-                    <div class="task-item ${task.completed ? 'completed' : ''}">
-                        <h3>${task.title}</h3>
-                        <p>${task.description}</p>
-                        <div class="task-meta">
-                            <span class="points">🏆 ${task.points} points</span>
-                            <span class="type">${task.type}</span>
-                        </div>
-                        ${task.completed 
-                            ? `<span class="completed-badge">✅ Completed</span>`
-                            : `<button class="start-task-btn" data-task-id="${task.id}">Start Task</button>`
-                        }
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading tasks:', error);
-                throw error;
-            }
-        }
     </script>
     <script>
         // Core Strengths Animations

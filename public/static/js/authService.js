@@ -135,6 +135,14 @@ const authService = {
             email: user?.email
         });
         return hasToken;
+    },
+
+    getUser() {
+        return auth.getUser();
+    },
+
+    getToken() {
+        return auth.getToken();
     }
 };
 
