@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { validateApiKey } = require('../middleware/auth');
-const { User } = require('../models');
+const { authenticateToken } = require('../middleware/auth');
+const { User, PointHistory } = require('../models');
+const { sequelize } = require('../config/sequelize');
 
 // 记录带时间戳的日志
 function logWithTimestamp(message) {
@@ -66,11 +67,11 @@ async function handleGetBalance(req, res) {
 logWithTimestamp('开始注册路由');
 
 // 更新积分路由
-router.post('/update', validateApiKey, handleUpdatePoints);
+router.post('/update', authenticateToken, handleUpdatePoints);
 logWithTimestamp('已注册 POST /update 路由');
 
 // 查询积分路由
-router.get('/balance/:email', validateApiKey, handleGetBalance);
+router.get('/balance/:email', authenticateToken, handleGetBalance);
 logWithTimestamp('已注册 GET /balance/:email 路由');
 
 logWithTimestamp('路由注册完成');
