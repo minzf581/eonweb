@@ -341,4 +341,44 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
     }
 });
 
+// 登出
+router.post('/logout', authenticateToken, async (req, res) => {
+    const timestamp = new Date().toISOString();
+    try {
+        console.log(`[${timestamp}][Auth] 收到登出请求:`, {
+            userId: req.user.id,
+            email: req.user.email,
+            isAdmin: req.user.is_admin,
+            headers: {
+                authorization: req.headers.authorization ? '存在' : '不存在'
+            }
+        });
+
+        // 这里可以添加任何必要的清理工作
+        // 比如将token加入黑名单等
+
+        console.log(`[${timestamp}][Auth] 登出成功:`, {
+            userId: req.user.id,
+            email: req.user.email
+        });
+        
+        res.json({
+            success: true,
+            message: 'Logout successful'
+        });
+    } catch (error) {
+        console.error(`[${timestamp}][Auth] 登出错误:`, {
+            userId: req.user?.id,
+            email: req.user?.email,
+            error: error.message,
+            stack: error.stack
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Logout failed',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
