@@ -16,6 +16,7 @@ const authService = {
             
             const data = await response.json();
             auth.setToken(data.token);
+            auth.setUser(data.user);
             return data;
         } catch (error) {
             console.error('Login error:', error);
@@ -37,6 +38,7 @@ const authService = {
             }
             
             auth.clearToken();
+            auth.clearUser();
         } catch (error) {
             console.error('Logout error:', error);
             throw error;
@@ -62,5 +64,38 @@ const authService = {
             console.error('Registration error:', error);
             throw error;
         }
+    },
+
+    isAdmin() {
+        const user = auth.getUser();
+        return user && user.is_admin === true;
+    }
+};
+
+// Auth utilities
+const auth = {
+    getToken() {
+        return localStorage.getItem('token');
+    },
+
+    setToken(token) {
+        localStorage.setItem('token', token);
+    },
+
+    clearToken() {
+        localStorage.removeItem('token');
+    },
+
+    getUser() {
+        const userStr = localStorage.getItem('user');
+        return userStr ? JSON.parse(userStr) : null;
+    },
+
+    setUser(user) {
+        localStorage.setItem('user', JSON.stringify(user));
+    },
+
+    clearUser() {
+        localStorage.removeItem('user');
     }
 };

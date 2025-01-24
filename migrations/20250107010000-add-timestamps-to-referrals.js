@@ -1,35 +1,41 @@
 'use strict';
 
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
-    await queryInterface.sequelize.transaction(async (transaction) => {
-      // Add deleted_at column to referrals table
-      await queryInterface.addColumn('referrals', 'deleted_at', {
-        type: Sequelize.DATE,
-        allowNull: true
-      }, { transaction });
+  async up(queryInterface, Sequelize) {
+    // Add timestamps to referrals table
+    await queryInterface.addColumn('referrals', 'created_at', {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    });
 
-      // Add created_at column if it doesn't exist
-      await queryInterface.addColumn('referrals', 'created_at', {
-        type: Sequelize.DATE,
-        allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-      }, { transaction }).catch(() => {});
+    await queryInterface.addColumn('referrals', 'updated_at', {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    });
 
-      // Add updated_at column if it doesn't exist
-      await queryInterface.addColumn('referrals', 'updated_at', {
-        type: Sequelize.DATE,
-        allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-      }, { transaction }).catch(() => {});
+    // Add timestamps to point_histories table
+    await queryInterface.addColumn('point_histories', 'created_at', {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    });
+
+    await queryInterface.addColumn('point_histories', 'updated_at', {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
-    await queryInterface.sequelize.transaction(async (transaction) => {
-      await queryInterface.removeColumn('referrals', 'deleted_at', { transaction });
-      await queryInterface.removeColumn('referrals', 'created_at', { transaction }).catch(() => {});
-      await queryInterface.removeColumn('referrals', 'updated_at', { transaction }).catch(() => {});
-    });
+  async down(queryInterface, Sequelize) {
+    // Remove timestamps from referrals table
+    await queryInterface.removeColumn('referrals', 'created_at');
+    await queryInterface.removeColumn('referrals', 'updated_at');
+
+    // Remove timestamps from point_histories table
+    await queryInterface.removeColumn('point_histories', 'created_at');
+    await queryInterface.removeColumn('point_histories', 'updated_at');
   }
 };
