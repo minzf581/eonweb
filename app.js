@@ -46,6 +46,23 @@ app.use(morgan(':method :url :status :response-time ms'));
 app.use(bodyParser.json());
 app.use(cors());
 
+// Security middleware
+app.use((req, res, next) => {
+    // 阻止可疑的PHP文件请求
+    if (req.path.endsWith('.php') || req.path.endsWith('.php7')) {
+        console.log(`[${new Date().toISOString()}][Security] 阻止可疑请求: ${req.path}`);
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // 阻止WordPress相关路径
+    if (req.path.includes('/wp-') || req.path.includes('/wordpress')) {
+        console.log(`[${new Date().toISOString()}][Security] 阻止WordPress相关请求: ${req.path}`);
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    next();
+});
+
 // API routes
 const apiRouter = express.Router();
 console.log(`[${new Date().toISOString()}][DEBUG] 开始注册 API 路由`);

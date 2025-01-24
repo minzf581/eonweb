@@ -160,7 +160,7 @@
                 
                 // Check if already logged in
                 if (window.authService.isLoggedIn()) {
-                    window.location.href = '/dashboard/index.html';
+                    window.location.href = '/dashboard/';
                     return;
                 }
 
@@ -185,9 +185,9 @@
                         
                         // Redirect based on user role
                         if (window.authService.isAdmin()) {
-                            window.location.href = '/admin/dashboard.html';
+                            window.location.href = '/admin/';
                         } else {
-                            window.location.href = '/dashboard/index.html';
+                            window.location.href = '/dashboard/';
                         }
                     } catch (err) {
                         error.textContent = err.message;
