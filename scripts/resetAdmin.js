@@ -10,27 +10,36 @@ async function resetAdmin() {
     const dbPassword = process.env.DB_PASSWORD || 'eonprotocol';
     const dbHost = process.env.DB_HOST || 'localhost';
     const dbPort = process.env.DB_PORT || 5432;
+    const isProduction = process.env.NODE_ENV === 'production';
 
     console.log('Database configuration:', {
         host: dbHost,
         port: dbPort,
         database: dbName,
-        user: dbUser
+        user: dbUser,
+        environment: process.env.NODE_ENV
     });
 
-    // 创建数据库连接
-    const sequelize = new Sequelize(dbName, dbUser, dbPassword, {
+    let sequelizeConfig = {
         host: dbHost,
         port: dbPort,
         dialect: 'postgres',
-        logging: console.log,
-        dialectOptions: {
-            ssl: process.env.NODE_ENV === 'production' ? {
-                require: true,
-                rejectUnauthorized: false
-            } : false
-        }
-    });
+        logging: console.log
+    };
+
+    // 在生产环境使用 Cloud SQL Socket
+    if (isProduction) {
+        sequelizeConfig = {
+            ...sequelizeConfig,
+            host: '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
+            dialectOptions: {
+                socketPath: '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
+            }
+        };
+    }
+
+    // 创建数据库连接
+    const sequelize = new Sequelize(dbName, dbUser, dbPassword, sequelizeConfig);
 
     // 定义 User 模型
     const User = sequelize.define('User', {
