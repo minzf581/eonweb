@@ -49,10 +49,34 @@ for dir in models routes middleware config scripts; do
     fi
 done
 
-# 复制可选目录（如果存在）
+# 复制public目录
 if [ -d "public" ]; then
     echo "Copying directory: public"
-    cp -r public .deploy/
+    mkdir -p .deploy/public
+    
+    # 复制所有文件和目录，除了static/js
+    for item in public/*; do
+        if [ "$item" != "public/static" ]; then
+            cp -r "$item" .deploy/public/
+        fi
+    done
+    
+    # 单独处理static/js目录
+    if [ -d "public/static/js" ]; then
+        echo "Copying JS files..."
+        mkdir -p .deploy/public/static/js
+        # 只复制authService.js
+        cp public/static/js/authService.js .deploy/public/static/js/
+    fi
+    
+    # 复制其他static目录
+    if [ -d "public/static" ]; then
+        for item in public/static/*; do
+            if [ "$item" != "public/static/js" ]; then
+                cp -r "$item" .deploy/public/static/
+            fi
+        done
+    fi
 fi
 
 # 验证文件复制
@@ -116,19 +140,4 @@ fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment verification complete!"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] New version $new_version is now serving"
-
-# 创建新的管理员账户
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Creating new admin user..."
-echo "Waiting for application to be fully initialized..."
-sleep 30
-
-# 调用创建管理员的API
-echo "Calling create admin API..."
-response=$(curl -s -X POST \
-  -H "X-API-Key: ${API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"lewis@eon-protocol.com","password":"admin123"}' \
-  https://eonhome-445809.et.r.appspot.com/api/admin/create-admin)
-
-echo "API Response: $response"
 echo "Deployment complete!"

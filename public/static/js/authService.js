@@ -1,17 +1,18 @@
 // Auth service for handling API calls
 const authService = {
-    async login(username, password) {
+    async login(email, password) {
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ email, password }),
             });
             
             if (!response.ok) {
-                throw new Error('Login failed');
+                const data = await response.json();
+                throw new Error(data.message || 'Login failed');
             }
             
             const data = await response.json();
@@ -69,6 +70,10 @@ const authService = {
     isAdmin() {
         const user = auth.getUser();
         return user && user.is_admin === true;
+    },
+
+    isLoggedIn() {
+        return !!auth.getToken();
     }
 };
 
@@ -99,3 +104,25 @@ const auth = {
         localStorage.removeItem('user');
     }
 };
+
+// Auth service utilities
+const authServiceUtils = {
+    waitForAuthService() {
+        return new Promise((resolve) => {
+            if (window.authService) {
+                resolve();
+            } else {
+                const checkInterval = setInterval(() => {
+                    if (window.authService) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 100);
+            }
+        });
+    }
+};
+
+// Export to window
+window.authService = authService;
+window.authServiceUtils = authServiceUtils;
