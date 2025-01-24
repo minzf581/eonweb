@@ -219,8 +219,19 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
 // 临时重置管理员密码的路由
 router.post('/reset-admin-temp', async (req, res) => {
     try {
+        console.log('[Admin Reset] Request received:', {
+            headers: req.headers,
+            body: req.body
+        });
+
         const apiKey = req.headers['x-api-key'];
+        console.log('[Admin Reset] Checking API key:', {
+            received: apiKey,
+            expected: process.env.API_KEY
+        });
+
         if (apiKey !== process.env.API_KEY) {
+            console.log('[Admin Reset] Invalid API key');
             return res.status(401).json({
                 success: false,
                 message: 'Invalid API key'
@@ -231,7 +242,7 @@ router.post('/reset-admin-temp', async (req, res) => {
         const password = 'admin123';
         
         // 检查管理员用户是否已存在
-        console.log('Finding admin user with email:', email);
+        console.log('[Admin Reset] Finding admin user with email:', email);
         const existingUser = await User.findOne({
             where: { email }
         });
@@ -241,16 +252,16 @@ router.post('/reset-admin-temp', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         if (existingUser) {
-            console.log('Found existing admin user, updating...');
+            console.log('[Admin Reset] Found existing admin user, updating...');
             await existingUser.update({
                 password: hashedPassword,
                 is_admin: true,
                 updated_at: new Date()
             });
-            console.log('Admin user updated successfully');
+            console.log('[Admin Reset] Admin user updated successfully');
             res.json({ success: true, message: 'Admin user updated successfully' });
         } else {
-            console.log('Admin user not found, creating new one...');
+            console.log('[Admin Reset] Admin user not found, creating new one...');
             // 生成推荐码
             const referralCode = crypto.randomBytes(4).toString('hex');
 
@@ -265,11 +276,11 @@ router.post('/reset-admin-temp', async (req, res) => {
                 referral_code: referralCode
             });
 
-            console.log('Admin user created successfully');
+            console.log('[Admin Reset] Admin user created successfully');
             res.json({ success: true, message: 'Admin user created successfully' });
         }
     } catch (error) {
-        console.error('Error managing admin user:', error);
+        console.error('[Admin Reset] Error managing admin user:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
