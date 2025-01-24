@@ -4,42 +4,36 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 async function resetAdmin() {
-    // 从环境变量获取数据库配置
-    const dbName = process.env.DB_NAME || 'eon_protocol';
-    const dbUser = process.env.DB_USER || 'eonuser';
-    const dbPassword = process.env.DB_PASSWORD || 'eonprotocol';
-    const dbHost = process.env.DB_HOST || 'localhost';
-    const dbPort = process.env.DB_PORT || 5432;
     const isProduction = process.env.NODE_ENV === 'production';
-
-    console.log('Database configuration:', {
-        host: dbHost,
-        port: dbPort,
-        database: dbName,
-        user: dbUser,
-        environment: process.env.NODE_ENV
-    });
-
-    let sequelizeConfig = {
-        host: dbHost,
-        port: dbPort,
+    const dbConfig = {
+        database: process.env.DB_NAME || 'eon_protocol',
+        username: process.env.DB_USER || 'eonuser',
+        password: process.env.DB_PASSWORD || 'eonprotocol',
+        host: isProduction ? '/cloudsql/eonhome-445809:asia-southeast2:eon-db' : 'localhost',
         dialect: 'postgres',
         logging: console.log
     };
 
-    // 在生产环境使用 Cloud SQL Socket
     if (isProduction) {
-        sequelizeConfig = {
-            ...sequelizeConfig,
-            host: '/cloudsql/eonhome-445809:asia-southeast2:eon-db',
-            dialectOptions: {
-                socketPath: '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
-            }
+        dbConfig.dialectOptions = {
+            socketPath: '/cloudsql/eonhome-445809:asia-southeast2:eon-db'
         };
     }
 
+    console.log('Database configuration:', {
+        host: dbConfig.host,
+        database: dbConfig.database,
+        username: dbConfig.username,
+        environment: process.env.NODE_ENV
+    });
+
     // 创建数据库连接
-    const sequelize = new Sequelize(dbName, dbUser, dbPassword, sequelizeConfig);
+    const sequelize = new Sequelize(
+        dbConfig.database,
+        dbConfig.username,
+        dbConfig.password,
+        dbConfig
+    );
 
     // 定义 User 模型
     const User = sequelize.define('User', {

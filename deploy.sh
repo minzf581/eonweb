@@ -120,6 +120,10 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] New version $new_version is now serving"
 # 重置管理员密码
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Resetting admin password..."
 cd .deploy
+if [ -f ../.env.production ]; then
+    echo "Loading environment variables from .env.production"
+    export $(cat ../.env.production | grep -v '^#' | xargs)
+fi
 NODE_ENV=production node scripts/resetAdmin.js
 cd ..
 
