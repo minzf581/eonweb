@@ -23,8 +23,9 @@ automatic_scaling:
 
 handlers:
   # 静态文件处理
-  - url: /static
-    static_dir: public
+  - url: /static/(.*)
+    static_files: public/static/\1
+    upload: public/static/.*
     secure: always
     http_headers:
       X-Frame-Options: DENY
@@ -33,6 +34,12 @@ handlers:
       Strict-Transport-Security: 'max-age=31536000; includeSubDomains'
       Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
       Referrer-Policy: strict-origin-when-cross-origin
+
+  # 其他静态文件处理
+  - url: /(.*\.(html|ico))$
+    static_files: public/\1
+    upload: public/.*\.(html|ico)$
+    secure: always
 
   # API和其他动态请求处理
   - url: /.*
