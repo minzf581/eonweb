@@ -23,9 +23,8 @@ automatic_scaling:
 
 handlers:
   # 静态文件处理
-  - url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|html))$
-    static_files: public/\1
-    upload: public/.*\.(js|css|png|jpg|jpeg|gif|ico|html)$
+  - url: /static
+    static_dir: public
     secure: always
     http_headers:
       X-Frame-Options: DENY
@@ -51,9 +50,6 @@ entrypoint: node server.js
 
 beta_settings:
   cloud_sql_instances: eonhome-445809:asia-southeast2:eon-db
-
-vpc_access_connector:
-  name: projects/eonhome-445809/locations/asia-southeast2/connectors/eon-connector
 
 # 安全设置
 runtime_config:
