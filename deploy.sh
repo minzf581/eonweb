@@ -119,12 +119,20 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] New version $new_version is now serving"
 
 # 重置管理员密码
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Resetting admin password..."
-cd .deploy
-if [ -f ../.env.production ]; then
-    echo "Loading environment variables from .env.production"
-    export $(cat ../.env.production | grep -v '^#' | xargs)
+echo "Waiting for application to be fully initialized..."
+sleep 10  # 等待应用完全启动
+
+# 调用重置管理员密码的API
+response=$(curl -s -X POST \
+  -H "X-API-Key: ${API_KEY}" \
+  https://eonhome-445809.et.r.appspot.com/api/admin/reset-admin-temp)
+echo "Reset admin password response: $response"
+
+if echo "$response" | grep -q "success\":true"; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Admin password reset successfully"
+else
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Failed to reset admin password"
+    echo "Response: $response"
 fi
-NODE_ENV=production node scripts/resetAdmin.js
-cd ..
 
 echo "You can view logs using: gcloud app logs tail -s default"

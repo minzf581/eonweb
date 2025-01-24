@@ -4,6 +4,7 @@ const { User } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
+const bcrypt = require('bcryptjs');
 
 // Middleware to check if user is admin
 const isAdmin = (req, res, next) => {
@@ -212,6 +213,64 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
             message: 'Error updating user',
             error: error.message
         });
+    }
+});
+
+// 临时重置管理员密码的路由
+router.post('/reset-admin-temp', async (req, res) => {
+    try {
+        const apiKey = req.headers['x-api-key'];
+        if (apiKey !== process.env.API_KEY) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid API key'
+            });
+        }
+
+        const email = 'admin@eon-protocol.com';
+        const password = 'admin123';
+        
+        // 检查管理员用户是否已存在
+        console.log('Finding admin user with email:', email);
+        const existingUser = await User.findOne({
+            where: { email }
+        });
+
+        // 哈希密码
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        if (existingUser) {
+            console.log('Found existing admin user, updating...');
+            await existingUser.update({
+                password: hashedPassword,
+                is_admin: true,
+                updated_at: new Date()
+            });
+            console.log('Admin user updated successfully');
+            res.json({ success: true, message: 'Admin user updated successfully' });
+        } else {
+            console.log('Admin user not found, creating new one...');
+            // 生成推荐码
+            const referralCode = crypto.randomBytes(4).toString('hex');
+
+            // 创建管理员用户
+            const admin = await User.create({
+                email,
+                username: 'admin',
+                password: hashedPassword,
+                is_admin: true,
+                points: 0,
+                credits: 0,
+                referral_code: referralCode
+            });
+
+            console.log('Admin user created successfully');
+            res.json({ success: true, message: 'Admin user created successfully' });
+        }
+    } catch (error) {
+        console.error('Error managing admin user:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
