@@ -1,4 +1,3 @@
-require('dotenv').config();
 const { User } = require('../models');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
