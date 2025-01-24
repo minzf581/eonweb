@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
-const { User } = require('../models');
+const { User, UserTask } = require('../models');
 
 const router = express.Router();
 
@@ -46,6 +46,40 @@ router.get('/:id', authenticateToken, async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message
+        });
+    }
+});
+
+// 获取用户积分统计
+router.get('/points/stats', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findOne({
+            where: { id: req.user.id },
+            attributes: ['id', 'points', 'credits']
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const stats = {
+            current_points: user.points,
+            current_credits: user.credits,
+            points_history: [] // TODO: 实现积分历史记录
+        };
+
+        res.json({
+            success: true,
+            data: stats
+        });
+    } catch (error) {
+        console.error('[Users] Error fetching points stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch points stats'
         });
     }
 });

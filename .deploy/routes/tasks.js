@@ -57,7 +57,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // 获取用户任务列表
-router.get('/user', authenticateToken, async (req, res) => {
+router.get('/user/list', authenticateToken, async (req, res) => {
     try {
         const userTasks = await UserTask.findAll({
             where: { userid: req.user.id },
@@ -66,10 +66,18 @@ router.get('/user', authenticateToken, async (req, res) => {
                 as: 'task'
             }]
         });
-        res.json(userTasks);
+        
+        res.json({
+            success: true,
+            data: userTasks
+        });
     } catch (error) {
-        console.error('Error fetching user tasks:', error);
-        res.status(500).json({ message: 'Error fetching user tasks' });
+        console.error('[Tasks] Error fetching user tasks:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching user tasks',
+            error: error.message 
+        });
     }
 });
 

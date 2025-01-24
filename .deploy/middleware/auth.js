@@ -1,31 +1,52 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
-const validateApiKey = async (req, res, next) => {
-    try {
-        const apiKey = req.headers['x-api-key'];
-        if (!apiKey) {
-            return res.status(401).json({
-                success: false,
-                message: 'API key is required'
-            });
-        }
+function logWithTimestamp(message, data = '') {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}][Auth] ${message}`, data);
+}
 
-        if (apiKey !== process.env.API_KEY) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid API key'
-            });
-        }
-
-        next();
-    } catch (error) {
-        console.error('[Auth] API key validation error:', error);
-        res.status(500).json({
+const validateApiKey = (req, res, next) => {
+    const timestamp = new Date().toISOString();
+    const version = '2024011626';
+    
+    logWithTimestamp('开始验证 API Key', { 
+        version,
+        path: req.path,
+        method: req.method,
+        headers: {
+            'x-api-key': req.headers['x-api-key'] ? '***' : undefined,
+            'content-type': req.headers['content-type']
+        },
+        timestamp
+    });
+    
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+        logWithTimestamp('验证失败：缺少 API Key', { version });
+        res.status(401).json({
             success: false,
-            message: 'Internal server error'
+            message: 'API key not provided'
         });
+        return;
     }
+
+    if (apiKey !== process.env.API_KEY) {
+        logWithTimestamp('验证失败：无效的 API Key', { version });
+        res.status(401).json({
+            success: false,
+            message: 'Invalid API key'
+        });
+        return;
+    }
+
+    logWithTimestamp('API Key 验证成功', { 
+        version,
+        path: req.path,
+        method: req.method 
+    });
+    
+    next();
 };
 
 const authenticateToken = async (req, res, next) => {
@@ -86,34 +107,6 @@ const authenticateToken = async (req, res, next) => {
     }
 };
 
-const authenticateApiKey = async (req, res, next) => {
-    try {
-        const apiKey = req.headers['x-api-key'];
-        if (!apiKey) {
-            return res.status(401).json({
-                success: false,
-                message: 'API key required'
-            });
-        }
-
-        // TODO: Implement API key validation
-        if (apiKey !== process.env.PROXY_API_KEY) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid API key'
-            });
-        }
-
-        next();
-    } catch (error) {
-        console.error('[Auth] API key authentication error:', error);
-        return res.status(401).json({
-            success: false,
-            message: 'Authentication failed'
-        });
-    }
-};
-
 const isAdmin = async (req, res, next) => {
     try {
         // Get fresh user data to ensure admin status is current
@@ -158,7 +151,6 @@ const isAdminSimple = (req, res, next) => {
 
 module.exports = {
     authenticateToken,
-    authenticateApiKey,
     isAdmin,
     isAdminSimple,
     validateApiKey
