@@ -216,71 +216,55 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-// 临时重置管理员密码的路由
-router.post('/reset-admin-temp', async (req, res) => {
+// 创建新的管理员账户
+router.post('/create-admin', async (req, res) => {
     try {
-        console.log('[Admin Reset] Request received:', {
+        console.log('[Admin Create] Request received:', {
             headers: req.headers,
             body: req.body
         });
 
         const apiKey = req.headers['x-api-key'];
-        console.log('[Admin Reset] Checking API key:', {
-            received: apiKey,
-            expected: process.env.API_KEY
-        });
-
         if (apiKey !== process.env.API_KEY) {
-            console.log('[Admin Reset] Invalid API key');
+            console.log('[Admin Create] Invalid API key');
             return res.status(401).json({
                 success: false,
                 message: 'Invalid API key'
             });
         }
 
-        const email = 'admin@eon-protocol.com';
-        const password = 'admin123';
+        const { email = 'lewis@eon-protocol.com', password = 'admin123' } = req.body;
         
-        // 检查管理员用户是否已存在
-        console.log('[Admin Reset] Finding admin user with email:', email);
-        const existingUser = await User.findOne({
-            where: { email }
-        });
+        // 生成推荐码
+        const referralCode = crypto.randomBytes(4).toString('hex');
 
         // 哈希密码
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        if (existingUser) {
-            console.log('[Admin Reset] Found existing admin user, updating...');
-            await existingUser.update({
-                password: hashedPassword,
-                is_admin: true,
-                updated_at: new Date()
-            });
-            console.log('[Admin Reset] Admin user updated successfully');
-            res.json({ success: true, message: 'Admin user updated successfully' });
-        } else {
-            console.log('[Admin Reset] Admin user not found, creating new one...');
-            // 生成推荐码
-            const referralCode = crypto.randomBytes(4).toString('hex');
+        // 创建新管理员用户
+        const admin = await User.create({
+            email,
+            username: email.split('@')[0],
+            password: hashedPassword,
+            is_admin: true,
+            points: 0,
+            credits: 0,
+            referral_code: referralCode
+        });
 
-            // 创建管理员用户
-            const admin = await User.create({
-                email,
-                username: 'admin',
-                password: hashedPassword,
-                is_admin: true,
-                points: 0,
-                credits: 0,
-                referral_code: referralCode
-            });
-
-            console.log('[Admin Reset] Admin user created successfully');
-            res.json({ success: true, message: 'Admin user created successfully' });
-        }
+        console.log('[Admin Create] New admin user created successfully');
+        res.json({ 
+            success: true, 
+            message: 'New admin user created successfully',
+            admin: {
+                email: admin.email,
+                username: admin.username,
+                is_admin: admin.is_admin
+            }
+        });
     } catch (error) {
-        console.error('[Admin Reset] Error managing admin user:', error);
+        console.error('[Admin Create] Error creating admin user:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

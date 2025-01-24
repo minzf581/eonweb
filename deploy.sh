@@ -117,10 +117,18 @@ fi
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment verification complete!"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] New version $new_version is now serving"
 
-# 重置管理员密码
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Resetting admin password..."
-cd .deploy
-NODE_ENV=production node scripts/resetAdmin.js
-cd ..
+# 创建新的管理员账户
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Creating new admin user..."
+echo "Waiting for application to be fully initialized..."
+sleep 30
 
+# 调用创建管理员的API
+echo "Calling create admin API..."
+response=$(curl -s -X POST \
+  -H "X-API-Key: ${API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"lewis@eon-protocol.com","password":"admin123"}' \
+  https://eonhome-445809.et.r.appspot.com/api/admin/create-admin)
+
+echo "API Response: $response"
 echo "Deployment complete!"
