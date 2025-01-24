@@ -25,11 +25,16 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
         });
 
         // Get total users count
-        const totalUsers = await User.count();
+        const totalUsers = await User.count({
+            where: {
+                deleted_at: null
+            }
+        });
 
         // Get active users (logged in within last 7 days)
         const activeUsers = await User.count({
             where: {
+                deleted_at: null,
                 last_login_at: {
                     [Op.gte]: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
                 }
@@ -38,19 +43,24 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
 
         // Get total tasks from UserTask model
         const { UserTask } = require('../models');
-        const completedTasks = await UserTask.count({
+        const totalTasks = await UserTask.count({
             where: {
+                deleted_at: null,
                 status: 'completed'
             }
         });
 
         // Get total credits
-        const totalCredits = await User.sum('credits') || 0;
+        const totalCredits = await User.sum('credits', {
+            where: {
+                deleted_at: null
+            }
+        }) || 0;
 
         console.log('[Admin] Stats retrieved:', {
             totalUsers,
             activeUsers,
-            completedTasks,
+            totalTasks,
             totalCredits
         });
 
@@ -59,15 +69,15 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
             data: {
                 totalUsers,
                 activeUsers,
-                totalTasks: completedTasks,
-                totalCredits
+                totalTasks,
+                totalCredits: parseFloat(totalCredits).toFixed(2)
             }
         });
     } catch (error) {
         console.error('[Admin] Error getting stats:', error);
         res.status(500).json({
             success: false,
-            message: 'Error getting system stats',
+            message: 'Failed to get system stats',
             error: error.message
         });
     }

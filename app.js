@@ -180,18 +180,18 @@ console.log(`[${new Date().toISOString()}][Static] 静态文件根目录: ${path
 
 // 添加静态文件中间件
 app.use('/static', (req, res, next) => {
-    console.log(`[${new Date().toISOString()}][Static] 访问 /static 路径: ${req.path}`);
+    console.log(`[${new Date().toISOString()}][Static] Accessing root path: ${req.path}`);
     next();
 }, express.static(path.join(__dirname, 'public/static')));
 
 app.use('/', (req, res, next) => {
-    console.log(`[${new Date().toISOString()}][Static] 访问根路径: ${req.path}`);
+    console.log(`[${new Date().toISOString()}][Static] Accessing root path: ${req.path}`);
     next();
 }, express.static(path.join(__dirname, 'public')));
 
 // Handle SPA routes
 app.get('*', (req, res) => {
-    console.log(`[${new Date().toISOString()}][Static] 处理请求路径: ${req.path}`);
+    console.log(`[${new Date().toISOString()}][Static] Processing request path: ${req.path}`);
     
     // Skip API routes
     if (req.path.startsWith('/api/')) {
@@ -238,7 +238,7 @@ app.get('*', (req, res) => {
 
     // For root path or all other routes, serve index.html
     const indexPath = path.join(__dirname, 'public', 'index.html');
-    console.log(`[${new Date().toISOString()}][Static] 尝试提供默认页面: ${indexPath}`);
+    console.log(`[${new Date().toISOString()}][Static] Attempting to serve default page: ${indexPath}`);
     
     try {
         if (fs.existsSync(indexPath)) {
