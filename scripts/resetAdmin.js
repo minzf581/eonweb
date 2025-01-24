@@ -3,14 +3,23 @@ const { Sequelize } = require('sequelize');
 const crypto = require('crypto');
 
 async function resetAdmin() {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const socketPath = '/cloudsql/eonhome-445809:asia-southeast2:eon-db';
+
     // 创建数据库连接
-    const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
-        host: process.env.DB_HOST,
-        dialect: 'postgres',
-        dialectOptions: {
-            socketPath: process.env.DB_HOST
+    const sequelize = new Sequelize(
+        process.env.DB_NAME || 'eon_protocol',
+        process.env.DB_USER || 'eonuser',
+        process.env.DB_PASSWORD, 
+        {
+            host: socketPath,
+            dialect: 'postgres',
+            dialectOptions: {
+                socketPath: socketPath
+            },
+            logging: console.log
         }
-    });
+    );
 
     // 定义 User 模型
     const User = sequelize.define('User', {
@@ -34,6 +43,10 @@ async function resetAdmin() {
     });
 
     try {
+        // 测试数据库连接
+        await sequelize.authenticate();
+        console.log('Database connection has been established successfully.');
+
         // 创建管理员账户
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash('admin123', salt);
