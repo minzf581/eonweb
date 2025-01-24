@@ -117,6 +117,7 @@ router.get('/users', authenticateToken, isAdmin, async (req, res) => {
         }));
 
         console.log(`[Admin] Retrieved ${users.length} users with extended information`);
+        console.log('[Admin] Formatted users data:', formatted_users);
 
         // 设置响应头以防止缓存
         res.set({

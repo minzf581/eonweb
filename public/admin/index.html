@@ -312,12 +312,12 @@
 
                 const tableBody = document.getElementById('usersTableBody');
                 
-                if (!data.data || data.data.length === 0) {
+                if (!data.users || data.users.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No users found</td></tr>';
                     return;
                 }
 
-                tableBody.innerHTML = data.data.map(user => `
+                tableBody.innerHTML = data.users.map(user => `
                     <tr>
                         <td>${user.email}</td>
                         <td>${user.username || '-'}</td>
