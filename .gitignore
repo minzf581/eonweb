@@ -26,3 +26,6 @@ npm-debug.log*
 
 # Local development files
 server-local.js
+
+# Deployment files
+.deploy/
