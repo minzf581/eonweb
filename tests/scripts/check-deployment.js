@@ -1,7 +1,7 @@
 import https from 'https';
 
 const files = [
-    '/public/js/authService.js',
+    '/static/js/authService.js',
     '/public/auth/login.html'
 ];
 
