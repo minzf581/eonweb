@@ -97,6 +97,7 @@ sequelize.authenticate()
 module.exports = {
     development: developmentConfig,
     production: productionConfig,
+    test: developmentConfig,
     sequelize,
     dbConfig
 };
