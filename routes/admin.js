@@ -2,9 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { User } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
-const crypto = require('crypto');
 const { Op } = require('sequelize');
-const bcrypt = require('bcryptjs');
 
 // Middleware to check if user is admin
 const isAdmin = (req, res, next) => {
@@ -102,74 +100,6 @@ router.get('/users', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-// Create new user
-router.post('/users', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        console.log('[Admin] Creating new user. Requested by:', {
-            id: req.user.id,
-            email: req.user.email,
-            is_admin: req.user.is_admin
-        });
-
-        const { email, password, is_admin } = req.body;
-
-        // Validate required fields
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email and password are required'
-            });
-        }
-
-        // Check if email already exists
-        const existing_user = await User.findOne({ where: { email } });
-        if (existing_user) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email already registered'
-            });
-        }
-
-        // Generate referral code
-        const referral_code = crypto.randomBytes(4).toString('hex');
-
-        // Create user
-        const user = await User.create({
-            email,
-            password,
-            referral_code,
-            is_admin: !!is_admin,
-            points: 0
-        });
-
-        console.log('[Admin] User created successfully:', {
-            id: user.id,
-            email: user.email,
-            is_admin: user.is_admin
-        });
-
-        res.status(201).json({
-            success: true,
-            message: 'User created successfully',
-            user: {
-                id: user.id,
-                email: user.email,
-                is_admin: user.is_admin,
-                points: user.points,
-                referral_code: user.referral_code,
-                created_at: user.created_at
-            }
-        });
-    } catch (error) {
-        console.error('[Admin] Error creating user:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error creating user',
-            error: error.message
-        });
-    }
-});
-
 // Update user
 router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
@@ -213,59 +143,6 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
             message: 'Error updating user',
             error: error.message
         });
-    }
-});
-
-// 创建新的管理员账户
-router.post('/create-admin', async (req, res) => {
-    try {
-        console.log('[Admin Create] Request received:', {
-            headers: req.headers,
-            body: req.body
-        });
-
-        const apiKey = req.headers['x-api-key'];
-        if (apiKey !== process.env.API_KEY) {
-            console.log('[Admin Create] Invalid API key');
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid API key'
-            });
-        }
-
-        const { email = 'lewis@eon-protocol.com', password = 'admin123' } = req.body;
-        
-        // 生成推荐码
-        const referralCode = crypto.randomBytes(4).toString('hex');
-
-        // 哈希密码
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // 创建新管理员用户
-        const admin = await User.create({
-            email,
-            username: email.split('@')[0],
-            password: hashedPassword,
-            is_admin: true,
-            points: 0,
-            credits: 0,
-            referral_code: referralCode
-        });
-
-        console.log('[Admin Create] New admin user created successfully');
-        res.json({ 
-            success: true, 
-            message: 'New admin user created successfully',
-            admin: {
-                email: admin.email,
-                username: admin.username,
-                is_admin: admin.is_admin
-            }
-        });
-    } catch (error) {
-        console.error('[Admin Create] Error creating admin user:', error);
-        res.status(500).json({ success: false, error: error.message });
     }
 });
 
