@@ -93,20 +93,37 @@ router.get('/users', authenticateToken, isAdmin, async (req, res) => {
         });
 
         const users = await User.findAll({
-            attributes: ['id', 'email', 'points', 'referral_code', 'is_admin', 'created_at'],
+            where: {
+                deleted_at: null
+            },
+            attributes: [
+                'id', 
+                'email', 
+                'points',
+                'credits', 
+                'referral_code',
+                'is_admin',
+                'created_at',
+                'last_login_at',
+                'username'
+            ],
             order: [['created_at', 'DESC']]
         });
 
         const formatted_users = users.map(user => ({
-            id: user.id,
-            email: user.email,
-            points: user.points,
-            referral_code: user.referral_code,
-            is_admin: user.is_admin,
-            created_at: user.created_at
+            ...user.toJSON(),
+            points: parseFloat(user.points || 0).toFixed(2),
+            credits: parseFloat(user.credits || 0).toFixed(2)
         }));
 
-        console.log(`[Admin] Retrieved ${users.length} users`);
+        console.log(`[Admin] Retrieved ${users.length} users with extended information`);
+
+        // 设置响应头以防止缓存
+        res.set({
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
 
         res.json({
             success: true,
@@ -116,7 +133,7 @@ router.get('/users', authenticateToken, isAdmin, async (req, res) => {
         console.error('[Admin] Error getting users:', error);
         res.status(500).json({
             success: false,
-            message: 'Error getting users',
+            message: 'Failed to get users list',
             error: error.message
         });
     }
