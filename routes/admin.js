@@ -24,9 +24,6 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
             is_admin: req.user.is_admin
         });
 
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
         // Get total users count
         const totalUsers = await User.count();
 
@@ -34,13 +31,18 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
         const activeUsers = await User.count({
             where: {
                 last_login_at: {
-                    [Op.gte]: new Date(now - 7 * 24 * 60 * 60 * 1000)
+                    [Op.gte]: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
                 }
             }
         });
 
-        // Get total tasks count
-        const totalTasks = await User.sum('tasks_completed') || 0;
+        // Get total tasks from UserTask model
+        const { UserTask } = require('../models');
+        const completedTasks = await UserTask.count({
+            where: {
+                status: 'completed'
+            }
+        });
 
         // Get total credits
         const totalCredits = await User.sum('credits') || 0;
@@ -48,7 +50,7 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
         console.log('[Admin] Stats retrieved:', {
             totalUsers,
             activeUsers,
-            totalTasks,
+            completedTasks,
             totalCredits
         });
 
@@ -57,7 +59,7 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
             data: {
                 totalUsers,
                 activeUsers,
-                totalTasks,
+                totalTasks: completedTasks,
                 totalCredits
             }
         });
