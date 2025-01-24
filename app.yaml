@@ -22,8 +22,10 @@ automatic_scaling:
   max_instances: 10
 
 handlers:
-  - url: /.*
-    script: auto
+  # 静态文件处理
+  - url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|html))$
+    static_files: public/\1
+    upload: public/.*\.(js|css|png|jpg|jpeg|gif|ico|html)$
     secure: always
     http_headers:
       X-Frame-Options: DENY
@@ -32,6 +34,11 @@ handlers:
       Strict-Transport-Security: 'max-age=31536000; includeSubDomains'
       Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
       Referrer-Policy: strict-origin-when-cross-origin
+
+  # API和其他动态请求处理
+  - url: /.*
+    script: auto
+    secure: always
 
 readiness_check:
   path: "/_ah/health"
