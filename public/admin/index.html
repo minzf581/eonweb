@@ -163,6 +163,75 @@
         .hidden {
             display: none !important;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            margin: 10% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+
+        .modal-close {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -225,7 +294,45 @@
         </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit User</h2>
+            <form id="editUserForm">
+                <div class="form-group">
+                    <label for="editEmail">Email:</label>
+                    <input type="email" id="editEmail" required />
+                </div>
+                <div class="form-group">
+                    <label for="editUsername">Username:</label>
+                    <input type="text" id="editUsername" />
+                </div>
+                <div class="form-group">
+                    <label for="editCredits">Credits:</label>
+                    <input type="number" id="editCredits" step="0.01" required />
+                </div>
+                <div class="form-group">
+                    <label for="editPoints">Points:</label>
+                    <input type="number" id="editPoints" step="0.01" required />
+                </div>
+                <div class="form-group">
+                    <label for="editIsAdmin">
+                        <input type="checkbox" id="editIsAdmin" />
+                        Admin
+                    </label>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        let userData = [];
+
         async function initializePage() {
             try {
                 // Wait for auth service
@@ -310,6 +417,9 @@
                     throw new Error(data.message || 'Invalid users response');
                 }
 
+                // Save users data globally
+                userData = data.users;
+
                 const tableBody = document.getElementById('usersTableBody');
                 
                 if (!data.users || data.users.length === 0) {
@@ -338,9 +448,74 @@
             }
         }
 
+        let currentEditUserId = null;
+
+        function closeEditModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+            currentEditUserId = null;
+        }
+
         async function editUser(userId) {
-            // TODO: Implement user editing
-            alert('Edit user function not implemented yet');
+            const user = userData.find(u => u.id === userId);
+            if (!user) {
+                alert('User not found');
+                return;
+            }
+
+            currentEditUserId = userId;
+
+            // Fill form with user data
+            document.getElementById('editEmail').value = user.email || '';
+            document.getElementById('editUsername').value = user.username || '';
+            document.getElementById('editCredits').value = user.credits || 0;
+            document.getElementById('editPoints').value = user.points || 0;
+            document.getElementById('editIsAdmin').checked = user.is_admin || false;
+
+            // Show modal
+            document.getElementById('editUserModal').style.display = 'block';
+
+            // Handle form submission
+            document.getElementById('editUserForm').onsubmit = async (e) => {
+                e.preventDefault();
+
+                const updates = {
+                    email: document.getElementById('editEmail').value,
+                    username: document.getElementById('editUsername').value,
+                    credits: parseFloat(document.getElementById('editCredits').value),
+                    points: parseFloat(document.getElementById('editPoints').value),
+                    is_admin: document.getElementById('editIsAdmin').checked
+                };
+
+                try {
+                    const response = await fetch(`/api/admin/users/${currentEditUserId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${window.authService.getToken()}`
+                        },
+                        body: JSON.stringify(updates)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update user');
+                    }
+
+                    await loadUsers();
+                    closeEditModal();
+                    alert('User updated successfully');
+                } catch (error) {
+                    console.error('Error updating user:', error);
+                    alert('Failed to update user. Please try again.');
+                }
+            };
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editUserModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
         }
 
         async function deleteUser(userId) {

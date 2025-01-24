@@ -146,6 +146,8 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
         const { id } = req.params;
         const updates = req.body;
 
+        console.log('[Admin] Updating user:', { id, updates });
+
         const user = await User.findByPk(id);
         if (!user) {
             return res.status(404).json({
@@ -155,7 +157,7 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
         }
 
         // Update user fields
-        const allowed_updates = ['email', 'points', 'is_admin'];
+        const allowed_updates = ['email', 'points', 'credits', 'is_admin', 'username'];
         Object.keys(updates).forEach(key => {
             if (allowed_updates.includes(key)) {
                 user[key] = updates[key];
@@ -164,6 +166,8 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
 
         await user.save();
 
+        console.log('[Admin] User updated successfully:', user.toJSON());
+
         res.json({
             success: true,
             message: 'User updated successfully',
@@ -171,7 +175,9 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
                 id: user.id,
                 email: user.email,
                 points: user.points,
+                credits: user.credits,
                 is_admin: user.is_admin,
+                username: user.username,
                 referral_code: user.referral_code,
                 created_at: user.created_at
             }
@@ -181,6 +187,40 @@ router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error updating user',
+            error: error.message
+        });
+    }
+});
+
+// Delete user
+router.delete('/users/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        console.log('[Admin] Deleting user:', { id });
+
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Soft delete the user
+        await user.update({ deleted_at: new Date() });
+
+        console.log('[Admin] User deleted successfully:', { id });
+
+        res.json({
+            success: true,
+            message: 'User deleted successfully'
+        });
+    } catch (error) {
+        console.error('[Admin] Error deleting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting user',
             error: error.message
         });
     }
