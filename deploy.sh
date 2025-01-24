@@ -40,7 +40,7 @@ if [ ! -f ".deploy/app.yaml" ]; then
 fi
 
 # 复制必需的目录（如果存在）
-for dir in models routes middleware config; do
+for dir in models routes middleware config scripts; do
     if [ -d "$dir" ]; then
         echo "Copying directory: $dir"
         cp -r "$dir" .deploy/
@@ -116,4 +116,11 @@ fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment verification complete!"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] New version $new_version is now serving"
+
+# 重置管理员密码
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Resetting admin password..."
+cd .deploy
+NODE_ENV=production node scripts/resetAdmin.js
+cd ..
+
 echo "You can view logs using: gcloud app logs tail -s default"
