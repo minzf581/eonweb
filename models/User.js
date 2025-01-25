@@ -20,12 +20,7 @@ module.exports = (sequelize) => {
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
-      set(value) {
-        // Store both the temporary and actual password
-        this.setDataValue('_password', value);
-        this.setDataValue('password', value);
-      }
+      allowNull: false
     },
     points: {
       type: DataTypes.INTEGER,
@@ -69,11 +64,9 @@ module.exports = (sequelize) => {
     hooks: {
       beforeSave: async (user) => {
         // Hash password if it has changed
-        if (user._password) {
+        if (user.changed('password')) {
           const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(user._password, salt);
-          // Clear the temporary password
-          delete user._password;
+          user.password = await bcrypt.hash(user.password, salt);
         }
         
         // Generate referral code if not exists
@@ -100,7 +93,6 @@ module.exports = (sequelize) => {
   User.prototype.toJSON = function() {
     const values = { ...this.get() };
     delete values.password;
-    delete values._password;
     return values;
   };
 
