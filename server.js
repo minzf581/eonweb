@@ -26,14 +26,14 @@ console.log('Database configuration:', {
 // 运行数据库迁移
 async function runMigrations() {
     try {
-        console.log('Starting database migrations...');
+        console.log('[Migration] Starting database migrations...');
         const { stdout, stderr } = await execPromise('npx sequelize-cli db:migrate');
-        console.log('Migration stdout:', stdout);
-        if (stderr) console.error('Migration stderr:', stderr);
-        console.log('Database migrations completed successfully');
+        console.log('[Migration] stdout:', stdout);
+        if (stderr) console.error('[Migration] stderr:', stderr);
+        console.log('[Migration] Database migrations completed successfully');
         return true;
     } catch (error) {
-        console.error('Migration error:', error);
+        console.error('[Migration] Error:', error);
         return false;
     }
 }
@@ -41,10 +41,17 @@ async function runMigrations() {
 // 启动服务器
 async function startServer() {
     try {
+        // 等待数据库连接
+        console.log('[Server] Waiting for database connection...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
         // 运行迁移
+        console.log('[Server] Running database migrations...');
         const migrationSuccess = await runMigrations();
         if (!migrationSuccess) {
-            console.error('Database migrations failed, but continuing with server start...');
+            console.error('[Server] Database migrations failed, but continuing with server start...');
+        } else {
+            console.log('[Server] Database migrations completed successfully');
         }
 
         // 启动服务器
@@ -52,9 +59,11 @@ async function startServer() {
             console.log(`[DEBUG] Server started on port ${PORT}`);
         });
     } catch (error) {
-        console.error('Server startup error:', error);
+        console.error('[Server] Startup error:', error);
         process.exit(1);
     }
 }
 
+// 启动服务器
+console.log('[Server] Starting server...');
 startServer();
