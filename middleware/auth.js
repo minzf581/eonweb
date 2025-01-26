@@ -75,6 +75,8 @@ const authenticateToken = async (req, res, next) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             console.log('[Auth] Token decoded successfully:', {
                 userId: decoded.id,
+                email: decoded.email,
+                isAdmin: decoded.is_admin,
                 exp: new Date(decoded.exp * 1000).toISOString()
             });
 
@@ -84,7 +86,7 @@ const authenticateToken = async (req, res, next) => {
                     id: decoded.id,
                     deleted_at: null
                 },
-                attributes: ['id', 'email', 'is_admin', 'points', 'referral_code', 'credits']
+                attributes: ['id', 'email', 'is_admin', 'points', 'referral_code', 'credits', 'username']
             });
 
             if (!user) {
@@ -95,11 +97,24 @@ const authenticateToken = async (req, res, next) => {
                 });
             }
 
+            // 验证用户权限是否与token中的一致
+            if (user.is_admin !== decoded.is_admin) {
+                console.log('[Auth] User privileges mismatch:', {
+                    tokenAdmin: decoded.is_admin,
+                    userAdmin: user.is_admin
+                });
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication failed: Invalid privileges'
+                });
+            }
+
             req.user = user;
             console.log('[Auth] User authenticated successfully:', {
                 id: user.id,
                 email: user.email,
-                is_admin: user.is_admin
+                is_admin: user.is_admin,
+                username: user.username
             });
 
             next();

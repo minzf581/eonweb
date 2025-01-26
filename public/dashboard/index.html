@@ -702,9 +702,7 @@
                     return;
                 }
 
-                console.log('[Dashboard] User authenticated with token');
-
-                // Update user info
+                // 检查是否是管理员用户
                 const user = window.authService.getUser();
                 if (!user) {
                     console.error('[Dashboard] No user data found');
@@ -712,6 +710,15 @@
                     return;
                 }
 
+                if (user.is_admin === true) {
+                    console.log('[Dashboard] Admin user detected, redirecting to admin dashboard');
+                    window.location.href = '/admin/';
+                    return;
+                }
+
+                console.log('[Dashboard] Regular user authenticated with token');
+
+                // Update user info
                 document.getElementById('userEmail').textContent = user.email;
                 document.getElementById('referralCodeDisplay').textContent = user.referral_code || '-';
                 document.getElementById('referralCodeText').textContent = user.referral_code || 'Loading...';

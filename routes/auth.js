@@ -136,13 +136,18 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         console.log('[Auth] Login request received:', {
-            email: req.body.email
+            email: req.body.email,
+            timestamp: new Date().toISOString()
         });
 
         const { email, password } = req.body;
 
         // 验证必需字段
         if (!email || !password) {
+            console.log('[Auth] Missing required fields:', { 
+                hasEmail: !!email, 
+                hasPassword: !!password 
+            });
             return res.status(400).json({
                 success: false,
                 message: 'Email and password are required'
@@ -151,12 +156,18 @@ router.post('/login', async (req, res) => {
 
         // 查找用户
         const user = await User.findOne({ 
-            where: { email },
+            where: { 
+                email,
+                deleted_at: null  // 确保用户未被删除
+            },
             attributes: ['id', 'email', 'password', 'is_admin', 'points', 'referral_code', 'username', 'credits']
         });
 
         if (!user) {
-            console.log('[Auth] Login failed: User not found:', { email });
+            console.log('[Auth] Login failed: User not found:', { 
+                email,
+                timestamp: new Date().toISOString()
+            });
             return res.status(401).json({
                 success: false,
                 message: 'Invalid email or password'
@@ -164,23 +175,22 @@ router.post('/login', async (req, res) => {
         }
 
         // 验证密码
-        try {
-            const validPassword = await user.comparePassword(password);
-            if (!validPassword) {
-                console.log('[Auth] Login failed: Invalid password:', { email });
-                return res.status(401).json({
-                    success: false,
-                    message: 'Invalid email or password'
-                });
-            }
-        } catch (error) {
-            console.error('[Auth] Password verification error:', error);
-            return res.status(500).json({
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            console.log('[Auth] Login failed: Invalid password:', { 
+                email,
+                timestamp: new Date().toISOString()
+            });
+            return res.status(401).json({
                 success: false,
-                message: 'Login failed',
-                error: error.message
+                message: 'Invalid email or password'
             });
         }
+
+        // 更新最后登录时间
+        await user.update({
+            last_login_at: new Date()
+        });
 
         // 生成 JWT
         const token = jwt.sign({
@@ -191,16 +201,11 @@ router.post('/login', async (req, res) => {
             expiresIn: '24h'
         });
 
-        console.log('[Auth] Generated token payload:', {
-            id: user.id,
-            email: user.email,
-            is_admin: user.is_admin
-        });
-
         console.log('[Auth] Login successful:', {
             id: user.id,
             email: user.email,
-            is_admin: user.is_admin
+            is_admin: user.is_admin,
+            timestamp: new Date().toISOString()
         });
 
         // Return success response

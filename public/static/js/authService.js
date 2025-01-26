@@ -26,9 +26,22 @@ const authService = {
                 username: data.user.username
             });
             
-            // 先保存用户信息和token
-            auth.setToken(data.token);
-            auth.setUser(data.user);
+            // 确保先保存 token 和用户信息
+            if (data.token) {
+                auth.setToken(data.token);
+                console.log('[AuthService] Token已保存');
+            } else {
+                console.error('[AuthService] 登录响应中没有token');
+                throw new Error('No token in login response');
+            }
+            
+            if (data.user) {
+                auth.setUser(data.user);
+                console.log('[AuthService] 用户信息已保存');
+            } else {
+                console.error('[AuthService] 登录响应中没有用户信息');
+                throw new Error('No user data in login response');
+            }
             
             // 根据用户角色决定跳转页面
             if (data.user.is_admin === true) {
@@ -140,7 +153,21 @@ const authService = {
     },
 
     getToken() {
-        return auth.getToken();
+        const token = auth.getToken();
+        if (!token) {
+            console.warn('[AuthService] Token不存在');
+            return null;
+        }
+        return token;
+    },
+
+    setToken(token) {
+        if (!token) {
+            console.warn('[AuthService] 尝试设置空token');
+            return;
+        }
+        auth.setToken(token);
+        console.log('[AuthService] Token已更新');
     }
 };
 
