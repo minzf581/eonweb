@@ -175,15 +175,24 @@ router.post('/login', async (req, res) => {
         }
 
         // 验证密码
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) {
-            console.log('[Auth] Login failed: Invalid password:', { 
-                email,
-                timestamp: new Date().toISOString()
-            });
-            return res.status(401).json({
+        try {
+            const validPassword = await user.comparePassword(password);
+            if (!validPassword) {
+                console.log('[Auth] Login failed: Invalid password:', { 
+                    email,
+                    timestamp: new Date().toISOString()
+                });
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid email or password'
+                });
+            }
+        } catch (error) {
+            console.error('[Auth] Password verification error:', error);
+            return res.status(500).json({
                 success: false,
-                message: 'Invalid email or password'
+                message: 'Login failed',
+                error: error.message
             });
         }
 

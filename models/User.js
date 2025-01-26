@@ -77,15 +77,28 @@ module.exports = (sequelize) => {
     }
   });
 
-  User.prototype.comparePassword = async function(password) {
+  User.prototype.comparePassword = async function(candidatePassword) {
     try {
+      console.log('[User] Comparing password for:', {
+        userId: this.id,
+        email: this.email
+      });
+      
       if (!this.password) {
-        console.error('No password hash stored for user');
+        console.error('[User] No password hash stored for user');
         return false;
       }
-      return await bcrypt.compare(password, this.password);
+
+      const isMatch = await bcrypt.compare(candidatePassword, this.password);
+      console.log('[User] Password comparison result:', {
+        userId: this.id,
+        email: this.email,
+        isMatch
+      });
+
+      return isMatch;
     } catch (error) {
-      console.error('Password comparison error:', error);
+      console.error('[User] Password comparison error:', error);
       throw error;
     }
   };
