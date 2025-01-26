@@ -31,7 +31,7 @@ mkdir -p .deploy
 # 复制文件到构建目录
 echo "Copying files to build directory..."
 # 复制必需的文件
-cp app.js server.js package.json package-lock.json app.yaml .deploy/ || echo "Some files not found"
+cp app.js server.js package.json package-lock.json app.yaml .env.production .sequelizerc .deploy/ || echo "Some files not found"
 
 # 验证 app.yaml 是否存在
 if [ ! -f ".deploy/app.yaml" ]; then
@@ -40,7 +40,7 @@ if [ ! -f ".deploy/app.yaml" ]; then
 fi
 
 # 复制必需的目录（如果存在）
-for dir in models routes middleware config scripts; do
+for dir in models routes middleware config scripts migrations seeders; do
     if [ -d "$dir" ]; then
         echo "Copying directory: $dir"
         cp -r "$dir" .deploy/
@@ -97,6 +97,16 @@ fi
 echo "Verifying file copy..."
 cd .deploy
 npm install
+
+# 执行数据库迁移
+echo "Running database migrations..."
+NODE_ENV=production npx sequelize-cli db:migrate
+if [ $? -ne 0 ]; then
+    echo "ERROR: Database migration failed!"
+    exit 1
+fi
+echo "Database migration completed successfully!"
+
 cd ..
 
 # 部署到 Google Cloud
