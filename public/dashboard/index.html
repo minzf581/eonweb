@@ -457,13 +457,23 @@
         async function loadStats() {
             try {
                 console.log('[Dashboard] Loading user stats...');
+                const token = window.authService.getToken();
+                console.log('[Dashboard] Token for stats:', token ? 'exists' : 'not found');
+                
                 const response = await fetch('/api/stats', {
+                    method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     }
                 });
 
                 if (!response.ok) {
+                    const errorData = await response.text();
+                    console.error('[Dashboard] Stats response error:', {
+                        status: response.status,
+                        data: errorData
+                    });
                     throw new Error('Failed to load stats');
                 }
 
@@ -521,7 +531,9 @@
 
                 console.log('[Dashboard] Making request to /api/tasks');
                 const response = await fetch('/api/tasks', {
+                    method: 'GET',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     }
                 });
@@ -587,15 +599,22 @@
             try {
                 await window.authServiceUtils.waitForAuthService();
                 const token = window.authService.getToken();
-                console.log('[Dashboard] Token retrieved:', !!token);
+                console.log('[Dashboard] Token for referral:', token ? 'exists' : 'not found');
 
                 const response = await fetch('/api/referral', {
+                    method: 'GET',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
                 if (!response.ok) {
+                    const errorData = await response.text();
+                    console.error('[Dashboard] Referral response error:', {
+                        status: response.status,
+                        data: errorData
+                    });
                     throw new Error('Failed to load referral data');
                 }
 
@@ -675,15 +694,24 @@
                 // Wait for AuthService
                 await window.authServiceUtils.waitForAuthService();
                 
-                // Check if user is logged in
-                if (!window.authService.isLoggedIn()) {
-                    console.log('[Dashboard] User not logged in, redirecting to login page');
+                // Check if user is logged in and has valid token
+                const token = window.authService.getToken();
+                if (!token || !window.authService.isLoggedIn()) {
+                    console.log('[Dashboard] User not logged in or no token, redirecting to login page');
                     window.location.href = '/auth/login.html';
                     return;
                 }
 
+                console.log('[Dashboard] User authenticated with token');
+
                 // Update user info
                 const user = window.authService.getUser();
+                if (!user) {
+                    console.error('[Dashboard] No user data found');
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
+
                 document.getElementById('userEmail').textContent = user.email;
                 document.getElementById('referralCodeDisplay').textContent = user.referral_code || '-';
                 document.getElementById('referralCodeText').textContent = user.referral_code || 'Loading...';
@@ -692,13 +720,21 @@
                 document.getElementById('loadingOverlay').style.display = 'flex';
 
                 // Load all data
-                await Promise.all([
-                    loadStats(),
-                    loadTasks(),
-                    loadReferralData()
-                ]);
-
-                console.log('[Dashboard] All data loaded successfully');
+                try {
+                    await Promise.all([
+                        loadStats(),
+                        loadTasks(),
+                        loadReferralData()
+                    ]);
+                    console.log('[Dashboard] All data loaded successfully');
+                } catch (error) {
+                    console.error('[Dashboard] Error loading dashboard data:', error);
+                    if (error.message?.includes('Authentication failed')) {
+                        console.log('[Dashboard] Authentication error, redirecting to login');
+                        window.location.href = '/auth/login.html';
+                        return;
+                    }
+                }
             } catch (error) {
                 console.error('[Dashboard] Dashboard initialization failed:', error);
                 document.getElementById('errorMessage').style.display = 'block';

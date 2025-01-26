@@ -55,88 +55,90 @@ const authenticateToken = async (req, res, next) => {
         
         const authHeader = req.headers['authorization'];
         if (!authHeader) {
-            console.log('[Auth] No authorization header');
+            console.log('[Auth] No authorization header provided');
             return res.status(401).json({
                 success: false,
-                message: 'No authorization header'
+                message: 'Authentication failed: No token provided'
             });
         }
 
-        const token = authHeader.split(' ')[1];
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
         if (!token) {
-            console.log('[Auth] No token provided');
+            console.log('[Auth] No token found in authorization header');
             return res.status(401).json({
                 success: false,
-                message: 'No token provided'
+                message: 'Authentication failed: Invalid token format'
             });
         }
 
-        // Verify and decode the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('[Auth] Token decoded:', decoded);
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            console.log('[Auth] Token decoded successfully:', {
+                userId: decoded.id,
+                exp: new Date(decoded.exp * 1000).toISOString()
+            });
 
-        // Get fresh user data from database
-        const user = await User.findOne({
-            where: { id: decoded.id },
-            attributes: ['id', 'email', 'is_admin', 'points', 'referral_code', 'credits']
-        });
+            // 获取用户信息
+            const user = await User.findOne({
+                where: { 
+                    id: decoded.id,
+                    deleted_at: null
+                },
+                attributes: ['id', 'email', 'is_admin', 'points', 'referral_code', 'credits']
+            });
 
-        if (!user) {
-            console.log('[Auth] User not found:', decoded);
+            if (!user) {
+                console.log('[Auth] User not found or deleted:', decoded.id);
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication failed: User not found'
+                });
+            }
+
+            req.user = user;
+            console.log('[Auth] User authenticated successfully:', {
+                id: user.id,
+                email: user.email,
+                is_admin: user.is_admin
+            });
+
+            next();
+        } catch (error) {
+            console.error('[Auth] Token verification failed:', {
+                error: error.message,
+                name: error.name
+            });
             return res.status(401).json({
                 success: false,
-                message: 'User not found'
+                message: 'Authentication failed: Invalid token'
             });
         }
-
-        // Attach user to request
-        req.user = user.toJSON();
-        console.log('[Auth] User authenticated:', {
-            id: user.id,
-            email: user.email,
-            is_admin: user.is_admin
-        });
-
-        next();
     } catch (error) {
         console.error('[Auth] Authentication error:', error);
-        return res.status(401).json({
+        return res.status(500).json({
             success: false,
-            message: 'Authentication failed'
+            message: 'Internal server error'
         });
     }
 };
 
-const isAdmin = async (req, res, next) => {
-    try {
-        // Get fresh user data to ensure admin status is current
-        const user = await User.findOne({
-            where: { id: req.user.id },
-            attributes: ['id', 'email', 'is_admin']
-        });
+const isAdmin = (req, res, next) => {
+    console.log('[Auth] Checking admin privileges:', {
+        userId: req.user?.id,
+        email: req.user?.email,
+        isAdmin: req.user?.is_admin
+    });
 
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        if (!user.is_admin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        next();
-    } catch (error) {
-        console.error('[Auth] Admin check error:', error);
-        return res.status(500).json({
+    if (!req.user || req.user.is_admin !== true) {
+        console.log('[Auth] Admin check failed');
+        return res.status(403).json({
             success: false,
-            message: 'Server error'
+            message: 'Access denied. Admin privileges required.'
         });
     }
+
+    console.log('[Auth] Admin check passed');
+    next();
 };
 
 const isAdminSimple = (req, res, next) => {

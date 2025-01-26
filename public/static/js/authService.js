@@ -26,13 +26,14 @@ const authService = {
                 username: data.user.username
             });
             
+            // 先保存用户信息和token
             auth.setToken(data.token);
             auth.setUser(data.user);
             
             // 根据用户角色决定跳转页面
-            if (data.user.is_admin) {
+            if (data.user.is_admin === true) {
                 console.log('[AuthService] 管理员用户，准备跳转到管理后台');
-                window.location.href = '/admin/dashboard.html';
+                window.location.href = '/admin/';
             } else {
                 console.log('[AuthService] 普通用户，准备跳转到用户后台');
                 window.location.href = '/dashboard/';
@@ -46,42 +47,39 @@ const authService = {
     },
     
     async logout() {
+        console.log('[AuthService] 尝试登出');
+        
+        const token = this.getToken();
+        console.log('[AuthService] 当前用户Token:', token ? '存在' : '不存在');
+        
+        const user = this.getUser();
+        console.log('[AuthService] 当前用户信息:', user);
+
         try {
-            console.log('[AuthService] 尝试登出');
-            const token = auth.getToken();
-            console.log('[AuthService] 当前用户Token:', token ? '存在' : '不存在');
-            
-            const user = auth.getUser();
-            console.log('[AuthService] 当前用户信息:', {
-                userId: user?.id,
-                email: user?.email,
-                isAdmin: user?.is_admin
-            });
-            
             const response = await fetch('/api/auth/logout', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                    'Content-Type': 'application/json'
+                }
             });
-            
+
             if (!response.ok) {
-                console.error('[AuthService] 登出请求失败:', {
-                    status: response.status,
-                    statusText: response.statusText
-                });
+                console.log('[AuthService] 登出请求失败:', response);
                 throw new Error('Logout failed');
             }
+
+            // 清除本地存储的token和用户信息
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
             
-            console.log('[AuthService] 登出成功，清除本地存储');
-            auth.clearToken();
-            auth.clearUser();
-            
-            console.log('[AuthService] 准备跳转到登录页面');
+            // 重定向到登录页面
             window.location.href = '/auth/login.html';
         } catch (error) {
-            console.error('[AuthService] 登出错误:', error);
-            throw error;
+            console.log('[AuthService] 登出错误:', error);
+            // 即使请求失败，也清除本地存储并重定向
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/auth/login.html';
         }
     },
     
@@ -150,11 +148,16 @@ const authService = {
 const auth = {
     getToken() {
         const token = localStorage.getItem('token');
+        console.log('[Auth] 获取Token:', token ? '存在' : '不存在');
         return token;
     },
 
     setToken(token) {
         console.log('[Auth] 保存Token');
+        if (!token) {
+            console.warn('[Auth] 尝试保存空Token');
+            return;
+        }
         localStorage.setItem('token', token);
     },
 
@@ -165,8 +168,18 @@ const auth = {
 
     getUser() {
         const userStr = localStorage.getItem('user');
-        const user = userStr ? JSON.parse(userStr) : null;
-        return user;
+        try {
+            const user = userStr ? JSON.parse(userStr) : null;
+            console.log('[Auth] 获取用户信息:', user ? {
+                id: user.id,
+                email: user.email,
+                isAdmin: user.is_admin
+            } : '不存在');
+            return user;
+        } catch (error) {
+            console.error('[Auth] 解析用户信息失败:', error);
+            return null;
+        }
     },
 
     setUser(user) {

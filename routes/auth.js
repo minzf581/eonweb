@@ -342,40 +342,20 @@ router.get('/verify-token', authenticateToken, async (req, res) => {
 });
 
 // 登出
-router.post('/logout', authenticateToken, async (req, res) => {
-    const timestamp = new Date().toISOString();
+router.post('/logout', async (req, res) => {
     try {
-        console.log(`[${timestamp}][Auth] 收到登出请求:`, {
-            userId: req.user.id,
-            email: req.user.email,
-            isAdmin: req.user.is_admin,
-            headers: {
-                authorization: req.headers.authorization ? '存在' : '不存在'
-            }
-        });
-
-        // 这里可以添加任何必要的清理工作
-        // 比如将token加入黑名单等
-
-        console.log(`[${timestamp}][Auth] 登出成功:`, {
-            userId: req.user.id,
-            email: req.user.email
-        });
+        console.log('[Auth] User logging out');
         
+        // 直接返回成功，因为前端会清除token
         res.json({
             success: true,
-            message: 'Logout successful'
+            message: 'Logged out successfully'
         });
     } catch (error) {
-        console.error(`[${timestamp}][Auth] 登出错误:`, {
-            userId: req.user?.id,
-            email: req.user?.email,
-            error: error.message,
-            stack: error.stack
-        });
+        console.error('[Auth] Error during logout:', error);
         res.status(500).json({
             success: false,
-            message: 'Logout failed',
+            message: 'Failed to logout',
             error: error.message
         });
     }
