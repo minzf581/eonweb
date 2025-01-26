@@ -93,10 +93,11 @@ if [ -d "public" ]; then
     fi
 fi
 
-# 验证文件复制
-echo "Verifying file copy..."
+# 验证文件复制并安装依赖
+echo "Verifying file copy and installing dependencies..."
 cd .deploy
-npm install
+rm -rf node_modules package-lock.json
+NODE_ENV=production npm install --production
 cd ..
 
 # 部署到 Google Cloud
