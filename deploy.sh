@@ -97,16 +97,6 @@ fi
 echo "Verifying file copy..."
 cd .deploy
 npm install
-
-# 执行数据库迁移
-echo "Running database migrations..."
-NODE_ENV=production npx sequelize-cli db:migrate
-if [ $? -ne 0 ]; then
-    echo "ERROR: Database migration failed!"
-    exit 1
-fi
-echo "Database migration completed successfully!"
-
 cd ..
 
 # 部署到 Google Cloud
