@@ -335,36 +335,60 @@
 
         async function initializePage() {
             try {
+                console.log('[Admin] 开始初始化页面');
+                
                 // Wait for auth service
                 await window.authServiceUtils.waitForAuthService();
+                console.log('[Admin] AuthService 已就绪');
                 
                 // Check if user is logged in and is admin
-                if (!window.authService.isLoggedIn()) {
+                const token = window.authService.getToken();
+                const user = window.authService.getUser();
+                
+                console.log('[Admin] 检查用户状态:', {
+                    hasToken: !!token,
+                    user: user ? {
+                        id: user.id,
+                        email: user.email,
+                        isAdmin: user.is_admin
+                    } : null
+                });
+
+                if (!token || !window.authService.isLoggedIn()) {
+                    console.log('[Admin] 用户未登录，重定向到登录页面');
                     window.location.href = '/auth/login.html';
                     return;
                 }
 
                 if (!window.authService.isAdmin()) {
+                    console.log('[Admin] 非管理员用户，重定向到用户仪表板');
                     window.location.href = '/dashboard/index.html';
                     return;
                 }
+
+                console.log('[Admin] 用户验证通过，开始加载管理员界面');
 
                 // Show loading state
                 document.getElementById('loadingOverlay').style.display = 'flex';
 
                 // Update admin info
-                const user = window.authService.getUser();
                 document.getElementById('adminEmail').textContent = user.email;
+                
+                console.log('[Admin] 页面初始化完成');
 
                 // Load dashboard data
                 await Promise.all([
                     loadStats(),
                     loadUsers()
                 ]);
-            } catch (err) {
-                console.error('Failed to initialize page:', err);
-                document.getElementById('errorMessage').textContent = 'Failed to initialize page. Please try again.';
-                document.getElementById('errorMessage').style.display = 'block';
+            } catch (error) {
+                console.error('[Admin] 页面初始化失败:', error);
+                // 显示错误信息
+                const errorDiv = document.createElement('div');
+                errorDiv.style.color = 'red';
+                errorDiv.style.padding = '20px';
+                errorDiv.textContent = '初始化失败: ' + error.message;
+                document.body.appendChild(errorDiv);
             } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }

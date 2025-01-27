@@ -13,40 +13,28 @@ const authService = {
             });
             
             if (!response.ok) {
-                const data = await response.json();
-                console.error('[AuthService] 登录失败:', data);
-                throw new Error(data.message || 'Login failed');
+                const error = await response.json();
+                console.error('[AuthService] 登录失败:', error);
+                throw new Error(error.message || 'Login failed');
             }
             
             const data = await response.json();
             console.log('[AuthService] 登录成功:', {
                 userId: data.user.id,
                 email: data.user.email,
-                isAdmin: data.user.is_admin,
-                username: data.user.username
+                isAdmin: data.user.is_admin
             });
             
-            // 确保先保存 token 和用户信息
-            if (data.token) {
-                auth.setToken(data.token);
-                console.log('[AuthService] Token已保存');
-            } else {
-                console.error('[AuthService] 登录响应中没有token');
-                throw new Error('No token in login response');
-            }
-            
-            if (data.user) {
-                auth.setUser(data.user);
-                console.log('[AuthService] 用户信息已保存');
-            } else {
-                console.error('[AuthService] 登录响应中没有用户信息');
-                throw new Error('No user data in login response');
-            }
+            // 保存用户信息和token
+            auth.setToken(data.token);
+            auth.setUser(data.user);
             
             // 根据用户角色决定跳转页面
             if (data.user.is_admin === true) {
                 console.log('[AuthService] 管理员用户，准备跳转到管理后台');
-                window.location.href = '/admin/';
+                const adminPath = '/admin/';
+                console.log('[AuthService] 跳转路径:', adminPath);
+                window.location.href = adminPath;
             } else {
                 console.log('[AuthService] 普通用户，准备跳转到用户后台');
                 window.location.href = '/dashboard/';

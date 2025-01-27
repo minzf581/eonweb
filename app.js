@@ -215,10 +215,23 @@ app.get('*', (req, res) => {
     // For admin routes, serve admin/index.html
     if (req.path.startsWith('/admin')) {
         const adminPath = path.join(__dirname, 'public', 'admin', 'index.html');
-        console.log(`[${new Date().toISOString()}][Static] 尝试提供admin页面: ${adminPath}`);
+        console.log(`[${new Date().toISOString()}][Static] 尝试访问管理员页面:`, {
+            path: req.path,
+            adminPath,
+            exists: fs.existsSync(adminPath),
+            headers: req.headers,
+            method: req.method
+        });
         if (fs.existsSync(adminPath)) {
-            console.log(`[${new Date().toISOString()}][Static] 找到admin页面`);
-            res.sendFile(adminPath);
+            console.log(`[${new Date().toISOString()}][Static] 找到admin页面，准备发送`);
+            res.sendFile(adminPath, (err) => {
+                if (err) {
+                    console.error(`[${new Date().toISOString()}][Static] 发送admin页面失败:`, err);
+                    res.status(500).json({ error: 'Internal server error' });
+                } else {
+                    console.log(`[${new Date().toISOString()}][Static] 成功发送admin页面`);
+                }
+            });
             return;
         }
         console.log(`[${new Date().toISOString()}][Static] admin页面不存在`);
