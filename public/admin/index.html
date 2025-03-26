@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="/static/css/styles.css">
-    <script src="/static/js/authService.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,26 +33,6 @@
         .header h1 {
             margin: 0;
             color: #333;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .logout-btn {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .logout-btn:hover {
-            background-color: #c82333;
         }
 
         .stats-container {
@@ -123,149 +102,30 @@
         .users-table tr:hover {
             background-color: #f8f9fa;
         }
-
-        .loading-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-
-        .modal-content {
-            position: relative;
-            background: white;
-            margin: 10% auto;
-            padding: 20px;
-            width: 80%;
-            max-width: 500px;
-            border-radius: 8px;
-        }
-
-        .modal-close {
-            position: absolute;
-            right: 10px;
-            top: 10px;
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .btn-group {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: #007bff;
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
     </style>
 </head>
 <body>
-    <div id="loadingOverlay" class="loading-container">
-        <div class="loading-spinner"></div>
-    </div>
-
     <div id="adminContainer">
         <div class="header">
             <h1>Admin Dashboard</h1>
-            <div class="user-info">
-                <span id="adminEmail">Loading...</span>
-                <button onclick="window.authService.logout()" class="logout-btn">Logout</button>
-            </div>
         </div>
-
-        <div id="errorMessage" class="error-message"></div>
 
         <div class="stats-container">
             <div class="stat-card">
                 <h3>Total Users</h3>
-                <div id="totalUsers" class="value">0</div>
+                <div id="totalUsers" class="value">1,234</div>
             </div>
             <div class="stat-card">
                 <h3>Active Users Today</h3>
-                <div id="activeUsers" class="value">0</div>
+                <div id="activeUsers" class="value">567</div>
             </div>
             <div class="stat-card">
                 <h3>Total Tasks</h3>
-                <div id="totalTasks" class="value">0</div>
+                <div id="totalTasks" class="value">8,901</div>
             </div>
             <div class="stat-card">
                 <h3>Total Credits</h3>
-                <div id="totalCredits" class="value">0</div>
+                <div id="totalCredits" class="value">12,345</div>
             </div>
         </div>
 
@@ -282,293 +142,28 @@
                         <th>Points</th>
                         <th>Referral Code</th>
                         <th>Last Login</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="usersTableBody">
+                <tbody>
                     <tr>
-                        <td colspan="7" style="text-align: center;">Loading users...</td>
+                        <td>demo@example.com</td>
+                        <td>demo_user</td>
+                        <td>100</td>
+                        <td>500</td>
+                        <td>DEMO123</td>
+                        <td>2024-01-26 10:00:00</td>
+                    </tr>
+                    <tr>
+                        <td>test@example.com</td>
+                        <td>test_user</td>
+                        <td>200</td>
+                        <td>1000</td>
+                        <td>TEST456</td>
+                        <td>2024-01-26 09:30:00</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
-
-    <!-- Edit User Modal -->
-    <div id="editUserModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closeEditModal()">&times;</span>
-            <h2>Edit User</h2>
-            <form id="editUserForm">
-                <div class="form-group">
-                    <label for="editEmail">Email:</label>
-                    <input type="email" id="editEmail" required />
-                </div>
-                <div class="form-group">
-                    <label for="editUsername">Username:</label>
-                    <input type="text" id="editUsername" />
-                </div>
-                <div class="form-group">
-                    <label for="editCredits">Credits:</label>
-                    <input type="number" id="editCredits" step="0.01" required />
-                </div>
-                <div class="form-group">
-                    <label for="editPoints">Points:</label>
-                    <input type="number" id="editPoints" step="0.01" required />
-                </div>
-                <div class="form-group">
-                    <label for="editIsAdmin">
-                        <input type="checkbox" id="editIsAdmin" />
-                        Admin
-                    </label>
-                </div>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        let userData = [];
-
-        async function initializePage() {
-            try {
-                console.log('[Admin] 开始初始化页面');
-                
-                // Wait for auth service
-                await window.authServiceUtils.waitForAuthService();
-                console.log('[Admin] AuthService 已就绪');
-                
-                // Check if user is logged in and is admin
-                const token = window.authService.getToken();
-                const user = window.authService.getUser();
-                
-                console.log('[Admin] 检查用户状态:', {
-                    hasToken: !!token,
-                    user: user ? {
-                        id: user.id,
-                        email: user.email,
-                        isAdmin: user.is_admin
-                    } : null
-                });
-
-                if (!token || !window.authService.isLoggedIn()) {
-                    console.log('[Admin] 用户未登录，重定向到登录页面');
-                    window.location.href = '/auth/login.html';
-                    return;
-                }
-
-                if (!window.authService.isAdmin()) {
-                    console.log('[Admin] 非管理员用户，重定向到用户仪表板');
-                    window.location.href = '/dashboard/index.html';
-                    return;
-                }
-
-                console.log('[Admin] 用户验证通过，开始加载管理员界面');
-
-                // Show loading state
-                document.getElementById('loadingOverlay').style.display = 'flex';
-
-                // Update admin info
-                document.getElementById('adminEmail').textContent = user.email;
-                
-                console.log('[Admin] 页面初始化完成');
-
-                // Load dashboard data
-                await Promise.all([
-                    loadStats(),
-                    loadUsers()
-                ]);
-            } catch (error) {
-                console.error('[Admin] 页面初始化失败:', error);
-                // 显示错误信息
-                const errorDiv = document.createElement('div');
-                errorDiv.style.color = 'red';
-                errorDiv.style.padding = '20px';
-                errorDiv.textContent = '初始化失败: ' + error.message;
-                document.body.appendChild(errorDiv);
-            } finally {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
-        }
-
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/admin/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to load stats');
-                }
-
-                const data = await response.json();
-                
-                if (!data.success) {
-                    throw new Error(data.message || 'Invalid stats response');
-                }
-
-                document.getElementById('totalUsers').textContent = data.data.totalUsers || 0;
-                document.getElementById('activeUsers').textContent = data.data.activeUsers || 0;
-                document.getElementById('totalTasks').textContent = data.data.totalTasks || 0;
-                document.getElementById('totalCredits').textContent = data.data.totalCredits || 0;
-            } catch (error) {
-                console.error('Error loading stats:', error);
-                document.getElementById('errorMessage').textContent = 'Failed to load stats. Please refresh the page.';
-                document.getElementById('errorMessage').style.display = 'block';
-            }
-        }
-
-        async function loadUsers() {
-            try {
-                const response = await fetch('/api/admin/users', {
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to load users');
-                }
-
-                const data = await response.json();
-                
-                if (!data.success) {
-                    throw new Error(data.message || 'Invalid users response');
-                }
-
-                // Save users data globally
-                userData = data.users;
-
-                const tableBody = document.getElementById('usersTableBody');
-                
-                if (!data.users || data.users.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No users found</td></tr>';
-                    return;
-                }
-
-                tableBody.innerHTML = data.users.map(user => `
-                    <tr>
-                        <td>${user.email}</td>
-                        <td>${user.username || '-'}</td>
-                        <td>${user.credits || 0}</td>
-                        <td>${user.points || 0}</td>
-                        <td>${user.referral_code || '-'}</td>
-                        <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleString() : 'Never'}</td>
-                        <td>
-                            <button onclick="editUser(${user.id})" style="margin-right: 8px;">Edit</button>
-                            <button onclick="deleteUser(${user.id})">Delete</button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading users:', error);
-                document.getElementById('errorMessage').textContent = 'Failed to load users. Please refresh the page.';
-                document.getElementById('errorMessage').style.display = 'block';
-            }
-        }
-
-        let currentEditUserId = null;
-
-        function closeEditModal() {
-            document.getElementById('editUserModal').style.display = 'none';
-            currentEditUserId = null;
-        }
-
-        async function editUser(userId) {
-            const user = userData.find(u => u.id === userId);
-            if (!user) {
-                alert('User not found');
-                return;
-            }
-
-            currentEditUserId = userId;
-
-            // Fill form with user data
-            document.getElementById('editEmail').value = user.email || '';
-            document.getElementById('editUsername').value = user.username || '';
-            document.getElementById('editCredits').value = user.credits || 0;
-            document.getElementById('editPoints').value = user.points || 0;
-            document.getElementById('editIsAdmin').checked = user.is_admin || false;
-
-            // Show modal
-            document.getElementById('editUserModal').style.display = 'block';
-
-            // Handle form submission
-            document.getElementById('editUserForm').onsubmit = async (e) => {
-                e.preventDefault();
-
-                const updates = {
-                    email: document.getElementById('editEmail').value,
-                    username: document.getElementById('editUsername').value,
-                    credits: parseFloat(document.getElementById('editCredits').value),
-                    points: parseFloat(document.getElementById('editPoints').value),
-                    is_admin: document.getElementById('editIsAdmin').checked
-                };
-
-                try {
-                    const response = await fetch(`/api/admin/users/${currentEditUserId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${window.authService.getToken()}`
-                        },
-                        body: JSON.stringify(updates)
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to update user');
-                    }
-
-                    await loadUsers();
-                    closeEditModal();
-                    alert('User updated successfully');
-                } catch (error) {
-                    console.error('Error updating user:', error);
-                    alert('Failed to update user. Please try again.');
-                }
-            };
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('editUserModal');
-            if (event.target === modal) {
-                closeEditModal();
-            }
-        }
-
-        async function deleteUser(userId) {
-            if (!confirm('Are you sure you want to delete this user?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${window.authService.getToken()}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to delete user');
-                }
-
-                await loadUsers();
-            } catch (error) {
-                console.error('Error deleting user:', error);
-                document.getElementById('errorMessage').textContent = 'Failed to delete user. Please try again.';
-                document.getElementById('errorMessage').style.display = 'block';
-            }
-        }
-
-        // Start initialization when page loads
-        window.addEventListener('load', initializePage);
-    </script>
 </body>
 </html>
