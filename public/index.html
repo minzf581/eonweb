@@ -672,12 +672,41 @@ footer p {
     margin-bottom: 0.5rem;
   }
 }
-.social-links {
-  padding: 2rem 0;
-  background: var(--background-color);
-  text-align: center;
-  border-top: 1px solid #333;
-}
+        .social-links {
+            padding: 2rem 0;
+            background: var(--background-color);
+            text-align: center;
+            border-top: 1px solid #333;
+        }
+
+        .footer-links {
+            margin: 1rem 0;
+        }
+
+        .privacy-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background: var(--card-bg);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .privacy-link:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .privacy-link i {
+            font-size: 1rem;
+        }
 
 .social-links-container {
   display: flex;
@@ -1392,6 +1421,11 @@ footer p {
                 </a>
                 <a href="https://linkedin.com/company/eon-protocol" class="social-link linkedin" target="_blank" rel="noopener">
                     <i class="fab fa-linkedin"></i>
+                </a>
+            </div>
+            <div class="footer-links">
+                <a href="/EON Protocol Data Privacy.pdf" class="privacy-link" target="_blank">
+                    <i class="fas fa-shield-alt"></i> Privacy Rule
                 </a>
             </div>
             <p> 2024 EON Protocol. All rights reserved.</p>
