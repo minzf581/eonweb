@@ -103,6 +103,11 @@
             font-weight: 500;
             transition: all 0.3s ease;
             margin-left: 1rem;
+            min-height: 44px;
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .language-switch:hover {
@@ -110,10 +115,37 @@
             transform: translateY(-2px);
         }
 
+        .language-switch:active {
+            transform: translateY(0);
+        }
+
         .language-switch.mobile {
             margin: 1rem auto;
             display: block;
             width: fit-content;
+        }
+
+        /* Touch-friendly improvements */
+        .cta-button,
+        .nav-link,
+        .hamburger {
+            min-height: 44px;
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cta-button:active {
+            transform: translateY(1px);
+        }
+
+        .advantage-item:active {
+            transform: translateY(-2px);
+        }
+
+        .solution-item:active {
+            transform: translateY(-5px);
         }
 
         /* Hero Section - 保持黑色背景 */
@@ -1343,7 +1375,67 @@ footer p {
             font-weight: bold;
         }
 
+        /* Mobile Responsive Styles */
         @media (max-width: 768px) {
+            /* Navigation */
+            .main-nav {
+                padding: 0 1rem;
+            }
+            
+            .nav-brand img {
+                height: 3rem !important;
+                margin-top: 0.5rem !important;
+            }
+
+            /* Hero Section */
+            .hero {
+                padding: 1rem;
+                min-height: 100vh;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+                line-height: 1.2;
+                margin-bottom: 1rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+            }
+
+            .hero-description {
+                font-size: 1rem;
+                margin-bottom: 2rem;
+                padding: 0 1rem;
+            }
+
+            .role-options {
+                flex-direction: column;
+                gap: 1rem;
+                margin-top: 2rem;
+            }
+
+            .cta-button {
+                padding: 0.8rem 1.5rem;
+                font-size: 1rem;
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .trust-indicators {
+                flex-direction: column;
+                gap: 1rem;
+                margin-top: 2rem;
+            }
+
+            .trust-item {
+                font-size: 0.9rem;
+                padding: 0.8rem 1rem;
+                text-align: center;
+            }
+
+            /* Comparison Table */
             .comparison-header,
             .comparison-row {
                 grid-template-columns: 1fr;
@@ -1354,20 +1446,52 @@ footer p {
                 border-bottom: 1px solid var(--border-color);
             }
 
+            .problem-item, .solution-item {
+                padding: 1rem;
+                min-height: auto;
+                font-size: 0.9rem;
+            }
+
+            /* Process Timeline */
             .process-phase {
                 flex-direction: column;
                 text-align: center;
+                gap: 1rem;
+                margin-bottom: 2rem;
             }
 
             .phase-number {
                 align-self: center;
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
             }
 
-            .trust-indicators {
-                flex-direction: column;
-                align-items: center;
+            .phase-content {
+                padding: 1.5rem;
             }
 
+            .phase-content h3 {
+                font-size: 1.1rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .phase-content h4 {
+                font-size: 1rem;
+                margin: 1rem 0 0.8rem 0;
+            }
+
+            .phase-content ul {
+                margin: 0.8rem 0;
+                padding-left: 1rem;
+            }
+
+            .phase-content li {
+                font-size: 0.9rem;
+                margin-bottom: 0.4rem;
+            }
+
+            /* Advantages Grid */
             .advantages-grid {
                 grid-template-columns: 1fr;
                 gap: 2rem;
@@ -1377,15 +1501,271 @@ footer p {
                 flex-direction: column;
                 text-align: center;
                 gap: 1.5rem;
+                padding: 1.5rem;
             }
 
             .advantage-icon {
                 align-self: center;
+                width: 70px;
+                height: 70px;
             }
 
+            .advantage-icon i {
+                font-size: 1.8rem;
+            }
+
+            .advantage-content h3 {
+                font-size: 1.2rem;
+            }
+
+            .advantage-subtitle {
+                font-size: 0.9rem;
+            }
+
+            .advantage-features li {
+                font-size: 0.9rem;
+                margin-bottom: 0.6rem;
+            }
+
+            /* Case Study */
+            .about-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .about-section {
+                padding: 1.5rem;
+            }
+
+            .about-section h3 {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+            }
+
+            .about-section ul {
+                padding-left: 1rem;
+            }
+
+            .about-section li {
+                font-size: 0.9rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .investor-appeal {
+                gap: 0.8rem;
+            }
+
+            .appeal-item {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.9rem;
+            }
+
+            /* Contact Section */
+            .contact-options {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .contact-option {
+                padding: 1.5rem;
+            }
+
+            .contact-option h2 {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+            }
+
+            .contact-description ul {
+                padding-left: 1rem;
+            }
+
+            .contact-description li {
+                font-size: 0.9rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .confidentiality-notice {
+                padding: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            .confidentiality-notice h3 {
+                font-size: 1.1rem;
+            }
+
+            .confidentiality-notice p {
+                font-size: 0.9rem;
+            }
+
+            /* Footer */
+            .footer-info {
+                margin: 1.5rem 0;
+                padding: 0 1rem;
+            }
+
+            .footer-info p {
+                font-size: 0.9rem;
+                margin-bottom: 0.8rem;
+            }
+
+            /* Language Switch */
             .language-switch {
                 margin-left: 0;
                 margin-top: 1rem;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+
+            /* Section Padding */
+            .partners-section,
+            .solution-section,
+            .core-strengths,
+            .section {
+                padding: 3rem 1rem;
+            }
+
+            .partners-section h2,
+            .solution-container h2,
+            .core-strengths h2 {
+                font-size: 1.8rem;
+                margin-bottom: 2rem;
+            }
+        }
+
+        /* Extra Small Devices */
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 1.6rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+
+            .hero-description {
+                font-size: 0.9rem;
+            }
+
+            .cta-button {
+                padding: 0.7rem 1.2rem;
+                font-size: 0.9rem;
+            }
+
+            .trust-item {
+                font-size: 0.8rem;
+                padding: 0.6rem 0.8rem;
+            }
+
+            .advantage-item {
+                padding: 1rem;
+            }
+
+            .advantage-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            .advantage-icon i {
+                font-size: 1.5rem;
+            }
+
+            .phase-content {
+                padding: 1rem;
+            }
+
+            .about-section {
+                padding: 1rem;
+            }
+
+            .contact-option {
+                padding: 1rem;
+            }
+
+            .partners-section,
+            .solution-section,
+            .core-strengths,
+            .section {
+                padding: 2rem 0.8rem;
+            }
+
+            /* Partners Section Mobile */
+            .partners-scroll {
+                gap: 2rem;
+            }
+
+            .partner-item {
+                flex: 0 0 150px;
+                padding: 1rem;
+            }
+
+            .partner-item img {
+                width: 120px;
+            }
+
+            /* Social Links Mobile */
+            .social-links-container {
+                gap: 1rem;
+            }
+
+            .social-link {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            /* Privacy Link Mobile */
+            .privacy-link {
+                font-size: 0.8rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+
+        /* Landscape Mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .hero {
+                min-height: 100vh;
+                padding: 0.5rem;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .hero-description {
+                font-size: 0.9rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .role-options {
+                flex-direction: row;
+                justify-content: center;
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            .cta-button {
+                max-width: 200px;
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .trust-indicators {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.8rem;
+                margin-top: 1.5rem;
+            }
+
+            .trust-item {
+                font-size: 0.8rem;
+                padding: 0.5rem 0.8rem;
             }
         }
     </style>
@@ -1436,13 +1816,26 @@ footer p {
             padding: 15px 25px;
             color: #ffffff;
             text-decoration: none;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        .mobile-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         .mobile-nav a[id="loginLink"],
         .mobile-nav a[id="registerLink"] {
             color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .mobile-nav .language-switch {
+            margin: 15px auto;
+            display: block;
+            width: fit-content;
         }
 
         @media (max-width: 768px) {
@@ -1452,11 +1845,15 @@ footer p {
             
             .hamburger {
                 display: flex;
-                margin-right: 20px;
+                margin-right: 15px;
             }
 
             .mobile-nav {
                 display: block;
+            }
+
+            .mobile-nav {
+                padding-top: 80px;
             }
         }
     </style>
