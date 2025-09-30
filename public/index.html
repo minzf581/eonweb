@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EON Protocol - Decentralized Network Infrastructure</title>
+    <title data-zh="EON Protocol - 为企业提供数字金融服务" data-en="EON Protocol - Digital financial services for enterprises">EON Protocol - 为企业提供数字金融服务</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico?v=2">
@@ -91,6 +91,31 @@
             color: var(--secondary-color);
         }
 
+        /* Language Switch Button */
+        .language-switch {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-left: 1rem;
+        }
+
+        .language-switch:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .language-switch.mobile {
+            margin: 1rem auto;
+            display: block;
+            width: fit-content;
+        }
+
         /* Hero Section - 保持黑色背景 */
         .hero {
             height: 100vh;
@@ -120,7 +145,33 @@
         .hero-subtitle {
             font-size: 1.5rem;
             color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
             margin-bottom: 3rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .trust-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .trust-item {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         /* Role Options Styles */
@@ -1053,6 +1104,290 @@ footer p {
                 margin: 0 auto;
             }
         }
+
+        /* Comparison Table Styles */
+        .comparison-table {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .comparison-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .comparison-header > div {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .comparison-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .comparison-row:last-child {
+            border-bottom: none;
+        }
+
+        .problem-item, .solution-item {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            min-height: 80px;
+        }
+
+        .problem-item {
+            background: rgba(255, 0, 0, 0.05);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .solution-item {
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        /* Process Timeline Styles */
+        .process-timeline {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .process-phase {
+            display: flex;
+            margin-bottom: 3rem;
+            align-items: flex-start;
+            gap: 2rem;
+        }
+
+        .phase-number {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .phase-content {
+            flex: 1;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .phase-content h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .phase-content h4 {
+            color: var(--text-color);
+            margin: 1.5rem 0 1rem 0;
+            font-size: 1.1rem;
+        }
+
+        .phase-content ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .phase-content li {
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .phase-content p {
+            margin-top: 1rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* Investor Appeal Styles */
+        .investor-appeal {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .appeal-item {
+            padding: 0.8rem 1rem;
+            background: rgba(0, 255, 0, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        /* Confidentiality Notice */
+        .confidentiality-notice {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .confidentiality-notice h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        /* Footer Info Styles */
+        .footer-info {
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .footer-info p {
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        /* Optimized Core Advantages Layout */
+        .advantages-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .advantage-item {
+            display: flex;
+            gap: 2rem;
+            padding: 2rem;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            align-items: flex-start;
+        }
+
+        .advantage-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--secondary-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .advantage-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 0.5rem;
+        }
+
+        .advantage-icon i {
+            font-size: 2rem;
+            color: white;
+        }
+
+        .advantage-content {
+            flex: 1;
+        }
+
+        .advantage-content h3 {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+
+        .advantage-subtitle {
+            color: var(--text-color);
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        .advantage-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .advantage-features li {
+            color: var(--text-color);
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .advantage-features li::before {
+            content: '•';
+            color: var(--primary-color);
+            position: absolute;
+            left: 0;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-header,
+            .comparison-row {
+                grid-template-columns: 1fr;
+            }
+
+            .problem-item {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .process-phase {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .phase-number {
+                align-self: center;
+            }
+
+            .trust-indicators {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .advantages-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .advantage-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 1.5rem;
+            }
+
+            .advantage-icon {
+                align-self: center;
+            }
+
+            .language-switch {
+                margin-left: 0;
+                margin-top: 1rem;
+            }
+        }
     </style>
     <style>
         /* 移动端导航样式 */
@@ -1134,12 +1469,16 @@ footer p {
             <a href="#home"></a>
         </div>
         <div class="nav-links">
-            <a href="#home" class="nav-link">Home</a>
-            <a href="https://solution.eon-protocol.com" class="nav-link">Solution</a>
-            <a href="#projects" class="nav-link">Features</a>
-            <a href="#about" class="nav-link">About</a>
-            <a href="/auth/login.html" class="nav-link" style="color: var(--primary-color);" id="loginLink">SIGN IN</a>
-            <a href="/auth/register.html" class="nav-link" style="color: var(--primary-color);" id="registerLink">SIGN UP</a>
+            <a href="#home" class="nav-link" data-zh="首页" data-en="Home">首页</a>
+            <a href="#why-tokenization" class="nav-link" data-zh="为什么代币化" data-en="Why Tokenization">为什么代币化</a>
+            <a href="#advantages" class="nav-link" data-zh="核心优势" data-en="Core Advantages">核心优势</a>
+            <a href="#process" class="nav-link" data-zh="代币化流程" data-en="Process">代币化流程</a>
+            <a href="#contact" class="nav-link" data-zh="联系我们" data-en="Contact">联系我们</a>
+            <a href="/auth/login.html" class="nav-link" style="color: var(--primary-color);" id="loginLink" data-zh="登录" data-en="Login">登录</a>
+            <a href="/auth/register.html" class="nav-link" style="color: var(--primary-color);" id="registerLink" data-zh="注册" data-en="Register">注册</a>
+            <button class="language-switch" id="languageSwitch" data-current="zh">
+                <span data-zh="EN" data-en="中文">EN</span>
+            </button>
         </div>
         <button class="hamburger" id="hamburger">
             <span></span>
@@ -1150,138 +1489,276 @@ footer p {
 
     <!-- Mobile Navigation -->
     <div class="mobile-nav" id="mobileNav">
-        <a href="#home">Home</a>
-        <a href="https://solution.eon-protocol.com">Solution</a>
-        <a href="#projects">Features</a>
-        <a href="#about">About</a>
-        <a href="/auth/login.html" id="loginLink">SIGN IN</a>
-        <a href="/auth/register.html" id="registerLink">SIGN UP</a>
+        <a href="#home" data-zh="首页" data-en="Home">首页</a>
+        <a href="#why-tokenization" data-zh="为什么代币化" data-en="Why Tokenization">为什么代币化</a>
+        <a href="#advantages" data-zh="核心优势" data-en="Core Advantages">核心优势</a>
+        <a href="#process" data-zh="代币化流程" data-en="Process">代币化流程</a>
+        <a href="#contact" data-zh="联系我们" data-en="Contact">联系我们</a>
+        <a href="/auth/login.html" id="loginLink" data-zh="登录" data-en="Login">登录</a>
+        <a href="/auth/register.html" id="registerLink" data-zh="注册" data-en="Register">注册</a>
+        <button class="language-switch mobile" id="mobileLanguageSwitch" data-current="zh">
+            <span data-zh="EN" data-en="中文">EN</span>
+        </button>
     </div>
     <!-- Hero Section with Particles -->
     <section id="home" class="hero">
         <div class="hero-content">
-            <h1>AI Meets Crypto, Unlocking Data Potential</h1>
-            <!-- Role Options -->
+            <h1 data-zh="为企业提供数字金融服务" data-en="Digital financial services for enterprises">为企业提供数字金融服务</h1>
+            <p class="hero-subtitle" data-zh="通过资产代币化，突破融资瓶颈" data-en="Break Through Financing Barriers with Asset Tokenization">通过资产代币化，突破融资瓶颈</p>
+             
+            <!-- Call-to-Action Buttons -->
             <div class="role-options">
                 <div class="role-option">
-                    <h2></h2>
-                    <a href="https://solution.eon-protocol.com" class="cta-button">Exploring</a>
+                    <a href="#contact" class="cta-button" data-zh="免费咨询" data-en="Free Consultation">免费咨询</a>
                 </div>
-                
+                <div class="role-option">
+                    <a href="#case-study" class="cta-button" data-zh="成功案例" data-en="Case Studies">成功案例</a>
+                </div>
+            </div>
+            
+            <!-- Trust Indicators -->
+            <div class="trust-indicators">
+                <div class="trust-item" data-zh="✓ 新加坡金管局（MAS）合规框架" data-en="✓ MAS-Compliant Framework">✓ 新加坡金管局（MAS）合规框架</div>
+                <div class="trust-item" data-zh="✓ 已服务 3+ 中国企业代币化项目" data-en="✓ 3+ Chinese Enterprise Tokenization Projects Completed">✓ 已服务 3+ 中国企业代币化项目</div>
+                <div class="trust-item" data-zh="✓ 平均融资规模 1500-5000 万美元" data-en="✓ Average Funding Size: $15-50M USD">✓ 平均融资规模 1500-5000 万美元</div>
             </div>
         </div>
         <div id="particles-js"></div>
-         
     </section>
 
-    <!-- Projects Section -->
-    <section id="projects" class="partners-section">
-        <h2>Enterprise Stablecoin Solution</h2>
-        <div class="projects-grid">
-            <div class="project-card">
-                <h3>Built for Enterprise Excellence</h3>
-                <p>Native ERP Integration； Role-Based Access Control； Real-Time Synchronization.</p>
+    <!-- Why Tokenization Section -->
+    <section id="why-tokenization" class="partners-section">
+        <h2 data-zh="为什么企业需要代币化？" data-en="Why Enterprises Need Tokenization?">为什么中国企业需要代币化？</h2>
+        <div class="comparison-table">
+            <div class="comparison-header">
+                <div class="problem-column" data-zh="🚫 传统融资困境" data-en="🚫 Traditional Financing Challenges">🚫 传统融资困境</div>
+                <div class="solution-column" data-zh="✅ 代币化优势" data-en="✅ Tokenization Advantages">✅ 代币化优势</div>
             </div>
-            <div class="project-card">
-                <h3>Corporate Treasury Management</h3>
-                <p>Yield Optimization；Capital Preservation；Capital Preservation； Liquidity Management. </p>
+            <div class="comparison-row">
+                <div class="problem-item" data-zh="资本管制限制跨境融资" data-en="Capital controls limit cross-border funding">资本管制限制跨境融资</div>
+                <div class="solution-item" data-zh="通过新加坡合规架构实现美元融资" data-en="USD financing through Singapore-compliant structure">通过新加坡合规架构实现美元融资</div>
             </div>
-            <div class="project-card">
-                <h3>Supply Chain Finance Revolution</h3>
-                <p>Smart Contract Automation; Deferred Acceptance; Transparency & Traceability.</p>
+            <div class="comparison-row">
+                <div class="problem-item" data-zh="银行贷款需要重资产抵押" data-en="Bank loans require heavy asset collateral">银行贷款需要重资产抵押</div>
+                <div class="solution-item" data-zh="基于收入流的融资，无需抵押" data-en="Revenue-based financing, no collateral needed">基于收入流的融资，无需抵押</div>
+            </div>
+            <div class="comparison-row">
+                <div class="problem-item" data-zh="风投稀释股权，失去控制" data-en="VC dilutes equity and control">风投稀释股权，失去控制</div>
+                <div class="solution-item" data-zh="保持 100% 运营控制权" data-en="Maintain 100% operational control">保持 100% 运营控制权</div>
+            </div>
+            <div class="comparison-row">
+                <div class="problem-item" data-zh="融资成本高（15-20%）" data-en="High financing costs (15-20%)">融资成本高（15-20%）</div>
+                <div class="solution-item" data-zh="更低成本（10-12%年化收益）" data-en="Lower cost (10-12% annualized yield)">更低成本（10-12%年化收益）</div>
+            </div>
+            <div class="comparison-row">
+                <div class="problem-item" data-zh="国际投资者难以触达" data-en="Difficult to reach international investors">国际投资者难以触达</div>
+                <div class="solution-item" data-zh="接入新加坡 2 万亿美元财富管理市场" data-en="Access Singapore's $2T wealth management market">接入新加坡 2 万亿美元财富管理市场</div>
             </div>
         </div>
     </section>
 
-    <!-- Solution Section -->
-    <section id="solution" class="solution-section">
+    <!-- Core Advantages Section -->
+    <section id="advantages" class="solution-section">
         <div class="solution-container">
-            <h2>Data Concierge</h2>
-            <div class="solution-grid">
-                <div class="solution-item">
-                    <i class="fas fa-shield-alt"></i>
-                    <h3>High-Speed Data Collection</h3>
-                    <p>Ultra-Low Latency: 20-50ms direct connections accelerate web scraping;Distributed IPs: A vast pool of unique residential IPs bypasses geo-restrictions and anti-bot measures</p>
+            <h2 data-zh="我们的核心优势" data-en="Our Core Advantages">我们的核心优势</h2>
+            <div class="advantages-grid">
+                <div class="advantage-item">
+                    <div class="advantage-icon">
+                        <i class="fas fa-bridge"></i>
+                    </div>
+                    <div class="advantage-content">
+                        <h3 data-zh="🌉 中新桥梁专长" data-en="🌉 China-Singapore Bridge Expertise">🌉 中新桥梁专长</h3>
+                        <p class="advantage-subtitle" data-zh="唯一具备深度中国市场认知的新加坡代币化顾问" data-en="The Only Singapore Tokenization Advisor with Deep China Market Knowledge">唯一具备深度中国市场认知的新加坡代币化顾问</p>
+                        <ul class="advantage-features">
+                            <li data-zh="理解中国企业财务结构与合规挑战" data-en="Understand Chinese corporate financial structures and compliance challenges">理解中国企业财务结构与合规挑战</li>
+                            <li data-zh="精通中新两地监管协调" data-en="Expert in coordinating China-Singapore regulatory requirements">精通中新两地监管协调</li>
+                            <li data-zh="提供中文全流程服务支持" data-en="Full-service support in Chinese language">提供中文全流程服务支持</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="solution-item">
-                    <i class="fas fa-chart-network"></i>
-                    <h3>Reliability and Scale</h3>
-                    <p>Stable Connections: Hybrid mode guarantees 95%-99% uptime, supporting continuous data harvesting; High Concurrency: Scales to thousands of simultaneous requests, ideal for large-scale AI model training.</p>
-                </div>
-                <div class="solution-item">
-                    <i class="fas fa-file-contract"></i>
-                    <h3>Regulatory Compliance</h3>
-                    <p>Built-in compliance measures ensuring data usage meets regulatory requirements</p>
-                </div>
-                <div class="solution-item">
-                    <i class="fas fa-coins"></i>
-                    <h3>Customization</h3>
-                    <p>Targeted IPs: Allocate IPs by region or operator for localized AI tasks like ad verification or sentiment analysis.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Core Strengths Section -->
-    <section class="core-strengths">
-        <div class="core-strengths-container">
-            <h2>Our Core Strengths</h2>
-            <div class="strengths-grid">
-                <div class="strength-item">
-                    <div class="strength-icon-wrapper">
+                
+                <div class="advantage-item">
+                    <div class="advantage-icon">
                         <i class="fas fa-shield-alt"></i>
                     </div>
-                    <div class="strength-content">
-                        <h3>Security First</h3>
-                        <p>Enterprise-grade encryption and secure data handling ensure your information remains protected at all times.</p>
+                    <div class="advantage-content">
+                        <h3 data-zh="🔒 先进验证技术" data-en="🔒 Advanced Verification Technology">🔒 先进验证技术</h3>
+                        <p class="advantage-subtitle" data-zh="全同态加密确保跨境资产验证" data-en="Fully Homomorphic Encryption for Cross-Border Asset Verification">全同态加密确保跨境资产验证</p>
+                        <ul class="advantage-features">
+                            <li data-zh="保护商业机密的同时完成尽职调查" data-en="Complete due diligence while protecting trade secrets">保护商业机密的同时完成尽职调查</li>
+                            <li data-zh="实时资产监控与报告系统" data-en="Real-time asset monitoring and reporting systems">实时资产监控与报告系统</li>
+                            <li data-zh="符合两地数据安全法规" data-en="Compliant with data security regulations in both jurisdictions">符合两地数据安全法规</li>
+                        </ul>
                     </div>
-                    <div class="strength-background"></div>
                 </div>
-
-                <div class="strength-item">
-                    <div class="strength-icon-wrapper">
-                        <i class="fas fa-bolt"></i>
+                
+                <div class="advantage-item">
+                    <div class="advantage-icon">
+                        <i class="fas fa-handshake"></i>
                     </div>
-                    <div class="strength-content">
-                        <h3>High Performance</h3>
-                        <p>Optimized architecture delivers lightning-fast processing and real-time data collaboration capabilities.</p>
+                    <div class="advantage-content">
+                        <h3 data-zh="💼 成功收费模式" data-en="💼 Success-Based Fee Model">💼 成功收费模式</h3>
+                        <p class="advantage-subtitle" data-zh="风险共担，利益一致" data-en="Shared Risk, Aligned Interests">风险共担，利益一致</p>
+                        <ul class="advantage-features">
+                            <li data-zh="融资成功后才收取 3-7% 服务费" data-en="3-7% fee only upon successful funding">融资成功后才收取 3-7% 服务费</li>
+                            <li data-zh="监管批准保证，否则全额退款" data-en="Regulatory approval guarantee or full refund">监管批准保证，否则全额退款</li>
+                            <li data-zh="无隐藏费用，透明收费结构" data-en="No hidden costs, transparent fee structure">无隐藏费用，透明收费结构</li>
+                        </ul>
                     </div>
-                    <div class="strength-background"></div>
                 </div>
-
-                <div class="strength-item">
-                    <div class="strength-icon-wrapper">
-                        <i class="fas fa-network-wired"></i>
+                
+                <div class="advantage-item">
+                    <div class="advantage-icon">
+                        <i class="fas fa-cogs"></i>
                     </div>
-                    <div class="strength-content">
-                        <h3>Scalable Solution</h3>
-                        <p>Built to grow with your needs, our platform seamlessly scales from startups to enterprise-level operations.</p>
+                    <div class="advantage-content">
+                        <h3 data-zh="🎯 端到端服务" data-en="🎯 End-to-End Service">🎯 端到端服务</h3>
+                        <p class="advantage-subtitle" data-zh="从评估到发行后管理的全流程支持" data-en="Complete Support from Assessment to Post-Issuance Management">从评估到发行后管理的全流程支持</p>
+                        <ul class="advantage-features">
+                            <li data-zh="跨境法律结构设计" data-en="Cross-border legal structure design">跨境法律结构设计</li>
+                            <li data-zh="MAS 合规申请与审批" data-en="MAS compliance application and approval">MAS 合规申请与审批</li>
+                            <li data-zh="投资者路演与资金募集" data-en="Investor roadshows and capital raising">投资者路演与资金募集</li>
+                            <li data-zh="持续的投资者关系管理" data-en="Ongoing investor relations management">持续的投资者关系管理</li>
+                        </ul>
                     </div>
-                    <div class="strength-background"></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- About Section -->
-    <section id="about" class="section">
-        <div class="about-content">
-            <h2>About Us</h2>
-            
-            <!-- Vision and Mission Grid -->
-            <div class="about-grid">
-                <!-- Vision Section -->
-                <div class="about-section">
-                    <h3>Vision</h3>
-                    <p>EON Protocol envisions a world where the free flow of secure and encrypted data empowers individuals, enterprises, and organizations to collaborate seamlessly within and across borders. We strive to establish a digital ecosystem built on privacy, security, and interoperability, driving trust and innovation globally.</p>
+    <!-- Tokenization Process Section -->
+    <section id="process" class="core-strengths">
+        <div class="core-strengths-container">
+            <h2 data-zh="代币化流程与时间表" data-en="Tokenization Process & Timeline">代币化流程与时间表</h2>
+            <div class="process-timeline">
+                <div class="process-phase">
+                    <div class="phase-number">1</div>
+                    <div class="phase-content">
+                        <h3 data-zh="阶段 1：评估与规划（2-4 周）" data-en="Phase 1: Assessment & Planning (2-4 weeks)">阶段 1：评估与规划（2-4 周）</h3>
+                        <h4 data-zh="🔍 全面尽职调查" data-en="🔍 Comprehensive Due Diligence">🔍 全面尽职调查</h4>
+                        <ul>
+                            <li data-zh="资产评估与代币化适配性分析" data-en="Asset evaluation and tokenization suitability analysis">资产评估与代币化适配性分析</li>
+                            <li data-zh="跨境法律结构设计" data-en="Cross-border legal structure design">跨境法律结构设计</li>
+                            <li data-zh="财务审计协调" data-en="Financial audit coordination">财务审计协调</li>
+                            <li data-zh="监管合规路径规划" data-en="Regulatory compliance pathway planning">监管合规路径规划</li>
+                        </ul>
+                        <p><strong data-zh="交付物" data-en="Deliverables">交付物</strong><span data-zh="：可行性报告 + 定制化代币化方案" data-en=": Feasibility Report + Customized Tokenization Plan">：可行性报告 + 定制化代币化方案</span></p>
+                    </div>
                 </div>
-
-                <!-- Mission Section -->
-                <div class="about-section">
-                    <h3>Mission</h3>
-                    <p>We empower enterprises and individuals to achieve secure and seamless data collaboration by delivering scalable, privacy-preserving, and decentralized technology solutions that facilitate the free flow of encrypted data across networks, industries, and borders.</p>
+                
+                <div class="process-phase">
+                    <div class="phase-number">2</div>
+                    <div class="phase-content">
+                        <h3 data-zh="阶段 2：实施准备（6-12 周）" data-en="Phase 2: Implementation Preparation (6-12 weeks)">阶段 2：实施准备（6-12 周）</h3>
+                        <h4 data-zh="📋 法律与合规" data-en="📋 Legal & Compliance">📋 法律与合规</h4>
+                        <ul>
+                            <li data-zh="新加坡实体设立与优化" data-en="Singapore entity establishment and optimization">新加坡实体设立与优化</li>
+                            <li data-zh="MAS 合规文件准备" data-en="MAS compliance documentation preparation">MAS 合规文件准备</li>
+                            <li data-zh="投资者协议起草" data-en="Investor agreement drafting">投资者协议起草</li>
+                            <li data-zh="AML/CFT 框架建立" data-en="AML/CFT framework establishment">AML/CFT 框架建立</li>
+                        </ul>
+                        <h4 data-zh="💻 技术实施" data-en="💻 Technical Implementation">💻 技术实施</h4>
+                        <ul>
+                            <li data-zh="区块链平台选择" data-en="Blockchain platform selection">区块链平台选择</li>
+                            <li data-zh="智能合约开发与审计" data-en="Smart contract development and audit">智能合约开发与审计</li>
+                            <li data-zh="资产验证系统集成" data-en="Asset verification system integration">资产验证系统集成</li>
+                        </ul>
+                        <p><strong data-zh="交付物" data-en="Deliverables">交付物</strong><span data-zh="：完整法律文件包 + 技术基础设施" data-en=": Complete Legal Document Package + Technical Infrastructure">：完整法律文件包 + 技术基础设施</span></p>
+                    </div>
+                </div>
+                
+                <div class="process-phase">
+                    <div class="phase-number">3</div>
+                    <div class="phase-content">
+                        <h3 data-zh="阶段 3：市场推广与发行（4-8 周）" data-en="Phase 3: Marketing & Issuance (4-8 weeks)">阶段 3：市场推广与发行（4-8 周）</h3>
+                        <h4 data-zh="🎤 投资者路演" data-en="🎤 Investor Roadshows">🎤 投资者路演</h4>
+                        <ul>
+                            <li data-zh="新加坡家族办公室推介" data-en="Singapore family office presentations">新加坡家族办公室推介</li>
+                            <li data-zh="机构投资者尽职调查支持" data-en="Institutional investor due diligence support">机构投资者尽职调查支持</li>
+                            <li data-zh="ESG 投资叙事呈现" data-en="ESG investment narrative presentation">ESG 投资叙事呈现</li>
+                            <li data-zh="平台上市准备" data-en="Platform listing preparation">平台上市准备</li>
+                        </ul>
+                        <h4 data-zh="💼 代币发行" data-en="💼 Token Issuance">💼 代币发行</h4>
+                        <ul>
+                            <li data-zh="投资者认购与 KYC" data-en="Investor subscription and KYC">投资者认购与 KYC</li>
+                            <li data-zh="代币铸造与分配" data-en="Token minting and distribution">代币铸造与分配</li>
+                            <li data-zh="资金部署执行" data-en="Capital deployment execution">资金部署执行</li>
+                        </ul>
+                        <p><strong data-zh="交付物" data-en="Deliverables">交付物</strong><span data-zh="：成功融资 + 活跃的投资者基础" data-en=": Successful Funding + Active Investor Base">：成功融资 + 活跃的投资者基础</span></p>
+                    </div>
+                </div>
+                
+                <div class="process-phase">
+                    <div class="phase-number">4</div>
+                    <div class="phase-content">
+                        <h3 data-zh="阶段 4：发行后管理（持续）" data-en="Phase 4: Post-Issuance Management (Ongoing)">阶段 4：发行后管理（持续）</h3>
+                        <h4 data-zh="📊 持续运营" data-en="📊 Ongoing Operations">📊 持续运营</h4>
+                        <ul>
+                            <li data-zh="月度投资者报告" data-en="Monthly investor reports">月度投资者报告</li>
+                            <li data-zh="收益分配执行" data-en="Revenue distribution execution">收益分配执行</li>
+                            <li data-zh="合规审计与监管报告" data-en="Compliance audits and regulatory reporting">合规审计与监管报告</li>
+                            <li data-zh="二级市场流动性支持" data-en="Secondary market liquidity support">二级市场流动性支持</li>
+                        </ul>
+                        <p><strong data-zh="交付物" data-en="Deliverables">交付物</strong><span data-zh="：长期合规与投资者关系维护" data-en=": Long-term Compliance & Investor Relations Maintenance">：长期合规与投资者关系维护</span></p>
+                    </div>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- Success Case Study Section -->
+    <section id="case-study" class="section">
+        <div class="about-content">
+            <h2 data-zh="成功案例：电子翻新企业" data-en="Success Case: Electronics Refurbishment Enterprise">成功案例：中国电子翻新企业</h2>
+            
+            <!-- Case Study Grid -->
+            <div class="about-grid">
+                <!-- Project Overview -->
+                <div class="about-section">
+                    <h3 data-zh="📱 项目概况" data-en="📱 Project Overview">📱 项目概况</h3>
+                    <ul>
+                        <li><strong data-zh="企业类型" data-en="Company Type">企业类型</strong><span data-zh="：二手手机翻新与销售" data-en=": Refurbished mobile phone sales">：二手手机翻新与销售</span></li>
+                        <li><strong data-zh="年营收" data-en="Annual Revenue">年营收</strong><span data-zh="：7000 万美元" data-en=": $70M USD">：7000 万美元</span></li>
+                        <li><strong data-zh="融资目标" data-en="Funding Target">融资目标</strong><span data-zh="：1500 万美元" data-en=": $15M USD">：1500 万美元</span></li>
+                        <li><strong data-zh="投资者收益" data-en="Investor Returns">投资者收益</strong><span data-zh="：10-12% 年化" data-en=": 10-12% annualized">：10-12% 年化</span></li>
+                    </ul>
+                </div>
+
+                <!-- Tokenization Solution -->
+                <div class="about-section">
+                    <h3 data-zh="🎯 代币化方案" data-en="🎯 Tokenization Solution">🎯 代币化方案</h3>
+                    <p><strong data-zh="基于收入分成的证券代币" data-en="Revenue-Share Security Token">基于收入分成的证券代币</strong></p>
+                    <ul>
+                        <li data-zh="月度分配毛收入的 15% 给代币持有人" data-en="Monthly distribution of 15% of gross revenue to token holders">月度分配毛收入的 15% 给代币持有人</li>
+                        <li data-zh="保持企业 100% 股权" data-en="Company retains 100% equity">保持企业 100% 股权</li>
+                        <li data-zh="18-24 个月完成融资" data-en="18-24 month timeline to full funding">18-24 个月完成融资</li>
+                        <li data-zh="符合 MAS 证券型代币框架" data-en="MAS-compliant security token framework">符合 MAS 证券型代币框架</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- ESG Narrative -->
+            <div class="about-section">
+                <h3 data-zh="💡 ESG 叙事优势" data-en="💡 ESG Narrative Advantage">💡 ESG 叙事优势</h3>
+                <ul>
+                    <li><strong data-zh="循环经济领导者" data-en="Circular Economy Leader">循环经济领导者</strong><span data-zh="：延长电子设备生命周期" data-en=": Extends electronic device lifecycles">：延长电子设备生命周期</span></li>
+                    <li><strong data-zh="环境影响" data-en="Environmental Impact">环境影响</strong><span data-zh="：减少电子废弃物与碳排放" data-en=": Reduces e-waste and carbon emissions">：减少电子废弃物与碳排放</span></li>
+                    <li><strong data-zh="社会价值" data-en="Social Value">社会价值</strong><span data-zh="：促进科技普惠，创造高技能就业" data-en=": Promotes tech accessibility, creates skilled jobs">：促进科技普惠，创造高技能就业</span></li>
+                </ul>
+            </div>
+            
+            <!-- Investor Appeal -->
+            <div class="about-section">
+                <h3 data-zh="📊 投资者吸引力" data-en="📊 Investor Appeal">📊 投资者吸引力</h3>
+                <div class="investor-appeal">
+                    <div class="appeal-item" data-zh="✓ 新加坡家族办公室寻求稳定收益资产" data-en="✓ Singapore family offices seeking stable yield assets">✓ 新加坡家族办公室寻求稳定收益资产</div>
+                    <div class="appeal-item" data-zh="✓ ESG 基金配置需求" data-en="✓ ESG fund allocation requirements">✓ ESG 基金配置需求</div>
+                    <div class="appeal-item" data-zh="✓ 代币化资产流动性溢价" data-en="✓ Tokenized asset liquidity premium">✓ 代币化资产流动性溢价</div>
+                </div>
+                <p><a href="#contact" class="cta-button" data-zh="查看完整案例研究 →" data-en="View Full Case Study →">查看完整案例研究 →</a></p>
+            </div>
+        </div>
+    </section>
 
             <!-- Collapsible Core Values Section -->
             <button class="collapsible">Core Values</button>
@@ -1384,21 +1861,37 @@ footer p {
     <section id="contact" class="contact-section">
         <div class="contact-container">
             <div class="contact-header">
-                <div class="contact-options">
-                    <div class="contact-option">
-                        <a href="/auth/login.html">
-                            <h2>Join our Community</h2>
-                            <p class="contact-description">Be part of the next generation of secure distributed computing!</p>
-                        </a>
-                    </div>
-                    
-                    <div class="contact-option">
-                        <a href="https://www.linkedin.com/jobs/view/4097011356" target="_blank">
-                            <h2>We're Hiring!</h2>
-                            <p class="contact-description">Join our team and help build the future of secure data collaboration!</p>
-                        </a>
+                <h2 data-zh="立即开始" data-en="Get Started Now">立即开始</h2>
+                <p class="contact-description" data-zh="与我们的跨境代币化专家讨论您的企业代币化需求" data-en="Discuss your enterprise tokenization needs with our cross-border experts">与我们的跨境代币化专家讨论您的企业代币化需求</p>
+            </div>
+            
+            <div class="contact-options">
+                <div class="contact-option">
+                    <h2 data-zh="📞 免费咨询（30 分钟）" data-en="📞 Free Consultation (30 minutes)">📞 免费咨询（30 分钟）</h2>
+                    <div class="contact-description">
+                        <p data-zh="与我们的跨境代币化专家讨论：" data-en="Discuss with our cross-border tokenization experts:">与我们的跨境代币化专家讨论：</p>
+                        <ul>
+                            <li data-zh="✓ 您的企业是否适合代币化" data-en="✓ Whether your business is suitable for tokenization">✓ 您的企业是否适合代币化</li>
+                            <li data-zh="✓ 初步融资规模评估" data-en="✓ Preliminary funding size assessment">✓ 初步融资规模评估</li>
+                            <li data-zh="✓ 定制化方案建议" data-en="✓ Customized solution recommendations">✓ 定制化方案建议</li>
+                            <li data-zh="✓ 时间表与成本估算" data-en="✓ Timeline and cost estimates">✓ 时间表与成本估算</li>
+                        </ul>
                     </div>
                 </div>
+                
+                <div class="contact-option">
+                    <h2 data-zh="📧 联系方式" data-en="📧 Contact Information">📧 联系方式</h2>
+                    <div class="contact-description">
+                        <p><strong data-zh="Lewis Min" data-en="Lewis Min">Lewis Min</strong><br>
+                        
+                        📧 lewis@eon-protocol.com<br>
+                        </div>
+                </div>
+            </div>
+            
+            <div class="confidentiality-notice">
+                <h3 data-zh="🔒 保密承诺" data-en="🔒 Confidentiality Commitment">🔒 保密承诺</h3>
+                <p data-zh="所有咨询严格保密，签署 NDA 后方可深入讨论具体细节。" data-en="All consultations are strictly confidential. Detailed discussions only after NDA signing.">所有咨询严格保密，签署 NDA 后方可深入讨论具体细节。</p>
             </div>
         </div>
     </section>
@@ -1428,7 +1921,16 @@ footer p {
                     <i class="fas fa-shield-alt"></i> Privacy Rule
                 </a>
             </div>
-            <p> 2024 EON Protocol. All rights reserved.</p>
+            <div class="footer-info">
+                <p><strong>EON Protocol</strong><br>
+                <span data-zh="新加坡资产代币化领导者" data-en="Singapore's Asset Tokenization Leader">新加坡资产代币化领导者</span><br>
+                <span data-zh="专注服务中国企业的跨境融资需求" data-en="Specialized in Cross-Border Financing for Chinese Enterprises">专注服务中国企业的跨境融资需求</span></p>
+                <p><strong data-zh="地址" data-en="Address">地址</strong><span data-zh="：新加坡" data-en=": Singapore">：新加坡</span><br>
+                <strong data-zh="邮箱" data-en="Email">邮箱</strong><span data-zh="：lewis@eon-protocol.com" data-en=": lewis@eon-protocol.com">：lewis@eon-protocol.com</span></p>
+                <p><strong data-zh="法律声明" data-en="Legal Disclaimer">法律声明</strong><span data-zh="：" data-en=": ">：</span><br>
+                <span data-zh="本网站信息仅供参考，不构成投资建议。所有代币化服务需符合相关监管要求。" data-en="Information on this website is for reference only and does not constitute investment advice. All tokenization services must comply with relevant regulatory requirements.">本网站信息仅供参考，不构成投资建议。所有代币化服务需符合相关监管要求。</span></p>
+            </div>
+            <p>© 2024 EON Protocol. All rights reserved.</p>
         </div>
     </footer>
 
@@ -1652,6 +2154,104 @@ footer p {
                 }
             });
         }
+
+        // Language Switching Functionality
+        class LanguageSwitcher {
+            constructor() {
+                this.currentLang = this.detectLanguage();
+                this.init();
+            }
+
+            detectLanguage() {
+                // Check browser language
+                const browserLang = navigator.language || navigator.userLanguage;
+                const isChinese = browserLang.startsWith('zh');
+                
+                // Check if user has previously selected a language
+                const savedLang = localStorage.getItem('eon-language');
+                if (savedLang) {
+                    return savedLang;
+                }
+                
+                // Default to Chinese if browser language is Chinese, otherwise English
+                return isChinese ? 'zh' : 'en';
+            }
+
+            init() {
+                this.switchLanguage(this.currentLang);
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                const desktopSwitch = document.getElementById('languageSwitch');
+                const mobileSwitch = document.getElementById('mobileLanguageSwitch');
+                
+                if (desktopSwitch) {
+                    desktopSwitch.addEventListener('click', () => this.toggleLanguage());
+                }
+                
+                if (mobileSwitch) {
+                    mobileSwitch.addEventListener('click', () => this.toggleLanguage());
+                }
+            }
+
+            toggleLanguage() {
+                const newLang = this.currentLang === 'zh' ? 'en' : 'zh';
+                this.switchLanguage(newLang);
+            }
+
+            switchLanguage(lang) {
+                this.currentLang = lang;
+                
+                // Update HTML lang attribute
+                document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+                
+                // Update page title
+                const title = document.querySelector('title');
+                if (title) {
+                    title.textContent = title.getAttribute(`data-${lang}`);
+                }
+                
+                // Update all elements with language data attributes
+                const elements = document.querySelectorAll('[data-zh][data-en]');
+                elements.forEach(element => {
+                    const text = element.getAttribute(`data-${lang}`);
+                    if (text) {
+                        element.textContent = text;
+                    }
+                });
+                
+                // Update language switch buttons
+                const switches = document.querySelectorAll('.language-switch');
+                switches.forEach(switchBtn => {
+                    const span = switchBtn.querySelector('span');
+                    if (span) {
+                        span.textContent = span.getAttribute(`data-${lang}`);
+                    }
+                    switchBtn.setAttribute('data-current', lang);
+                });
+                
+                // Save language preference
+                localStorage.setItem('eon-language', lang);
+                
+                // Update navigation links for mobile
+                const mobileNav = document.getElementById('mobileNav');
+                if (mobileNav) {
+                    const mobileLinks = mobileNav.querySelectorAll('a[data-zh][data-en]');
+                    mobileLinks.forEach(link => {
+                        const text = link.getAttribute(`data-${lang}`);
+                        if (text) {
+                            link.textContent = text;
+                        }
+                    });
+                }
+            }
+        }
+
+        // Initialize language switcher when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            new LanguageSwitcher();
+        });
     </script>
 </body>
 </html>
