@@ -1787,6 +1787,123 @@ footer p {
                 padding: 0.5rem 0.8rem;
             }
         }
+
+        /* Related News Section Styles */
+        .related-news-section {
+            padding: 4rem 0;
+            background: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .related-news-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .related-news-section h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: var(--text-color);
+            position: relative;
+        }
+
+        .related-news-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: var(--primary-color);
+        }
+
+        .news-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .news-link {
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .news-link:hover {
+            transform: translateX(5px);
+        }
+
+        .news-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .news-link:hover .news-item {
+            background: rgba(13, 67, 249, 0.1);
+            border-color: var(--secondary-color);
+        }
+
+        .news-item i {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            margin-top: 0.2rem;
+            flex-shrink: 0;
+        }
+
+        .news-item span {
+            color: var(--text-color);
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        /* Mobile Responsive Styles for Related News */
+        @media (max-width: 768px) {
+            .related-news-section {
+                padding: 3rem 0;
+            }
+
+            .related-news-container {
+                padding: 0 1rem;
+            }
+
+            .related-news-section h2 {
+                font-size: 2rem;
+                margin-bottom: 2rem;
+            }
+
+            .news-item {
+                padding: 0.8rem;
+            }
+
+            .news-item span {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .related-news-section h2 {
+                font-size: 1.8rem;
+            }
+
+            .news-item {
+                padding: 0.6rem;
+            }
+
+            .news-item span {
+                font-size: 0.85rem;
+            }
+        }
     </style>
     <style>
         /* 移动端导航样式 */
@@ -2273,6 +2390,54 @@ footer p {
   </div>
 </section>
 
+<!-- Related News Section -->
+<section class="related-news-section">
+  <div class="related-news-container">
+    <h2 data-zh="相关报道" data-en="Related News">相关报道</h2>
+    <div class="news-links">
+      <!-- Chinese News Links -->
+      <a href="https://gu.qq.com/hk02153/gp/notice/nokHKEX-EPS-20250710-11752919?utm_source=chatgpt.com" class="news-link" target="_blank" rel="noopener" data-lang="zh">
+        <div class="news-item">
+          <i class="fas fa-external-link-alt"></i>
+          <span data-zh="达丰设备：自愿公告 第六次发行数字证券商业票据" data-en="Dahfeng Equipment: Voluntary Announcement of Sixth Digital Securities Commercial Paper Issuance">达丰设备：自愿公告 第六次发行数字证券商业票据</span>
+        </div>
+      </a>
+      <a href="https://www.chaincatcher.com/article/2158861?utm_source=chatgpt.com" class="news-link" target="_blank" rel="noopener" data-lang="zh">
+        <div class="news-item">
+          <i class="fas fa-external-link-alt"></i>
+          <span data-zh="彭博社：新加坡在加密货币中心竞赛中领先香港" data-en="Bloomberg: Singapore Leads Hong Kong in Crypto Hub Race">彭博社：新加坡在加密货币中心竞赛中领先香港</span>
+        </div>
+      </a>
+      <a href="https://m.tech.china.com/redian/2025/1007/102025_1744157.html?utm_source=chatgpt.com" class="news-link" target="_blank" rel="noopener" data-lang="zh">
+        <div class="news-item">
+          <i class="fas fa-external-link-alt"></i>
+          <span data-zh="RWA之夜新加坡站：UPAL发布与联盟成果亮相 企业上链新机遇引发关注" data-en="RWA Night Singapore: UPAL Launch and Alliance Results Showcase, Enterprise On-Chain Opportunities Draw Attention">RWA之夜新加坡站：UPAL发布与联盟成果亮相 企业上链新机遇引发关注</span>
+        </div>
+      </a>
+      
+      <!-- English News Links -->
+      <a href="https://news.futunn.com/en/post/58996011/dahfeng-equipment-02153-is-issuing-digital-securities-commercial-paper-for?chain_id=NTimtuQSpRVbcH.1kehj5v&futusource=news_web_stockpagenews&global_content=%7B%22promote_id%22%3A13766%2C%22sub_promote_id%22%3A33%2C%22f%22%3A%22news.futunn.com%2Fen%2Fpost%2F59010125%2Ftat-hong-equipment-eyes-up-to-sg-25-million-from%22%7D&lang=en-us&ns_stock_id=79993765890153&report_id=54556613&report_type=stock&src=43&stock_news_tab=news&level=1&data_ticket=1760087093555670" class="news-link" target="_blank" rel="noopener" data-lang="en">
+        <div class="news-item">
+          <i class="fas fa-external-link-alt"></i>
+          <span data-zh="达丰设备(02153)第六次发行数字证券商业票据，预计募集2000-2500万新加坡元" data-en="Dahfeng Equipment (02153) is issuing digital securities commercial paper for the sixth time, expecting to raise between 20 million to 25 million Singapore dollars">Dahfeng Equipment (02153) is issuing digital securities commercial paper for the sixth time, expecting to raise between 20 million to 25 million Singapore dollars</span>
+        </div>
+      </a>
+      <a href="https://www.tipranks.com/news/company-announcements/valuemax-group-raises-s48-29-million-through-digital-securities#google_vignette" class="news-link" target="_blank" rel="noopener" data-lang="en">
+        <div class="news-item">
+          <i class="fas fa-external-link-alt"></i>
+          <span data-zh="ValueMax集团通过数字证券募集4829万新加坡元" data-en="ValueMax Group Raises S$48.29 Million Through Digital Securities">ValueMax Group Raises S$48.29 Million Through Digital Securities</span>
+        </div>
+      </a>
+      <a href="https://www.bloomberg.com/news/articles/2024-12-23/singapore-pulls-ahead-of-hong-kong-in-race-to-be-crypto-hub?embedded-checkout=true" class="news-link" target="_blank" rel="noopener" data-lang="en">
+        <div class="news-item">
+          <i class="fas fa-external-link-alt"></i>
+          <span data-zh="新加坡在加密货币中心竞赛中领先香港" data-en="Singapore Pulls Ahead of Hong Kong in Race to Be Crypto Hub">Singapore Pulls Ahead of Hong Kong in Race to Be Crypto Hub</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
     <!-- Contact Section -->
     <section id="contact" class="contact-section">
         <div class="contact-container">
@@ -2645,6 +2810,17 @@ footer p {
                         span.textContent = span.getAttribute(`data-${lang}`);
                     }
                     switchBtn.setAttribute('data-current', lang);
+                });
+                
+                // Show/hide news links based on language
+                const newsLinks = document.querySelectorAll('.news-link');
+                newsLinks.forEach(link => {
+                    const linkLang = link.getAttribute('data-lang');
+                    if (linkLang === lang) {
+                        link.style.display = 'block';
+                    } else {
+                        link.style.display = 'none';
+                    }
                 });
                 
                 // Save language preference
