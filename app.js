@@ -31,7 +31,20 @@ app.get('*', (req, res) => {
         console.log(`[${new Date().toISOString()}][Static] 尝试提供dashboard页面: ${dashboardPath}`);
         if (fs.existsSync(dashboardPath)) {
             console.log(`[${new Date().toISOString()}][Static] 找到dashboard页面`);
-            res.sendFile(dashboardPath);
+            res.sendFile(dashboardPath, (err) => {
+                if (err) {
+                    // EPIPE 错误表示客户端断开连接，这是正常的，不需要处理
+                    if (err.code === 'EPIPE' || err.code === 'ECONNRESET') {
+                        console.log(`[${new Date().toISOString()}][Static] 客户端断开连接（dashboard）`);
+                        return;
+                    }
+                    // 只有在响应未发送时才尝试发送错误响应
+                    if (!res.headersSent) {
+                        console.error(`[${new Date().toISOString()}][Static] 发送dashboard页面失败:`, err);
+                        res.status(500).json({ error: 'Internal server error' });
+                    }
+                }
+            });
             return;
         }
         console.log(`[${new Date().toISOString()}][Static] dashboard页面不存在`);
@@ -51,8 +64,16 @@ app.get('*', (req, res) => {
             console.log(`[${new Date().toISOString()}][Static] 找到admin页面，准备发送`);
             res.sendFile(adminPath, (err) => {
                 if (err) {
-                    console.error(`[${new Date().toISOString()}][Static] 发送admin页面失败:`, err);
-                    res.status(500).json({ error: 'Internal server error' });
+                    // EPIPE 错误表示客户端断开连接，这是正常的，不需要处理
+                    if (err.code === 'EPIPE' || err.code === 'ECONNRESET') {
+                        console.log(`[${new Date().toISOString()}][Static] 客户端断开连接（admin）`);
+                        return;
+                    }
+                    // 只有在响应未发送时才尝试发送错误响应
+                    if (!res.headersSent) {
+                        console.error(`[${new Date().toISOString()}][Static] 发送admin页面失败:`, err);
+                        res.status(500).json({ error: 'Internal server error' });
+                    }
                 } else {
                     console.log(`[${new Date().toISOString()}][Static] 成功发送admin页面`);
                 }
@@ -68,7 +89,20 @@ app.get('*', (req, res) => {
         console.log(`[${new Date().toISOString()}][Static] 尝试提供auth文件: ${authFile}`);
         if (fs.existsSync(authFile)) {
             console.log(`[${new Date().toISOString()}][Static] 找到auth文件`);
-            res.sendFile(authFile);
+            res.sendFile(authFile, (err) => {
+                if (err) {
+                    // EPIPE 错误表示客户端断开连接，这是正常的，不需要处理
+                    if (err.code === 'EPIPE' || err.code === 'ECONNRESET') {
+                        console.log(`[${new Date().toISOString()}][Static] 客户端断开连接（auth）`);
+                        return;
+                    }
+                    // 只有在响应未发送时才尝试发送错误响应
+                    if (!res.headersSent) {
+                        console.error(`[${new Date().toISOString()}][Static] 发送auth文件失败:`, err);
+                        res.status(500).json({ error: 'Internal server error' });
+                    }
+                }
+            });
             return;
         }
         console.log(`[${new Date().toISOString()}][Static] auth文件不存在`);
@@ -83,8 +117,16 @@ app.get('*', (req, res) => {
             console.log(`[${new Date().toISOString()}][Static] 找到index.html`);
             res.sendFile(indexPath, (err) => {
                 if (err) {
-                    console.error(`[${new Date().toISOString()}][Static] 发送文件错误:`, err);
-                    res.status(500).json({ error: 'Internal server error' });
+                    // EPIPE 错误表示客户端断开连接，这是正常的，不需要处理
+                    if (err.code === 'EPIPE' || err.code === 'ECONNRESET') {
+                        console.log(`[${new Date().toISOString()}][Static] 客户端断开连接（index.html）`);
+                        return;
+                    }
+                    // 只有在响应未发送时才尝试发送错误响应
+                    if (!res.headersSent) {
+                        console.error(`[${new Date().toISOString()}][Static] 发送文件错误:`, err);
+                        res.status(500).json({ error: 'Internal server error' });
+                    }
                 }
             });
         } else {
@@ -93,7 +135,10 @@ app.get('*', (req, res) => {
         }
     } catch (error) {
         console.error(`[${new Date().toISOString()}][Static] 检查文件时出错:`, error);
-        res.status(500).json({ error: 'Internal server error' });
+        // 只有在响应未发送时才尝试发送错误响应
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Internal server error' });
+        }
     }
 });
 
@@ -103,8 +148,16 @@ app.get('/favicon.ico', (req, res) => {
     console.log(`[Static] Serving favicon from: ${faviconPath}`);
     res.sendFile(faviconPath, err => {
         if (err) {
-            console.warn('[Static] Favicon not found:', err.message);
-            res.status(404).end();
+            // EPIPE 错误表示客户端断开连接，这是正常的，不需要处理
+            if (err.code === 'EPIPE' || err.code === 'ECONNRESET') {
+                console.log(`[${new Date().toISOString()}][Static] 客户端断开连接（favicon）`);
+                return;
+            }
+            // 只有在响应未发送时才尝试发送错误响应
+            if (!res.headersSent) {
+                console.warn('[Static] Favicon not found:', err.message);
+                res.status(404).end();
+            }
         }
     });
 });
