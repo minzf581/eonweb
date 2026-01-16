@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投资人门户 - EON Protocol</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0D43F9;
+            --secondary-color: #4AD8FD;
+            --success-color: #10B981;
+            --warning-color: #F59E0B;
+            --danger-color: #EF4444;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-color: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .layout { display: flex; min-height: 100vh; }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-menu { list-style: none; }
+        .nav-item { margin-bottom: 0.5rem; }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .nav-link i { width: 20px; text-align: center; }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .page-header { margin-bottom: 2rem; }
+        .page-title { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .page-subtitle { color: var(--text-secondary); }
+
+        /* 卡片 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* 状态徽章 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-approved { background: #D1FAE5; color: #065F46; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+
+        /* 项目卡片 */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .project-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .project-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .project-stage {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .project-industry {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-description {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .project-meta {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .project-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* 筛选栏 */
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            background: white;
+        }
+
+        .filter-input {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            min-width: 200px;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title { font-size: 1.5rem; font-weight: 600; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-section h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .detail-item {
+            padding: 0.75rem;
+            background: var(--bg-color);
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value { font-weight: 500; }
+
+        /* 按钮 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: #0939d4; }
+        .btn-secondary { background: var(--border-color); color: var(--text-color); }
+        .btn-success { background: var(--success-color); color: white; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-group { display: flex; gap: 1rem; margin-top: 1.5rem; }
+
+        /* 表单 */
+        .form-group { margin-bottom: 1.5rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-label .required { color: var(--danger-color); }
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-hint { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .checkbox-item { display: flex; align-items: center; gap: 0.5rem; }
+
+        /* 消息提示 */
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .message-success { background: #D1FAE5; color: #065F46; }
+        .message-error { background: #FEE2E2; color: #991B1B; }
+        .message-info { background: #DBEAFE; color: #1E40AF; }
+        .message-warning { background: #FEF3C7; color: #92400E; }
+
+        /* 请求列表 */
+        .request-list { }
+        .request-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+        .request-info { flex: 1; }
+        .request-company { font-weight: 600; margin-bottom: 0.25rem; }
+        .request-type { font-size: 0.875rem; color: var(--text-secondary); }
+        .request-date { font-size: 0.75rem; color: var(--text-secondary); }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+        .user-email { font-weight: 500; }
+
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .logout-btn:hover { background: var(--danger-color); color: white; border-color: var(--danger-color); }
+
+        .loading { display: flex; align-items: center; justify-content: center; padding: 3rem; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        .empty-state i { font-size: 3rem; margin-bottom: 1rem; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); z-index: 1000; }
+            .main-content { margin-left: 0; }
+            .form-row, .detail-grid { grid-template-columns: 1fr; }
+            .projects-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-chart-pie"></i>
+                EON Protocol
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#projects" class="nav-link active" data-panel="projects">
+                            <i class="fas fa-th-large"></i>
+                            <span>项目列表</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#profile" class="nav-link" data-panel="profile">
+                            <i class="fas fa-user"></i>
+                            <span>我的资料</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#requests" class="nav-link" data-panel="requests">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>我的请求</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" style="margin-top: 2rem;">
+                        <a href="/" class="nav-link">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>返回首页</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容 -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="user-info">
+                    <span>欢迎，</span>
+                    <span class="user-email" id="userEmail">-</span>
+                    <span class="status-badge" id="accountStatus">-</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                </button>
+            </div>
+
+            <div id="messageContainer"></div>
+
+            <!-- 待审核提示 -->
+            <div id="pendingNotice" class="message message-warning" style="display: none;">
+                <i class="fas fa-clock"></i>
+                <span>您的投资人账户正在审核中，审核通过后即可浏览项目。</span>
+            </div>
+
+            <!-- 项目列表面板 -->
+            <div id="projects" class="panel active">
+                <div class="page-header">
+                    <h1 class="page-title">项目列表</h1>
+                    <p class="page-subtitle">浏览经审核的高质量项目</p>
+                </div>
+
+                <!-- 筛选栏 -->
+                <div class="filter-bar">
+                    <select class="filter-select" id="filterIndustry" onchange="loadProjects()">
+                        <option value="">全部行业</option>
+                        <option value="technology">科技/互联网</option>
+                        <option value="healthcare">医疗健康</option>
+                        <option value="finance">金融科技</option>
+                        <option value="manufacturing">制造业</option>
+                        <option value="consumer">消费品</option>
+                        <option value="energy">能源/环保</option>
+                    </select>
+                    <select class="filter-select" id="filterStage" onchange="loadProjects()">
+                        <option value="">全部阶段</option>
+                        <option value="seed">种子轮</option>
+                        <option value="angel">天使轮</option>
+                        <option value="a">A轮</option>
+                        <option value="b">B轮</option>
+                        <option value="pre_ipo">Pre-IPO</option>
+                    </select>
+                </div>
+
+                <!-- 项目网格 -->
+                <div id="projectsGrid" class="projects-grid">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+            </div>
+
+            <!-- 我的资料面板 -->
+            <div id="profile" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">投资人资料</h1>
+                    <p class="page-subtitle">完善您的投资人信息</p>
+                </div>
+
+                <form id="profileForm" class="card">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">姓名 <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">投资人类型 <span class="required">*</span></label>
+                            <select class="form-control" name="investor_type" required>
+                                <option value="">请选择</option>
+                                <option value="individual">个人投资人</option>
+                                <option value="family_office">家族办公室</option>
+                                <option value="vc">风险投资</option>
+                                <option value="pe">私募股权</option>
+                                <option value="corporate">企业战略投资</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">所属机构</label>
+                            <input type="text" class="form-control" name="organization">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">职位</label>
+                            <input type="text" class="form-control" name="title">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">电话</label>
+                            <input type="tel" class="form-control" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">微信</label>
+                            <input type="text" class="form-control" name="wechat">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">WhatsApp</label>
+                            <input type="text" class="form-control" name="whatsapp">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">LinkedIn</label>
+                            <input type="url" class="form-control" name="linkedin">
+                        </div>
+                    </div>
+
+                    <h3 class="card-title" style="margin-top: 2rem;">投资偏好</h3>
+
+                    <div class="form-group">
+                        <label class="form-label">关注行业</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="technology"> 科技/互联网</label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="healthcare"> 医疗健康</label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="finance"> 金融科技</label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="manufacturing"> 制造业</label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="consumer"> 消费品</label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="energy"> 能源/环保</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">关注阶段</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="seed"> 种子轮</label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="angel"> 天使轮</label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="a"> A轮</label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="b"> B轮</label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="pre_ipo"> Pre-IPO</label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">投资金额区间（万美元）</label>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <input type="number" class="form-control" name="ticket_size_min" placeholder="最小">
+                                <span>-</span>
+                                <input type="number" class="form-control" name="ticket_size_max" placeholder="最大">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">个人简介</label>
+                        <textarea class="form-control" name="bio" rows="4" placeholder="简单介绍您的投资经历和偏好"></textarea>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 我的请求面板 -->
+            <div id="requests" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">我的请求</h1>
+                    <p class="page-subtitle">查看您的引荐请求记录</p>
+                </div>
+
+                <div class="card">
+                    <div id="requestsList" class="request-list">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 项目详情模态框 -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalProjectName">-</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalContent">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let investorProfile = null;
+        let token = localStorage.getItem('token');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!token) {
+                window.location.href = '/auth/login.html?redirect=/investor';
+                return;
+            }
+
+            await loadUserInfo();
+            setupEventListeners();
+        });
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取用户信息失败');
+
+                const data = await response.json();
+                currentUser = data.user;
+
+                if (currentUser.role !== 'investor' && currentUser.role !== 'admin') {
+                    showMessage('您没有权限访问投资人门户', 'error');
+                    setTimeout(() => window.location.href = '/', 2000);
+                    return;
+                }
+
+                document.getElementById('userEmail').textContent = currentUser.email;
+
+                // 加载投资人资料
+                await loadInvestorProfile();
+
+                // 根据状态显示内容
+                if (investorProfile && investorProfile.status === 'approved') {
+                    document.getElementById('accountStatus').textContent = '已认证';
+                    document.getElementById('accountStatus').className = 'status-badge status-approved';
+                    await loadProjects();
+                } else {
+                    document.getElementById('accountStatus').textContent = '待审核';
+                    document.getElementById('accountStatus').className = 'status-badge status-pending';
+                    document.getElementById('pendingNotice').style.display = 'flex';
+                    document.getElementById('projectsGrid').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <p>账户审核中，请先完善您的投资人资料</p>
+                        </div>
+                    `;
+                }
+
+                await loadMyRequests();
+            } catch (error) {
+                console.error('加载用户信息错误:', error);
+                showMessage('请重新登录', 'error');
+                setTimeout(() => window.location.href = '/auth/login.html', 2000);
+            }
+        }
+
+        async function loadInvestorProfile() {
+            try {
+                const response = await fetch('/api/investor/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取资料失败');
+
+                const data = await response.json();
+                investorProfile = data.profile;
+
+                if (investorProfile) {
+                    populateProfileForm();
+                }
+            } catch (error) {
+                console.error('加载投资人资料错误:', error);
+            }
+        }
+
+        function populateProfileForm() {
+            if (!investorProfile) return;
+
+            const form = document.getElementById('profileForm');
+            const fields = ['name', 'investor_type', 'organization', 'title', 'phone', 'wechat', 'whatsapp', 'linkedin', 'bio'];
+
+            fields.forEach(field => {
+                const input = form.querySelector(`[name="${field}"]`);
+                if (input && investorProfile[field]) {
+                    input.value = investorProfile[field];
+                }
+            });
+
+            // 复选框
+            if (investorProfile.industries) {
+                investorProfile.industries.forEach(i => {
+                    const cb = form.querySelector(`[name="industries"][value="${i}"]`);
+                    if (cb) cb.checked = true;
+                });
+            }
+
+            if (investorProfile.stages) {
+                investorProfile.stages.forEach(s => {
+                    const cb = form.querySelector(`[name="stages"][value="${s}"]`);
+                    if (cb) cb.checked = true;
+                });
+            }
+
+            if (investorProfile.ticket_size_min) {
+                form.querySelector('[name="ticket_size_min"]').value = investorProfile.ticket_size_min / 10000;
+            }
+            if (investorProfile.ticket_size_max) {
+                form.querySelector('[name="ticket_size_max"]').value = investorProfile.ticket_size_max / 10000;
+            }
+        }
+
+        async function loadProjects() {
+            const industry = document.getElementById('filterIndustry').value;
+            const stage = document.getElementById('filterStage').value;
+
+            try {
+                let url = '/api/investor/projects?';
+                if (industry) url += `industry=${industry}&`;
+                if (stage) url += `stage=${stage}&`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 403) {
+                    // 未审核通过
+                    document.getElementById('projectsGrid').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-lock"></i>
+                            <p>账户审核通过后即可浏览项目</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (!response.ok) throw new Error('获取项目失败');
+
+                const data = await response.json();
+
+                if (data.projects && data.projects.length > 0) {
+                    document.getElementById('projectsGrid').innerHTML = data.projects.map(p => `
+                        <div class="project-card" onclick="openProjectDetail('${p.id}')">
+                            <div class="project-header">
+                                <div class="project-name">${p.name_cn}</div>
+                                <div class="project-stage">${formatStage(p.stage)}</div>
+                            </div>
+                            <div class="project-industry">
+                                <i class="fas fa-industry"></i> ${formatIndustry(p.industry_primary)}
+                            </div>
+                            <div class="project-description">${p.description}</div>
+                            <div class="project-meta">
+                                ${p.fundraising ? `
+                                    <div class="project-meta-item">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        ${formatAmount(p.fundraising.amount_min)} - ${formatAmount(p.fundraising.amount_max)}
+                                    </div>
+                                    <div class="project-meta-item">
+                                        <i class="fas fa-clock"></i>
+                                        ${formatTimeline(p.fundraising.timeline)}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('projectsGrid').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <p>暂无符合条件的项目</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('加载项目错误:', error);
+                showMessage('加载项目失败', 'error');
+            }
+        }
+
+        async function openProjectDetail(projectId) {
+            document.getElementById('projectModal').classList.add('active');
+            document.getElementById('modalContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            try {
+                const response = await fetch(`/api/investor/projects/${projectId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取项目详情失败');
+
+                const data = await response.json();
+                const p = data.project;
+
+                document.getElementById('modalProjectName').textContent = p.name_cn;
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="detail-section">
+                        <h4>基本信息</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">公司名称</div>
+                                <div class="detail-value">${p.name_cn}${p.name_en ? ` / ${p.name_en}` : ''}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">行业</div>
+                                <div class="detail-value">${formatIndustry(p.industry_primary)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">融资阶段</div>
+                                <div class="detail-value">${formatStage(p.stage)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">所在地</div>
+                                <div class="detail-value">${p.location_headquarters}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4>公司简介</h4>
+                        <p>${p.description}</p>
+                        ${p.description_detail ? `<p style="margin-top: 0.5rem; color: var(--text-secondary);">${p.description_detail}</p>` : ''}
+                    </div>
+
+                    ${p.fundraising ? `
+                        <div class="detail-section">
+                            <h4>融资需求</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">融资金额</div>
+                                    <div class="detail-value">${formatAmount(p.fundraising.amount_min)} - ${formatAmount(p.fundraising.amount_max)}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">时间窗口</div>
+                                    <div class="detail-value">${formatTimeline(p.fundraising.timeline)}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">融资目的</div>
+                                    <div class="detail-value">${p.fundraising.purpose?.join(', ') || '-'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">融资类型</div>
+                                    <div class="detail-value">${p.fundraising.financing_type?.join(', ') || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${p.contact ? `
+                        <div class="detail-section">
+                            <h4>联系人信息</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">联系人</div>
+                                    <div class="detail-value">${p.contact.name}${p.contact.title ? ` (${p.contact.title})` : ''}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">邮箱</div>
+                                    <div class="detail-value">${p.contact.email}</div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="message message-info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>联系人信息需要申请引荐后查看</span>
+                        </div>
+                    `}
+
+                    <div class="btn-group">
+                        ${!p.hasAccess ? `
+                            <button class="btn btn-primary" onclick="requestAccess('${p.id}', 'bp_access')">
+                                <i class="fas fa-file-alt"></i> 请求BP访问
+                            </button>
+                            <button class="btn btn-success" onclick="requestAccess('${p.id}', 'referral')">
+                                <i class="fas fa-handshake"></i> 请求引荐
+                            </button>
+                        ` : `
+                            <button class="btn btn-secondary" disabled>
+                                <i class="fas fa-check"></i> 已获得访问权限
+                            </button>
+                        `}
+                        <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('加载项目详情错误:', error);
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="message message-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        加载失败，请稍后重试
+                    </div>
+                `;
+            }
+        }
+
+        async function requestAccess(companyId, requestType) {
+            const message = prompt('请简单说明您的投资意向或问题（可选）：');
+
+            try {
+                const response = await fetch('/api/investor/request-access', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        company_id: companyId,
+                        request_type: requestType,
+                        message: message || ''
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '请求失败');
+                }
+
+                showMessage('请求已提交，请等待管理员处理', 'success');
+                closeModal();
+                await loadMyRequests();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function loadMyRequests() {
+            try {
+                const response = await fetch('/api/investor/my-requests', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取请求记录失败');
+
+                const data = await response.json();
+
+                if (data.requests && data.requests.length > 0) {
+                    document.getElementById('requestsList').innerHTML = data.requests.map(r => `
+                        <div class="request-item">
+                            <div class="request-info">
+                                <div class="request-company">${r.company?.name_cn || '未知企业'}</div>
+                                <div class="request-type">${formatRequestType(r.request_type)}</div>
+                                <div class="request-date">${new Date(r.created_at).toLocaleDateString()}</div>
+                            </div>
+                            <span class="status-badge status-${r.status}">${formatStatus(r.status)}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('requestsList').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>暂无请求记录</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('加载请求记录错误:', error);
+            }
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.nav-link[data-panel]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showPanel(link.dataset.panel);
+                });
+            });
+
+            document.getElementById('profileForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await saveProfile(new FormData(e.target));
+            });
+
+            // 点击模态框外部关闭
+            document.getElementById('projectModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) closeModal();
+            });
+        }
+
+        function showPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(panelId).classList.add('active');
+            document.querySelector(`[data-panel="${panelId}"]`)?.classList.add('active');
+        }
+
+        async function saveProfile(formData) {
+            try {
+                const industries = formData.getAll('industries');
+                const stages = formData.getAll('stages');
+
+                const data = {
+                    name: formData.get('name'),
+                    investor_type: formData.get('investor_type'),
+                    organization: formData.get('organization'),
+                    title: formData.get('title'),
+                    phone: formData.get('phone'),
+                    wechat: formData.get('wechat'),
+                    whatsapp: formData.get('whatsapp'),
+                    linkedin: formData.get('linkedin'),
+                    industries,
+                    stages,
+                    ticket_size_min: formData.get('ticket_size_min') ? parseFloat(formData.get('ticket_size_min')) * 10000 : null,
+                    ticket_size_max: formData.get('ticket_size_max') ? parseFloat(formData.get('ticket_size_max')) * 10000 : null,
+                    bio: formData.get('bio')
+                };
+
+                const response = await fetch('/api/investor/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '保存失败');
+                }
+
+                showMessage('资料已保存', 'success');
+                await loadInvestorProfile();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('projectModal').classList.remove('active');
+        }
+
+        function showMessage(text, type = 'info') {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `
+                <div class="message message-${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    ${text}
+                </div>
+            `;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        function formatStage(stage) {
+            const map = {
+                'seed': '种子轮', 'angel': '天使轮', 'pre_a': 'Pre-A轮',
+                'a': 'A轮', 'b': 'B轮', 'c': 'C轮+',
+                'pre_ipo': 'Pre-IPO', 'ipo': '已上市', 'post_ipo': '上市后'
+            };
+            return map[stage] || stage;
+        }
+
+        function formatIndustry(industry) {
+            const map = {
+                'technology': '科技/互联网', 'healthcare': '医疗健康', 'finance': '金融科技',
+                'manufacturing': '制造业', 'consumer': '消费品', 'energy': '能源/环保',
+                'education': '教育', 'logistics': '物流/供应链', 'other': '其他'
+            };
+            return map[industry] || industry;
+        }
+
+        function formatAmount(amount) {
+            if (!amount) return '-';
+            if (amount >= 100000000) return (amount / 100000000).toFixed(1) + '亿美元';
+            if (amount >= 10000) return (amount / 10000).toFixed(0) + '万美元';
+            return amount + '美元';
+        }
+
+        function formatTimeline(timeline) {
+            const map = {
+                '0-3months': '0-3个月', '3-6months': '3-6个月',
+                '6-12months': '6-12个月', '12+months': '12个月+'
+            };
+            return map[timeline] || timeline;
+        }
+
+        function formatRequestType(type) {
+            const map = {
+                'bp_access': 'BP访问', 'referral': '引荐', 'meeting': '会议', 'dataroom': '数据室'
+            };
+            return map[type] || type;
+        }
+
+        function formatStatus(status) {
+            const map = { 'pending': '待处理', 'approved': '已通过', 'rejected': '已拒绝', 'expired': '已过期' };
+            return map[status] || status;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业门户 - EON Protocol</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0D43F9;
+            --secondary-color: #4AD8FD;
+            --success-color: #10B981;
+            --warning-color: #F59E0B;
+            --danger-color: #EF4444;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-color: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+        }
+
+        /* 卡片 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* 状态徽章 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-draft { background: #E5E7EB; color: #374151; }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-approved { background: #D1FAE5; color: #065F46; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+
+        /* 进度步骤 */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 0;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--border-color);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .step.active .step-number {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .step.completed .step-number {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .step.active .step-label,
+        .step.completed .step-label {
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .form-label .required {
+            color: var(--danger-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 67, 249, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-hint {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* 复选框组 */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+        /* 按钮 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0939d4;
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background: #D1D5DB;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* 文件上传 */
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+            background: rgba(13, 67, 249, 0.02);
+        }
+
+        .file-upload i {
+            font-size: 3rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 1rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--bg-color);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-item-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .file-item-name {
+            font-weight: 500;
+        }
+
+        .file-item-size {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* 消息提示 */
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .message-success {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .message-error {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .message-info {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        /* 隐藏的面板 */
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* 顶部栏 */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-email {
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 1000;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-building"></i>
+                EON Protocol
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#overview" class="nav-link active" data-panel="overview">
+                            <i class="fas fa-home"></i>
+                            <span>概览</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#profile" class="nav-link" data-panel="profile">
+                            <i class="fas fa-building"></i>
+                            <span>企业资料</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#fundraising" class="nav-link" data-panel="fundraising">
+                            <i class="fas fa-chart-line"></i>
+                            <span>融资信息</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#documents" class="nav-link" data-panel="documents">
+                            <i class="fas fa-file-alt"></i>
+                            <span>BP/文档</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#status" class="nav-link" data-panel="status">
+                            <i class="fas fa-tasks"></i>
+                            <span>提交状态</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" style="margin-top: 2rem;">
+                        <a href="/" class="nav-link">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>返回首页</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容 -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="user-info">
+                    <span>欢迎，</span>
+                    <span class="user-email" id="userEmail">-</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                </button>
+            </div>
+
+            <div id="messageContainer"></div>
+
+            <!-- 概览面板 -->
+            <div id="overview" class="panel active">
+                <div class="page-header">
+                    <h1 class="page-title">企业门户</h1>
+                    <p class="page-subtitle">管理您的企业信息，对接国际资本</p>
+                </div>
+
+                <!-- 进度步骤 -->
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-tasks"></i> 提交进度</h3>
+                    <div class="progress-steps">
+                        <div class="step" id="step1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">企业资料</div>
+                        </div>
+                        <div class="step" id="step2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">融资信息</div>
+                        </div>
+                        <div class="step" id="step3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">上传BP</div>
+                        </div>
+                        <div class="step" id="step4">
+                            <div class="step-number">4</div>
+                            <div class="step-label">提交审核</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 当前状态 -->
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-info-circle"></i> 当前状态</h3>
+                    <p>审核状态：<span class="status-badge" id="currentStatus">-</span></p>
+                    <p id="adminFeedback" style="margin-top: 1rem; display: none;">
+                        <strong>管理员反馈：</strong><span id="feedbackText"></span>
+                    </p>
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-bolt"></i> 快速操作</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="showPanel('profile')">
+                            <i class="fas fa-edit"></i> 编辑企业资料
+                        </button>
+                        <button class="btn btn-secondary" onclick="showPanel('documents')">
+                            <i class="fas fa-upload"></i> 上传BP文件
+                        </button>
+                        <button class="btn btn-success" id="submitBtn" onclick="submitForReview()" disabled>
+                            <i class="fas fa-paper-plane"></i> 提交审核
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 企业资料面板 -->
+            <div id="profile" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">企业资料</h1>
+                    <p class="page-subtitle">填写您的企业基本信息</p>
+                </div>
+
+                <form id="profileForm" class="card">
+                    <h3 class="card-title">基本信息</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">公司中文名称 <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="name_cn" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">公司英文名称</label>
+                            <input type="text" class="form-control" name="name_en">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">公司官网</label>
+                            <input type="url" class="form-control" name="website" placeholder="https://">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">LinkedIn</label>
+                            <input type="url" class="form-control" name="linkedin" placeholder="https://linkedin.com/company/...">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主要行业 <span class="required">*</span></label>
+                            <select class="form-control" name="industry_primary" required>
+                                <option value="">请选择</option>
+                                <option value="technology">科技/互联网</option>
+                                <option value="healthcare">医疗健康</option>
+                                <option value="finance">金融科技</option>
+                                <option value="manufacturing">制造业</option>
+                                <option value="consumer">消费品</option>
+                                <option value="energy">能源/环保</option>
+                                <option value="education">教育</option>
+                                <option value="logistics">物流/供应链</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">次要行业</label>
+                            <select class="form-control" name="industry_secondary">
+                                <option value="">请选择</option>
+                                <option value="technology">科技/互联网</option>
+                                <option value="healthcare">医疗健康</option>
+                                <option value="finance">金融科技</option>
+                                <option value="manufacturing">制造业</option>
+                                <option value="consumer">消费品</option>
+                                <option value="energy">能源/环保</option>
+                                <option value="education">教育</option>
+                                <option value="logistics">物流/供应链</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">总部所在地 <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="location_headquarters" required placeholder="如：中国深圳">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">研发中心所在地</label>
+                            <input type="text" class="form-control" name="location_rd" placeholder="如：中国北京">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">一句话产品简介 <span class="required">*</span></label>
+                        <input type="text" class="form-control" name="description" required maxlength="200" placeholder="用一句话描述您的产品或服务">
+                        <p class="form-hint">最多200字</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">详细公司介绍</label>
+                        <textarea class="form-control" name="description_detail" rows="4" placeholder="详细介绍您的公司、产品、市场等"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">融资阶段 <span class="required">*</span></label>
+                        <select class="form-control" name="stage" required>
+                            <option value="">请选择</option>
+                            <option value="seed">种子轮</option>
+                            <option value="angel">天使轮</option>
+                            <option value="pre_a">Pre-A轮</option>
+                            <option value="a">A轮</option>
+                            <option value="b">B轮</option>
+                            <option value="c">C轮及以后</option>
+                            <option value="pre_ipo">Pre-IPO</option>
+                            <option value="ipo">已上市</option>
+                            <option value="post_ipo">上市后融资</option>
+                        </select>
+                    </div>
+
+                    <h3 class="card-title" style="margin-top: 2rem;">联系人信息</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">联系人姓名 <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="contact_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">联系人职务</label>
+                            <input type="text" class="form-control" name="contact_title" placeholder="如：CEO、CFO">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">联系人邮箱 <span class="required">*</span></label>
+                            <input type="email" class="form-control" name="contact_email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">联系人电话</label>
+                            <input type="tel" class="form-control" name="contact_phone">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">微信</label>
+                            <input type="text" class="form-control" name="contact_wechat">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">WhatsApp</label>
+                            <input type="text" class="form-control" name="contact_whatsapp">
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="showPanel('overview')">
+                            返回
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 融资信息面板 -->
+            <div id="fundraising" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">融资信息</h1>
+                    <p class="page-subtitle">填写您的融资需求</p>
+                </div>
+
+                <form id="fundraisingForm" class="card">
+                    <div class="form-group">
+                        <label class="form-label">融资目的 <span class="required">*</span></label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="purpose" value="expansion"> 海外扩张
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="purpose" value="rd"> 研发投入
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="purpose" value="marketing"> 市场营销
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="purpose" value="ma"> 并购
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="purpose" value="working_capital"> 营运资金
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="purpose" value="factory"> 建厂
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">融资类型偏好 <span class="required">*</span></label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="financing_type" value="equity"> 股权融资
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="financing_type" value="debt"> 债权融资
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="financing_type" value="convertible"> 可转债
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="financing_type" value="project"> 项目融资
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="financing_type" value="rwa"> RWA/代币化
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">融资金额（最低）<span class="required">*</span></label>
+                            <input type="number" class="form-control" name="amount_min" required placeholder="万美元">
+                            <p class="form-hint">单位：万美元</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">融资金额（最高）<span class="required">*</span></label>
+                            <input type="number" class="form-control" name="amount_max" required placeholder="万美元">
+                            <p class="form-hint">单位：万美元</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">融资时间窗口 <span class="required">*</span></label>
+                        <select class="form-control" name="timeline" required>
+                            <option value="">请选择</option>
+                            <option value="0-3months">0-3个月</option>
+                            <option value="3-6months">3-6个月</option>
+                            <option value="6-12months">6-12个月</option>
+                            <option value="12+months">12个月以上</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">估值预期</label>
+                        <input type="text" class="form-control" name="valuation_expectation" placeholder="如：5000-8000万美元">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">资金用途说明</label>
+                        <textarea class="form-control" name="use_of_funds" rows="3" placeholder="详细说明资金用途分配"></textarea>
+                    </div>
+
+                    <h3 class="card-title" style="margin-top: 2rem;">海外结构</h3>
+
+                    <div class="form-group">
+                        <label class="form-label">是否已有海外主体</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="overseas_sg"> 新加坡
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="overseas_hk"> 香港
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="overseas_us"> 美国
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="overseas_other"> 其他
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">IP归属情况</label>
+                        <input type="text" class="form-control" name="ip_ownership" placeholder="如：中国境内公司持有">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">数据敏感性</label>
+                        <select class="form-control" name="data_sensitivity">
+                            <option value="low">低 - 不涉及敏感数据</option>
+                            <option value="medium" selected>中 - 涉及部分用户数据</option>
+                            <option value="high">高 - 涉及敏感行业数据</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">其他补充信息</label>
+                        <textarea class="form-control" name="additional_info" rows="3" placeholder="任何您认为重要的补充信息"></textarea>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="showPanel('overview')">
+                            返回
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 文档上传面板 -->
+            <div id="documents" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">BP/文档管理</h1>
+                    <p class="page-subtitle">上传您的商业计划书和其他文档</p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-upload"></i> 上传BP文件</h3>
+                    <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>点击或拖拽文件到此处上传</p>
+                        <p class="form-hint">支持 PDF、PPT、PPTX、DOC、DOCX 格式，最大 50MB</p>
+                        <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,.doc,.docx" onchange="uploadFile(this)">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-file-alt"></i> 已上传文档</h3>
+                    <div id="fileList">
+                        <p class="form-hint">暂无已上传文档</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-link"></i> 数据室链接（可选）</h3>
+                    <div class="form-group">
+                        <input type="url" class="form-control" id="dataroomLink" placeholder="如：https://docsend.com/your-dataroom">
+                        <p class="form-hint">如果您有在线数据室，可以在此填写链接</p>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="showPanel('overview')">
+                        返回概览
+                    </button>
+                </div>
+            </div>
+
+            <!-- 提交状态面板 -->
+            <div id="status" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">提交状态</h1>
+                    <p class="page-subtitle">查看您的提交进度和审核状态</p>
+                </div>
+
+                <div class="card" id="statusDetails">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let companyData = null;
+        let token = localStorage.getItem('token');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!token) {
+                window.location.href = '/auth/login.html?redirect=/company';
+                return;
+            }
+
+            await loadUserInfo();
+            await loadCompanyData();
+            setupEventListeners();
+        });
+
+        // 加载用户信息
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取用户信息失败');
+                }
+
+                const data = await response.json();
+                currentUser = data.user;
+
+                // 检查用户角色
+                if (currentUser.role !== 'company' && currentUser.role !== 'admin') {
+                    showMessage('您没有权限访问企业门户', 'error');
+                    setTimeout(() => window.location.href = '/', 2000);
+                    return;
+                }
+
+                document.getElementById('userEmail').textContent = currentUser.email;
+            } catch (error) {
+                console.error('加载用户信息错误:', error);
+                showMessage('请重新登录', 'error');
+                setTimeout(() => window.location.href = '/auth/login.html', 2000);
+            }
+        }
+
+        // 加载企业数据
+        async function loadCompanyData() {
+            try {
+                const response = await fetch('/api/company/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取企业信息失败');
+                }
+
+                const data = await response.json();
+                companyData = data.company;
+
+                updateProgressSteps();
+                updateStatusDisplay();
+
+                if (companyData) {
+                    populateProfileForm();
+                    populateFundraisingForm();
+                    loadDocuments();
+                }
+            } catch (error) {
+                console.error('加载企业数据错误:', error);
+            }
+        }
+
+        // 更新进度步骤
+        function updateProgressSteps() {
+            const hasProfile = companyData && companyData.name_cn;
+            const hasFundraising = companyData && companyData.fundraisingInfo;
+            const hasDocuments = companyData && companyData.documents && companyData.documents.length > 0;
+            const isSubmitted = companyData && companyData.status !== 'draft';
+
+            document.getElementById('step1').className = `step ${hasProfile ? 'completed' : 'active'}`;
+            document.getElementById('step2').className = `step ${hasFundraising ? 'completed' : hasProfile ? 'active' : ''}`;
+            document.getElementById('step3').className = `step ${hasDocuments ? 'completed' : hasFundraising ? 'active' : ''}`;
+            document.getElementById('step4').className = `step ${isSubmitted ? 'completed' : hasDocuments ? 'active' : ''}`;
+
+            // 启用/禁用提交按钮
+            const canSubmit = hasProfile && hasFundraising && hasDocuments && companyData.status === 'draft';
+            document.getElementById('submitBtn').disabled = !canSubmit;
+        }
+
+        // 更新状态显示
+        function updateStatusDisplay() {
+            const statusMap = {
+                'draft': { text: '草稿', class: 'status-draft' },
+                'pending': { text: '待审核', class: 'status-pending' },
+                'approved': { text: '已通过', class: 'status-approved' },
+                'rejected': { text: '已拒绝', class: 'status-rejected' }
+            };
+
+            const status = companyData?.status || 'draft';
+            const statusInfo = statusMap[status] || statusMap.draft;
+
+            const statusBadge = document.getElementById('currentStatus');
+            statusBadge.textContent = statusInfo.text;
+            statusBadge.className = `status-badge ${statusInfo.class}`;
+
+            // 显示管理员反馈
+            if (companyData?.admin_feedback) {
+                document.getElementById('adminFeedback').style.display = 'block';
+                document.getElementById('feedbackText').textContent = companyData.admin_feedback;
+            }
+        }
+
+        // 填充企业资料表单
+        function populateProfileForm() {
+            if (!companyData) return;
+
+            const form = document.getElementById('profileForm');
+            const fields = ['name_cn', 'name_en', 'website', 'linkedin', 'industry_primary', 
+                           'industry_secondary', 'location_headquarters', 'location_rd',
+                           'description', 'description_detail', 'stage',
+                           'contact_name', 'contact_title', 'contact_email',
+                           'contact_phone', 'contact_wechat', 'contact_whatsapp'];
+
+            fields.forEach(field => {
+                const input = form.querySelector(`[name="${field}"]`);
+                if (input && companyData[field]) {
+                    input.value = companyData[field];
+                }
+            });
+        }
+
+        // 填充融资信息表单
+        function populateFundraisingForm() {
+            if (!companyData?.fundraisingInfo) return;
+
+            const info = companyData.fundraisingInfo;
+            const form = document.getElementById('fundraisingForm');
+
+            // 复选框：融资目的
+            if (info.purpose) {
+                info.purpose.forEach(p => {
+                    const checkbox = form.querySelector(`[name="purpose"][value="${p}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+
+            // 复选框：融资类型
+            if (info.financing_type) {
+                info.financing_type.forEach(t => {
+                    const checkbox = form.querySelector(`[name="financing_type"][value="${t}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+
+            // 其他字段
+            const fields = ['amount_min', 'amount_max', 'timeline', 'valuation_expectation', 
+                           'use_of_funds', 'ip_ownership', 'data_sensitivity', 'additional_info'];
+            fields.forEach(field => {
+                const input = form.querySelector(`[name="${field}"]`);
+                if (input && info[field]) {
+                    input.value = info[field];
+                }
+            });
+
+            // 海外结构
+            if (info.overseas_structure) {
+                if (info.overseas_structure.sg) form.querySelector('[name="overseas_sg"]').checked = true;
+                if (info.overseas_structure.hk) form.querySelector('[name="overseas_hk"]').checked = true;
+                if (info.overseas_structure.us) form.querySelector('[name="overseas_us"]').checked = true;
+                if (info.overseas_structure.other) form.querySelector('[name="overseas_other"]').checked = true;
+            }
+        }
+
+        // 加载文档列表
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/company/documents', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取文档失败');
+
+                const data = await response.json();
+                const fileList = document.getElementById('fileList');
+
+                if (data.documents && data.documents.length > 0) {
+                    fileList.innerHTML = data.documents.map(doc => `
+                        <div class="file-item">
+                            <div class="file-item-info">
+                                <i class="fas fa-file-pdf" style="color: #EF4444;"></i>
+                                <div>
+                                    <div class="file-item-name">${doc.filename}</div>
+                                    <div class="file-item-size">${formatFileSize(doc.filesize)}</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')" style="padding: 0.5rem 1rem;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    fileList.innerHTML = '<p class="form-hint">暂无已上传文档</p>';
+                }
+            } catch (error) {
+                console.error('加载文档错误:', error);
+            }
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 导航切换
+            document.querySelectorAll('.nav-link[data-panel]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const panel = link.dataset.panel;
+                    showPanel(panel);
+                });
+            });
+
+            // 企业资料表单提交
+            document.getElementById('profileForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await saveProfile(new FormData(e.target));
+            });
+
+            // 融资信息表单提交
+            document.getElementById('fundraisingForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await saveFundraising(new FormData(e.target));
+            });
+        }
+
+        // 显示面板
+        function showPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+
+            document.getElementById(panelId).classList.add('active');
+            document.querySelector(`[data-panel="${panelId}"]`)?.classList.add('active');
+        }
+
+        // 保存企业资料
+        async function saveProfile(formData) {
+            try {
+                const data = Object.fromEntries(formData);
+
+                const response = await fetch('/api/company/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '保存失败');
+                }
+
+                showMessage('企业资料已保存', 'success');
+                await loadCompanyData();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 保存融资信息
+        async function saveFundraising(formData) {
+            try {
+                // 收集复选框数据
+                const purpose = [];
+                const financing_type = [];
+                formData.getAll('purpose').forEach(v => purpose.push(v));
+                formData.getAll('financing_type').forEach(v => financing_type.push(v));
+
+                const overseas_structure = {
+                    sg: formData.get('overseas_sg') === 'on',
+                    hk: formData.get('overseas_hk') === 'on',
+                    us: formData.get('overseas_us') === 'on',
+                    other: formData.get('overseas_other') === 'on'
+                };
+
+                const data = {
+                    purpose,
+                    financing_type,
+                    amount_min: parseFloat(formData.get('amount_min')) * 10000, // 转换为美元
+                    amount_max: parseFloat(formData.get('amount_max')) * 10000,
+                    timeline: formData.get('timeline'),
+                    valuation_expectation: formData.get('valuation_expectation'),
+                    use_of_funds: formData.get('use_of_funds'),
+                    overseas_structure,
+                    ip_ownership: formData.get('ip_ownership'),
+                    data_sensitivity: formData.get('data_sensitivity'),
+                    additional_info: formData.get('additional_info')
+                };
+
+                const response = await fetch('/api/company/fundraising', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '保存失败');
+                }
+
+                showMessage('融资信息已保存', 'success');
+                await loadCompanyData();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 上传文件
+        async function uploadFile(input) {
+            if (!input.files || !input.files[0]) return;
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showMessage('正在上传...', 'info');
+
+                const response = await fetch('/api/company/upload-bp', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '上传失败');
+                }
+
+                showMessage('文件上传成功', 'success');
+                await loadCompanyData();
+                await loadDocuments();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+
+            input.value = '';
+        }
+
+        // 删除文档
+        async function deleteDocument(docId) {
+            if (!confirm('确定要删除这个文档吗？')) return;
+
+            try {
+                const response = await fetch(`/api/company/documents/${docId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除失败');
+                }
+
+                showMessage('文档已删除', 'success');
+                await loadCompanyData();
+                await loadDocuments();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 提交审核
+        async function submitForReview() {
+            if (!confirm('确定要提交审核吗？提交后将无法修改信息，直到审核完成。')) return;
+
+            try {
+                const response = await fetch('/api/company/submit', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '提交失败');
+                }
+
+                showMessage('已提交审核，请等待管理员处理', 'success');
+                await loadCompanyData();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 显示消息
+        function showMessage(text, type = 'info') {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `
+                <div class="message message-${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    ${text}
+                </div>
+            `;
+
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (!bytes) return '-';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

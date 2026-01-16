@@ -1,212 +1,375 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <script src="/static/js/authService.js"></script>
+    <title>登录 - EON Protocol</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #0D43F9;
+            --secondary-color: #4AD8FD;
+            --success-color: #10B981;
+            --danger-color: #EF4444;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-color: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
-            background-color: #f5f5f5;
-        }
-
-        #loginContainer {
-            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
         }
 
-        h1 {
-            margin: 0 0 1.5rem;
+        .container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 420px;
+            padding: 2.5rem;
+        }
+
+        .logo {
             text-align: center;
-            color: #333;
+            margin-bottom: 2rem;
+        }
+
+        .logo h1 {
+            color: var(--primary-color);
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
         }
 
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
         }
 
-        label {
+        .form-label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #555;
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 0.875rem;
         }
 
-        input {
+        .form-control {
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             font-size: 1rem;
-            box-sizing: border-box;
+            transition: all 0.2s;
         }
 
-        .submit-button {
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 67, 249, 0.1);
+        }
+
+        .btn {
             width: 100%;
-            padding: 0.75rem;
-            background-color: #007bff;
-            color: white;
+            padding: 1rem;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
-            position: relative;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
 
-        .submit-button:hover {
-            background-color: #0056b3;
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
         }
 
-        .submit-button:disabled {
-            background-color: #cccccc;
+        .btn-primary:hover {
+            background: #0939d4;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
 
-        .loading-container {
+        .link-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .link-text a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .link-text a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            font-size: 0.875rem;
+        }
+
+        .success-message {
+            background: #D1FAE5;
+            color: #065F46;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            font-size: 0.875rem;
+        }
+
+        .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            right: 0;
+            bottom: 0;
             background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            justify-content: center;
+            display: none;
             align-items: center;
+            justify-content: center;
             z-index: 1000;
         }
 
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #007bff;
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        .error-text {
-            color: #dc3545;
-            margin-bottom: 1rem;
-            text-align: center;
-            display: none;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .register-link {
-            text-align: center;
-            margin-top: 1rem;
-        }
-
-        .register-link a {
-            color: #007bff;
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
             text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
         }
 
-        .register-link a:hover {
-            text-decoration: underline;
+        .back-link:hover {
+            color: var(--primary-color);
+        }
+
+        .quick-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .quick-link:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
         }
     </style>
 </head>
 <body>
-    <div id="loadingOverlay" class="loading-container hidden">
-        <div class="loading-spinner"></div>
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
     </div>
 
-    <div id="loginContainer">
-        <h1>Login</h1>
+    <div class="container">
+        <a href="/" class="back-link">
+            <i class="fas fa-arrow-left"></i> 返回首页
+        </a>
+
+        <div class="logo">
+            <h1>EON Protocol</h1>
+            <p>登录您的账户</p>
+        </div>
+
         <form id="loginForm">
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required autocomplete="email">
+                <label class="form-label">邮箱地址</label>
+                <input type="email" class="form-control" id="email" required placeholder="your@email.com">
             </div>
+
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required autocomplete="current-password">
+                <label class="form-label">密码</label>
+                <input type="password" class="form-control" id="password" required placeholder="输入密码">
             </div>
-            <div id="error" class="error-text"></div>
-            <button type="submit" id="loginButton" class="submit-button">
-                Login
+
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <i class="fas fa-sign-in-alt"></i> 登录
             </button>
-            <div class="register-link">
-                Don't have an account? <a href="/auth/register.html">Register here</a>
-            </div>
         </form>
+
+        <div class="link-text">
+            还没有账户？<a href="/auth/register.html">立即注册</a>
+        </div>
+
+        <div class="quick-links">
+            <a href="/auth/register.html?role=company" class="quick-link">
+                <i class="fas fa-building"></i> 企业注册
+            </a>
+            <a href="/auth/register.html?role=investor" class="quick-link">
+                <i class="fas fa-chart-line"></i> 投资人注册
+            </a>
+        </div>
     </div>
 
     <script>
-        async function initializePage() {
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查是否已登录
+            const token = localStorage.getItem('token');
+            if (token) {
+                checkAuth(token);
+            }
+
+            // 表单提交
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        });
+
+        async function checkAuth(token) {
             try {
-                // Wait for auth service
-                await window.authServiceUtils.waitForAuthService();
-                
-                // Check if already logged in
-                if (window.authService.isLoggedIn()) {
-                    window.location.href = '/dashboard/';
-                    return;
-                }
-
-                // Initialize form
-                const form = document.getElementById('loginForm');
-                const loading = document.getElementById('loadingOverlay');
-                const error = document.getElementById('error');
-                const button = document.getElementById('loginButton');
-
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    error.style.display = 'none';
-                    loading.classList.remove('hidden');
-                    button.disabled = true;
-
-                    try {
-                        const email = document.getElementById('email').value;
-                        const password = document.getElementById('password').value;
-
-                        // Login
-                        await window.authService.login(email, password);
-                        
-                        // Redirect based on user role
-                        if (window.authService.isAdmin()) {
-                            window.location.href = '/admin/';
-                        } else {
-                            window.location.href = '/dashboard/';
-                        }
-                    } catch (err) {
-                        error.textContent = err.message;
-                        error.style.display = 'block';
-                    } finally {
-                        loading.classList.add('hidden');
-                        button.disabled = false;
-                    }
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
-            } catch (err) {
-                console.error('Failed to initialize page:', err);
-                document.getElementById('error').textContent = 'Failed to initialize page. Please try again.';
-                document.getElementById('error').style.display = 'block';
+
+                if (response.ok) {
+                    const data = await response.json();
+                    redirectByRole(data.user.role);
+                }
+            } catch (error) {
+                // 忽略错误
             }
         }
 
-        // Start initialization when page loads
-        window.addEventListener('load', initializePage);
+        async function handleLogin(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            showLoading(true);
+            hideMessages();
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '登录失败');
+                }
+
+                // 保存 token
+                localStorage.setItem('token', result.token);
+                localStorage.setItem('user', JSON.stringify(result.user));
+
+                showSuccess('登录成功，正在跳转...');
+
+                // 跳转
+                setTimeout(() => {
+                    redirectByRole(result.user.role);
+                }, 500);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function redirectByRole(role) {
+            const redirect = new URLSearchParams(window.location.search).get('redirect');
+            
+            if (redirect) {
+                window.location.href = redirect;
+            } else if (role === 'company') {
+                window.location.href = '/company';
+            } else if (role === 'investor') {
+                window.location.href = '/investor';
+            } else if (role === 'admin') {
+                window.location.href = '/admin';
+            } else {
+                window.location.href = '/dashboard';
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+            document.getElementById('submitBtn').disabled = show;
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
     </script>
 </body>
 </html>

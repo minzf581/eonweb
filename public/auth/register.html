@@ -1,206 +1,488 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - EON Protocol</title>
-    <script src="/static/js/authService.js"></script>
+    <title>注册 - EON Protocol</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #0D43F9;
+            --secondary-color: #4AD8FD;
+            --success-color: #10B981;
+            --danger-color: #EF4444;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-color: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
-            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
         }
 
         .container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 400px;
+            max-width: 480px;
+            padding: 2.5rem;
         }
 
-        h1 {
-            margin: 0 0 1.5rem;
+        .logo {
             text-align: center;
-            color: #333;
+            margin-bottom: 2rem;
         }
 
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        label {
-            display: block;
+        .logo h1 {
+            color: var(--primary-color);
+            font-size: 1.75rem;
             margin-bottom: 0.5rem;
-            color: #555;
         }
 
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
+        .logo p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
         }
 
-        button {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
+        /* 角色选择 */
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .error {
-            color: #dc3545;
-            margin-top: 1rem;
+        .role-option {
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
             text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .role-option:hover {
+            border-color: var(--primary-color);
+            background: rgba(13, 67, 249, 0.02);
+        }
+
+        .role-option.active {
+            border-color: var(--primary-color);
+            background: rgba(13, 67, 249, 0.05);
+        }
+
+        .role-option i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .role-option h3 {
+            font-size: 1rem;
+            color: var(--text-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .role-option p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .role-option input {
             display: none;
         }
 
-        .loading {
+        /* 表单 */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 67, 249, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0939d4;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .divider span {
+            padding: 0 1rem;
+        }
+
+        .link-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .link-text a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .link-text a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            font-size: 0.875rem;
+        }
+
+        .success-message {
+            background: #D1FAE5;
+            color: #065F46;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            font-size: 0.875rem;
+        }
+
+        .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
             display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
         }
 
-        .loading::after {
-            content: '';
+        .spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #007bff;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        .hidden {
-            display: none;
+        .password-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary-color);
         }
     </style>
 </head>
 <body>
-    <div class="loading" id="loading"></div>
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
     <div class="container">
-        <h1>Register</h1>
+        <a href="/" class="back-link">
+            <i class="fas fa-arrow-left"></i> 返回首页
+        </a>
+
+        <div class="logo">
+            <h1>EON Protocol</h1>
+            <p>注册账户，开始链接全球资本</p>
+        </div>
+
         <form id="registerForm">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" required>
+            <!-- 角色选择 -->
+            <div class="role-selector">
+                <label class="role-option" id="roleCompany">
+                    <input type="radio" name="role" value="company" checked>
+                    <i class="fas fa-building"></i>
+                    <h3>我是企业</h3>
+                    <p>提交 BP，对接投资人</p>
+                </label>
+                <label class="role-option active" id="roleInvestor">
+                    <input type="radio" name="role" value="investor">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>我是投资人</h3>
+                    <p>浏览项目，请求引荐</p>
+                </label>
             </div>
+
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" required>
+                <label class="form-label">姓名</label>
+                <input type="text" class="form-control" id="name" placeholder="您的姓名">
             </div>
+
             <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
-                <input type="password" id="confirmPassword" required>
+                <label class="form-label">邮箱地址</label>
+                <input type="email" class="form-control" id="email" required placeholder="your@email.com">
             </div>
+
             <div class="form-group">
-                <label for="referralCode">Referral Code (Optional)</label>
-                <input type="text" id="referralCode">
+                <label class="form-label">密码</label>
+                <input type="password" class="form-control" id="password" required placeholder="设置密码">
+                <p class="password-hint">密码长度至少6位</p>
             </div>
-            <div id="error" class="error"></div>
-            <button type="submit" id="registerButton">Register</button>
-            <p style="text-align: center; margin-top: 1rem;">
-                Already have an account? <a href="/auth/login.html">Login</a>
-            </p>
+
+            <div class="form-group">
+                <label class="form-label">确认密码</label>
+                <input type="password" class="form-control" id="confirmPassword" required placeholder="再次输入密码">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <i class="fas fa-user-plus"></i> 注册
+            </button>
         </form>
+
+        <div class="link-text">
+            已有账户？<a href="/auth/login.html">立即登录</a>
+        </div>
     </div>
 
     <script>
-        // Initialize page
-        async function initializePage() {
-            try {
-                // Wait for auth service
-                await window.authServiceUtils.waitForAuthService();
-                
-                // Check if already logged in
-                if (window.authService.isLoggedIn()) {
-                    window.location.href = '/dashboard/index.html';
-                    return;
-                }
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 从 URL 获取角色参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const role = urlParams.get('role');
+            
+            if (role === 'company') {
+                selectRole('company');
+            } else if (role === 'investor') {
+                selectRole('investor');
+            } else {
+                selectRole('company'); // 默认企业
+            }
 
-                // Initialize form
-                const form = document.getElementById('registerForm');
-                const loading = document.getElementById('loading');
-                const error = document.getElementById('error');
-                const button = document.getElementById('registerButton');
+            // 检查是否已登录
+            const token = localStorage.getItem('token');
+            if (token) {
+                checkAuth(token);
+            }
 
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    error.style.display = 'none';
-                    loading.style.display = 'flex';
-                    button.disabled = true;
+            setupEventListeners();
+        });
 
-                    try {
-                        const email = document.getElementById('email').value;
-                        const password = document.getElementById('password').value;
-                        const confirmPassword = document.getElementById('confirmPassword').value;
-                        const referralCode = document.getElementById('referralCode').value;
-
-                        // Validate passwords
-                        if (password !== confirmPassword) {
-                            throw new Error('Passwords do not match');
-                        }
-
-                        // Register
-                        await window.authService.register(email, password, referralCode);
-                        
-                        // Login after registration
-                        await window.authService.login(email, password);
-                        
-                        // Redirect based on user role
-                        if (window.authService.isAdmin()) {
-                            window.location.href = '/admin/';
-                        } else {
-                            window.location.href = '/dashboard/';
-                        }
-                    } catch (err) {
-                        error.textContent = err.message;
-                        error.style.display = 'block';
-                    } finally {
-                        loading.style.display = 'none';
-                        button.disabled = false;
-                    }
+        function setupEventListeners() {
+            // 角色选择
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const radio = option.querySelector('input[type="radio"]');
+                    selectRole(radio.value);
                 });
-            } catch (err) {
-                console.error('Failed to initialize page:', err);
-                document.getElementById('error').textContent = 'Failed to initialize page. Please try again.';
-                document.getElementById('error').style.display = 'block';
+            });
+
+            // 表单提交
+            document.getElementById('registerForm').addEventListener('submit', handleRegister);
+        }
+
+        function selectRole(role) {
+            document.querySelectorAll('.role-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            
+            const option = document.querySelector(`input[value="${role}"]`).parentElement;
+            option.classList.add('active');
+            option.querySelector('input').checked = true;
+        }
+
+        async function checkAuth(token) {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // 根据角色跳转
+                    redirectByRole(data.user.role);
+                }
+            } catch (error) {
+                // 忽略错误
             }
         }
 
-        // Start initialization when page loads
-        window.addEventListener('load', initializePage);
+        async function handleRegister(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+
+            // 验证
+            if (password.length < 6) {
+                showError('密码长度至少6位');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('两次输入的密码不一致');
+                return;
+            }
+
+            showLoading(true);
+            hideMessages();
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, role, name })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '注册失败');
+                }
+
+                // 保存 token
+                localStorage.setItem('token', result.token);
+                localStorage.setItem('user', JSON.stringify(result.user));
+
+                showSuccess('注册成功，正在跳转...');
+
+                // 跳转
+                setTimeout(() => {
+                    redirectByRole(role);
+                }, 1000);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function redirectByRole(role) {
+            const redirect = new URLSearchParams(window.location.search).get('redirect');
+            
+            if (redirect) {
+                window.location.href = redirect;
+            } else if (role === 'company') {
+                window.location.href = '/company';
+            } else if (role === 'investor') {
+                window.location.href = '/investor';
+            } else if (role === 'admin') {
+                window.location.href = '/admin';
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+            document.getElementById('submitBtn').disabled = show;
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
     </script>
 </body>
 </html>
