@@ -164,10 +164,25 @@ router.post('/upload-bp', authenticate, requireCompany, upload.single('file'), a
         // 将文件内容转换为 Base64 存储
         const fileContent = req.file.buffer.toString('base64');
 
+        // 处理文件名编码 - 确保中文文件名正确存储
+        let filename = req.file.originalname;
+        // 尝试解码可能被错误编码的文件名
+        try {
+            // 如果文件名是 Latin-1 编码的 UTF-8 字节，需要重新解码
+            const buffer = Buffer.from(filename, 'latin1');
+            const decoded = buffer.toString('utf8');
+            // 检查解码后是否有效（不包含替换字符）
+            if (!decoded.includes('\ufffd') && decoded !== filename) {
+                filename = decoded;
+            }
+        } catch (e) {
+            // 保持原始文件名
+        }
+
         const document = await Document.create({
             company_id: company.id,
             type: 'bp',
-            filename: req.file.originalname,
+            filename: filename,
             filepath: null, // 不再使用文件路径
             filesize: req.file.size,
             mimetype: req.file.mimetype,
@@ -317,9 +332,12 @@ router.get('/documents/:id/download', authenticate, requireCompany, async (req, 
         // 将 Base64 内容转换回 Buffer
         const fileBuffer = Buffer.from(document.file_content, 'base64');
 
-        // 设置响应头
+        // 设置响应头 - 使用 RFC 5987 编码支持中文文件名
+        const filename = document.filename;
+        const encodedFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
+        
         res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
-        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(document.filename)}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);
         res.setHeader('Content-Length', fileBuffer.length);
 
         res.send(fileBuffer);

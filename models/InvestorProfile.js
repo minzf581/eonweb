@@ -22,11 +22,10 @@ const InvestorProfile = sequelize.define('InvestorProfile', {
         allowNull: false,
         comment: '投资人/机构名称'
     },
-    // 投资人类型
+    // 投资人类型 - 改用STRING避免Sequelize ENUM同步bug
     investor_type: {
-        type: DataTypes.ENUM('individual', 'family_office', 'vc', 'pe', 'corporate', 'other'),
-        allowNull: false,
-        comment: '投资人类型'
+        type: DataTypes.STRING(30),
+        allowNull: false
     },
     // 公司/机构名称
     organization: {
@@ -89,11 +88,10 @@ const InvestorProfile = sequelize.define('InvestorProfile', {
         allowNull: true,
         comment: '投资人简介'
     },
-    // 审核状态
+    // 审核状态 - 改用STRING避免Sequelize ENUM同步bug
     status: {
-        type: DataTypes.ENUM('pending', 'approved', 'rejected', 'suspended'),
-        defaultValue: 'pending',
-        comment: '审核状态'
+        type: DataTypes.STRING(20),
+        defaultValue: 'pending'
     },
     // 管理员备注
     admin_notes: {

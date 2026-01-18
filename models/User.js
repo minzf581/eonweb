@@ -21,12 +21,12 @@ const User = sequelize.define('User', {
         allowNull: false
     },
     role: {
-        type: DataTypes.ENUM('company', 'investor', 'admin'),
+        type: DataTypes.STRING(20),
         allowNull: false,
         defaultValue: 'company'
     },
     status: {
-        type: DataTypes.ENUM('pending', 'active', 'suspended'),
+        type: DataTypes.STRING(20),
         defaultValue: 'pending'
     },
     name: {
