@@ -373,7 +373,71 @@
             font-size: 0.875rem;
         }
 
-        /* 消息提示 */
+        /* 消息提示 - 浮动Toast样式 */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease, fadeOut 0.5s ease 4.5s forwards;
+            min-width: 300px;
+            font-weight: 500;
+        }
+
+        .toast-success {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+        }
+
+        .toast-success i {
+            font-size: 1.5rem;
+            animation: pulse 0.5s ease;
+        }
+
+        .toast-error {
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+            color: white;
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; transform: translateX(100%); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* 保留旧的message样式用于兼容 */
         .message {
             padding: 1rem;
             border-radius: 8px;
@@ -898,7 +962,7 @@
                     <div class="file-upload" onclick="document.getElementById('fileInput').click()">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>点击或拖拽文件到此处上传</p>
-                        <p class="form-hint">支持 PDF、PPT、PPTX、DOC、DOCX 格式，最大 50MB</p>
+                        <p class="form-hint">支持 PDF、PPT、PPTX、DOC、DOCX 格式，最大 10MB</p>
                         <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,.doc,.docx" onchange="uploadFile(this)">
                     </div>
                 </div>
@@ -1341,18 +1405,40 @@
             }
         }
 
-        // 显示消息
+        // 显示消息 - 使用浮动Toast样式
         function showMessage(text, type = 'info') {
-            const container = document.getElementById('messageContainer');
-            container.innerHTML = `
-                <div class="message message-${type}">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                    ${text}
-                </div>
+            // 获取或创建toast容器
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container';
+                document.body.appendChild(toastContainer);
+            }
+
+            // 创建toast
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const iconMap = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                info: 'info-circle'
+            };
+            
+            toast.innerHTML = `
+                <i class="fas fa-${iconMap[type] || 'info-circle'}"></i>
+                <span>${text}</span>
             `;
 
+            toastContainer.appendChild(toast);
+
+            // 5秒后移除
             setTimeout(() => {
-                container.innerHTML = '';
+                toast.remove();
+                // 如果容器为空，移除容器
+                if (toastContainer.children.length === 0) {
+                    toastContainer.remove();
+                }
             }, 5000);
         }
 

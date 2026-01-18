@@ -43,11 +43,10 @@ const FundraisingInfo = sequelize.define('FundraisingInfo', {
         defaultValue: 'USD',
         comment: '金额币种'
     },
-    // 时间窗口
+    // 时间窗口 - 改用STRING避免Sequelize ENUM同步bug
     timeline: {
-        type: DataTypes.ENUM('0-3months', '3-6months', '6-12months', '12+months'),
-        allowNull: false,
-        comment: '融资时间窗口'
+        type: DataTypes.STRING(20),
+        allowNull: false
     },
     // 估值预期
     valuation_expectation: {
@@ -83,11 +82,10 @@ const FundraisingInfo = sequelize.define('FundraisingInfo', {
         allowNull: true,
         comment: 'IP 相关备注'
     },
-    // 数据敏感性
+    // 数据敏感性 - 改用STRING避免Sequelize ENUM同步bug
     data_sensitivity: {
-        type: DataTypes.ENUM('low', 'medium', 'high'),
-        defaultValue: 'medium',
-        comment: '数据敏感性'
+        type: DataTypes.STRING(20),
+        defaultValue: 'medium'
     },
     data_sensitivity_notes: {
         type: DataTypes.TEXT,

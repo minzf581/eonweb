@@ -15,55 +15,53 @@ const Document = sequelize.define('Document', {
             key: 'id'
         }
     },
-    // 文档类型
+    // 文档类型 - 移除 comment 避免 Sequelize ENUM bug
     type: {
-        type: DataTypes.ENUM('bp', 'financial', 'legal', 'other'),
+        type: DataTypes.STRING(20),
         allowNull: false,
-        comment: '文档类型：BP/财务/法律/其他'
+        defaultValue: 'bp'
     },
     // 文件信息
     filename: {
         type: DataTypes.STRING,
-        allowNull: false,
-        comment: '原始文件名'
+        allowNull: false
     },
+    // 改为可选，用于向后兼容
     filepath: {
         type: DataTypes.STRING,
-        allowNull: false,
-        comment: '存储路径'
+        allowNull: true
     },
     filesize: {
         type: DataTypes.INTEGER,
-        allowNull: true,
-        comment: '文件大小（字节）'
+        allowNull: true
     },
     mimetype: {
         type: DataTypes.STRING,
-        allowNull: true,
-        comment: 'MIME 类型'
+        allowNull: true
+    },
+    // 文件内容 - Base64 编码存储在数据库中（Railway 不支持本地文件存储）
+    file_content: {
+        type: DataTypes.TEXT,
+        allowNull: true
     },
     // 数据室链接（可选）
     dataroom_link: {
         type: DataTypes.STRING,
-        allowNull: true,
-        comment: '数据室链接'
+        allowNull: true
     },
     // 描述
     description: {
         type: DataTypes.TEXT,
-        allowNull: true,
-        comment: '文档描述'
+        allowNull: true
     },
     // 访问控制
     is_public: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false,
-        comment: '是否对投资人公开'
+        defaultValue: false
     },
     requires_approval: {
         type: DataTypes.BOOLEAN,
-        defaultValue: true,
-        comment: '是否需要审批才能查看'
+        defaultValue: true
     },
     // 下载统计
     download_count: {

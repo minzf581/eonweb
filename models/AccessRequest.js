@@ -25,11 +25,10 @@ const AccessRequest = sequelize.define('AccessRequest', {
             key: 'id'
         }
     },
-    // 请求类型
+    // 请求类型 - 改用STRING避免Sequelize ENUM同步bug
     request_type: {
-        type: DataTypes.ENUM('bp_access', 'referral', 'meeting', 'dataroom'),
-        allowNull: false,
-        comment: '请求类型：BP访问/引荐/会议/数据室'
+        type: DataTypes.STRING(20),
+        allowNull: false
     },
     // 请求说明
     message: {
@@ -37,11 +36,10 @@ const AccessRequest = sequelize.define('AccessRequest', {
         allowNull: true,
         comment: '投资人留言'
     },
-    // 状态
+    // 状态 - 改用STRING避免Sequelize ENUM同步bug
     status: {
-        type: DataTypes.ENUM('pending', 'approved', 'rejected', 'expired'),
-        defaultValue: 'pending',
-        comment: '请求状态'
+        type: DataTypes.STRING(20),
+        defaultValue: 'pending'
     },
     // 管理员处理
     admin_response: {

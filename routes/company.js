@@ -2,35 +2,22 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { Company, FundraisingInfo, Document, AccessRequest } = require('../models');
 const { authenticate, requireCompany } = require('../middleware/auth');
 
-// 配置文件上传
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, '../uploads/bp');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// 配置文件上传 - 使用内存存储（Railway不支持本地文件系统写入）
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB（内存存储需要限制大小）
     fileFilter: (req, file, cb) => {
         const allowedTypes = ['.pdf', '.ppt', '.pptx', '.doc', '.docx'];
         const ext = path.extname(file.originalname).toLowerCase();
         if (allowedTypes.includes(ext)) {
             cb(null, true);
         } else {
-            cb(new Error('不支持的文件格式'));
+            cb(new Error('不支持的文件格式，仅支持 PDF、PPT、PPTX、DOC、DOCX'));
         }
     }
 });
@@ -162,7 +149,7 @@ router.post('/fundraising', authenticate, requireCompany, async (req, res) => {
     }
 });
 
-// 上传 BP 文件
+// 上传 BP 文件 - 使用内存存储并保存到数据库
 router.post('/upload-bp', authenticate, requireCompany, upload.single('file'), async (req, res) => {
     try {
         const company = await Company.findOne({ where: { user_id: req.user.id } });
@@ -174,13 +161,17 @@ router.post('/upload-bp', authenticate, requireCompany, upload.single('file'), a
             return res.status(400).json({ error: '请选择要上传的文件' });
         }
 
+        // 将文件内容转换为 Base64 存储
+        const fileContent = req.file.buffer.toString('base64');
+
         const document = await Document.create({
             company_id: company.id,
             type: 'bp',
             filename: req.file.originalname,
-            filepath: req.file.path,
+            filepath: null, // 不再使用文件路径
             filesize: req.file.size,
             mimetype: req.file.mimetype,
+            file_content: fileContent, // Base64 内容存储在数据库
             description: req.body.description || 'Business Plan',
             requires_approval: true
         });
@@ -191,6 +182,7 @@ router.post('/upload-bp', authenticate, requireCompany, upload.single('file'), a
                 id: document.id,
                 filename: document.filename,
                 type: document.type,
+                filesize: document.filesize,
                 created_at: document.created_at
             }
         });
@@ -236,11 +228,7 @@ router.delete('/documents/:id', authenticate, requireCompany, async (req, res) =
             return res.status(404).json({ error: '文档不存在' });
         }
 
-        // 删除文件
-        if (fs.existsSync(document.filepath)) {
-            fs.unlinkSync(document.filepath);
-        }
-
+        // 直接从数据库删除（文件内容已存储在数据库中）
         await document.destroy();
 
         res.json({ message: '文档已删除' });
@@ -303,6 +291,41 @@ router.get('/access-requests', authenticate, requireCompany, async (req, res) =>
     } catch (error) {
         console.error('[Company] 获取访问请求错误:', error);
         res.status(500).json({ error: '获取访问请求失败' });
+    }
+});
+
+// 下载文档 - 从数据库返回文件内容
+router.get('/documents/:id/download', authenticate, requireCompany, async (req, res) => {
+    try {
+        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        const document = await Document.findOne({
+            where: { id: req.params.id, company_id: company.id }
+        });
+
+        if (!document) {
+            return res.status(404).json({ error: '文档不存在' });
+        }
+
+        if (!document.file_content) {
+            return res.status(404).json({ error: '文件内容不存在' });
+        }
+
+        // 将 Base64 内容转换回 Buffer
+        const fileBuffer = Buffer.from(document.file_content, 'base64');
+
+        // 设置响应头
+        res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(document.filename)}"`);
+        res.setHeader('Content-Length', fileBuffer.length);
+
+        res.send(fileBuffer);
+    } catch (error) {
+        console.error('[Company] 下载文档错误:', error);
+        res.status(500).json({ error: '下载失败' });
     }
 });
 

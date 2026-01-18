@@ -67,11 +67,10 @@ const Company = sequelize.define('Company', {
         allowNull: true,
         comment: '详细公司介绍'
     },
-    // 阶段
+    // 阶段 - 改用STRING避免Sequelize ENUM同步bug
     stage: {
-        type: DataTypes.ENUM('seed', 'angel', 'pre_a', 'a', 'b', 'c', 'pre_ipo', 'ipo', 'post_ipo'),
-        allowNull: false,
-        comment: '融资阶段'
+        type: DataTypes.STRING(20),
+        allowNull: false
     },
     // 联系人信息
     contact_name: {
@@ -104,16 +103,14 @@ const Company = sequelize.define('Company', {
         allowNull: true,
         comment: '联系人WhatsApp'
     },
-    // 状态和审核
+    // 状态和审核 - 改用STRING避免Sequelize ENUM同步bug
     status: {
-        type: DataTypes.ENUM('draft', 'pending', 'approved', 'rejected', 'archived'),
-        defaultValue: 'draft',
-        comment: '审核状态'
+        type: DataTypes.STRING(20),
+        defaultValue: 'draft'
     },
     visibility: {
-        type: DataTypes.ENUM('private', 'investors', 'whitelist'),
-        defaultValue: 'private',
-        comment: '可见性：私有/对投资人可见/白名单可见'
+        type: DataTypes.STRING(20),
+        defaultValue: 'private'
     },
     // 管理员备注
     admin_notes: {
