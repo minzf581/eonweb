@@ -23,9 +23,27 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-// 请求日志
+// 请求日志（含响应跟踪）
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    const startTime = Date.now();
+    const requestId = Math.random().toString(36).substring(7);
+    
+    console.log(`[${new Date().toISOString()}] [${requestId}] ${req.method} ${req.path} - 开始`);
+    
+    // 记录响应完成
+    res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        console.log(`[${new Date().toISOString()}] [${requestId}] ${req.method} ${req.path} - 完成 ${res.statusCode} (${duration}ms)`);
+    });
+    
+    // 记录响应关闭（可能是客户端断开）
+    res.on('close', () => {
+        if (!res.writableFinished) {
+            const duration = Date.now() - startTime;
+            console.log(`[${new Date().toISOString()}] [${requestId}] ${req.method} ${req.path} - 连接关闭（未完成） (${duration}ms)`);
+        }
+    });
+    
     next();
 });
 

@@ -150,70 +150,82 @@ router.post('/fundraising', authenticate, requireCompany, async (req, res) => {
 });
 
 // 上传 BP 文件 - 使用内存存储并保存到数据库
-router.post('/upload-bp', authenticate, requireCompany, (req, res, next) => {
-    // 先执行 multer 上传，捕获错误
+router.post('/upload-bp', (req, res, next) => {
+    console.log('[Company][Upload] ===== 收到上传请求 =====');
+    next();
+}, authenticate, (req, res, next) => {
+    console.log('[Company][Upload] 认证通过，用户:', req.user?.email);
+    next();
+}, requireCompany, (req, res, next) => {
+    console.log('[Company][Upload] 角色验证通过');
+    // 执行 multer 上传
     upload.single('file')(req, res, (err) => {
         if (err) {
-            console.error('[Company] Multer 错误:', err.message);
+            console.error('[Company][Upload] Multer 错误:', err.message, err.code);
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(400).json({ error: '文件大小不能超过 10MB' });
             }
             return res.status(400).json({ error: err.message || '上传失败' });
         }
+        console.log('[Company][Upload] Multer 处理完成');
         next();
     });
 }, async (req, res) => {
     const startTime = Date.now();
-    console.log(`[Company] 开始处理 BP 上传请求`);
+    console.log(`[Company][Upload] 开始处理文件保存`);
     
     try {
         const company = await Company.findOne({ where: { user_id: req.user.id } });
         if (!company) {
-            console.log('[Company] 企业信息不存在');
+            console.log('[Company][Upload] 错误：企业信息不存在');
             return res.status(400).json({ error: '请先创建企业基本信息' });
         }
+        console.log('[Company][Upload] 找到企业:', company.id);
 
         if (!req.file) {
-            console.log('[Company] 未收到文件');
+            console.log('[Company][Upload] 错误：未收到文件');
             return res.status(400).json({ error: '请选择要上传的文件' });
         }
 
-        console.log(`[Company] 收到文件: ${req.file.originalname}, 大小: ${req.file.size} bytes`);
+        console.log(`[Company][Upload] 收到文件: ${req.file.originalname}`);
+        console.log(`[Company][Upload] 文件大小: ${req.file.size} bytes`);
+        console.log(`[Company][Upload] MIME类型: ${req.file.mimetype}`);
 
         // 将文件内容转换为 Base64 存储
+        console.log('[Company][Upload] 开始 Base64 编码...');
         const fileContent = req.file.buffer.toString('base64');
-        console.log(`[Company] Base64 编码完成，长度: ${fileContent.length}`);
+        console.log(`[Company][Upload] Base64 编码完成，长度: ${fileContent.length} 字符`);
 
         // 处理文件名编码 - 确保中文文件名正确存储
         let filename = req.file.originalname;
-        // 尝试解码可能被错误编码的文件名
         try {
-            // 如果文件名是 Latin-1 编码的 UTF-8 字节，需要重新解码
             const buffer = Buffer.from(filename, 'latin1');
             const decoded = buffer.toString('utf8');
-            // 检查解码后是否有效（不包含替换字符）
             if (!decoded.includes('\ufffd') && decoded !== filename) {
                 filename = decoded;
             }
         } catch (e) {
             // 保持原始文件名
         }
-        console.log(`[Company] 处理后文件名: ${filename}`);
+        console.log(`[Company][Upload] 处理后文件名: ${filename}`);
 
+        console.log('[Company][Upload] 开始写入数据库...');
         const document = await Document.create({
             company_id: company.id,
             type: 'bp',
             filename: filename,
-            filepath: null, // 不再使用文件路径
+            filepath: null,
             filesize: req.file.size,
             mimetype: req.file.mimetype,
-            file_content: fileContent, // Base64 内容存储在数据库
+            file_content: fileContent,
             description: req.body.description || 'Business Plan',
             requires_approval: true
         });
 
         const duration = Date.now() - startTime;
-        console.log(`[Company] BP 上传成功，文档ID: ${document.id}，耗时: ${duration}ms`);
+        console.log(`[Company][Upload] ===== 上传成功 =====`);
+        console.log(`[Company][Upload] 文档ID: ${document.id}`);
+        console.log(`[Company][Upload] 总耗时: ${duration}ms`);
 
         res.json({ 
             message: 'BP 文件上传成功',
@@ -227,10 +239,102 @@ router.post('/upload-bp', authenticate, requireCompany, (req, res, next) => {
         });
     } catch (error) {
         const duration = Date.now() - startTime;
-        console.error(`[Company] 上传 BP 错误 (耗时 ${duration}ms):`, error.message);
-        console.error('[Company] 错误堆栈:', error.stack);
-        res.status(500).json({ error: '上传失败，请稍后重试: ' + error.message });
+        console.error(`[Company][Upload] ===== 上传失败 =====`);
+        console.error(`[Company][Upload] 耗时: ${duration}ms`);
+        console.error(`[Company][Upload] 错误类型: ${error.name}`);
+        console.error(`[Company][Upload] 错误信息: ${error.message}`);
+        console.error(`[Company][Upload] 错误堆栈:`, error.stack);
+        
+        // 检查是否是数据库相关错误
+        if (error.name === 'SequelizeDatabaseError') {
+            console.error(`[Company][Upload] 数据库错误SQL:`, error.sql);
+        }
+        
+        if (!res.headersSent) {
+            res.status(500).json({ error: '上传失败: ' + error.message });
+        }
     }
+});
+
+// 全局错误处理 - 捕获未处理的路由错误
+router.use((err, req, res, next) => {
+    console.error('[Company] 路由错误:', err);
+    if (!res.headersSent) {
+        res.status(500).json({ error: '服务器错误: ' + err.message });
+    }
+});
+
+// 诊断端点 - 检查上传功能状态
+router.get('/upload-diagnostics', authenticate, async (req, res) => {
+    console.log('[Company][Diag] 开始诊断...');
+    const diagnostics = {
+        timestamp: new Date().toISOString(),
+        user: req.user?.email,
+        checks: []
+    };
+
+    try {
+        // 检查1: 用户是否有企业
+        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        diagnostics.checks.push({
+            name: '企业信息',
+            status: company ? 'OK' : 'MISSING',
+            detail: company ? `ID: ${company.id}` : '请先创建企业信息'
+        });
+
+        if (company) {
+            // 检查2: 现有文档数量
+            const docCount = await Document.count({ where: { company_id: company.id } });
+            diagnostics.checks.push({
+                name: '现有文档数',
+                status: 'OK',
+                detail: `${docCount} 个文档`
+            });
+
+            // 检查3: 测试创建一个小文档
+            const testDoc = await Document.create({
+                company_id: company.id,
+                type: 'test',
+                filename: 'diagnostic_test.txt',
+                filesize: 100,
+                mimetype: 'text/plain',
+                file_content: Buffer.from('Test content').toString('base64'),
+                description: 'Diagnostic test - will be deleted'
+            });
+            
+            // 验证是否能读取
+            const readBack = await Document.findByPk(testDoc.id);
+            const hasContent = readBack && readBack.file_content && readBack.file_content.length > 0;
+            
+            diagnostics.checks.push({
+                name: '数据库写入测试',
+                status: hasContent ? 'OK' : 'FAILED',
+                detail: hasContent ? `写入成功，内容长度: ${readBack.file_content.length}` : '写入后无法读取'
+            });
+
+            // 删除测试文档
+            await testDoc.destroy();
+            diagnostics.checks.push({
+                name: '数据库删除测试',
+                status: 'OK',
+                detail: '测试文档已删除'
+            });
+        }
+
+        diagnostics.overall = diagnostics.checks.every(c => c.status === 'OK') ? 'PASS' : 'FAIL';
+        console.log('[Company][Diag] 诊断完成:', diagnostics.overall);
+
+    } catch (error) {
+        console.error('[Company][Diag] 诊断错误:', error);
+        diagnostics.checks.push({
+            name: '诊断过程',
+            status: 'ERROR',
+            detail: error.message
+        });
+        diagnostics.overall = 'ERROR';
+    }
+
+    res.json(diagnostics);
 });
 
 // 获取企业的所有文档
