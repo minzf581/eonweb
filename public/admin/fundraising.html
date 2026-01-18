@@ -417,6 +417,9 @@
                 <button class="tab-btn active" data-tab="companies">企业管理</button>
                 <button class="tab-btn" data-tab="investors">投资人管理</button>
                 <button class="tab-btn" data-tab="requests">访问请求</button>
+                <button class="tab-btn" data-tab="users">用户管理</button>
+                <button class="tab-btn" data-tab="messages">消息中心</button>
+                <button class="tab-btn" data-tab="settings">系统设置</button>
             </div>
 
             <!-- 企业管理 -->
@@ -515,6 +518,102 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 用户管理 -->
+            <div id="users" class="tab-content">
+                <div class="filter-bar">
+                    <select class="filter-select" id="userRoleFilter" onchange="loadUsers()">
+                        <option value="">全部角色</option>
+                        <option value="admin">管理员</option>
+                        <option value="company">企业</option>
+                        <option value="investor">投资人</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showCreateUserModal()">
+                        <i class="fas fa-plus"></i> 创建用户
+                    </button>
+                </div>
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>邮箱</th>
+                                    <th>姓名</th>
+                                    <th>角色</th>
+                                    <th>状态</th>
+                                    <th>注册时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable">
+                                <tr><td colspan="6"><div class="loading"><div class="spinner"></div></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 消息中心 -->
+            <div id="messages" class="tab-content">
+                <div class="filter-bar">
+                    <button class="btn btn-primary" onclick="showSendMessageModal()">
+                        <i class="fas fa-paper-plane"></i> 发送消息
+                    </button>
+                    <span id="emailStatusBadge" class="stat-badge" style="margin-left: auto;"></span>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">已发送消息</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>收件人</th>
+                                    <th>主题</th>
+                                    <th>类型</th>
+                                    <th>附件</th>
+                                    <th>邮件</th>
+                                    <th>时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="messagesTable">
+                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统设置 -->
+            <div id="settings" class="tab-content">
+                <div class="card" style="max-width: 600px;">
+                    <h3 class="card-title"><i class="fas fa-key"></i> 修改密码</h3>
+                    <form id="changePasswordForm" onsubmit="changePassword(event)">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">当前密码</label>
+                            <input type="password" class="filter-input" id="currentPassword" required style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">新密码</label>
+                            <input type="password" class="filter-input" id="newPassword" required minlength="6" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">确认新密码</label>
+                            <input type="password" class="filter-input" id="confirmPassword" required minlength="6" style="width: 100%;">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存密码
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card" style="max-width: 600px; margin-top: 1.5rem;">
+                    <h3 class="card-title"><i class="fas fa-envelope"></i> 邮件配置状态</h3>
+                    <div id="emailConfigStatus">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -541,6 +640,139 @@
             <div id="investorModalContent">
                 <div class="loading"><div class="spinner"></div></div>
             </div>
+        </div>
+    </div>
+
+    <!-- 创建用户模态框 -->
+    <div class="modal" id="createUserModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">创建用户</h2>
+                <button class="modal-close" onclick="closeModal('createUserModal')">&times;</button>
+            </div>
+            <form id="createUserForm" onsubmit="createUser(event)">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">邮箱 <span style="color: red;">*</span></label>
+                    <input type="email" class="filter-input" name="email" required style="width: 100%;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">密码 <span style="color: red;">*</span></label>
+                    <input type="password" class="filter-input" name="password" required minlength="6" style="width: 100%;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">角色 <span style="color: red;">*</span></label>
+                    <select class="filter-select" name="role" required style="width: 100%;">
+                        <option value="company">企业用户</option>
+                        <option value="investor">投资人</option>
+                        <option value="admin">管理员</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">姓名</label>
+                    <input type="text" class="filter-input" name="name" style="width: 100%;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">电话</label>
+                    <input type="text" class="filter-input" name="phone" style="width: 100%;">
+                </div>
+                <div class="btn-group" style="margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary">创建</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createUserModal')">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 发送消息模态框 -->
+    <div class="modal" id="sendMessageModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">发送消息</h2>
+                <button class="modal-close" onclick="closeModal('sendMessageModal')">&times;</button>
+            </div>
+            <form id="sendMessageForm" onsubmit="sendMessage(event)">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">收件人 <span style="color: red;">*</span></label>
+                    <select class="filter-select" id="messageRecipient" name="recipient_id" required style="width: 100%;">
+                        <option value="">选择收件人...</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">关联企业（可选）</label>
+                    <select class="filter-select" id="messageCompany" name="company_id" style="width: 100%;">
+                        <option value="">选择企业...</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">消息类型</label>
+                    <select class="filter-select" name="type" style="width: 100%;">
+                        <option value="general">普通消息</option>
+                        <option value="status_change">状态变更通知</option>
+                        <option value="review_feedback">审核反馈</option>
+                        <option value="notification">系统通知</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">主题 <span style="color: red;">*</span></label>
+                    <input type="text" class="filter-input" name="subject" required style="width: 100%;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">内容 <span style="color: red;">*</span></label>
+                    <textarea class="filter-input" name="content" required rows="6" style="width: 100%; resize: vertical;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">附件（最多5个，每个最大10MB）</label>
+                    <input type="file" id="messageAttachments" name="attachments" multiple style="width: 100%;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">变更状态（可选）</label>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <select class="filter-select" id="changeEntityType" onchange="updateStatusOptions()">
+                            <option value="">不变更状态</option>
+                            <option value="company">变更企业状态</option>
+                            <option value="investor">变更投资人状态</option>
+                        </select>
+                        <select class="filter-select" id="changeNewStatus" style="display: none;">
+                            <option value="">选择新状态...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="send_email" id="sendEmailCheckbox">
+                        <span>同时发送邮件通知</span>
+                        <span id="emailNotConfigured" style="color: #F59E0B; font-size: 0.875rem; display: none;">（邮件服务未配置）</span>
+                    </label>
+                </div>
+                <div class="btn-group" style="margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> 发送</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('sendMessageModal')">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 重置密码模态框 -->
+    <div class="modal" id="resetPasswordModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 class="modal-title">重置用户密码</h2>
+                <button class="modal-close" onclick="closeModal('resetPasswordModal')">&times;</button>
+            </div>
+            <form id="resetPasswordForm" onsubmit="resetUserPassword(event)">
+                <input type="hidden" id="resetPasswordUserId">
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                    重置用户 <strong id="resetPasswordUserEmail"></strong> 的密码
+                </p>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">新密码 <span style="color: red;">*</span></label>
+                    <input type="password" class="filter-input" id="resetNewPassword" required minlength="6" style="width: 100%;">
+                </div>
+                <div class="btn-group" style="margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary">确认重置</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">取消</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -595,6 +827,9 @@
                     if (btn.dataset.tab === 'companies') loadCompanies();
                     else if (btn.dataset.tab === 'investors') loadInvestors();
                     else if (btn.dataset.tab === 'requests') loadRequests();
+                    else if (btn.dataset.tab === 'users') loadUsers();
+                    else if (btn.dataset.tab === 'messages') { loadMessages(); checkEmailStatus(); }
+                    else if (btn.dataset.tab === 'settings') loadEmailConfig();
                 });
             });
         }
@@ -959,6 +1194,398 @@
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/';
+        }
+
+        // ============ 用户管理功能 ============
+        async function loadUsers() {
+            const role = document.getElementById('userRoleFilter').value;
+            try {
+                let url = '/api/admin/users?';
+                if (role) url += `role=${role}`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.users && data.users.length > 0) {
+                    document.getElementById('usersTable').innerHTML = data.users.map(u => `
+                        <tr>
+                            <td>${u.email}</td>
+                            <td>${u.name || '-'}</td>
+                            <td><span class="status-badge status-${u.role === 'admin' ? 'approved' : 'pending'}">${formatRole(u.role)}</span></td>
+                            <td><span class="status-badge status-${u.status === 'active' ? 'approved' : u.status}">${formatUserStatus(u.status)}</span></td>
+                            <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-secondary btn-sm" onclick="showResetPasswordModal('${u.id}', '${u.email}')">重置密码</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}', '${u.email}')">删除</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    document.getElementById('usersTable').innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无用户</td></tr>';
+                }
+            } catch (error) {
+                console.error('加载用户失败:', error);
+                document.getElementById('usersTable').innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;">加载失败</td></tr>';
+            }
+        }
+
+        function formatRole(role) {
+            const roles = { 'admin': '管理员', 'company': '企业', 'investor': '投资人' };
+            return roles[role] || role;
+        }
+
+        function formatUserStatus(status) {
+            const statuses = { 'active': '活跃', 'pending': '待激活', 'suspended': '已禁用' };
+            return statuses[status] || status;
+        }
+
+        function showCreateUserModal() {
+            document.getElementById('createUserForm').reset();
+            openModal('createUserModal');
+        }
+
+        async function createUser(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage('用户创建成功', 'success');
+                closeModal('createUserModal');
+                loadUsers();
+                loadStats();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        function showResetPasswordModal(userId, email) {
+            document.getElementById('resetPasswordUserId').value = userId;
+            document.getElementById('resetPasswordUserEmail').textContent = email;
+            document.getElementById('resetNewPassword').value = '';
+            openModal('resetPasswordModal');
+        }
+
+        async function resetUserPassword(e) {
+            e.preventDefault();
+            const userId = document.getElementById('resetPasswordUserId').value;
+            const newPassword = document.getElementById('resetNewPassword').value;
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ newPassword })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage('密码重置成功', 'success');
+                closeModal('resetPasswordModal');
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function deleteUser(userId, email) {
+            if (!confirm(`确定要删除用户 ${email} 吗？此操作不可恢复。`)) return;
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage('用户已删除', 'success');
+                loadUsers();
+                loadStats();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // ============ 消息功能 ============
+        let emailConfigured = false;
+
+        async function checkEmailStatus() {
+            try {
+                const response = await fetch('/api/admin/email-status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                emailConfigured = data.configured;
+
+                const badge = document.getElementById('emailStatusBadge');
+                if (emailConfigured) {
+                    badge.className = 'stat-badge success';
+                    badge.textContent = '邮件服务已配置';
+                } else {
+                    badge.className = 'stat-badge pending';
+                    badge.textContent = '邮件服务未配置';
+                }
+
+                document.getElementById('emailNotConfigured').style.display = emailConfigured ? 'none' : 'inline';
+            } catch (error) {
+                console.error('检查邮件状态失败:', error);
+            }
+        }
+
+        async function loadMessages() {
+            try {
+                const response = await fetch('/api/admin/messages/sent', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.messages && data.messages.length > 0) {
+                    document.getElementById('messagesTable').innerHTML = data.messages.map(m => `
+                        <tr>
+                            <td>${m.recipient?.email || '-'}</td>
+                            <td>${m.subject}</td>
+                            <td>${formatMessageType(m.type)}</td>
+                            <td>${m.attachments?.length || 0} 个</td>
+                            <td>${m.email_sent ? '<span class="status-badge status-approved">已发送</span>' : '<span class="status-badge status-draft">未发送</span>'}</td>
+                            <td>${new Date(m.created_at).toLocaleString()}</td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm" onclick="viewMessage('${m.id}')">查看</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    document.getElementById('messagesTable').innerHTML = '<tr><td colspan="7" style="text-align:center;">暂无消息</td></tr>';
+                }
+            } catch (error) {
+                console.error('加载消息失败:', error);
+            }
+        }
+
+        function formatMessageType(type) {
+            const types = {
+                'general': '普通消息',
+                'status_change': '状态变更',
+                'review_feedback': '审核反馈',
+                'notification': '系统通知'
+            };
+            return types[type] || type;
+        }
+
+        async function showSendMessageModal() {
+            document.getElementById('sendMessageForm').reset();
+            document.getElementById('changeNewStatus').style.display = 'none';
+
+            // 加载收件人列表
+            try {
+                const response = await fetch('/api/admin/users?limit=1000', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                const select = document.getElementById('messageRecipient');
+                select.innerHTML = '<option value="">选择收件人...</option>' +
+                    data.users.filter(u => u.role !== 'admin').map(u =>
+                        `<option value="${u.id}">${u.email} (${formatRole(u.role)})</option>`
+                    ).join('');
+
+                // 加载企业列表
+                const compResponse = await fetch('/api/admin/companies?limit=1000', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const compData = await compResponse.json();
+
+                const compSelect = document.getElementById('messageCompany');
+                compSelect.innerHTML = '<option value="">选择企业...</option>' +
+                    compData.companies.map(c =>
+                        `<option value="${c.id}">${c.name_cn}</option>`
+                    ).join('');
+
+            } catch (error) {
+                console.error('加载收件人失败:', error);
+            }
+
+            checkEmailStatus();
+            openModal('sendMessageModal');
+        }
+
+        function updateStatusOptions() {
+            const entityType = document.getElementById('changeEntityType').value;
+            const statusSelect = document.getElementById('changeNewStatus');
+
+            if (!entityType) {
+                statusSelect.style.display = 'none';
+                return;
+            }
+
+            statusSelect.style.display = 'block';
+            if (entityType === 'company') {
+                statusSelect.innerHTML = `
+                    <option value="">选择新状态...</option>
+                    <option value="approved">通过审核</option>
+                    <option value="rejected">拒绝</option>
+                    <option value="pending">待审核</option>
+                    <option value="draft">草稿</option>
+                `;
+            } else {
+                statusSelect.innerHTML = `
+                    <option value="">选择新状态...</option>
+                    <option value="approved">通过审核</option>
+                    <option value="rejected">拒绝</option>
+                    <option value="pending">待审核</option>
+                    <option value="suspended">禁用</option>
+                `;
+            }
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+
+            // 添加附件
+            const files = document.getElementById('messageAttachments').files;
+            for (let i = 0; i < files.length; i++) {
+                formData.append('attachments', files[i]);
+            }
+
+            // 添加状态变更
+            const entityType = document.getElementById('changeEntityType').value;
+            const newStatus = document.getElementById('changeNewStatus').value;
+            if (entityType && newStatus) {
+                formData.append('change_status', JSON.stringify({
+                    entity_type: entityType,
+                    new_status: newStatus
+                }));
+            }
+
+            try {
+                const response = await fetch('/api/admin/messages', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                let msg = '消息发送成功';
+                if (result.data.email_sent) msg += '，邮件已发送';
+                if (result.data.status_change) msg += `，状态已变更为 ${result.data.status_change.to}`;
+
+                showMessage(msg, 'success');
+                closeModal('sendMessageModal');
+                loadMessages();
+                loadCompanies();
+                loadInvestors();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function viewMessage(msgId) {
+            try {
+                const response = await fetch(`/api/admin/messages/${msgId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                const m = data.message;
+
+                alert(`收件人: ${m.recipient?.email}\n主题: ${m.subject}\n内容: ${m.content}\n\n附件: ${m.attachments?.length || 0} 个\n邮件已发送: ${m.email_sent ? '是' : '否'}`);
+            } catch (error) {
+                showMessage('获取消息详情失败', 'error');
+            }
+        }
+
+        // ============ 设置功能 ============
+        async function changePassword(e) {
+            e.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showMessage('两次输入的密码不一致', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/change-password', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage('密码修改成功', 'success');
+                document.getElementById('changePasswordForm').reset();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function loadEmailConfig() {
+            try {
+                const response = await fetch('/api/admin/email-status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                const container = document.getElementById('emailConfigStatus');
+                if (data.configured) {
+                    container.innerHTML = `
+                        <p style="color: var(--success-color);"><i class="fas fa-check-circle"></i> 邮件服务已配置</p>
+                        <p style="margin-top: 0.5rem; color: var(--text-secondary);">SMTP 服务器: ${data.smtp_host}</p>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <p style="color: var(--warning-color);"><i class="fas fa-exclamation-triangle"></i> 邮件服务未配置</p>
+                        <p style="margin-top: 0.5rem; color: var(--text-secondary);">
+                            请在 Railway 环境变量中配置以下参数：
+                        </p>
+                        <ul style="margin-top: 0.5rem; color: var(--text-secondary); padding-left: 1.5rem;">
+                            <li>SMTP_HOST - SMTP 服务器地址</li>
+                            <li>SMTP_PORT - SMTP 端口（默认587）</li>
+                            <li>SMTP_USER - SMTP 用户名</li>
+                            <li>SMTP_PASS - SMTP 密码</li>
+                            <li>SMTP_FROM - 发件人邮箱（可选）</li>
+                            <li>SMTP_SECURE - 是否使用SSL（可选，true/false）</li>
+                        </ul>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('emailConfigStatus').innerHTML = '<p style="color:red;">加载配置失败</p>';
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
         }
     </script>
 </body>

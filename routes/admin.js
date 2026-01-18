@@ -1,8 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
-const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest } = require('../models');
+const multer = require('multer');
+const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
+const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message } = require('../models');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+
+// 配置文件上传 - 内存存储用于附件
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+
+// 配置邮件发送（可选）
+const createEmailTransporter = () => {
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        return nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT || 587,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+    }
+    return null;
+};
 
 // 仪表盘统计
 router.get('/stats', authenticate, requireAdmin, async (req, res) => {
@@ -351,6 +376,402 @@ router.put('/users/:id', authenticate, requireAdmin, async (req, res) => {
         console.error('[Admin] 更新用户错误:', error);
         res.status(500).json({ error: '更新用户失败' });
     }
+});
+
+// ============ 新增管理员功能 ============
+
+// 修改自己的密码
+router.put('/change-password', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: '请提供当前密码和新密码' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: '新密码长度至少6位' });
+        }
+
+        const admin = await User.findByPk(req.user.id);
+        
+        // 验证当前密码
+        const isValid = await admin.validatePassword(currentPassword);
+        if (!isValid) {
+            return res.status(400).json({ error: '当前密码不正确' });
+        }
+
+        // 更新密码（bcrypt hook 会自动加密）
+        admin.password = newPassword;
+        await admin.save();
+
+        res.json({ message: '密码修改成功' });
+    } catch (error) {
+        console.error('[Admin] 修改密码错误:', error);
+        res.status(500).json({ error: '修改密码失败' });
+    }
+});
+
+// 创建新用户（管理员/企业/投资人）
+router.post('/users', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { email, password, role, name, phone, wechat, whatsapp } = req.body;
+
+        // 验证必填字段
+        if (!email || !password || !role) {
+            return res.status(400).json({ error: '请提供邮箱、密码和角色' });
+        }
+
+        // 验证角色
+        if (!['admin', 'company', 'investor'].includes(role)) {
+            return res.status(400).json({ error: '无效的角色类型' });
+        }
+
+        // 检查邮箱是否已存在
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({ error: '该邮箱已被注册' });
+        }
+
+        // 创建用户
+        const user = await User.create({
+            email,
+            password,
+            role,
+            name: name || '',
+            phone: phone || null,
+            wechat: wechat || null,
+            whatsapp: whatsapp || null,
+            status: 'active' // 管理员创建的用户直接激活
+        });
+
+        console.log(`[Admin] 管理员 ${req.user.email} 创建了用户: ${email} (${role})`);
+
+        res.status(201).json({
+            message: '用户创建成功',
+            user: user.toSafeObject()
+        });
+    } catch (error) {
+        console.error('[Admin] 创建用户错误:', error);
+        res.status(500).json({ error: '创建用户失败' });
+    }
+});
+
+// 删除用户
+router.delete('/users/:id', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+
+        // 不能删除自己
+        if (user.id === req.user.id) {
+            return res.status(400).json({ error: '不能删除自己的账户' });
+        }
+
+        const email = user.email;
+        await user.destroy();
+
+        console.log(`[Admin] 管理员 ${req.user.email} 删除了用户: ${email}`);
+
+        res.json({ message: '用户已删除' });
+    } catch (error) {
+        console.error('[Admin] 删除用户错误:', error);
+        res.status(500).json({ error: '删除用户失败' });
+    }
+});
+
+// 重置用户密码
+router.put('/users/:id/reset-password', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ error: '请提供至少6位的新密码' });
+        }
+
+        const user = await User.findByPk(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        console.log(`[Admin] 管理员 ${req.user.email} 重置了用户 ${user.email} 的密码`);
+
+        res.json({ message: '密码重置成功' });
+    } catch (error) {
+        console.error('[Admin] 重置密码错误:', error);
+        res.status(500).json({ error: '重置密码失败' });
+    }
+});
+
+// 发送消息给企业或投资人（支持附件和可选邮件）
+router.post('/messages', authenticate, requireAdmin, upload.array('attachments', 5), async (req, res) => {
+    try {
+        const { 
+            recipient_id, 
+            company_id, 
+            subject, 
+            content, 
+            type = 'general',
+            send_email = false,
+            change_status = null // { entity_type: 'company'|'investor', new_status: 'approved'|'rejected'|etc }
+        } = req.body;
+
+        if (!recipient_id || !subject || !content) {
+            return res.status(400).json({ error: '请提供收件人、主题和内容' });
+        }
+
+        // 获取收件人信息
+        const recipient = await User.findByPk(recipient_id);
+        if (!recipient) {
+            return res.status(404).json({ error: '收件人不存在' });
+        }
+
+        // 处理附件
+        const attachments = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                attachments.push({
+                    filename: file.originalname,
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    content: file.buffer.toString('base64')
+                });
+            }
+        }
+
+        // 处理状态变更
+        let statusChange = null;
+        if (change_status) {
+            const parsed = typeof change_status === 'string' ? JSON.parse(change_status) : change_status;
+            const { entity_type, new_status } = parsed;
+            
+            if (entity_type === 'company' && company_id) {
+                const company = await Company.findByPk(company_id);
+                if (company) {
+                    const oldStatus = company.status;
+                    await company.update({ 
+                        status: new_status,
+                        reviewed_at: new Date(),
+                        reviewed_by: req.user.id
+                    });
+                    statusChange = { from: oldStatus, to: new_status, entity_type: 'company' };
+                }
+            } else if (entity_type === 'investor') {
+                const profile = await InvestorProfile.findOne({ where: { user_id: recipient_id } });
+                if (profile) {
+                    const oldStatus = profile.status;
+                    await profile.update({
+                        status: new_status,
+                        reviewed_at: new Date(),
+                        reviewed_by: req.user.id
+                    });
+                    statusChange = { from: oldStatus, to: new_status, entity_type: 'investor' };
+                    
+                    // 同步更新用户状态
+                    if (new_status === 'approved') {
+                        await User.update({ status: 'active' }, { where: { id: recipient_id } });
+                    }
+                }
+            }
+        }
+
+        // 创建消息
+        const message = await Message.create({
+            sender_id: req.user.id,
+            recipient_id,
+            company_id: company_id || null,
+            type,
+            subject,
+            content,
+            attachments,
+            status_change: statusChange
+        });
+
+        // 可选发送邮件
+        let emailSent = false;
+        if (send_email === 'true' || send_email === true) {
+            const transporter = createEmailTransporter();
+            if (transporter) {
+                try {
+                    const emailAttachments = attachments.map(att => ({
+                        filename: att.filename,
+                        content: Buffer.from(att.content, 'base64'),
+                        contentType: att.mimetype
+                    }));
+
+                    await transporter.sendMail({
+                        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                        to: recipient.email,
+                        subject: subject,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                <h2 style="color: #0D43F9;">EON Protocol</h2>
+                                <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+                                    ${content.replace(/\n/g, '<br>')}
+                                </div>
+                                ${statusChange ? `<p style="color: #666; margin-top: 20px;">您的状态已更新为: <strong>${statusChange.to}</strong></p>` : ''}
+                                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                                <p style="color: #999; font-size: 12px;">此邮件由 EON Protocol 系统自动发送</p>
+                            </div>
+                        `,
+                        attachments: emailAttachments
+                    });
+
+                    emailSent = true;
+                    await message.update({ email_sent: true, email_sent_at: new Date() });
+                    console.log(`[Admin] 邮件发送成功: ${recipient.email}`);
+                } catch (emailError) {
+                    console.error('[Admin] 邮件发送失败:', emailError);
+                }
+            } else {
+                console.log('[Admin] 邮件服务未配置，跳过发送');
+            }
+        }
+
+        console.log(`[Admin] 管理员 ${req.user.email} 发送消息给 ${recipient.email}`);
+
+        res.status(201).json({
+            message: '消息发送成功',
+            data: {
+                id: message.id,
+                email_sent: emailSent,
+                status_change: statusChange
+            }
+        });
+    } catch (error) {
+        console.error('[Admin] 发送消息错误:', error);
+        res.status(500).json({ error: '发送消息失败' });
+    }
+});
+
+// 获取已发送的消息列表
+router.get('/messages/sent', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { page = 1, limit = 20 } = req.query;
+
+        const { count, rows: messages } = await Message.findAndCountAll({
+            where: { sender_id: req.user.id },
+            include: [
+                { model: User, as: 'recipient', attributes: ['id', 'email', 'name', 'role'] },
+                { model: Company, as: 'company', attributes: ['id', 'name_cn', 'name_en'] }
+            ],
+            order: [['created_at', 'DESC']],
+            limit: parseInt(limit),
+            offset: (parseInt(page) - 1) * parseInt(limit)
+        });
+
+        res.json({
+            messages,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                pages: Math.ceil(count / parseInt(limit))
+            }
+        });
+    } catch (error) {
+        console.error('[Admin] 获取消息列表错误:', error);
+        res.status(500).json({ error: '获取消息列表失败' });
+    }
+});
+
+// 获取所有消息（管理员查看所有）
+router.get('/messages', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { page = 1, limit = 20, recipient_id, company_id } = req.query;
+
+        const where = {};
+        if (recipient_id) where.recipient_id = recipient_id;
+        if (company_id) where.company_id = company_id;
+
+        const { count, rows: messages } = await Message.findAndCountAll({
+            where,
+            include: [
+                { model: User, as: 'sender', attributes: ['id', 'email', 'name'] },
+                { model: User, as: 'recipient', attributes: ['id', 'email', 'name', 'role'] },
+                { model: Company, as: 'company', attributes: ['id', 'name_cn', 'name_en'] }
+            ],
+            order: [['created_at', 'DESC']],
+            limit: parseInt(limit),
+            offset: (parseInt(page) - 1) * parseInt(limit)
+        });
+
+        res.json({
+            messages,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                pages: Math.ceil(count / parseInt(limit))
+            }
+        });
+    } catch (error) {
+        console.error('[Admin] 获取消息列表错误:', error);
+        res.status(500).json({ error: '获取消息列表失败' });
+    }
+});
+
+// 获取消息详情
+router.get('/messages/:id', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const message = await Message.findByPk(req.params.id, {
+            include: [
+                { model: User, as: 'sender', attributes: ['id', 'email', 'name'] },
+                { model: User, as: 'recipient', attributes: ['id', 'email', 'name', 'role'] },
+                { model: Company, as: 'company', attributes: ['id', 'name_cn', 'name_en'] }
+            ]
+        });
+
+        if (!message) {
+            return res.status(404).json({ error: '消息不存在' });
+        }
+
+        res.json({ message });
+    } catch (error) {
+        console.error('[Admin] 获取消息详情错误:', error);
+        res.status(500).json({ error: '获取消息详情失败' });
+    }
+});
+
+// 下载消息附件
+router.get('/messages/:id/attachments/:index', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const message = await Message.findByPk(req.params.id);
+        if (!message) {
+            return res.status(404).json({ error: '消息不存在' });
+        }
+
+        const index = parseInt(req.params.index);
+        if (!message.attachments || index < 0 || index >= message.attachments.length) {
+            return res.status(404).json({ error: '附件不存在' });
+        }
+
+        const attachment = message.attachments[index];
+        const buffer = Buffer.from(attachment.content, 'base64');
+
+        res.setHeader('Content-Type', attachment.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`);
+        res.setHeader('Content-Length', buffer.length);
+
+        res.send(buffer);
+    } catch (error) {
+        console.error('[Admin] 下载附件错误:', error);
+        res.status(500).json({ error: '下载附件失败' });
+    }
+});
+
+// 获取邮件配置状态
+router.get('/email-status', authenticate, requireAdmin, async (req, res) => {
+    const configured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+    res.json({ 
+        configured,
+        smtp_host: configured ? process.env.SMTP_HOST : null
+    });
 });
 
 module.exports = router;

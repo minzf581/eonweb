@@ -5,6 +5,7 @@ const FundraisingInfo = require('./FundraisingInfo');
 const Document = require('./Document');
 const InvestorProfile = require('./InvestorProfile');
 const AccessRequest = require('./AccessRequest');
+const Message = require('./Message');
 
 // 设置关联关系
 
@@ -31,6 +32,16 @@ AccessRequest.belongsTo(User, { foreignKey: 'investor_id', as: 'investor' });
 Company.hasMany(AccessRequest, { foreignKey: 'company_id', as: 'accessRequests' });
 AccessRequest.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
 
+// Message 关联
+User.hasMany(Message, { foreignKey: 'sender_id', as: 'sentMessages' });
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+
+User.hasMany(Message, { foreignKey: 'recipient_id', as: 'receivedMessages' });
+Message.belongsTo(User, { foreignKey: 'recipient_id', as: 'recipient' });
+
+Company.hasMany(Message, { foreignKey: 'company_id', as: 'messages' });
+Message.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
 // 同步数据库
 const syncDatabase = async (force = false) => {
     try {
@@ -51,5 +62,6 @@ module.exports = {
     Document,
     InvestorProfile,
     AccessRequest,
+    Message,
     syncDatabase
 };
