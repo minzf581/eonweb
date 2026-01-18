@@ -1194,17 +1194,25 @@
 
                 if (data.documents && data.documents.length > 0) {
                     fileList.innerHTML = data.documents.map(doc => `
-                        <div class="file-item">
-                            <div class="file-item-info">
-                                <i class="fas fa-file-pdf" style="color: #EF4444;"></i>
+                        <div class="file-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 0.5rem;">
+                            <div class="file-item-info" style="display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas fa-file-pdf" style="color: #EF4444; font-size: 1.5rem;"></i>
                                 <div>
-                                    <div class="file-item-name">${doc.filename}</div>
-                                    <div class="file-item-size">${formatFileSize(doc.filesize)}</div>
+                                    <div class="file-item-name" style="font-weight: 500;">${doc.filename}</div>
+                                    <div class="file-item-size" style="font-size: 0.75rem; color: #666;">
+                                        ${doc.type === 'bp' ? 'Business Plan' : doc.type} · ${formatFileSize(doc.filesize)}
+                                        · ${new Date(doc.created_at).toLocaleDateString()}
+                                    </div>
                                 </div>
                             </div>
-                            <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')" style="padding: 0.5rem 1rem;">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="/api/company/documents/${doc.id}/download" class="btn btn-primary" style="padding: 0.5rem 1rem;" title="下载">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')" style="padding: 0.5rem 1rem;" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     `).join('');
                 } else {
@@ -1327,37 +1335,146 @@
             }
         }
 
-        // 上传文件
-        async function uploadFile(input) {
+        // 上传文件 - 使用 XMLHttpRequest 显示进度
+        function uploadFile(input) {
             if (!input.files || !input.files[0]) return;
 
             const file = input.files[0];
+            
+            // 检查文件大小 (10MB 限制)
+            if (file.size > 10 * 1024 * 1024) {
+                showMessage('文件大小不能超过 10MB', 'error');
+                input.value = '';
+                return;
+            }
+
             const formData = new FormData();
             formData.append('file', file);
 
-            try {
-                showMessage('正在上传...', 'info');
+            // 显示上传进度
+            showUploadProgress(0, file.name);
 
-                const response = await fetch('/api/company/upload-bp', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.error || '上传失败');
+            const xhr = new XMLHttpRequest();
+            
+            // 上传进度
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    showUploadProgress(percent, file.name);
                 }
+            });
 
-                showMessage('文件上传成功', 'success');
-                await loadCompanyData();
-                await loadDocuments();
-            } catch (error) {
-                showMessage(error.message, 'error');
-            }
+            // 上传完成
+            xhr.addEventListener('load', async () => {
+                hideUploadProgress();
+                
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const result = JSON.parse(xhr.responseText);
+                        showMessage(`文件 "${file.name}" 上传成功！`, 'success');
+                        await loadCompanyData();
+                        await loadDocuments();
+                    } catch (e) {
+                        showMessage('上传成功', 'success');
+                        await loadCompanyData();
+                        await loadDocuments();
+                    }
+                } else {
+                    let errorMsg = '上传失败';
+                    try {
+                        const result = JSON.parse(xhr.responseText);
+                        errorMsg = result.error || errorMsg;
+                    } catch (e) {}
+                    showMessage(errorMsg, 'error');
+                }
+            });
+
+            // 上传错误
+            xhr.addEventListener('error', () => {
+                hideUploadProgress();
+                showMessage('网络错误，上传失败', 'error');
+            });
+
+            // 上传超时
+            xhr.addEventListener('timeout', () => {
+                hideUploadProgress();
+                showMessage('上传超时，请检查网络后重试', 'error');
+            });
+
+            // 配置请求
+            xhr.open('POST', '/api/company/upload-bp');
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.timeout = 120000; // 2分钟超时
+            xhr.send(formData);
 
             input.value = '';
+        }
+
+        // 显示上传进度条
+        function showUploadProgress(percent, filename) {
+            let progressContainer = document.getElementById('uploadProgressContainer');
+            
+            if (!progressContainer) {
+                progressContainer = document.createElement('div');
+                progressContainer.id = 'uploadProgressContainer';
+                progressContainer.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 12px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                    z-index: 10000;
+                    min-width: 300px;
+                    text-align: center;
+                `;
+                progressContainer.innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #0D43F9;"></i>
+                    </div>
+                    <div id="uploadFileName" style="font-weight: 500; margin-bottom: 0.5rem; word-break: break-all;"></div>
+                    <div id="uploadProgressText" style="color: #666; margin-bottom: 1rem;">正在上传...</div>
+                    <div style="background: #E5E7EB; border-radius: 999px; height: 8px; overflow: hidden;">
+                        <div id="uploadProgressBar" style="background: linear-gradient(90deg, #0D43F9, #4AD8FD); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <div id="uploadPercentText" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">0%</div>
+                `;
+                document.body.appendChild(progressContainer);
+                
+                // 添加背景遮罩
+                const overlay = document.createElement('div');
+                overlay.id = 'uploadOverlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.5);
+                    z-index: 9999;
+                `;
+                document.body.appendChild(overlay);
+            }
+            
+            document.getElementById('uploadFileName').textContent = filename;
+            document.getElementById('uploadProgressBar').style.width = `${percent}%`;
+            document.getElementById('uploadPercentText').textContent = `${percent}%`;
+            
+            if (percent < 100) {
+                document.getElementById('uploadProgressText').textContent = '正在上传...';
+            } else {
+                document.getElementById('uploadProgressText').textContent = '正在保存到服务器...';
+            }
+        }
+
+        // 隐藏上传进度条
+        function hideUploadProgress() {
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const overlay = document.getElementById('uploadOverlay');
+            if (progressContainer) progressContainer.remove();
+            if (overlay) overlay.remove();
         }
 
         // 删除文档

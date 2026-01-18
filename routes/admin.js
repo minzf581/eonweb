@@ -774,4 +774,84 @@ router.get('/email-status', authenticate, requireAdmin, async (req, res) => {
     });
 });
 
+// ============ 文档管理 ============
+
+// 获取企业文档列表
+router.get('/companies/:id/documents', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const documents = await Document.findAll({
+            where: { company_id: req.params.id },
+            attributes: ['id', 'type', 'filename', 'filesize', 'mimetype', 'description', 'created_at', 'download_count'],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ documents });
+    } catch (error) {
+        console.error('[Admin] 获取文档列表错误:', error);
+        res.status(500).json({ error: '获取文档列表失败' });
+    }
+});
+
+// 下载企业文档（管理员）
+router.get('/documents/:id/download', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const document = await Document.findByPk(req.params.id);
+        
+        if (!document) {
+            return res.status(404).json({ error: '文档不存在' });
+        }
+
+        if (!document.file_content) {
+            return res.status(404).json({ error: '文件内容不存在' });
+        }
+
+        // 更新下载计数
+        await document.increment('download_count');
+
+        // 将 Base64 内容转换回 Buffer
+        const fileBuffer = Buffer.from(document.file_content, 'base64');
+
+        // 设置响应头 - 使用 RFC 5987 编码支持中文文件名
+        const filename = document.filename;
+        const encodedFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
+        
+        res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);
+        res.setHeader('Content-Length', fileBuffer.length);
+
+        res.send(fileBuffer);
+    } catch (error) {
+        console.error('[Admin] 下载文档错误:', error);
+        res.status(500).json({ error: '下载失败' });
+    }
+});
+
+// 预览企业文档（管理员）- 直接在浏览器中显示
+router.get('/documents/:id/preview', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const document = await Document.findByPk(req.params.id);
+        
+        if (!document) {
+            return res.status(404).json({ error: '文档不存在' });
+        }
+
+        if (!document.file_content) {
+            return res.status(404).json({ error: '文件内容不存在' });
+        }
+
+        // 将 Base64 内容转换回 Buffer
+        const fileBuffer = Buffer.from(document.file_content, 'base64');
+
+        // 设置响应头 - inline 显示而不是下载
+        res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Content-Length', fileBuffer.length);
+
+        res.send(fileBuffer);
+    } catch (error) {
+        console.error('[Admin] 预览文档错误:', error);
+        res.status(500).json({ error: '预览失败' });
+    }
+});
+
 module.exports = router;

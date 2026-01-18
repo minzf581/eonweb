@@ -150,19 +150,39 @@ router.post('/fundraising', authenticate, requireCompany, async (req, res) => {
 });
 
 // 上传 BP 文件 - 使用内存存储并保存到数据库
-router.post('/upload-bp', authenticate, requireCompany, upload.single('file'), async (req, res) => {
+router.post('/upload-bp', authenticate, requireCompany, (req, res, next) => {
+    // 先执行 multer 上传，捕获错误
+    upload.single('file')(req, res, (err) => {
+        if (err) {
+            console.error('[Company] Multer 错误:', err.message);
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ error: '文件大小不能超过 10MB' });
+            }
+            return res.status(400).json({ error: err.message || '上传失败' });
+        }
+        next();
+    });
+}, async (req, res) => {
+    const startTime = Date.now();
+    console.log(`[Company] 开始处理 BP 上传请求`);
+    
     try {
         const company = await Company.findOne({ where: { user_id: req.user.id } });
         if (!company) {
+            console.log('[Company] 企业信息不存在');
             return res.status(400).json({ error: '请先创建企业基本信息' });
         }
 
         if (!req.file) {
+            console.log('[Company] 未收到文件');
             return res.status(400).json({ error: '请选择要上传的文件' });
         }
 
+        console.log(`[Company] 收到文件: ${req.file.originalname}, 大小: ${req.file.size} bytes`);
+
         // 将文件内容转换为 Base64 存储
         const fileContent = req.file.buffer.toString('base64');
+        console.log(`[Company] Base64 编码完成，长度: ${fileContent.length}`);
 
         // 处理文件名编码 - 确保中文文件名正确存储
         let filename = req.file.originalname;
@@ -178,6 +198,7 @@ router.post('/upload-bp', authenticate, requireCompany, upload.single('file'), a
         } catch (e) {
             // 保持原始文件名
         }
+        console.log(`[Company] 处理后文件名: ${filename}`);
 
         const document = await Document.create({
             company_id: company.id,
@@ -191,6 +212,9 @@ router.post('/upload-bp', authenticate, requireCompany, upload.single('file'), a
             requires_approval: true
         });
 
+        const duration = Date.now() - startTime;
+        console.log(`[Company] BP 上传成功，文档ID: ${document.id}，耗时: ${duration}ms`);
+
         res.json({ 
             message: 'BP 文件上传成功',
             document: {
@@ -202,8 +226,10 @@ router.post('/upload-bp', authenticate, requireCompany, upload.single('file'), a
             }
         });
     } catch (error) {
-        console.error('[Company] 上传 BP 错误:', error);
-        res.status(500).json({ error: '上传失败，请稍后重试' });
+        const duration = Date.now() - startTime;
+        console.error(`[Company] 上传 BP 错误 (耗时 ${duration}ms):`, error.message);
+        console.error('[Company] 错误堆栈:', error.stack);
+        res.status(500).json({ error: '上传失败，请稍后重试: ' + error.message });
     }
 });
 
