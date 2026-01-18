@@ -1207,9 +1207,9 @@
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.5rem;">
-                                <a href="/api/company/documents/${doc.id}/download" class="btn btn-primary" style="padding: 0.5rem 1rem;" title="下载">
+                                <button class="btn btn-primary" onclick="downloadDocument('${doc.id}', '${doc.filename.replace(/'/g, "\\'")}')" style="padding: 0.5rem 1rem;" title="下载">
                                     <i class="fas fa-download"></i>
-                                </a>
+                                </button>
                                 <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')" style="padding: 0.5rem 1rem;" title="删除">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -1477,6 +1477,39 @@
             const overlay = document.getElementById('uploadOverlay');
             if (progressContainer) progressContainer.remove();
             if (overlay) overlay.remove();
+        }
+
+        // 下载文档（带认证）
+        async function downloadDocument(docId, filename) {
+            try {
+                showMessage('正在下载...', 'info');
+                
+                const response = await fetch(`/api/company/documents/${docId}/download`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '下载失败');
+                }
+
+                // 获取文件 blob
+                const blob = await response.blob();
+                
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                showMessage('下载成功', 'success');
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
         }
 
         // 删除文档
