@@ -272,7 +272,7 @@
             const token = localStorage.getItem('token');
             if (token) {
                 checkAuth(token);
-            }
+                }
 
             // 表单提交
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
@@ -294,10 +294,10 @@
         }
 
         async function handleLogin(e) {
-            e.preventDefault();
+                    e.preventDefault();
 
             const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
+                        const password = document.getElementById('password').value;
 
             showLoading(true);
             hideMessages();
@@ -344,15 +344,15 @@
                 window.location.href = '/investor';
             } else if (role === 'admin') {
                 window.location.href = '/admin';
-            } else {
+                        } else {
                 window.location.href = '/dashboard';
-            }
+                        }
         }
 
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'flex' : 'none';
             document.getElementById('submitBtn').disabled = show;
-        }
+                    }
 
         function showError(message) {
             const el = document.getElementById('errorMessage');
@@ -364,7 +364,7 @@
             const el = document.getElementById('successMessage');
             el.textContent = message;
             el.style.display = 'block';
-        }
+            }
 
         function hideMessages() {
             document.getElementById('errorMessage').style.display = 'none';

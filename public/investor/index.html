@@ -623,6 +623,29 @@
                         <div class="loading"><div class="spinner"></div></div>
                     </div>
                 </div>
+
+                <!-- 推荐码 -->
+                <div class="card" style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary-color);"><i class="fas fa-share-alt"></i> 我的推荐码</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.875rem;">分享您的推荐码，邀请其他用户注册。使用您推荐码注册的用户将获得优先处理。</p>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                        <div style="flex: 1;">
+                            <input type="text" class="form-control" id="myReferralCode" readonly style="font-size: 1.25rem; font-weight: bold; text-align: center; letter-spacing: 2px;">
+                        </div>
+                        <button class="btn btn-primary" onclick="copyReferralCode()" style="white-space: nowrap;">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <div style="flex: 1;">
+                            <input type="text" class="form-control" id="myReferralLink" readonly style="font-size: 0.875rem;">
+                        </div>
+                        <button class="btn btn-secondary" onclick="copyReferralLink()" style="white-space: nowrap;">
+                            <i class="fas fa-link"></i> 复制链接
+                        </button>
+                    </div>
+                    <p id="referralStats" style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);"></p>
+                </div>
             </div>
         </main>
     </div>
@@ -652,6 +675,7 @@
             }
 
             await loadUserInfo();
+            await loadReferralInfo();
             setupEventListeners();
         });
 
@@ -700,6 +724,47 @@
                 showMessage('请重新登录', 'error');
                 setTimeout(() => window.location.href = '/auth/login.html', 2000);
             }
+        }
+
+        // 加载推荐码信息
+        async function loadReferralInfo() {
+            try {
+                const response = await fetch('/api/auth/referral', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取推荐码失败');
+
+                const data = await response.json();
+                
+                document.getElementById('myReferralCode').value = data.referral_code || '加载中...';
+                document.getElementById('myReferralLink').value = window.location.origin + data.referral_link;
+                document.getElementById('referralStats').textContent = 
+                    `已成功推荐 ${data.referral_count || 0} 位用户`;
+            } catch (error) {
+                console.error('加载推荐码错误:', error);
+                document.getElementById('myReferralCode').value = '获取失败';
+            }
+        }
+
+        // 复制推荐码
+        function copyReferralCode() {
+            const code = document.getElementById('myReferralCode').value;
+            navigator.clipboard.writeText(code).then(() => {
+                showMessage('推荐码已复制到剪贴板', 'success');
+            }).catch(() => {
+                showMessage('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 复制推荐链接
+        function copyReferralLink() {
+            const link = document.getElementById('myReferralLink').value;
+            navigator.clipboard.writeText(link).then(() => {
+                showMessage('推荐链接已复制到剪贴板', 'success');
+            }).catch(() => {
+                showMessage('复制失败，请手动复制', 'error');
+            });
         }
 
         async function loadInvestorProfile() {

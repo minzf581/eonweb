@@ -387,6 +387,59 @@ router.delete('/documents/:id', authenticate, requireCompany, async (req, res) =
     }
 });
 
+// 保存 BP 链接（替代上传文件）
+router.post('/bp-link', authenticate, requireCompany, async (req, res) => {
+    try {
+        const { url, description } = req.body;
+
+        if (!url) {
+            return res.status(400).json({ error: '请输入 BP 链接' });
+        }
+
+        // 验证 URL 格式
+        try {
+            new URL(url);
+        } catch (e) {
+            return res.status(400).json({ error: '请输入有效的 URL 链接' });
+        }
+
+        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        if (!company) {
+            return res.status(400).json({ error: '请先创建企业基本信息' });
+        }
+
+        // 创建一个 BP 链接类型的文档记录
+        const document = await Document.create({
+            company_id: company.id,
+            type: 'bp',
+            filename: 'BP Link - ' + new URL(url).hostname,
+            filepath: null,
+            filesize: 0,
+            mimetype: 'text/x-uri',
+            file_content: null,
+            dataroom_link: url,
+            description: description || 'Business Plan (External Link)',
+            requires_approval: true
+        });
+
+        console.log(`[Company] BP 链接已保存: ${url} for company ${company.id}`);
+
+        res.json({ 
+            message: 'BP 链接保存成功',
+            document: {
+                id: document.id,
+                filename: document.filename,
+                type: document.type,
+                dataroom_link: document.dataroom_link,
+                created_at: document.created_at
+            }
+        });
+    } catch (error) {
+        console.error('[Company] 保存 BP 链接错误:', error);
+        res.status(500).json({ error: '保存失败: ' + error.message });
+    }
+});
+
 // 提交审核
 router.post('/submit', authenticate, requireCompany, async (req, res) => {
     try {
@@ -406,9 +459,10 @@ router.post('/submit', authenticate, requireCompany, async (req, res) => {
             return res.status(400).json({ error: '请先填写融资信息' });
         }
 
+        // 检查是否有 BP（文件上传或链接）
         const hasBP = company.documents.some(doc => doc.type === 'bp');
         if (!hasBP) {
-            return res.status(400).json({ error: '请先上传 BP 文件' });
+            return res.status(400).json({ error: '请先上传 BP 文件或填写 BP 链接' });
         }
 
         await company.update({ status: 'pending' });

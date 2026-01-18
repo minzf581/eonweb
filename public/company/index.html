@@ -662,6 +662,29 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- 推荐码 -->
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-share-alt"></i> 我的推荐码</h3>
+                    <p class="form-hint" style="margin-bottom: 1rem;">分享您的推荐码，邀请其他用户注册。使用您推荐码注册的用户将获得优先处理。</p>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                        <div style="flex: 1;">
+                            <input type="text" class="form-control" id="myReferralCode" readonly style="font-size: 1.25rem; font-weight: bold; text-align: center; letter-spacing: 2px;">
+                        </div>
+                        <button class="btn btn-primary" onclick="copyReferralCode()" style="white-space: nowrap;">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <div style="flex: 1;">
+                            <input type="text" class="form-control" id="myReferralLink" readonly style="font-size: 0.875rem;">
+                        </div>
+                        <button class="btn btn-secondary" onclick="copyReferralLink()" style="white-space: nowrap;">
+                            <i class="fas fa-link"></i> 复制链接
+                        </button>
+                    </div>
+                    <p id="referralStats" class="form-hint" style="margin-top: 1rem;"></p>
+                </div>
             </div>
 
             <!-- 企业资料面板 -->
@@ -954,32 +977,63 @@
             <div id="documents" class="panel">
                 <div class="page-header">
                     <h1 class="page-title">BP/文档管理</h1>
-                    <p class="page-subtitle">上传您的商业计划书和其他文档</p>
+                    <p class="page-subtitle">上传您的商业计划书或填写 BP 链接</p>
                 </div>
 
+                <!-- BP 提交方式选择 -->
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-upload"></i> 上传BP文件</h3>
-                    <div class="file-upload" onclick="document.getElementById('fileInput').click()">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>点击或拖拽文件到此处上传</p>
-                        <p class="form-hint">支持 PDF、PPT、PPTX、DOC、DOCX 格式</p>
-                        <p class="form-hint" style="color: #F59E0B;"><i class="fas fa-exclamation-triangle"></i> 文件大小不超过 2MB（如超过请先压缩）</p>
-                        <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,.doc,.docx" onchange="uploadFile(this)">
+                    <h3 class="card-title"><i class="fas fa-file-powerpoint"></i> 提交 BP（二选一）</h3>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <!-- 方式一：上传文件 -->
+                        <div style="border: 2px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+                            <h4 style="margin-bottom: 1rem; color: var(--primary-color);">
+                                <i class="fas fa-upload"></i> 方式一：上传文件
+                            </h4>
+                            <div class="file-upload" onclick="document.getElementById('fileInput').click()" style="margin: 0;">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>点击或拖拽文件到此处上传</p>
+                                <p class="form-hint">支持 PDF、PPT、PPTX、DOC、DOCX 格式</p>
+                                <p class="form-hint" style="color: #F59E0B;"><i class="fas fa-exclamation-triangle"></i> 文件大小不超过 2MB</p>
+                                <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,.doc,.docx" onchange="uploadFile(this)">
+                            </div>
+                        </div>
+
+                        <!-- 方式二：填写链接 -->
+                        <div style="border: 2px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+                            <h4 style="margin-bottom: 1rem; color: var(--primary-color);">
+                                <i class="fas fa-link"></i> 方式二：填写 BP 链接
+                            </h4>
+                            <p class="form-hint" style="margin-bottom: 1rem;">如果您的 BP 已经在网上（如 Google Drive、OneDrive、Docsend 等），可以直接填写链接</p>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <input type="url" class="form-control" id="bpLinkUrl" placeholder="https://drive.google.com/file/d/...">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <input type="text" class="form-control" id="bpLinkDesc" placeholder="描述（可选），如：2024年最新BP">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveBPLink()" style="width: 100%;">
+                                <i class="fas fa-save"></i> 保存 BP 链接
+                            </button>
+                        </div>
                     </div>
+                    
+                    <p class="form-hint" style="text-align: center; color: var(--text-secondary);">
+                        <i class="fas fa-info-circle"></i> 您只需选择以上两种方式之一即可提交审核
+                    </p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-file-alt"></i> 已上传文档</h3>
+                    <h3 class="card-title"><i class="fas fa-file-alt"></i> 已提交的 BP</h3>
                     <div id="fileList">
-                        <p class="form-hint">暂无已上传文档</p>
+                        <p class="form-hint">暂无已提交的 BP</p>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-link"></i> 数据室链接（可选）</h3>
+                    <h3 class="card-title"><i class="fas fa-database"></i> 数据室链接（可选）</h3>
                     <div class="form-group">
                         <input type="url" class="form-control" id="dataroomLink" placeholder="如：https://docsend.com/your-dataroom">
-                        <p class="form-hint">如果您有在线数据室，可以在此填写链接</p>
+                        <p class="form-hint">如果您有完整的在线数据室，可以在此额外填写链接</p>
                     </div>
                 </div>
 
@@ -1021,6 +1075,7 @@
 
             await loadUserInfo();
             await loadCompanyData();
+            await loadReferralInfo();
             setupEventListeners();
         });
 
@@ -1051,6 +1106,47 @@
                 showMessage('请重新登录', 'error');
                 setTimeout(() => window.location.href = '/auth/login.html', 2000);
             }
+        }
+
+        // 加载推荐码信息
+        async function loadReferralInfo() {
+            try {
+                const response = await fetch('/api/auth/referral', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取推荐码失败');
+
+                const data = await response.json();
+                
+                document.getElementById('myReferralCode').value = data.referral_code || '加载中...';
+                document.getElementById('myReferralLink').value = window.location.origin + data.referral_link;
+                document.getElementById('referralStats').textContent = 
+                    `已成功推荐 ${data.referral_count || 0} 位用户`;
+            } catch (error) {
+                console.error('加载推荐码错误:', error);
+                document.getElementById('myReferralCode').value = '获取失败';
+            }
+        }
+
+        // 复制推荐码
+        function copyReferralCode() {
+            const code = document.getElementById('myReferralCode').value;
+            navigator.clipboard.writeText(code).then(() => {
+                showMessage('推荐码已复制到剪贴板', 'success');
+            }).catch(() => {
+                showMessage('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 复制推荐链接
+        function copyReferralLink() {
+            const link = document.getElementById('myReferralLink').value;
+            navigator.clipboard.writeText(link).then(() => {
+                showMessage('推荐链接已复制到剪贴板', 'success');
+            }).catch(() => {
+                showMessage('复制失败，请手动复制', 'error');
+            });
         }
 
         // 加载企业数据
@@ -1194,30 +1290,45 @@
                 const fileList = document.getElementById('fileList');
 
                 if (data.documents && data.documents.length > 0) {
-                    fileList.innerHTML = data.documents.map(doc => `
+                    fileList.innerHTML = data.documents.map(doc => {
+                        const isLink = doc.dataroom_link && !doc.file_content;
+                        const icon = isLink ? 'fa-link' : 'fa-file-pdf';
+                        const iconColor = isLink ? '#0D43F9' : '#EF4444';
+                        const typeLabel = isLink ? 'BP 链接' : 'Business Plan';
+                        const sizeInfo = isLink ? '' : ` · ${formatFileSize(doc.filesize)}`;
+                        
+                        return `
                         <div class="file-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 0.5rem;">
                             <div class="file-item-info" style="display: flex; align-items: center; gap: 0.75rem;">
-                                <i class="fas fa-file-pdf" style="color: #EF4444; font-size: 1.5rem;"></i>
+                                <i class="fas ${icon}" style="color: ${iconColor}; font-size: 1.5rem;"></i>
                                 <div>
                                     <div class="file-item-name" style="font-weight: 500;">${doc.filename}</div>
                                     <div class="file-item-size" style="font-size: 0.75rem; color: #666;">
-                                        ${doc.type === 'bp' ? 'Business Plan' : doc.type} · ${formatFileSize(doc.filesize)}
+                                        ${typeLabel}${sizeInfo}
                                         · ${new Date(doc.created_at).toLocaleDateString()}
+                                        ${doc.description ? ' · ' + doc.description : ''}
                                     </div>
+                                    ${isLink ? `<div style="font-size: 0.75rem; color: #0D43F9; word-break: break-all;"><a href="${doc.dataroom_link}" target="_blank">${doc.dataroom_link}</a></div>` : ''}
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.5rem;">
-                                <button class="btn btn-primary" onclick="downloadDocument('${doc.id}', '${doc.filename.replace(/'/g, "\\'")}')" style="padding: 0.5rem 1rem;" title="下载">
-                                    <i class="fas fa-download"></i>
-                                </button>
+                                ${isLink ? `
+                                    <a href="${doc.dataroom_link}" target="_blank" class="btn btn-primary" style="padding: 0.5rem 1rem;" title="打开链接">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                ` : `
+                                    <button class="btn btn-primary" onclick="downloadDocument('${doc.id}', '${doc.filename.replace(/'/g, "\\'")}')" style="padding: 0.5rem 1rem;" title="下载">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                `}
                                 <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')" style="padding: 0.5rem 1rem;" title="删除">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
-                    `).join('');
+                    `}).join('');
                 } else {
-                    fileList.innerHTML = '<p class="form-hint">暂无已上传文档</p>';
+                    fileList.innerHTML = '<p class="form-hint">暂无已提交的 BP</p>';
                 }
             } catch (error) {
                 console.error('加载文档错误:', error);
@@ -1468,6 +1579,50 @@
                 document.getElementById('uploadProgressText').textContent = '正在上传...';
             } else {
                 document.getElementById('uploadProgressText').textContent = '正在保存到服务器...';
+            }
+        }
+
+        // 保存 BP 链接
+        async function saveBPLink() {
+            const url = document.getElementById('bpLinkUrl').value.trim();
+            const description = document.getElementById('bpLinkDesc').value.trim();
+
+            if (!url) {
+                showMessage('请输入 BP 链接', 'error');
+                return;
+            }
+
+            // 简单验证 URL 格式
+            try {
+                new URL(url);
+            } catch (e) {
+                showMessage('请输入有效的 URL 链接', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/company/bp-link', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url, description })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '保存失败');
+                }
+
+                showMessage('BP 链接保存成功！', 'success');
+                document.getElementById('bpLinkUrl').value = '';
+                document.getElementById('bpLinkDesc').value = '';
+                await loadCompanyData();
+                await loadDocuments();
+            } catch (error) {
+                showMessage(error.message, 'error');
             }
         }
 

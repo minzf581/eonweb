@@ -319,6 +319,17 @@
                 <input type="password" class="form-control" id="confirmPassword" required placeholder="再次输入密码">
             </div>
 
+            <div class="form-group">
+                <label class="form-label">推荐码 <span style="color: var(--text-secondary); font-weight: normal;">(选填)</span></label>
+                <input type="text" class="form-control" id="referralCode" placeholder="有推荐码可填写，优先处理" style="text-transform: uppercase;">
+                <p id="referralInfo" class="password-hint" style="display: none; color: var(--success-color);">
+                    <i class="fas fa-check-circle"></i> <span id="referrerName"></span> 推荐
+                </p>
+                <p id="referralError" class="password-hint" style="display: none; color: var(--danger-color);">
+                    <i class="fas fa-times-circle"></i> 推荐码无效
+                </p>
+            </div>
+
             <button type="submit" class="btn btn-primary" id="submitBtn">
                 <i class="fas fa-user-plus"></i> 注册
             </button>
@@ -330,11 +341,14 @@
     </div>
 
     <script>
+        let validReferralCode = null;
+
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
-            // 从 URL 获取角色参数
+            // 从 URL 获取角色参数和推荐码
             const urlParams = new URLSearchParams(window.location.search);
             const role = urlParams.get('role');
+            const refCode = urlParams.get('ref');
             
             if (role === 'company') {
                 selectRole('company');
@@ -342,6 +356,12 @@
                 selectRole('investor');
             } else {
                 selectRole('company'); // 默认企业
+            }
+
+            // 如果 URL 中有推荐码，自动填入并验证
+            if (refCode) {
+                document.getElementById('referralCode').value = refCode.toUpperCase();
+                validateReferralCode(refCode);
             }
 
             // 检查是否已登录
@@ -362,8 +382,45 @@
                 });
             });
 
+            // 推荐码验证（输入完成后验证）
+            let referralTimeout;
+            document.getElementById('referralCode').addEventListener('input', (e) => {
+                const code = e.target.value.trim();
+                clearTimeout(referralTimeout);
+                
+                // 清除之前的状态
+                document.getElementById('referralInfo').style.display = 'none';
+                document.getElementById('referralError').style.display = 'none';
+                validReferralCode = null;
+
+                if (code.length >= 6) {
+                    referralTimeout = setTimeout(() => validateReferralCode(code), 500);
+                }
+            });
+
             // 表单提交
             document.getElementById('registerForm').addEventListener('submit', handleRegister);
+        }
+
+        async function validateReferralCode(code) {
+            try {
+                const response = await fetch(`/api/auth/referral/validate/${code}`);
+                const result = await response.json();
+
+                if (result.valid) {
+                    document.getElementById('referrerName').textContent = result.referrer.name;
+                    document.getElementById('referralInfo').style.display = 'block';
+                    document.getElementById('referralError').style.display = 'none';
+                    validReferralCode = code.toUpperCase();
+                } else {
+                    document.getElementById('referralInfo').style.display = 'none';
+                    document.getElementById('referralError').style.display = 'block';
+                    validReferralCode = null;
+                }
+            } catch (error) {
+                console.error('验证推荐码失败:', error);
+                validReferralCode = null;
+            }
         }
 
         function selectRole(role) {
@@ -400,6 +457,7 @@
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const role = document.querySelector('input[name="role"]:checked').value;
+            const referralCode = document.getElementById('referralCode').value.trim().toUpperCase();
 
             // 验证
             if (password.length < 6) {
@@ -412,14 +470,25 @@
                 return;
             }
 
+            // 如果填了推荐码但无效，提示用户
+            if (referralCode && !validReferralCode) {
+                showError('请输入有效的推荐码，或清空推荐码字段');
+                return;
+            }
+
             showLoading(true);
             hideMessages();
 
             try {
+                const requestBody = { email, password, role, name };
+                if (validReferralCode) {
+                    requestBody.referral_code = validReferralCode;
+                }
+
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, role, name })
+                    body: JSON.stringify(requestBody)
                 });
 
                 const result = await response.json();
@@ -432,7 +501,11 @@
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
 
-                showSuccess('注册成功，正在跳转...');
+                let successMsg = '注册成功';
+                if (result.referrer) {
+                    successMsg += `（由 ${result.referrer.name || result.referrer.email} 推荐）`;
+                }
+                showSuccess(successMsg + '，正在跳转...');
 
                 // 跳转
                 setTimeout(() => {
@@ -465,7 +538,7 @@
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'flex' : 'none';
             document.getElementById('submitBtn').disabled = show;
-        }
+                    }
 
         function showError(message) {
             const el = document.getElementById('errorMessage');
@@ -477,7 +550,7 @@
             const el = document.getElementById('successMessage');
             el.textContent = message;
             el.style.display = 'block';
-        }
+            }
 
         function hideMessages() {
             document.getElementById('errorMessage').style.display = 'none';

@@ -93,7 +93,7 @@ app.get('*', (req, res) => {
             return sendFileWithErrorHandling(res, investorPath, 'investor');
         }
     }
-
+    
     // For dashboard routes, serve dashboard/index.html
     if (req.path.startsWith('/dashboard')) {
         const dashboardPath = path.join(__dirname, 'public', 'dashboard', 'index.html');
@@ -107,7 +107,7 @@ app.get('*', (req, res) => {
         const adminPath = path.join(__dirname, 'public', 'admin', 'index.html');
         if (fs.existsSync(adminPath)) {
             return sendFileWithErrorHandling(res, adminPath, 'admin');
-        }
+                }
     }
 
     // For auth routes, try to serve the exact file
@@ -131,8 +131,8 @@ app.get('*', (req, res) => {
     } catch (error) {
         console.error(`[${new Date().toISOString()}][Static] 检查文件时出错:`, error);
         if (!res.headersSent) {
-            res.status(500).json({ error: 'Internal server error' });
-        }
+        res.status(500).json({ error: 'Internal server error' });
+    }
     }
 });
 
@@ -151,7 +151,7 @@ function sendFileWithErrorHandling(res, filePath, name) {
                 res.status(500).json({ error: 'Internal server error' });
             }
         }
-    });
+});
 }
 
 // Handle favicon.ico
