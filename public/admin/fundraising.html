@@ -351,7 +351,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <i class="fas fa-shield-alt"></i>
-                管理后台
+                <span>EON Protocol</span>
             </div>
             <nav>
                 <ul class="nav-menu">
@@ -362,21 +362,51 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/admin/fundraising.html" class="nav-link active">
-                            <i class="fas fa-chart-line"></i>
-                            <span>融资平台</span>
+                        <a href="#companies" class="nav-link sidebar-tab active" data-tab="companies">
+                            <i class="fas fa-building"></i>
+                            <span>企业管理</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/admin/" class="nav-link">
+                        <a href="#investors" class="nav-link sidebar-tab" data-tab="investors">
+                            <i class="fas fa-user-tie"></i>
+                            <span>投资人管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#requests" class="nav-link sidebar-tab" data-tab="requests">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>访问请求</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#users" class="nav-link sidebar-tab" data-tab="users">
                             <i class="fas fa-users"></i>
                             <span>用户管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#messages" class="nav-link sidebar-tab" data-tab="messages">
+                            <i class="fas fa-envelope"></i>
+                            <span>消息中心</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#settings" class="nav-link sidebar-tab" data-tab="settings">
+                            <i class="fas fa-cog"></i>
+                            <span>系统设置</span>
                         </a>
                     </li>
                     <li class="nav-item" style="margin-top: 2rem;">
                         <a href="/" class="nav-link">
                             <i class="fas fa-arrow-left"></i>
                             <span>返回首页</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="logout(); return false;">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>退出登录</span>
                         </a>
                     </li>
                 </ul>
@@ -816,22 +846,67 @@
         }
 
         function setupTabs() {
+            // 标签页按钮点击
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    btn.classList.add('active');
-                    document.getElementById(btn.dataset.tab).classList.add('active');
-
-                    // 加载数据
-                    if (btn.dataset.tab === 'companies') loadCompanies();
-                    else if (btn.dataset.tab === 'investors') loadInvestors();
-                    else if (btn.dataset.tab === 'requests') loadRequests();
-                    else if (btn.dataset.tab === 'users') loadUsers();
-                    else if (btn.dataset.tab === 'messages') { loadMessages(); checkEmailStatus(); }
-                    else if (btn.dataset.tab === 'settings') loadEmailConfig();
+                    switchTab(btn.dataset.tab);
                 });
             });
+
+            // 侧边栏链接点击
+            document.querySelectorAll('.sidebar-tab').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchTab(link.dataset.tab);
+                });
+            });
+
+            // 支持 URL hash 导航
+            const hash = window.location.hash.replace('#', '');
+            if (hash && document.getElementById(hash)) {
+                switchTab(hash);
+            }
+
+            // 监听 hash 变化
+            window.addEventListener('hashchange', () => {
+                const newHash = window.location.hash.replace('#', '');
+                if (newHash && document.getElementById(newHash)) {
+                    switchTab(newHash);
+                }
+            });
+        }
+
+        function switchTab(tabName) {
+            // 更新标签页按钮状态
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+            if (btn) btn.classList.add('active');
+            
+            const tabContent = document.getElementById(tabName);
+            if (tabContent) tabContent.classList.add('active');
+
+            // 更新侧边栏导航状态
+            document.querySelectorAll('.sidebar-tab').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.tab === tabName) {
+                    link.classList.add('active');
+                }
+            });
+
+            // 更新 URL hash（不触发页面跳转）
+            if (window.location.hash !== `#${tabName}`) {
+                history.replaceState(null, null, `#${tabName}`);
+            }
+
+            // 加载数据
+            if (tabName === 'companies') loadCompanies();
+            else if (tabName === 'investors') loadInvestors();
+            else if (tabName === 'requests') loadRequests();
+            else if (tabName === 'users') loadUsers();
+            else if (tabName === 'messages') { loadMessages(); checkEmailStatus(); }
+            else if (tabName === 'settings') loadEmailConfig();
         }
 
         async function loadStats() {
