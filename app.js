@@ -163,11 +163,86 @@ const initializeApp = async () => {
             // 同步数据库模型
             await syncDatabase(false); // false = 不强制重建表
             console.log('[Server] 数据库初始化完成');
+            
+            // 自动创建默认管理员账户
+            await createDefaultAdmin();
         } else {
             console.warn('[Server] 数据库连接失败，将以无数据库模式运行');
         }
     } catch (error) {
         console.error('[Server] 初始化错误:', error);
+    }
+};
+
+// 创建或更新默认管理员账户
+const createDefaultAdmin = async () => {
+    try {
+        const { User } = require('./models');
+        const bcrypt = require('bcryptjs');
+        
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@eonprotocol.com';
+        const adminPassword = process.env.ADMIN_PASSWORD || 'admin123456';
+        
+        console.log(`[Server] 检查管理员账户: ${adminEmail}`);
+        
+        // 检查管理员是否已存在
+        let admin = await User.findOne({ where: { email: adminEmail } });
+        
+        if (!admin) {
+            // 创建管理员账户 - 注意：User 模型的 beforeCreate hook 会自动哈希密码
+            admin = await User.create({
+                email: adminEmail,
+                password: adminPassword,
+                role: 'admin',
+                status: 'active',
+                name: 'Administrator'
+            });
+            console.log(`[Server] 默认管理员账户已创建: ${adminEmail}`);
+            console.log(`[Server] 管理员密码: ${adminPassword.substring(0, 2)}****`);
+        } else {
+            // 检查是否需要更新密码（如果环境变量中的密码与数据库不同）
+            // 同时确保角色是 admin 且状态是 active
+            if (admin.role !== 'admin' || admin.status !== 'active') {
+                await admin.update({ role: 'admin', status: 'active' });
+                console.log(`[Server] 管理员账户权限已更新: ${adminEmail}`);
+            }
+            
+            // 如果设置了 ADMIN_PASSWORD 环境变量，重置密码
+            if (process.env.ADMIN_PASSWORD) {
+                // 验证当前密码是否与环境变量中的一致
+                const isCurrentPassword = await admin.validatePassword(adminPassword);
+                if (!isCurrentPassword) {
+                    // 密码不一致，更新为环境变量中的密码
+                    admin.password = adminPassword;
+                    await admin.save();
+                    console.log(`[Server] 管理员密码已更新为环境变量设置`);
+                } else {
+                    console.log(`[Server] 管理员账户已存在且密码正确: ${adminEmail}`);
+                }
+            } else {
+                console.log(`[Server] 管理员账户已存在: ${adminEmail}`);
+            }
+        }
+        
+        // 验证创建/更新的管理员能否正常登录
+        const testLogin = await admin.validatePassword(adminPassword);
+        console.log(`[Server] 管理员登录验证: ${testLogin ? '成功' : '失败'}`);
+        
+        if (!testLogin) {
+            console.error('[Server] 警告：管理员密码验证失败！可能是密码哈希问题。');
+            console.log('[Server] 尝试强制更新密码...');
+            // 强制更新密码
+            const hashedPassword = await bcrypt.hash(adminPassword, 10);
+            await User.update(
+                { password: hashedPassword },
+                { where: { id: admin.id }, hooks: false } // hooks: false 避免重复哈希
+            );
+            console.log('[Server] 管理员密码已强制更新');
+        }
+        
+    } catch (error) {
+        console.error('[Server] 创建/更新管理员账户失败:', error.message);
+        console.error('[Server] 错误详情:', error.stack);
     }
 };
 
