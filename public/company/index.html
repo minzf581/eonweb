@@ -962,7 +962,8 @@
                     <div class="file-upload" onclick="document.getElementById('fileInput').click()">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>点击或拖拽文件到此处上传</p>
-                        <p class="form-hint">支持 PDF、PPT、PPTX、DOC、DOCX 格式，最大 10MB</p>
+                        <p class="form-hint">支持 PDF、PPT、PPTX、DOC、DOCX 格式</p>
+                        <p class="form-hint" style="color: #F59E0B;"><i class="fas fa-exclamation-triangle"></i> 文件大小不超过 2MB（如超过请先压缩）</p>
                         <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,.doc,.docx" onchange="uploadFile(this)">
                     </div>
                 </div>
@@ -1340,10 +1341,11 @@
             if (!input.files || !input.files[0]) return;
 
             const file = input.files[0];
+            const MAX_SIZE = 2 * 1024 * 1024; // 2MB - Railway 平台限制
             
-            // 检查文件大小 (10MB 限制)
-            if (file.size > 10 * 1024 * 1024) {
-                showMessage('文件大小不能超过 10MB', 'error');
+            // 检查文件大小 (2MB 限制)
+            if (file.size > MAX_SIZE) {
+                showMessage(`文件大小不能超过 2MB（当前: ${(file.size / 1024 / 1024).toFixed(1)}MB）。请压缩文件后重试。`, 'error');
                 input.value = '';
                 return;
             }

@@ -6,11 +6,13 @@ const { Company, FundraisingInfo, Document, AccessRequest } = require('../models
 const { authenticate, requireCompany } = require('../middleware/auth');
 
 // 配置文件上传 - 使用内存存储（Railway不支持本地文件系统写入）
+// 注意：Railway 平台上传大文件容易超时，建议文件大小不超过 2MB
 const storage = multer.memoryStorage();
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB - Railway 平台的实际可用上限
 
 const upload = multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB（内存存储需要限制大小）
+    limits: { fileSize: MAX_FILE_SIZE },
     fileFilter: (req, file, cb) => {
         const allowedTypes = ['.pdf', '.ppt', '.pptx', '.doc', '.docx'];
         const ext = path.extname(file.originalname).toLowerCase();
@@ -163,7 +165,9 @@ router.post('/upload-bp', (req, res, next) => {
         if (err) {
             console.error('[Company][Upload] Multer 错误:', err.message, err.code);
             if (err.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({ error: '文件大小不能超过 10MB' });
+                return res.status(400).json({ 
+                    error: '文件大小不能超过 2MB。由于平台限制，请压缩文件后重试，或联系管理员提供其他上传方式。' 
+                });
             }
             return res.status(400).json({ error: err.message || '上传失败' });
         }
