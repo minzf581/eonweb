@@ -493,18 +493,18 @@
                         <option value="" data-zh="全部行业" data-en="All Industries">全部行业</option>
                         <option value="technology" data-zh="科技/互联网" data-en="Technology">科技/互联网</option>
                         <option value="healthcare" data-zh="医疗健康" data-en="Healthcare">医疗健康</option>
-                        <option value="finance">金融科技</option>
-                        <option value="manufacturing">制造业</option>
-                        <option value="consumer">消费品</option>
-                        <option value="energy">能源/环保</option>
+                        <option value="finance" data-zh="金融科技" data-en="FinTech">金融科技</option>
+                        <option value="manufacturing" data-zh="制造业" data-en="Manufacturing">制造业</option>
+                        <option value="consumer" data-zh="消费品" data-en="Consumer">消费品</option>
+                        <option value="energy" data-zh="能源/环保" data-en="Energy/Green">能源/环保</option>
                     </select>
                     <select class="filter-select" id="filterStage" onchange="loadProjects()">
-                        <option value="">全部阶段</option>
-                        <option value="seed">种子轮</option>
-                        <option value="angel">天使轮</option>
-                        <option value="a">A轮</option>
-                        <option value="b">B轮</option>
-                        <option value="pre_ipo">Pre-IPO</option>
+                        <option value="" data-zh="全部阶段" data-en="All Stages">全部阶段</option>
+                        <option value="seed" data-zh="种子轮" data-en="Seed">种子轮</option>
+                        <option value="angel" data-zh="天使轮" data-en="Angel">天使轮</option>
+                        <option value="a" data-zh="A轮" data-en="Series A">A轮</option>
+                        <option value="b" data-zh="B轮" data-en="Series B">B轮</option>
+                        <option value="pre_ipo" data-zh="Pre-IPO" data-en="Pre-IPO">Pre-IPO</option>
                     </select>
                 </div>
 
@@ -517,48 +517,48 @@
             <!-- 我的资料面板 -->
             <div id="profile" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">投资人资料</h1>
-                    <p class="page-subtitle">完善您的投资人信息</p>
+                    <h1 class="page-title" data-zh="投资人资料" data-en="Investor Profile">投资人资料</h1>
+                    <p class="page-subtitle" data-zh="完善您的投资人信息" data-en="Complete your investor information">完善您的投资人信息</p>
                 </div>
 
                 <form id="profileForm" class="card">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">姓名 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="姓名" data-en="Name">姓名</span> <span class="required">*</span></label>
                             <input type="text" class="form-control" name="name" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">投资人类型 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="投资人类型" data-en="Investor Type">投资人类型</span> <span class="required">*</span></label>
                             <select class="form-control" name="investor_type" required>
-                                <option value="">请选择</option>
-                                <option value="individual">个人投资人</option>
-                                <option value="family_office">家族办公室</option>
-                                <option value="vc">风险投资</option>
-                                <option value="pe">私募股权</option>
-                                <option value="corporate">企业战略投资</option>
-                                <option value="other">其他</option>
+                                <option value="" data-zh="请选择" data-en="Select...">请选择</option>
+                                <option value="individual" data-zh="个人投资人" data-en="Individual">个人投资人</option>
+                                <option value="family_office" data-zh="家族办公室" data-en="Family Office">家族办公室</option>
+                                <option value="vc" data-zh="风险投资" data-en="Venture Capital">风险投资</option>
+                                <option value="pe" data-zh="私募股权" data-en="Private Equity">私募股权</option>
+                                <option value="corporate" data-zh="企业战略投资" data-en="Corporate VC">企业战略投资</option>
+                                <option value="other" data-zh="其他" data-en="Other">其他</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">所属机构</label>
+                            <label class="form-label" data-zh="所属机构" data-en="Organization">所属机构</label>
                             <input type="text" class="form-control" name="organization">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">职位</label>
+                            <label class="form-label" data-zh="职位" data-en="Title">职位</label>
                             <input type="text" class="form-control" name="title">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">电话</label>
+                            <label class="form-label" data-zh="电话" data-en="Phone">电话</label>
                             <input type="tel" class="form-control" name="phone">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">微信</label>
+                            <label class="form-label" data-zh="微信" data-en="WeChat">微信</label>
                             <input type="text" class="form-control" name="wechat">
                         </div>
                     </div>

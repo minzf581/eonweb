@@ -564,48 +564,48 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value" id="statTotalCompanies">0</div>
-                        <div class="stat-label">创建的企业</div>
+                        <div class="stat-label" data-zh="创建的企业" data-en="Companies Created">创建的企业</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="statPendingCompanies">0</div>
-                        <div class="stat-label">待审核</div>
+                        <div class="stat-label" data-zh="待审核" data-en="Pending">待审核</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="statApprovedCompanies">0</div>
-                        <div class="stat-label">已通过</div>
+                        <div class="stat-label" data-zh="已通过" data-en="Approved">已通过</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="statPendingRequests">0</div>
-                        <div class="stat-label">待处理请求</div>
+                        <div class="stat-label" data-zh="待处理请求" data-en="Pending Requests">待处理请求</div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-plus-circle"></i> 快速操作</h3>
+                    <h3 class="card-title"><i class="fas fa-plus-circle"></i> <span data-zh="快速操作" data-en="Quick Actions">快速操作</span></h3>
                     <div class="btn-group">
                         <button class="btn btn-primary" onclick="openCreateCompanyModal()">
-                            <i class="fas fa-building"></i> 创建新企业
+                            <i class="fas fa-building"></i> <span data-zh="创建新企业" data-en="Create Company">创建新企业</span>
                         </button>
                         <button class="btn btn-secondary" onclick="showPanel('companies')">
-                            <i class="fas fa-list"></i> 查看所有企业
+                            <i class="fas fa-list"></i> <span data-zh="查看所有企业" data-en="View All Companies">查看所有企业</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- 推荐码 -->
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-share-alt"></i> 我的推荐码</h3>
-                    <p class="form-hint" style="margin-bottom: 1rem;">分享您的推荐码，邀请用户注册。</p>
+                    <h3 class="card-title"><i class="fas fa-share-alt"></i> <span data-zh="我的推荐码" data-en="My Referral Code">我的推荐码</span></h3>
+                    <p class="form-hint" style="margin-bottom: 1rem;" data-zh="分享您的推荐码，邀请用户注册。" data-en="Share your referral code to invite users.">分享您的推荐码，邀请用户注册。</p>
                     <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
                         <input type="text" class="form-control" id="myReferralCode" readonly style="flex: 1; font-size: 1.25rem; font-weight: bold; text-align: center; letter-spacing: 2px;">
                         <button class="btn btn-primary" onclick="copyReferralCode()">
-                            <i class="fas fa-copy"></i> 复制
+                            <i class="fas fa-copy"></i> <span data-zh="复制" data-en="Copy">复制</span>
                         </button>
                     </div>
                     <div style="display: flex; gap: 1rem; align-items: center;">
                         <input type="text" class="form-control" id="myReferralLink" readonly style="flex: 1; font-size: 0.875rem;">
                         <button class="btn btn-secondary" onclick="copyReferralLink()">
-                            <i class="fas fa-link"></i> 复制链接
+                            <i class="fas fa-link"></i> <span data-zh="复制链接" data-en="Copy Link">复制链接</span>
                         </button>
                     </div>
                 </div>
@@ -616,11 +616,11 @@
                 <div class="page-header">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <h1 class="page-title">企业管理</h1>
-                            <p class="page-subtitle">管理您创建的企业信息</p>
+                            <h1 class="page-title" data-zh="企业管理" data-en="Company Management">企业管理</h1>
+                            <p class="page-subtitle" data-zh="管理您创建的企业信息" data-en="Manage your created companies">管理您创建的企业信息</p>
                         </div>
                         <button class="btn btn-primary" onclick="openCreateCompanyModal()">
-                            <i class="fas fa-plus"></i> 创建企业
+                            <i class="fas fa-plus"></i> <span data-zh="创建企业" data-en="Create Company">创建企业</span>
                         </button>
                     </div>
                 </div>
@@ -630,12 +630,12 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>企业名称</th>
-                                    <th>行业</th>
-                                    <th>阶段</th>
-                                    <th>状态</th>
-                                    <th>创建时间</th>
-                                    <th>操作</th>
+                                    <th data-zh="企业名称" data-en="Company Name">企业名称</th>
+                                    <th data-zh="行业" data-en="Industry">行业</th>
+                                    <th data-zh="阶段" data-en="Stage">阶段</th>
+                                    <th data-zh="状态" data-en="Status">状态</th>
+                                    <th data-zh="创建时间" data-en="Created">创建时间</th>
+                                    <th data-zh="操作" data-en="Actions">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="companiesTableBody">

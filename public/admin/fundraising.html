@@ -432,41 +432,41 @@
             <!-- 统计卡片 -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h3>企业总数</h3>
+                    <h3 data-zh="企业总数" data-en="Total Companies">企业总数</h3>
                     <div class="stat-value" id="statCompanies">-</div>
-                    <div class="stat-badge pending" id="statCompaniesPending">待审核: -</div>
+                    <div class="stat-badge pending" id="statCompaniesPending"><span data-zh="待审核" data-en="Pending">待审核</span>: -</div>
                 </div>
                 <div class="stat-card">
-                    <h3>投资人总数</h3>
+                    <h3 data-zh="投资人总数" data-en="Total Investors">投资人总数</h3>
                     <div class="stat-value" id="statInvestors">-</div>
-                    <div class="stat-badge pending" id="statInvestorsPending">待审核: -</div>
+                    <div class="stat-badge pending" id="statInvestorsPending"><span data-zh="待审核" data-en="Pending">待审核</span>: -</div>
                 </div>
                 <div class="stat-card">
-                    <h3>访问请求</h3>
+                    <h3 data-zh="访问请求" data-en="Requests">访问请求</h3>
                     <div class="stat-value" id="statRequests">-</div>
-                    <div class="stat-badge pending" id="statRequestsPending">待处理: -</div>
+                    <div class="stat-badge pending" id="statRequestsPending"><span data-zh="待处理" data-en="Pending">待处理</span>: -</div>
                 </div>
             </div>
 
             <!-- 标签页 -->
             <div class="tabs">
-                <button class="tab-btn active" data-tab="companies">企业管理</button>
-                <button class="tab-btn" data-tab="investors">投资人管理</button>
-                <button class="tab-btn" data-tab="requests">访问请求</button>
-                <button class="tab-btn" data-tab="users">用户管理</button>
-                <button class="tab-btn" data-tab="messages">消息中心</button>
-                <button class="tab-btn" data-tab="settings">系统设置</button>
+                <button class="tab-btn active" data-tab="companies" data-zh="企业管理" data-en="Companies">企业管理</button>
+                <button class="tab-btn" data-tab="investors" data-zh="投资人管理" data-en="Investors">投资人管理</button>
+                <button class="tab-btn" data-tab="requests" data-zh="访问请求" data-en="Requests">访问请求</button>
+                <button class="tab-btn" data-tab="users" data-zh="用户管理" data-en="Users">用户管理</button>
+                <button class="tab-btn" data-tab="messages" data-zh="消息中心" data-en="Messages">消息中心</button>
+                <button class="tab-btn" data-tab="settings" data-zh="系统设置" data-en="Settings">系统设置</button>
             </div>
 
             <!-- 企业管理 -->
             <div id="companies" class="tab-content active">
                 <div class="filter-bar">
                     <select class="filter-select" id="companyStatusFilter" onchange="loadCompanies()">
-                        <option value="">全部状态</option>
-                        <option value="pending">待审核</option>
-                        <option value="approved">已通过</option>
-                        <option value="rejected">已拒绝</option>
-                        <option value="draft">草稿</option>
+                        <option value="" data-zh="全部状态" data-en="All Status">全部状态</option>
+                        <option value="pending" data-zh="待审核" data-en="Pending">待审核</option>
+                        <option value="approved" data-zh="已通过" data-en="Approved">已通过</option>
+                        <option value="rejected" data-zh="已拒绝" data-en="Rejected">已拒绝</option>
+                        <option value="draft" data-zh="草稿" data-en="Draft">草稿</option>
                     </select>
                 </div>
                 <div class="card">
@@ -474,13 +474,13 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>企业名称</th>
-                                    <th>行业</th>
-                                    <th>阶段</th>
-                                    <th>状态</th>
-                                    <th>可见性</th>
-                                    <th>提交时间</th>
-                                    <th>操作</th>
+                                    <th data-zh="企业名称" data-en="Company Name">企业名称</th>
+                                    <th data-zh="行业" data-en="Industry">行业</th>
+                                    <th data-zh="阶段" data-en="Stage">阶段</th>
+                                    <th data-zh="状态" data-en="Status">状态</th>
+                                    <th data-zh="可见性" data-en="Visibility">可见性</th>
+                                    <th data-zh="提交时间" data-en="Submit Time">提交时间</th>
+                                    <th data-zh="操作" data-en="Actions">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="companiesTable">
@@ -495,10 +495,10 @@
             <div id="investors" class="tab-content">
                 <div class="filter-bar">
                     <select class="filter-select" id="investorStatusFilter" onchange="loadInvestors()">
-                        <option value="">全部状态</option>
-                        <option value="pending">待审核</option>
-                        <option value="approved">已通过</option>
-                        <option value="rejected">已拒绝</option>
+                        <option value="" data-zh="全部状态" data-en="All Status">全部状态</option>
+                        <option value="pending" data-zh="待审核" data-en="Pending">待审核</option>
+                        <option value="approved" data-zh="已通过" data-en="Approved">已通过</option>
+                        <option value="rejected" data-zh="已拒绝" data-en="Rejected">已拒绝</option>
                     </select>
                 </div>
                 <div class="card">
@@ -506,13 +506,13 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>姓名</th>
-                                    <th>类型</th>
-                                    <th>机构</th>
-                                    <th>邮箱</th>
-                                    <th>状态</th>
-                                    <th>注册时间</th>
-                                    <th>操作</th>
+                                    <th data-zh="姓名" data-en="Name">姓名</th>
+                                    <th data-zh="类型" data-en="Type">类型</th>
+                                    <th data-zh="机构" data-en="Organization">机构</th>
+                                    <th data-zh="邮箱" data-en="Email">邮箱</th>
+                                    <th data-zh="状态" data-en="Status">状态</th>
+                                    <th data-zh="注册时间" data-en="Registered">注册时间</th>
+                                    <th data-zh="操作" data-en="Actions">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="investorsTable">
@@ -527,10 +527,10 @@
             <div id="requests" class="tab-content">
                 <div class="filter-bar">
                     <select class="filter-select" id="requestStatusFilter" onchange="loadRequests()">
-                        <option value="">全部状态</option>
-                        <option value="pending">待处理</option>
-                        <option value="approved">已通过</option>
-                        <option value="rejected">已拒绝</option>
+                        <option value="" data-zh="全部状态" data-en="All Status">全部状态</option>
+                        <option value="pending" data-zh="待处理" data-en="Pending">待处理</option>
+                        <option value="approved" data-zh="已通过" data-en="Approved">已通过</option>
+                        <option value="rejected" data-zh="已拒绝" data-en="Rejected">已拒绝</option>
                     </select>
                 </div>
                 <div class="card">
@@ -538,13 +538,13 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>投资人</th>
-                                    <th>目标企业</th>
-                                    <th>请求类型</th>
-                                    <th>留言</th>
-                                    <th>状态</th>
-                                    <th>时间</th>
-                                    <th>操作</th>
+                                    <th data-zh="投资人" data-en="Investor">投资人</th>
+                                    <th data-zh="目标企业" data-en="Target Company">目标企业</th>
+                                    <th data-zh="请求类型" data-en="Request Type">请求类型</th>
+                                    <th data-zh="留言" data-en="Message">留言</th>
+                                    <th data-zh="状态" data-en="Status">状态</th>
+                                    <th data-zh="时间" data-en="Time">时间</th>
+                                    <th data-zh="操作" data-en="Actions">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="requestsTable">
@@ -559,13 +559,14 @@
             <div id="users" class="tab-content">
                 <div class="filter-bar">
                     <select class="filter-select" id="userRoleFilter" onchange="loadUsers()">
-                        <option value="">全部角色</option>
-                        <option value="admin">管理员</option>
-                        <option value="company">企业</option>
-                        <option value="investor">投资人</option>
+                        <option value="" data-zh="全部角色" data-en="All Roles">全部角色</option>
+                        <option value="admin" data-zh="管理员" data-en="Admin">管理员</option>
+                        <option value="staff" data-zh="普通管理员" data-en="Staff">普通管理员</option>
+                        <option value="company" data-zh="企业" data-en="Company">企业</option>
+                        <option value="investor" data-zh="投资人" data-en="Investor">投资人</option>
                     </select>
                     <button class="btn btn-primary" onclick="showCreateUserModal()">
-                        <i class="fas fa-plus"></i> 创建用户
+                        <i class="fas fa-plus"></i> <span data-zh="创建用户" data-en="Create User">创建用户</span>
                     </button>
                 </div>
                 <div class="card">
@@ -573,12 +574,12 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>邮箱</th>
-                                    <th>姓名</th>
-                                    <th>角色</th>
-                                    <th>状态</th>
-                                    <th>注册时间</th>
-                                    <th>操作</th>
+                                    <th data-zh="邮箱" data-en="Email">邮箱</th>
+                                    <th data-zh="姓名" data-en="Name">姓名</th>
+                                    <th data-zh="角色" data-en="Role">角色</th>
+                                    <th data-zh="状态" data-en="Status">状态</th>
+                                    <th data-zh="注册时间" data-en="Registered">注册时间</th>
+                                    <th data-zh="操作" data-en="Actions">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTable">
@@ -593,23 +594,23 @@
             <div id="messages" class="tab-content">
                 <div class="filter-bar">
                     <button class="btn btn-primary" onclick="showSendMessageModal()">
-                        <i class="fas fa-paper-plane"></i> 发送消息
+                        <i class="fas fa-paper-plane"></i> <span data-zh="发送消息" data-en="Send Message">发送消息</span>
                     </button>
                     <span id="emailStatusBadge" class="stat-badge" style="margin-left: auto;"></span>
                 </div>
                 <div class="card">
-                    <h3 class="card-title">已发送消息</h3>
+                    <h3 class="card-title" data-zh="已发送消息" data-en="Sent Messages">已发送消息</h3>
                     <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>收件人</th>
-                                    <th>主题</th>
-                                    <th>类型</th>
-                                    <th>附件</th>
-                                    <th>邮件</th>
-                                    <th>时间</th>
-                                    <th>操作</th>
+                                    <th data-zh="收件人" data-en="Recipient">收件人</th>
+                                    <th data-zh="主题" data-en="Subject">主题</th>
+                                    <th data-zh="类型" data-en="Type">类型</th>
+                                    <th data-zh="附件" data-en="Attachments">附件</th>
+                                    <th data-zh="邮件" data-en="Email">邮件</th>
+                                    <th data-zh="时间" data-en="Time">时间</th>
+                                    <th data-zh="操作" data-en="Actions">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="messagesTable">
@@ -623,28 +624,28 @@
             <!-- 系统设置 -->
             <div id="settings" class="tab-content">
                 <div class="card" style="max-width: 600px;">
-                    <h3 class="card-title"><i class="fas fa-key"></i> 修改密码</h3>
+                    <h3 class="card-title"><i class="fas fa-key"></i> <span data-zh="修改密码" data-en="Change Password">修改密码</span></h3>
                     <form id="changePasswordForm" onsubmit="changePassword(event)">
                         <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">当前密码</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="当前密码" data-en="Current Password">当前密码</label>
                             <input type="password" class="filter-input" id="currentPassword" required style="width: 100%;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">新密码</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="新密码" data-en="New Password">新密码</label>
                             <input type="password" class="filter-input" id="newPassword" required minlength="6" style="width: 100%;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">确认新密码</label>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="确认新密码" data-en="Confirm Password">确认新密码</label>
                             <input type="password" class="filter-input" id="confirmPassword" required minlength="6" style="width: 100%;">
                         </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> 保存密码
+                            <i class="fas fa-save"></i> <span data-zh="保存密码" data-en="Save Password">保存密码</span>
                         </button>
                     </form>
                 </div>
 
                 <div class="card" style="max-width: 600px; margin-top: 1.5rem;">
-                    <h3 class="card-title"><i class="fas fa-envelope"></i> 邮件配置状态</h3>
+                    <h3 class="card-title"><i class="fas fa-envelope"></i> <span data-zh="邮件配置状态" data-en="Email Configuration">邮件配置状态</span></h3>
                     <div id="emailConfigStatus">
                         <div class="loading"><div class="spinner"></div></div>
                     </div>
@@ -657,7 +658,7 @@
     <div class="modal" id="companyModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">企业详情</h2>
+                <h2 class="modal-title" data-zh="企业详情" data-en="Company Details">企业详情</h2>
                 <button class="modal-close" onclick="closeModal('companyModal')">&times;</button>
             </div>
             <div id="companyModalContent">
@@ -670,7 +671,7 @@
     <div class="modal" id="investorModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">投资人详情</h2>
+                <h2 class="modal-title" data-zh="投资人详情" data-en="Investor Details">投资人详情</h2>
                 <button class="modal-close" onclick="closeModal('investorModal')">&times;</button>
             </div>
             <div id="investorModalContent">
@@ -683,39 +684,39 @@
     <div class="modal" id="createUserModal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h2 class="modal-title">创建用户</h2>
+                <h2 class="modal-title" data-zh="创建用户" data-en="Create User">创建用户</h2>
                 <button class="modal-close" onclick="closeModal('createUserModal')">&times;</button>
             </div>
             <form id="createUserForm" onsubmit="createUser(event)">
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">邮箱 <span style="color: red;">*</span></label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;"><span data-zh="邮箱" data-en="Email">邮箱</span> <span style="color: red;">*</span></label>
                     <input type="email" class="filter-input" name="email" required style="width: 100%;">
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">密码 <span style="color: red;">*</span></label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;"><span data-zh="密码" data-en="Password">密码</span> <span style="color: red;">*</span></label>
                     <input type="password" class="filter-input" name="password" required minlength="6" style="width: 100%;">
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">角色 <span style="color: red;">*</span></label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;"><span data-zh="角色" data-en="Role">角色</span> <span style="color: red;">*</span></label>
                     <select class="filter-select" name="role" required style="width: 100%;">
-                        <option value="company">企业用户</option>
-                        <option value="investor">投资人</option>
-                        <option value="staff">普通管理员</option>
-                        <option value="admin">超级管理员</option>
+                        <option value="company" data-zh="企业用户" data-en="Company">企业用户</option>
+                        <option value="investor" data-zh="投资人" data-en="Investor">投资人</option>
+                        <option value="staff" data-zh="普通管理员" data-en="Staff">普通管理员</option>
+                        <option value="admin" data-zh="超级管理员" data-en="Admin">超级管理员</option>
                     </select>
-                    <p style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">普通管理员可创建多个企业并管理</p>
+                    <p style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;" data-zh="普通管理员可创建多个企业并管理" data-en="Staff can create and manage multiple companies">普通管理员可创建多个企业并管理</p>
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">姓名</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="姓名" data-en="Name">姓名</label>
                     <input type="text" class="filter-input" name="name" style="width: 100%;">
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">电话</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="电话" data-en="Phone">电话</label>
                     <input type="text" class="filter-input" name="phone" style="width: 100%;">
                 </div>
                 <div class="btn-group" style="margin-top: 1.5rem;">
-                    <button type="submit" class="btn btn-primary">创建</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('createUserModal')">取消</button>
+                    <button type="submit" class="btn btn-primary" data-zh="创建" data-en="Create">创建</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createUserModal')" data-zh="取消" data-en="Cancel">取消</button>
                 </div>
             </form>
         </div>
@@ -725,53 +726,53 @@
     <div class="modal" id="sendMessageModal">
         <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
-                <h2 class="modal-title">发送消息</h2>
+                <h2 class="modal-title" data-zh="发送消息" data-en="Send Message">发送消息</h2>
                 <button class="modal-close" onclick="closeModal('sendMessageModal')">&times;</button>
             </div>
             <form id="sendMessageForm" onsubmit="sendMessage(event)">
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">收件人 <span style="color: red;">*</span></label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;"><span data-zh="收件人" data-en="Recipient">收件人</span> <span style="color: red;">*</span></label>
                     <select class="filter-select" id="messageRecipient" name="recipient_id" required style="width: 100%;">
-                        <option value="">选择收件人...</option>
+                        <option value="" data-zh="选择收件人..." data-en="Select recipient...">选择收件人...</option>
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">关联企业（可选）</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="关联企业（可选）" data-en="Related Company (optional)">关联企业（可选）</label>
                     <select class="filter-select" id="messageCompany" name="company_id" style="width: 100%;">
-                        <option value="">选择企业...</option>
+                        <option value="" data-zh="选择企业..." data-en="Select company...">选择企业...</option>
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">消息类型</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="消息类型" data-en="Message Type">消息类型</label>
                     <select class="filter-select" name="type" style="width: 100%;">
-                        <option value="general">普通消息</option>
-                        <option value="status_change">状态变更通知</option>
-                        <option value="review_feedback">审核反馈</option>
-                        <option value="notification">系统通知</option>
+                        <option value="general" data-zh="普通消息" data-en="General">普通消息</option>
+                        <option value="status_change" data-zh="状态变更通知" data-en="Status Change">状态变更通知</option>
+                        <option value="review_feedback" data-zh="审核反馈" data-en="Review Feedback">审核反馈</option>
+                        <option value="notification" data-zh="系统通知" data-en="Notification">系统通知</option>
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">主题 <span style="color: red;">*</span></label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;"><span data-zh="主题" data-en="Subject">主题</span> <span style="color: red;">*</span></label>
                     <input type="text" class="filter-input" name="subject" required style="width: 100%;">
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">内容 <span style="color: red;">*</span></label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;"><span data-zh="内容" data-en="Content">内容</span> <span style="color: red;">*</span></label>
                     <textarea class="filter-input" name="content" required rows="6" style="width: 100%; resize: vertical;"></textarea>
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">附件（最多5个，每个最大10MB）</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="附件（最多5个，每个最大10MB）" data-en="Attachments (max 5, 10MB each)">附件（最多5个，每个最大10MB）</label>
                     <input type="file" id="messageAttachments" name="attachments" multiple style="width: 100%;">
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">变更状态（可选）</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="变更状态（可选）" data-en="Change Status (optional)">变更状态（可选）</label>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                         <select class="filter-select" id="changeEntityType" onchange="updateStatusOptions()">
-                            <option value="">不变更状态</option>
-                            <option value="company">变更企业状态</option>
-                            <option value="investor">变更投资人状态</option>
+                            <option value="" data-zh="不变更状态" data-en="No change">不变更状态</option>
+                            <option value="company" data-zh="变更企业状态" data-en="Change company status">变更企业状态</option>
+                            <option value="investor" data-zh="变更投资人状态" data-en="Change investor status">变更投资人状态</option>
                         </select>
                         <select class="filter-select" id="changeNewStatus" style="display: none;">
-                            <option value="">选择新状态...</option>
+                            <option value="" data-zh="选择新状态..." data-en="Select status...">选择新状态...</option>
                         </select>
                     </div>
                 </div>

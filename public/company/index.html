@@ -629,62 +629,62 @@
 
                 <!-- 进度步骤 -->
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-tasks"></i> 提交进度</h3>
+                    <h3 class="card-title"><i class="fas fa-tasks"></i> <span data-zh="提交进度" data-en="Submission Progress">提交进度</span></h3>
                     <div class="progress-steps">
                         <div class="step" id="step1">
                             <div class="step-number">1</div>
-                            <div class="step-label">企业资料</div>
+                            <div class="step-label" data-zh="企业资料" data-en="Company Info">企业资料</div>
                         </div>
                         <div class="step" id="step2">
                             <div class="step-number">2</div>
-                            <div class="step-label">融资信息</div>
+                            <div class="step-label" data-zh="融资信息" data-en="Fundraising">融资信息</div>
                         </div>
                         <div class="step" id="step3">
                             <div class="step-number">3</div>
-                            <div class="step-label">上传BP</div>
+                            <div class="step-label" data-zh="上传BP" data-en="Upload BP">上传BP</div>
                         </div>
                         <div class="step" id="step4">
                             <div class="step-number">4</div>
-                            <div class="step-label">提交审核</div>
+                            <div class="step-label" data-zh="提交审核" data-en="Submit">提交审核</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 当前状态 -->
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-info-circle"></i> 当前状态</h3>
-                    <p>审核状态：<span class="status-badge" id="currentStatus">-</span></p>
+                    <h3 class="card-title"><i class="fas fa-info-circle"></i> <span data-zh="当前状态" data-en="Current Status">当前状态</span></h3>
+                    <p><span data-zh="审核状态：" data-en="Review Status: ">审核状态：</span><span class="status-badge" id="currentStatus">-</span></p>
                     <p id="adminFeedback" style="margin-top: 1rem; display: none;">
-                        <strong>管理员反馈：</strong><span id="feedbackText"></span>
+                        <strong data-zh="管理员反馈：" data-en="Admin Feedback: ">管理员反馈：</strong><span id="feedbackText"></span>
                     </p>
                 </div>
 
                 <!-- 快速操作 -->
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-bolt"></i> 快速操作</h3>
+                    <h3 class="card-title"><i class="fas fa-bolt"></i> <span data-zh="快速操作" data-en="Quick Actions">快速操作</span></h3>
                     <div class="btn-group">
                         <button class="btn btn-primary" onclick="showPanel('profile')">
-                            <i class="fas fa-edit"></i> 编辑企业资料
+                            <i class="fas fa-edit"></i> <span data-zh="编辑企业资料" data-en="Edit Profile">编辑企业资料</span>
                         </button>
                         <button class="btn btn-secondary" onclick="showPanel('documents')">
-                            <i class="fas fa-upload"></i> 上传BP文件
+                            <i class="fas fa-upload"></i> <span data-zh="上传BP文件" data-en="Upload BP">上传BP文件</span>
                         </button>
                         <button class="btn btn-success" id="submitBtn" onclick="submitForReview()" disabled>
-                            <i class="fas fa-paper-plane"></i> 提交审核
+                            <i class="fas fa-paper-plane"></i> <span data-zh="提交审核" data-en="Submit for Review">提交审核</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- 推荐码 -->
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-share-alt"></i> 我的推荐码</h3>
-                    <p class="form-hint" style="margin-bottom: 1rem;">分享您的推荐码，邀请其他用户注册。使用您推荐码注册的用户将获得优先处理。</p>
+                    <h3 class="card-title"><i class="fas fa-share-alt"></i> <span data-zh="我的推荐码" data-en="My Referral Code">我的推荐码</span></h3>
+                    <p class="form-hint" style="margin-bottom: 1rem;" data-zh="分享您的推荐码，邀请其他用户注册。使用您推荐码注册的用户将获得优先处理。" data-en="Share your referral code to invite others. Users who register with your code will get priority processing.">分享您的推荐码，邀请其他用户注册。使用您推荐码注册的用户将获得优先处理。</p>
                     <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
                         <div style="flex: 1;">
                             <input type="text" class="form-control" id="myReferralCode" readonly style="font-size: 1.25rem; font-weight: bold; text-align: center; letter-spacing: 2px;">
                         </div>
                         <button class="btn btn-primary" onclick="copyReferralCode()" style="white-space: nowrap;">
-                            <i class="fas fa-copy"></i> 复制
+                            <i class="fas fa-copy"></i> <span data-zh="复制" data-en="Copy">复制</span>
                         </button>
                     </div>
                     <div style="display: flex; gap: 1rem; align-items: center;">
@@ -692,7 +692,7 @@
                             <input type="text" class="form-control" id="myReferralLink" readonly style="font-size: 0.875rem;">
                         </div>
                         <button class="btn btn-secondary" onclick="copyReferralLink()" style="white-space: nowrap;">
-                            <i class="fas fa-link"></i> 复制链接
+                            <i class="fas fa-link"></i> <span data-zh="复制链接" data-en="Copy Link">复制链接</span>
                         </button>
                     </div>
                     <p id="referralStats" class="form-hint" style="margin-top: 1rem;"></p>
@@ -702,20 +702,20 @@
             <!-- 企业资料面板 -->
             <div id="profile" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">企业资料</h1>
-                    <p class="page-subtitle">填写您的企业基本信息</p>
+                    <h1 class="page-title" data-zh="企业资料" data-en="Company Profile">企业资料</h1>
+                    <p class="page-subtitle" data-zh="填写您的企业基本信息" data-en="Enter your company information">填写您的企业基本信息</p>
                 </div>
 
                 <form id="profileForm" class="card">
-                    <h3 class="card-title">基本信息</h3>
+                    <h3 class="card-title" data-zh="基本信息" data-en="Basic Information">基本信息</h3>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">公司中文名称 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="公司中文名称" data-en="Company Name (CN)">公司中文名称</span> <span class="required">*</span></label>
                             <input type="text" class="form-control" name="name_cn" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">公司英文名称</label>
+                            <label class="form-label" data-zh="公司英文名称" data-en="Company Name (EN)">公司英文名称</label>
                             <input type="text" class="form-control" name="name_en">
                         </div>
                     </div>
