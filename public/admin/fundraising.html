@@ -852,7 +852,83 @@
             meeting: { zh: '会议请求', en: 'Meeting' },
             data_room: { zh: '数据室', en: 'Data Room' },
             active: { zh: '活跃', en: 'Active' },
-            suspended: { zh: '已暂停', en: 'Suspended' }
+            suspended: { zh: '已暂停', en: 'Suspended' },
+            // 企业详情模态框
+            companyName: { zh: '公司名称', en: 'Company Name' },
+            companyNameEn: { zh: '英文名称', en: 'English Name' },
+            industry: { zh: '行业', en: 'Industry' },
+            stage: { zh: '阶段', en: 'Stage' },
+            headquarters: { zh: '总部', en: 'Headquarters' },
+            status: { zh: '状态', en: 'Status' },
+            companyDesc: { zh: '公司简介', en: 'Company Description' },
+            fundraisingInfo: { zh: '融资信息', en: 'Fundraising Info' },
+            fundraisingAmount: { zh: '融资金额', en: 'Fundraising Amount' },
+            timeWindow: { zh: '时间窗口', en: 'Time Window' },
+            noFundraisingInfo: { zh: '尚未填写融资信息', en: 'No fundraising info' },
+            bpDocuments: { zh: 'BP/文档', en: 'BP/Documents' },
+            noDocuments: { zh: '暂无上传文档', en: 'No documents uploaded' },
+            contactPerson: { zh: '联系人', en: 'Contact Person' },
+            name: { zh: '姓名', en: 'Name' },
+            email: { zh: '邮箱', en: 'Email' },
+            phone: { zh: '电话', en: 'Phone' },
+            wechat: { zh: '微信', en: 'WeChat' },
+            reviewActions: { zh: '审核操作', en: 'Review Actions' },
+            visibilitySetting: { zh: '可见性设置', en: 'Visibility Setting' },
+            private: { zh: '私有（仅内部）', en: 'Private (Internal only)' },
+            investors: { zh: '对投资人可见', en: 'Visible to Investors' },
+            whitelist: { zh: '白名单可见', en: 'Whitelist Only' },
+            adminNotes: { zh: '管理员备注', en: 'Admin Notes' },
+            adminFeedback: { zh: '给企业的反馈', en: 'Feedback to Company' },
+            approveAndSave: { zh: '通过并保存', en: 'Approve & Save' },
+            close: { zh: '关闭', en: 'Close' },
+            downloading: { zh: '正在下载...', en: 'Downloading...' },
+            downloadFailed: { zh: '下载失败', en: 'Download failed' },
+            preview: { zh: '预览', en: 'Preview' },
+            download: { zh: '下载', en: 'Download' },
+            // 投资人详情
+            investorType: { zh: '投资人类型', en: 'Investor Type' },
+            organization: { zh: '所属机构', en: 'Organization' },
+            title: { zh: '职位', en: 'Title' },
+            investmentFocus: { zh: '投资偏好', en: 'Investment Focus' },
+            investmentStages: { zh: '投资阶段', en: 'Investment Stages' },
+            investmentRange: { zh: '投资范围', en: 'Investment Range' },
+            contactInfo: { zh: '联系方式', en: 'Contact Info' },
+            // 通用
+            individual: { zh: '个人投资人', en: 'Individual' },
+            family_office: { zh: '家族办公室', en: 'Family Office' },
+            vc: { zh: '风险投资', en: 'Venture Capital' },
+            pe: { zh: '私募股权', en: 'Private Equity' },
+            corporate: { zh: '企业战略投资', en: 'Corporate VC' },
+            other: { zh: '其他', en: 'Other' },
+            seed: { zh: '种子轮', en: 'Seed' },
+            angel: { zh: '天使轮', en: 'Angel' },
+            a: { zh: 'A轮', en: 'Series A' },
+            b: { zh: 'B轮', en: 'Series B' },
+            c: { zh: 'C轮', en: 'Series C' },
+            pre_ipo: { zh: 'Pre-IPO', en: 'Pre-IPO' },
+            ipo: { zh: 'IPO', en: 'IPO' },
+            technology: { zh: '科技/互联网', en: 'Technology' },
+            healthcare: { zh: '医疗健康', en: 'Healthcare' },
+            finance: { zh: '金融科技', en: 'FinTech' },
+            manufacturing: { zh: '制造业', en: 'Manufacturing' },
+            consumer: { zh: '消费品', en: 'Consumer' },
+            energy: { zh: '能源/环保', en: 'Energy' },
+            immediate: { zh: '立即', en: 'Immediate' },
+            '3_months': { zh: '3个月内', en: 'Within 3 months' },
+            '6_months': { zh: '6个月内', en: 'Within 6 months' },
+            '12_months': { zh: '12个月内', en: 'Within 12 months' },
+            flexible: { zh: '灵活', en: 'Flexible' },
+            // 时间线
+            '0-3months': { zh: '0-3个月', en: '0-3 months' },
+            '3-6months': { zh: '3-6个月', en: '3-6 months' },
+            '6-12months': { zh: '6-12个月', en: '6-12 months' },
+            '12+months': { zh: '12个月+', en: '12+ months' },
+            // 请求类型
+            referral: { zh: '引荐请求', en: 'Referral' },
+            dataroom: { zh: '数据室', en: 'Data Room' },
+            // 投资人详情用的
+            linkedin: { zh: 'LinkedIn', en: 'LinkedIn' },
+            whatsapp: { zh: 'WhatsApp', en: 'WhatsApp' }
         };
 
         function t(key) {
@@ -1116,7 +1192,7 @@
                 const c = data.company;
 
                 // 生成文档列表 HTML
-                let documentsHtml = '<p style="color: #666;">暂无上传文档</p>';
+                let documentsHtml = `<p style="color: #666;">${t('noDocuments')}</p>`;
                 if (c.documents && c.documents.length > 0) {
                     documentsHtml = `
                         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -1133,10 +1209,10 @@
                                         </div>
                                     </div>
                                     <div class="btn-group">
-                                        <button onclick="previewDocument('${doc.id}', '${doc.filename}', '${doc.mimetype || 'application/pdf'}')" class="btn btn-secondary btn-sm" title="预览">
+                                        <button onclick="previewDocument('${doc.id}', '${doc.filename}', '${doc.mimetype || 'application/pdf'}')" class="btn btn-secondary btn-sm" title="${t('preview')}">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button onclick="downloadDocument('${doc.id}', '${doc.filename}')" class="btn btn-primary btn-sm" title="下载">
+                                        <button onclick="downloadDocument('${doc.id}', '${doc.filename}')" class="btn btn-primary btn-sm" title="${t('download')}">
                                             <i class="fas fa-download"></i>
                                         </button>
                                     </div>
@@ -1148,63 +1224,63 @@
 
                 document.getElementById('companyModalContent').innerHTML = `
                     <div class="detail-grid">
-                        <div class="detail-item"><div class="detail-label">公司名称</div><div class="detail-value">${c.name_cn}</div></div>
-                        <div class="detail-item"><div class="detail-label">英文名称</div><div class="detail-value">${c.name_en || '-'}</div></div>
-                        <div class="detail-item"><div class="detail-label">行业</div><div class="detail-value">${formatIndustry(c.industry_primary)}</div></div>
-                        <div class="detail-item"><div class="detail-label">阶段</div><div class="detail-value">${formatStage(c.stage)}</div></div>
-                        <div class="detail-item"><div class="detail-label">总部</div><div class="detail-value">${c.location_headquarters}</div></div>
-                        <div class="detail-item"><div class="detail-label">状态</div><div class="detail-value"><span class="status-badge status-${c.status}">${formatStatus(c.status)}</span></div></div>
+                        <div class="detail-item"><div class="detail-label">${t('companyName')}</div><div class="detail-value">${c.name_cn}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('companyNameEn')}</div><div class="detail-value">${c.name_en || '-'}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('industry')}</div><div class="detail-value">${formatIndustry(c.industry_primary)}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('stage')}</div><div class="detail-value">${formatStage(c.stage)}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('headquarters')}</div><div class="detail-value">${c.location_headquarters || '-'}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('status')}</div><div class="detail-value"><span class="status-badge status-${c.status}">${t(c.status)}</span></div></div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">公司简介</label>
+                        <label class="form-label">${t('companyDesc')}</label>
                         <p>${c.description || '-'}</p>
                     </div>
 
                     ${c.fundraisingInfo ? `
-                        <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-money-bill-wave" style="color: var(--success-color);"></i> 融资信息</h4>
+                        <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-money-bill-wave" style="color: var(--success-color);"></i> ${t('fundraisingInfo')}</h4>
                         <div class="detail-grid">
-                            <div class="detail-item"><div class="detail-label">融资金额</div><div class="detail-value">${formatAmount(c.fundraisingInfo.amount_min)} - ${formatAmount(c.fundraisingInfo.amount_max)}</div></div>
-                            <div class="detail-item"><div class="detail-label">时间窗口</div><div class="detail-value">${formatTimeline(c.fundraisingInfo.timeline)}</div></div>
+                            <div class="detail-item"><div class="detail-label">${t('fundraisingAmount')}</div><div class="detail-value">${formatAmount(c.fundraisingInfo.amount_min)} - ${formatAmount(c.fundraisingInfo.amount_max)}</div></div>
+                            <div class="detail-item"><div class="detail-label">${t('timeWindow')}</div><div class="detail-value">${formatTimeline(c.fundraisingInfo.timeline)}</div></div>
                         </div>
-                    ` : '<p style="color: #F59E0B; margin: 1rem 0;"><i class="fas fa-exclamation-triangle"></i> 尚未填写融资信息</p>'}
+                    ` : `<p style="color: #F59E0B; margin: 1rem 0;"><i class="fas fa-exclamation-triangle"></i> ${t('noFundraisingInfo')}</p>`}
 
-                    <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-file-alt" style="color: var(--primary-color);"></i> BP/文档</h4>
+                    <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-file-alt" style="color: var(--primary-color);"></i> ${t('bpDocuments')}</h4>
                     ${documentsHtml}
 
-                    <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-user" style="color: var(--secondary-color);"></i> 联系人</h4>
+                    <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-user" style="color: var(--secondary-color);"></i> ${t('contactPerson')}</h4>
                     <div class="detail-grid">
-                        <div class="detail-item"><div class="detail-label">姓名</div><div class="detail-value">${c.contact_name || '-'}</div></div>
-                        <div class="detail-item"><div class="detail-label">邮箱</div><div class="detail-value">${c.contact_email || '-'}</div></div>
-                        <div class="detail-item"><div class="detail-label">电话</div><div class="detail-value">${c.contact_phone || '-'}</div></div>
-                        <div class="detail-item"><div class="detail-label">微信</div><div class="detail-value">${c.contact_wechat || '-'}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('name')}</div><div class="detail-value">${c.contact_name || '-'}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('email')}</div><div class="detail-value">${c.contact_email || '-'}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('phone')}</div><div class="detail-value">${c.contact_phone || '-'}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('wechat')}</div><div class="detail-value">${c.contact_wechat || '-'}</div></div>
                     </div>
 
-                    <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-check-circle" style="color: var(--warning-color);"></i> 审核操作</h4>
+                    <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-check-circle" style="color: var(--warning-color);"></i> ${t('reviewActions')}</h4>
                     <div class="form-group">
-                        <label class="form-label">可见性设置</label>
+                        <label class="form-label">${t('visibilitySetting')}</label>
                         <select class="form-control" id="visibilitySelect">
-                            <option value="private" ${c.visibility === 'private' ? 'selected' : ''}>私有（仅内部）</option>
-                            <option value="investors" ${c.visibility === 'investors' ? 'selected' : ''}>对投资人可见</option>
-                            <option value="whitelist" ${c.visibility === 'whitelist' ? 'selected' : ''}>白名单可见</option>
+                            <option value="private" ${c.visibility === 'private' ? 'selected' : ''}>${t('private')}</option>
+                            <option value="investors" ${c.visibility === 'investors' ? 'selected' : ''}>${t('investors')}</option>
+                            <option value="whitelist" ${c.visibility === 'whitelist' ? 'selected' : ''}>${t('whitelist')}</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">管理员备注</label>
+                        <label class="form-label">${t('adminNotes')}</label>
                         <textarea class="form-control" id="adminNotes" rows="2">${c.admin_notes || ''}</textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">给企业的反馈</label>
+                        <label class="form-label">${t('adminFeedback')}</label>
                         <textarea class="form-control" id="adminFeedback" rows="2">${c.admin_feedback || ''}</textarea>
                     </div>
                     <div class="btn-group" style="margin-top: 1rem;">
-                        <button class="btn btn-success" onclick="saveCompanyReview('${c.id}', 'approved')">通过并保存</button>
-                        <button class="btn btn-danger" onclick="saveCompanyReview('${c.id}', 'rejected')">拒绝</button>
-                        <button class="btn btn-secondary" onclick="closeModal('companyModal')">关闭</button>
+                        <button class="btn btn-success" onclick="saveCompanyReview('${c.id}', 'approved')">${t('approveAndSave')}</button>
+                        <button class="btn btn-danger" onclick="saveCompanyReview('${c.id}', 'rejected')">${t('reject')}</button>
+                        <button class="btn btn-secondary" onclick="closeModal('companyModal')">${t('close')}</button>
                     </div>
                 `;
             } catch (error) {
-                document.getElementById('companyModalContent').innerHTML = '<p style="color:red;">加载失败</p>';
+                document.getElementById('companyModalContent').innerHTML = `<p style="color:red;">${t('loadFailed')}</p>`;
             }
         }
 
@@ -1408,45 +1484,44 @@
         }
 
         function formatStage(s) {
-            const map = { 'seed': '种子轮', 'angel': '天使轮', 'pre_a': 'Pre-A', 'a': 'A轮', 'b': 'B轮', 'c': 'C轮+', 'pre_ipo': 'Pre-IPO', 'ipo': '已上市' };
-            return map[s] || s;
+            return t(s) || s;
         }
 
         function formatIndustry(i) {
-            const map = { 'technology': '科技', 'healthcare': '医疗', 'finance': '金融', 'manufacturing': '制造', 'consumer': '消费', 'energy': '能源' };
-            return map[i] || i;
+            return t(i) || i;
         }
 
         function formatStatus(s) {
-            const map = { 'draft': '草稿', 'pending': '待审核', 'approved': '已通过', 'rejected': '已拒绝', 'suspended': '已暂停' };
-            return map[s] || s;
+            return t(s) || s;
         }
 
         function formatVisibility(v) {
-            const map = { 'private': '私有', 'investors': '投资人可见', 'whitelist': '白名单' };
-            return map[v] || v;
+            return t(v) || v;
         }
 
-        function formatInvestorType(t) {
-            const map = { 'individual': '个人', 'family_office': '家办', 'vc': 'VC', 'pe': 'PE', 'corporate': '战投' };
-            return map[t] || t;
+        function formatInvestorType(type) {
+            return t(type) || type;
         }
 
-        function formatRequestType(t) {
-            const map = { 'bp_access': 'BP访问', 'referral': '引荐', 'meeting': '会议', 'dataroom': '数据室' };
-            return map[t] || t;
+        function formatRequestType(type) {
+            return t(type) || type;
         }
 
         function formatAmount(a) {
             if (!a) return '-';
-            if (a >= 100000000) return (a / 100000000).toFixed(1) + '亿';
-            if (a >= 10000) return (a / 10000).toFixed(0) + '万';
+            const lang = localStorage.getItem('eon_language') || 'zh';
+            if (lang === 'zh') {
+                if (a >= 100000000) return (a / 100000000).toFixed(1) + '亿';
+                if (a >= 10000) return (a / 10000).toFixed(0) + '万';
+            } else {
+                if (a >= 1000000) return (a / 1000000).toFixed(1) + 'M';
+                if (a >= 1000) return (a / 1000).toFixed(0) + 'K';
+            }
             return a;
         }
 
-        function formatTimeline(t) {
-            const map = { '0-3months': '0-3月', '3-6months': '3-6月', '6-12months': '6-12月', '12+months': '12月+' };
-            return map[t] || t;
+        function formatTimeline(timeline) {
+            return t(timeline) || timeline;
         }
 
         function logout() {
