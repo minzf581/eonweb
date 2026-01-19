@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>融资平台管理 - EON Protocol</title>
+    <title data-zh="融资平台管理 - EON Protocol" data-en="Admin Management - EON Protocol">融资平台管理 - EON Protocol</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -358,56 +358,62 @@
                     <li class="nav-item">
                         <a href="/admin/" class="nav-link">
                             <i class="fas fa-home"></i>
-                            <span>仪表盘</span>
+                            <span data-zh="仪表盘" data-en="Dashboard">仪表盘</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#companies" class="nav-link sidebar-tab active" data-tab="companies">
                             <i class="fas fa-building"></i>
-                            <span>企业管理</span>
+                            <span data-zh="企业管理" data-en="Companies">企业管理</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#investors" class="nav-link sidebar-tab" data-tab="investors">
                             <i class="fas fa-user-tie"></i>
-                            <span>投资人管理</span>
+                            <span data-zh="投资人管理" data-en="Investors">投资人管理</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#requests" class="nav-link sidebar-tab" data-tab="requests">
                             <i class="fas fa-clipboard-list"></i>
-                            <span>访问请求</span>
+                            <span data-zh="访问请求" data-en="Requests">访问请求</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#users" class="nav-link sidebar-tab" data-tab="users">
                             <i class="fas fa-users"></i>
-                            <span>用户管理</span>
+                            <span data-zh="用户管理" data-en="Users">用户管理</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#messages" class="nav-link sidebar-tab" data-tab="messages">
                             <i class="fas fa-envelope"></i>
-                            <span>消息中心</span>
+                            <span data-zh="消息中心" data-en="Messages">消息中心</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#settings" class="nav-link sidebar-tab" data-tab="settings">
                             <i class="fas fa-cog"></i>
-                            <span>系统设置</span>
+                            <span data-zh="系统设置" data-en="Settings">系统设置</span>
                         </a>
                     </li>
                     <li class="nav-item" style="margin-top: 2rem;">
                         <a href="/" class="nav-link">
                             <i class="fas fa-arrow-left"></i>
-                            <span>返回首页</span>
+                            <span data-zh="返回首页" data-en="Back to Home">返回首页</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="logout(); return false;">
                             <i class="fas fa-sign-out-alt"></i>
-                            <span>退出登录</span>
+                            <span data-zh="退出登录" data-en="Logout">退出登录</span>
                         </a>
+                    </li>
+                    <li class="nav-item" style="margin-top: 1rem;">
+                        <button class="lang-switch nav-link" data-lang-switch style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                            <i class="fas fa-globe"></i>
+                            <span>EN</span>
+                        </button>
                     </li>
                 </ul>
             </nav>
@@ -415,9 +421,9 @@
 
         <main class="main-content">
             <div class="page-header">
-                <h1 class="page-title">融资平台管理</h1>
+                <h1 class="page-title" data-zh="融资平台管理" data-en="Admin Management">融资平台管理</h1>
                 <button class="btn btn-secondary" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> 退出
+                    <i class="fas fa-sign-out-alt"></i> <span data-zh="退出" data-en="Logout">退出</span>
                 </button>
             </div>
 
@@ -1789,5 +1795,6 @@
             document.getElementById(id).classList.add('active');
         }
     </script>
+    <script src="/static/js/lang.js"></script>
 </body>
 </html>

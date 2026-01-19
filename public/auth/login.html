@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 - EON Protocol</title>
+    <title data-zh="登录 - EON Protocol" data-en="Login - EON Protocol">登录 - EON Protocol</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -28,7 +28,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 1rem;
         }
 
         .container {
@@ -37,7 +37,42 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
             max-width: 420px;
-            padding: 2.5rem;
+            padding: 2rem;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary-color);
+        }
+
+        .lang-switch {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-switch:hover {
+            background: var(--secondary-color);
         }
 
         .logo {
@@ -177,25 +212,12 @@
             to { transform: rotate(360deg); }
         }
 
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.875rem;
-            margin-bottom: 1rem;
-        }
-
-        .back-link:hover {
-            color: var(--primary-color);
-        }
-
         .quick-links {
             display: flex;
             gap: 1rem;
             margin-top: 1rem;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .quick-link {
@@ -215,6 +237,26 @@
             border-color: var(--primary-color);
             color: var(--primary-color);
         }
+
+        /* 移动端优化 */
+        @media (max-width: 480px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+                border-radius: 12px;
+            }
+            .logo h1 {
+                font-size: 1.5rem;
+            }
+            .quick-links {
+                flex-direction: column;
+            }
+            .quick-link {
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -223,13 +265,19 @@
     </div>
 
     <div class="container">
-        <a href="/" class="back-link">
-            <i class="fas fa-arrow-left"></i> 返回首页
-        </a>
+        <div class="header-row">
+            <a href="/" class="back-link">
+                <i class="fas fa-arrow-left"></i> 
+                <span data-zh="返回首页" data-en="Back to Home">返回首页</span>
+            </a>
+            <button class="lang-switch" data-lang-switch>
+                <i class="fas fa-globe"></i> EN
+            </button>
+        </div>
 
         <div class="logo">
             <h1>EON Protocol</h1>
-            <p>登录您的账户</p>
+            <p data-zh="登录您的账户" data-en="Login to your account">登录您的账户</p>
         </div>
 
         <form id="loginForm">
@@ -237,34 +285,43 @@
             <div id="successMessage" class="success-message"></div>
 
             <div class="form-group">
-                <label class="form-label">邮箱地址</label>
-                <input type="email" class="form-control" id="email" required placeholder="your@email.com">
+                <label class="form-label" data-zh="邮箱地址" data-en="Email Address">邮箱地址</label>
+                <input type="email" class="form-control" id="email" required 
+                       data-placeholder-zh="your@email.com" data-placeholder-en="your@email.com" 
+                       placeholder="your@email.com">
             </div>
 
             <div class="form-group">
-                <label class="form-label">密码</label>
-                <input type="password" class="form-control" id="password" required placeholder="输入密码">
+                <label class="form-label" data-zh="密码" data-en="Password">密码</label>
+                <input type="password" class="form-control" id="password" required 
+                       data-placeholder-zh="输入密码" data-placeholder-en="Enter password"
+                       placeholder="输入密码">
             </div>
 
             <button type="submit" class="btn btn-primary" id="submitBtn">
-                <i class="fas fa-sign-in-alt"></i> 登录
+                <i class="fas fa-sign-in-alt"></i> 
+                <span data-zh="登录" data-en="Login">登录</span>
             </button>
         </form>
 
         <div class="link-text">
-            还没有账户？<a href="/auth/register.html">立即注册</a>
+            <span data-zh="还没有账户？" data-en="Don't have an account?">还没有账户？</span>
+            <a href="/auth/register.html" data-zh="立即注册" data-en="Register now">立即注册</a>
         </div>
 
         <div class="quick-links">
             <a href="/auth/register.html?role=company" class="quick-link">
-                <i class="fas fa-building"></i> 企业注册
+                <i class="fas fa-building"></i> 
+                <span data-zh="企业注册" data-en="Company">企业注册</span>
             </a>
             <a href="/auth/register.html?role=investor" class="quick-link">
-                <i class="fas fa-chart-line"></i> 投资人注册
+                <i class="fas fa-chart-line"></i> 
+                <span data-zh="投资人注册" data-en="Investor">投资人注册</span>
             </a>
         </div>
     </div>
 
+    <script src="/static/js/lang.js"></script>
     <script>
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
@@ -272,7 +329,7 @@
             const token = localStorage.getItem('token');
             if (token) {
                 checkAuth(token);
-                }
+            }
 
             // 表单提交
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
@@ -294,10 +351,10 @@
         }
 
         async function handleLogin(e) {
-                    e.preventDefault();
+            e.preventDefault();
 
             const email = document.getElementById('email').value.trim();
-                        const password = document.getElementById('password').value;
+            const password = document.getElementById('password').value;
 
             showLoading(true);
             hideMessages();
@@ -312,14 +369,14 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '登录失败');
+                    throw new Error(result.error || (getLang() === 'en' ? 'Login failed' : '登录失败'));
                 }
 
                 // 保存 token
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
 
-                showSuccess('登录成功，正在跳转...');
+                showSuccess(getLang() === 'en' ? 'Login successful, redirecting...' : '登录成功，正在跳转...');
 
                 // 跳转
                 setTimeout(() => {
@@ -354,7 +411,7 @@
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'flex' : 'none';
             document.getElementById('submitBtn').disabled = show;
-                    }
+        }
 
         function showError(message) {
             const el = document.getElementById('errorMessage');
@@ -366,7 +423,7 @@
             const el = document.getElementById('successMessage');
             el.textContent = message;
             el.style.display = 'block';
-            }
+        }
 
         function hideMessages() {
             document.getElementById('errorMessage').style.display = 'none';

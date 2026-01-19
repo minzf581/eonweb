@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>注册 - EON Protocol</title>
+    <title data-zh="注册 - EON Protocol" data-en="Register - EON Protocol">注册 - EON Protocol</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -28,7 +28,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 1rem;
         }
 
         .container {
@@ -37,12 +37,47 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
             max-width: 480px;
-            padding: 2.5rem;
+            padding: 2rem;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary-color);
+        }
+
+        .lang-switch {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-switch:hover {
+            background: var(--secondary-color);
         }
 
         .logo {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .logo h1 {
@@ -61,13 +96,13 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .role-option {
             border: 2px solid var(--border-color);
             border-radius: 12px;
-            padding: 1.5rem 1rem;
+            padding: 1.25rem 1rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
@@ -84,19 +119,19 @@
         }
 
         .role-option i {
-            font-size: 2rem;
+            font-size: 1.75rem;
             color: var(--primary-color);
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
 
         .role-option h3 {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: var(--text-color);
             margin-bottom: 0.25rem;
         }
 
         .role-option p {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
         }
 
@@ -106,12 +141,12 @@
 
         /* 表单 */
         .form-group {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
             font-weight: 500;
             color: var(--text-color);
             font-size: 0.875rem;
@@ -119,7 +154,7 @@
 
         .form-control {
             width: 100%;
-            padding: 0.875rem 1rem;
+            padding: 0.75rem 1rem;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             font-size: 1rem;
@@ -134,7 +169,7 @@
 
         .btn {
             width: 100%;
-            padding: 1rem;
+            padding: 0.875rem;
             border: none;
             border-radius: 8px;
             font-size: 1rem;
@@ -159,29 +194,9 @@
             transform: none;
         }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 1.5rem 0;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border-color);
-        }
-
-        .divider span {
-            padding: 0 1rem;
-        }
-
         .link-text {
             text-align: center;
-            margin-top: 1.5rem;
+            margin-top: 1.25rem;
             color: var(--text-secondary);
             font-size: 0.875rem;
         }
@@ -248,18 +263,27 @@
             margin-top: 0.25rem;
         }
 
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.875rem;
-            margin-bottom: 1rem;
-        }
-
-        .back-link:hover {
-            color: var(--primary-color);
+        /* 移动端优化 */
+        @media (max-width: 480px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+                border-radius: 12px;
+            }
+            .logo h1 {
+                font-size: 1.5rem;
+            }
+            .role-option {
+                padding: 1rem 0.5rem;
+            }
+            .role-option i {
+                font-size: 1.5rem;
+            }
+            .role-option h3 {
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -269,13 +293,19 @@
     </div>
 
     <div class="container">
-        <a href="/" class="back-link">
-            <i class="fas fa-arrow-left"></i> 返回首页
-        </a>
+        <div class="header-row">
+            <a href="/" class="back-link">
+                <i class="fas fa-arrow-left"></i> 
+                <span data-zh="返回首页" data-en="Back to Home">返回首页</span>
+            </a>
+            <button class="lang-switch" data-lang-switch>
+                <i class="fas fa-globe"></i> EN
+            </button>
+        </div>
 
         <div class="logo">
             <h1>EON Protocol</h1>
-            <p>注册账户，开始链接全球资本</p>
+            <p data-zh="注册账户，开始链接全球资本" data-en="Register to connect with global capital">注册账户，开始链接全球资本</p>
         </div>
 
         <form id="registerForm">
@@ -284,14 +314,14 @@
                 <label class="role-option" id="roleCompany">
                     <input type="radio" name="role" value="company" checked>
                     <i class="fas fa-building"></i>
-                    <h3>我是企业</h3>
-                    <p>提交 BP，对接投资人</p>
+                    <h3 data-zh="我是企业" data-en="I'm a Company">我是企业</h3>
+                    <p data-zh="提交 BP，对接投资人" data-en="Submit BP, connect investors">提交 BP，对接投资人</p>
                 </label>
                 <label class="role-option active" id="roleInvestor">
                     <input type="radio" name="role" value="investor">
                     <i class="fas fa-chart-line"></i>
-                    <h3>我是投资人</h3>
-                    <p>浏览项目，请求引荐</p>
+                    <h3 data-zh="我是投资人" data-en="I'm an Investor">我是投资人</h3>
+                    <p data-zh="浏览项目，请求引荐" data-en="Browse projects, request intro">浏览项目，请求引荐</p>
                 </label>
             </div>
 
@@ -299,47 +329,61 @@
             <div id="successMessage" class="success-message"></div>
 
             <div class="form-group">
-                <label class="form-label">姓名</label>
-                <input type="text" class="form-control" id="name" placeholder="您的姓名">
+                <label class="form-label" data-zh="姓名" data-en="Name">姓名</label>
+                <input type="text" class="form-control" id="name" 
+                       data-placeholder-zh="您的姓名" data-placeholder-en="Your name"
+                       placeholder="您的姓名">
             </div>
 
             <div class="form-group">
-                <label class="form-label">邮箱地址</label>
+                <label class="form-label" data-zh="邮箱地址" data-en="Email Address">邮箱地址</label>
                 <input type="email" class="form-control" id="email" required placeholder="your@email.com">
             </div>
 
             <div class="form-group">
-                <label class="form-label">密码</label>
-                <input type="password" class="form-control" id="password" required placeholder="设置密码">
-                <p class="password-hint">密码长度至少6位</p>
+                <label class="form-label" data-zh="密码" data-en="Password">密码</label>
+                <input type="password" class="form-control" id="password" required 
+                       data-placeholder-zh="设置密码" data-placeholder-en="Set password"
+                       placeholder="设置密码">
+                <p class="password-hint" data-zh="密码长度至少6位" data-en="Password must be at least 6 characters">密码长度至少6位</p>
             </div>
 
             <div class="form-group">
-                <label class="form-label">确认密码</label>
-                <input type="password" class="form-control" id="confirmPassword" required placeholder="再次输入密码">
+                <label class="form-label" data-zh="确认密码" data-en="Confirm Password">确认密码</label>
+                <input type="password" class="form-control" id="confirmPassword" required 
+                       data-placeholder-zh="再次输入密码" data-placeholder-en="Enter password again"
+                       placeholder="再次输入密码">
             </div>
 
             <div class="form-group">
-                <label class="form-label">推荐码 <span style="color: var(--text-secondary); font-weight: normal;">(选填)</span></label>
-                <input type="text" class="form-control" id="referralCode" placeholder="有推荐码可填写，优先处理" style="text-transform: uppercase;">
+                <label class="form-label">
+                    <span data-zh="推荐码" data-en="Referral Code">推荐码</span> 
+                    <span style="color: var(--text-secondary); font-weight: normal;" data-zh="(选填)" data-en="(Optional)">(选填)</span>
+                </label>
+                <input type="text" class="form-control" id="referralCode" 
+                       data-placeholder-zh="有推荐码可填写，优先处理" data-placeholder-en="Enter referral code for priority"
+                       placeholder="有推荐码可填写，优先处理" style="text-transform: uppercase;">
                 <p id="referralInfo" class="password-hint" style="display: none; color: var(--success-color);">
-                    <i class="fas fa-check-circle"></i> <span id="referrerName"></span> 推荐
+                    <i class="fas fa-check-circle"></i> <span id="referrerName"></span> <span data-zh="推荐" data-en="referred">推荐</span>
                 </p>
                 <p id="referralError" class="password-hint" style="display: none; color: var(--danger-color);">
-                    <i class="fas fa-times-circle"></i> 推荐码无效
+                    <i class="fas fa-times-circle"></i> <span data-zh="推荐码无效" data-en="Invalid referral code">推荐码无效</span>
                 </p>
             </div>
 
             <button type="submit" class="btn btn-primary" id="submitBtn">
-                <i class="fas fa-user-plus"></i> 注册
+                <i class="fas fa-user-plus"></i> 
+                <span data-zh="注册" data-en="Register">注册</span>
             </button>
         </form>
 
         <div class="link-text">
-            已有账户？<a href="/auth/login.html">立即登录</a>
+            <span data-zh="已有账户？" data-en="Already have an account?">已有账户？</span>
+            <a href="/auth/login.html" data-zh="立即登录" data-en="Login now">立即登录</a>
         </div>
     </div>
 
+    <script src="/static/js/lang.js"></script>
     <script>
         let validReferralCode = null;
 
@@ -441,7 +485,6 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    // 根据角色跳转
                     redirectByRole(data.user.role);
                 }
             } catch (error) {
@@ -451,6 +494,7 @@
 
         async function handleRegister(e) {
             e.preventDefault();
+            const isEn = getLang() === 'en';
 
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
@@ -461,18 +505,18 @@
 
             // 验证
             if (password.length < 6) {
-                showError('密码长度至少6位');
+                showError(isEn ? 'Password must be at least 6 characters' : '密码长度至少6位');
                 return;
             }
 
             if (password !== confirmPassword) {
-                showError('两次输入的密码不一致');
+                showError(isEn ? 'Passwords do not match' : '两次输入的密码不一致');
                 return;
             }
 
             // 如果填了推荐码但无效，提示用户
             if (referralCode && !validReferralCode) {
-                showError('请输入有效的推荐码，或清空推荐码字段');
+                showError(isEn ? 'Please enter a valid referral code or leave it empty' : '请输入有效的推荐码，或清空推荐码字段');
                 return;
             }
 
@@ -494,18 +538,18 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '注册失败');
+                    throw new Error(result.error || (isEn ? 'Registration failed' : '注册失败'));
                 }
 
                 // 保存 token
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
 
-                let successMsg = '注册成功';
+                let successMsg = isEn ? 'Registration successful' : '注册成功';
                 if (result.referrer) {
-                    successMsg += `（由 ${result.referrer.name || result.referrer.email} 推荐）`;
+                    successMsg += isEn ? ` (Referred by ${result.referrer.name || result.referrer.email})` : `（由 ${result.referrer.name || result.referrer.email} 推荐）`;
                 }
-                showSuccess(successMsg + '，正在跳转...');
+                showSuccess(successMsg + (isEn ? ', redirecting...' : '，正在跳转...'));
 
                 // 跳转
                 setTimeout(() => {
@@ -538,7 +582,7 @@
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'flex' : 'none';
             document.getElementById('submitBtn').disabled = show;
-                    }
+        }
 
         function showError(message) {
             const el = document.getElementById('errorMessage');
@@ -550,7 +594,7 @@
             const el = document.getElementById('successMessage');
             el.textContent = message;
             el.style.display = 'block';
-            }
+        }
 
         function hideMessages() {
             document.getElementById('errorMessage').style.display = 'none';

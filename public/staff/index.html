@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>运营管理 - EON Protocol</title>
+    <title data-zh="运营管理 - EON Protocol" data-en="Staff Portal - EON Protocol">运营管理 - EON Protocol</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -484,51 +484,57 @@
         <aside class="sidebar">
             <div class="logo">
                 <i class="fas fa-user-tie"></i>
-                运营管理
+                <span data-zh="运营管理" data-en="Staff Portal">运营管理</span>
             </div>
             <nav>
                 <ul class="nav-menu">
                     <li class="nav-item">
                         <a href="#overview" class="nav-link active" data-panel="overview">
                             <i class="fas fa-home"></i>
-                            <span>概览</span>
+                            <span data-zh="概览" data-en="Overview">概览</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#companies" class="nav-link" data-panel="companies">
                             <i class="fas fa-building"></i>
-                            <span>企业管理</span>
+                            <span data-zh="企业管理" data-en="Companies">企业管理</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#requests" class="nav-link" data-panel="requests">
                             <i class="fas fa-inbox"></i>
-                            <span>访问请求</span>
+                            <span data-zh="访问请求" data-en="Requests">访问请求</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#investors" class="nav-link" data-panel="investors">
                             <i class="fas fa-users"></i>
-                            <span>投资人</span>
+                            <span data-zh="投资人" data-en="Investors">投资人</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#messages" class="nav-link" data-panel="messages">
                             <i class="fas fa-envelope"></i>
-                            <span>消息</span>
+                            <span data-zh="消息" data-en="Messages">消息</span>
                         </a>
                     </li>
                     <li class="nav-item" style="margin-top: 2rem;">
                         <a href="#" class="nav-link" onclick="showPasswordModal(); return false;">
                             <i class="fas fa-key"></i>
-                            <span>修改密码</span>
+                            <span data-zh="修改密码" data-en="Change Password">修改密码</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="/" class="nav-link">
                             <i class="fas fa-arrow-left"></i>
-                            <span>返回首页</span>
+                            <span data-zh="返回首页" data-en="Back to Home">返回首页</span>
                         </a>
+                    </li>
+                    <li class="nav-item" style="margin-top: 1rem;">
+                        <button class="lang-switch nav-link" data-lang-switch style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                            <i class="fas fa-globe"></i>
+                            <span>EN</span>
+                        </button>
                     </li>
                 </ul>
             </nav>
@@ -538,11 +544,11 @@
         <main class="main-content">
             <div class="top-bar">
                 <div class="user-info">
-                    <span>运营管理员：</span>
+                    <span data-zh="运营管理员：" data-en="Staff: ">运营管理员：</span>
                     <span class="user-email" id="userEmail">-</span>
                 </div>
                 <button class="logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                    <i class="fas fa-sign-out-alt"></i> <span data-zh="退出登录" data-en="Logout">退出登录</span>
                 </button>
             </div>
 
@@ -551,8 +557,8 @@
             <!-- 概览面板 -->
             <div id="overview" class="panel active">
                 <div class="page-header">
-                    <h1 class="page-title">运营概览</h1>
-                    <p class="page-subtitle">管理您创建的企业和对接情况</p>
+                    <h1 class="page-title" data-zh="运营概览" data-en="Staff Overview">运营概览</h1>
+                    <p class="page-subtitle" data-zh="管理您创建的企业和对接情况" data-en="Manage companies and investor connections">管理您创建的企业和对接情况</p>
                 </div>
 
                 <div class="stats-grid">
@@ -1453,24 +1459,29 @@
     <!-- 修改密码模态框 -->
     <div id="passwordModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
         <div style="background: white; border-radius: 12px; padding: 2rem; width: 100%; max-width: 400px; margin: 1rem;">
-            <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;">修改密码</h2>
+            <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;" data-zh="修改密码" data-en="Change Password">修改密码</h2>
             <div class="form-group">
-                <label class="form-label">当前密码 <span class="required">*</span></label>
-                <input type="password" id="currentPassword" class="form-control" placeholder="请输入当前密码">
+                <label class="form-label"><span data-zh="当前密码" data-en="Current Password">当前密码</span> <span class="required">*</span></label>
+                <input type="password" id="currentPassword" class="form-control" 
+                       data-placeholder-zh="请输入当前密码" data-placeholder-en="Enter current password" placeholder="请输入当前密码">
             </div>
             <div class="form-group">
-                <label class="form-label">新密码 <span class="required">*</span></label>
-                <input type="password" id="newPassword" class="form-control" placeholder="请输入新密码（至少6位）">
+                <label class="form-label"><span data-zh="新密码" data-en="New Password">新密码</span> <span class="required">*</span></label>
+                <input type="password" id="newPassword" class="form-control" 
+                       data-placeholder-zh="请输入新密码（至少6位）" data-placeholder-en="New password (min 6 chars)" placeholder="请输入新密码（至少6位）">
             </div>
             <div class="form-group">
-                <label class="form-label">确认新密码 <span class="required">*</span></label>
-                <input type="password" id="confirmPassword" class="form-control" placeholder="请再次输入新密码">
+                <label class="form-label"><span data-zh="确认新密码" data-en="Confirm New Password">确认新密码</span> <span class="required">*</span></label>
+                <input type="password" id="confirmPassword" class="form-control" 
+                       data-placeholder-zh="请再次输入新密码" data-placeholder-en="Enter new password again" placeholder="请再次输入新密码">
             </div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
-                <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">取消</button>
-                <button type="button" class="btn btn-primary" onclick="changePassword()">确认修改</button>
+                <button type="button" class="btn btn-secondary" onclick="closePasswordModal()" data-zh="取消" data-en="Cancel">取消</button>
+                <button type="button" class="btn btn-primary" onclick="changePassword()" data-zh="确认修改" data-en="Confirm">确认修改</button>
             </div>
         </div>
     </div>
+
+    <script src="/static/js/lang.js"></script>
 </body>
 </html>
