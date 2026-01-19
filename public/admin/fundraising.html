@@ -856,7 +856,7 @@
         };
 
         function t(key) {
-            const lang = localStorage.getItem('lang') || 'zh';
+            const lang = localStorage.getItem('eon_language') || 'zh';
             return i18n[key] ? (i18n[key][lang] || i18n[key].zh) : key;
         }
 
