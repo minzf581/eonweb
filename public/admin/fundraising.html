@@ -795,28 +795,70 @@
     <div class="modal" id="resetPasswordModal">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
-                <h2 class="modal-title">重置用户密码</h2>
+                <h2 class="modal-title" data-zh="重置用户密码" data-en="Reset User Password">重置用户密码</h2>
                 <button class="modal-close" onclick="closeModal('resetPasswordModal')">&times;</button>
             </div>
             <form id="resetPasswordForm" onsubmit="resetUserPassword(event)">
                 <input type="hidden" id="resetPasswordUserId">
                 <p style="margin-bottom: 1rem; color: var(--text-secondary);">
-                    重置用户 <strong id="resetPasswordUserEmail"></strong> 的密码
+                    <span data-zh="重置用户" data-en="Reset password for">重置用户</span> <strong id="resetPasswordUserEmail"></strong> <span data-zh="的密码" data-en=""></span>
                 </p>
                 <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">新密码 <span style="color: red;">*</span></label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;"><span data-zh="新密码" data-en="New Password">新密码</span> <span style="color: red;">*</span></label>
                     <input type="password" class="filter-input" id="resetNewPassword" required minlength="6" style="width: 100%;">
                 </div>
                 <div class="btn-group" style="margin-top: 1.5rem;">
-                    <button type="submit" class="btn btn-primary">确认重置</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">取消</button>
+                    <button type="submit" class="btn btn-primary" data-zh="确认重置" data-en="Confirm Reset">确认重置</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')" data-zh="取消" data-en="Cancel">取消</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <script src="/static/js/lang.js"></script>
     <script>
         let token = localStorage.getItem('token');
+
+        // 多语言文本
+        const i18n = {
+            pending: { zh: '待审核', en: 'Pending' },
+            approved: { zh: '已通过', en: 'Approved' },
+            rejected: { zh: '已拒绝', en: 'Rejected' },
+            draft: { zh: '草稿', en: 'Draft' },
+            pendingProcess: { zh: '待处理', en: 'Pending' },
+            authFailed: { zh: '认证失败', en: 'Authentication failed' },
+            noAccess: { zh: '无权限访问', en: 'No access' },
+            view: { zh: '查看', en: 'View' },
+            approve: { zh: '通过', en: 'Approve' },
+            reject: { zh: '拒绝', en: 'Reject' },
+            delete: { zh: '删除', en: 'Delete' },
+            resetPassword: { zh: '重置密码', en: 'Reset Password' },
+            noData: { zh: '暂无数据', en: 'No data' },
+            loadFailed: { zh: '加载失败', en: 'Load failed' },
+            operationSuccess: { zh: '操作成功', en: 'Operation successful' },
+            operationFailed: { zh: '操作失败', en: 'Operation failed' },
+            confirmDelete: { zh: '确定要删除此用户吗？此操作不可恢复。', en: 'Are you sure you want to delete this user? This cannot be undone.' },
+            userCreated: { zh: '用户创建成功', en: 'User created successfully' },
+            messageSent: { zh: '消息发送成功', en: 'Message sent successfully' },
+            passwordReset: { zh: '密码重置成功', en: 'Password reset successfully' },
+            passwordChanged: { zh: '密码修改成功', en: 'Password changed successfully' },
+            passwordMismatch: { zh: '两次输入的密码不一致', en: 'Passwords do not match' },
+            company: { zh: '企业', en: 'Company' },
+            investor: { zh: '投资人', en: 'Investor' },
+            admin: { zh: '管理员', en: 'Admin' },
+            staff: { zh: '普通管理员', en: 'Staff' },
+            bp_access: { zh: 'BP访问', en: 'BP Access' },
+            introduction: { zh: '引荐请求', en: 'Introduction' },
+            meeting: { zh: '会议请求', en: 'Meeting' },
+            data_room: { zh: '数据室', en: 'Data Room' },
+            active: { zh: '活跃', en: 'Active' },
+            suspended: { zh: '已暂停', en: 'Suspended' }
+        };
+
+        function t(key) {
+            const lang = localStorage.getItem('lang') || 'zh';
+            return i18n[key] ? (i18n[key][lang] || i18n[key].zh) : key;
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             if (!token) {
@@ -833,17 +875,26 @@
             loadCompanies();
         });
 
+        // 监听语言变化重新加载数据
+        window.addEventListener('languageChanged', () => {
+            loadCompanies();
+            loadInvestors();
+            loadRequests();
+            loadUsers();
+            loadMessages();
+        });
+
         async function checkAdmin() {
             try {
                 const response = await fetch('/api/auth/me', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('认证失败');
+                if (!response.ok) throw new Error(t('authFailed'));
 
                 const data = await response.json();
                 if (data.user.role !== 'admin') {
-                    alert('无权限访问');
+                    alert(t('noAccess'));
                     window.location.href = '/';
                     return null;
                 }

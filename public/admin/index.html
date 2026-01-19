@@ -454,17 +454,17 @@
             </div>
 
             <!-- 快捷功能 -->
-            <h2 style="margin-bottom: 1rem;">快捷功能</h2>
+            <h2 style="margin-bottom: 1rem;" data-zh="快捷功能" data-en="Quick Actions">快捷功能</h2>
             <div class="quick-actions">
                 <a href="/admin/fundraising.html" class="action-card">
                     <div class="header">
                         <div class="icon" style="background: #EBF5FF; color: var(--primary-color);">
                             <i class="fas fa-building"></i>
                         </div>
-                        <h3>企业审核</h3>
+                        <h3 data-zh="企业审核" data-en="Company Review">企业审核</h3>
                     </div>
-                    <p>审核企业提交的资料、BP文件，管理企业状态和可见性设置。</p>
-                    <span class="badge pending" id="companyBadge">0 待审核</span>
+                    <p data-zh="审核企业提交的资料、BP文件，管理企业状态和可见性设置。" data-en="Review company submissions, BP files, manage status and visibility.">审核企业提交的资料、BP文件，管理企业状态和可见性设置。</p>
+                    <span class="badge pending" id="companyBadge">0 <span data-zh="待审核" data-en="Pending">待审核</span></span>
                 </a>
 
                 <a href="/admin/fundraising.html#investors" class="action-card">
@@ -472,10 +472,10 @@
                         <div class="icon" style="background: #D1FAE5; color: var(--success-color);">
                             <i class="fas fa-user-tie"></i>
                         </div>
-                        <h3>投资人审核</h3>
+                        <h3 data-zh="投资人审核" data-en="Investor Review">投资人审核</h3>
                     </div>
-                    <p>审核投资人注册申请，管理投资人账户状态。</p>
-                    <span class="badge pending" id="investorBadge">0 待审核</span>
+                    <p data-zh="审核投资人注册申请，管理投资人账户状态。" data-en="Review investor registrations, manage account status.">审核投资人注册申请，管理投资人账户状态。</p>
+                    <span class="badge pending" id="investorBadge">0 <span data-zh="待审核" data-en="Pending">待审核</span></span>
                 </a>
 
                 <a href="/admin/fundraising.html#requests" class="action-card">
@@ -483,10 +483,10 @@
                         <div class="icon" style="background: #FEF3C7; color: var(--warning-color);">
                             <i class="fas fa-clipboard-list"></i>
                         </div>
-                        <h3>处理请求</h3>
+                        <h3 data-zh="处理请求" data-en="Process Requests">处理请求</h3>
                     </div>
-                    <p>处理投资人的BP访问请求、引荐请求等。</p>
-                    <span class="badge pending" id="requestBadge">0 待处理</span>
+                    <p data-zh="处理投资人的BP访问请求、引荐请求等。" data-en="Process investor BP access requests, introduction requests, etc.">处理投资人的BP访问请求、引荐请求等。</p>
+                    <span class="badge pending" id="requestBadge">0 <span data-zh="待处理" data-en="Pending">待处理</span></span>
                 </a>
 
                 <a href="/admin/fundraising.html#users" class="action-card">
@@ -494,9 +494,9 @@
                         <div class="icon" style="background: #EDE9FE; color: #7C3AED;">
                             <i class="fas fa-users-cog"></i>
                         </div>
-                        <h3>用户管理</h3>
+                        <h3 data-zh="用户管理" data-en="User Management">用户管理</h3>
                     </div>
-                    <p>创建新用户（管理员/企业/投资人），重置密码，管理账户状态。</p>
+                    <p data-zh="创建新用户（管理员/企业/投资人），重置密码，管理账户状态。" data-en="Create users (admin/company/investor), reset passwords, manage accounts.">创建新用户（管理员/企业/投资人），重置密码，管理账户状态。</p>
                 </a>
 
                 <a href="/admin/fundraising.html#messages" class="action-card">
@@ -504,9 +504,9 @@
                         <div class="icon" style="background: #FEE2E2; color: var(--danger-color);">
                             <i class="fas fa-envelope"></i>
                         </div>
-                        <h3>消息中心</h3>
+                        <h3 data-zh="消息中心" data-en="Message Center">消息中心</h3>
                     </div>
-                    <p>向企业或投资人发送消息，支持附件和邮件通知功能。</p>
+                    <p data-zh="向企业或投资人发送消息，支持附件和邮件通知功能。" data-en="Send messages to companies or investors with attachments and email notifications.">向企业或投资人发送消息，支持附件和邮件通知功能。</p>
                 </a>
 
                 <a href="#" class="action-card" onclick="openChangePasswordModal(); return false;">
@@ -514,17 +514,17 @@
                         <div class="icon" style="background: #F3F4F6; color: var(--text-secondary);">
                             <i class="fas fa-key"></i>
                         </div>
-                        <h3>修改密码</h3>
+                        <h3 data-zh="修改密码" data-en="Change Password">修改密码</h3>
                     </div>
-                    <p>修改管理员账户密码，保护账户安全。</p>
+                    <p data-zh="修改管理员账户密码，保护账户安全。" data-en="Change admin password to protect account security.">修改管理员账户密码，保护账户安全。</p>
                 </a>
         </div>
 
             <!-- 最近活动 -->
             <div class="recent-section">
-                <h2>最近企业</h2>
+                <h2 data-zh="最近企业" data-en="Recent Companies">最近企业</h2>
                 <ul class="activity-list" id="recentCompanies">
-                    <li class="loading"><i class="fas fa-spinner fa-spin"></i> 加载中...</li>
+                    <li class="loading"><i class="fas fa-spinner fa-spin"></i> <span data-zh="加载中..." data-en="Loading...">加载中...</span></li>
                 </ul>
             </div>
         </main>
@@ -533,30 +533,59 @@
     <!-- 修改密码模态框 -->
     <div class="modal" id="changePasswordModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 400px; width: 90%;">
-            <h2 style="margin-bottom: 1.5rem;">修改密码</h2>
+            <h2 style="margin-bottom: 1.5rem;" data-zh="修改密码" data-en="Change Password">修改密码</h2>
             <form id="changePasswordForm">
                 <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">当前密码</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="当前密码" data-en="Current Password">当前密码</label>
                     <input type="password" id="currentPassword" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px;">
                 </div>
                 <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">新密码</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="新密码" data-en="New Password">新密码</label>
                     <input type="password" id="newPassword" required minlength="6" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px;">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">确认新密码</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;" data-zh="确认新密码" data-en="Confirm Password">确认新密码</label>
                     <input type="password" id="confirmPassword" required minlength="6" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px;">
                 </div>
                 <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">保存</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()" style="flex: 1;">取消</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;" data-zh="保存" data-en="Save">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()" style="flex: 1;" data-zh="取消" data-en="Cancel">取消</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <script src="/static/js/lang.js"></script>
     <script>
         let token = localStorage.getItem('token');
+
+        // 多语言文本
+        const i18n = {
+            pending: { zh: '待审核', en: 'Pending' },
+            approved: { zh: '已通过', en: 'Approved' },
+            rejected: { zh: '已拒绝', en: 'Rejected' },
+            draft: { zh: '草稿', en: 'Draft' },
+            pendingProcess: { zh: '待处理', en: 'Pending' },
+            noCompanyData: { zh: '暂无企业数据', en: 'No company data' },
+            loadFailed: { zh: '加载失败', en: 'Load failed' },
+            unnamed: { zh: '未命名企业', en: 'Unnamed Company' },
+            noIndustry: { zh: '未设置行业', en: 'No industry' },
+            view: { zh: '查看', en: 'View' },
+            configured: { zh: '已配置', en: 'Configured' },
+            notConfigured: { zh: '未配置', en: 'Not Configured' },
+            unknown: { zh: '未知', en: 'Unknown' },
+            passwordMismatch: { zh: '两次输入的新密码不一致', en: 'New passwords do not match' },
+            passwordTooShort: { zh: '新密码长度至少6位', en: 'New password must be at least 6 characters' },
+            passwordChanged: { zh: '密码修改成功！', en: 'Password changed successfully!' },
+            changeFailed: { zh: '修改失败', en: 'Change failed' },
+            noAdminAccess: { zh: '您没有管理员权限', en: 'You do not have admin access' },
+            authFailed: { zh: '认证失败', en: 'Authentication failed' }
+        };
+
+        function t(key) {
+            const lang = localStorage.getItem('lang') || 'zh';
+            return i18n[key] ? (i18n[key][lang] || i18n[key].zh) : key;
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             if (!token) {
@@ -577,24 +606,31 @@
             checkEmailStatus();
         });
 
+        // 监听语言变化重新加载数据
+        window.addEventListener('languageChanged', () => {
+            loadStats();
+            loadRecentCompanies();
+            checkEmailStatus();
+        });
+
         async function checkAdmin() {
             try {
                 const response = await fetch('/api/auth/me', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('认证失败');
+                if (!response.ok) throw new Error(t('authFailed'));
 
                 const data = await response.json();
                 
                 if (data.user.role !== 'admin') {
-                    alert('您没有管理员权限');
+                    alert(t('noAdminAccess'));
                     window.location.href = '/';
                     return null;
                 }
                 return data.user;
             } catch (error) {
-                console.error('认证失败:', error);
+                console.error(t('authFailed') + ':', error);
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/auth/login.html';
@@ -613,25 +649,28 @@
                 document.getElementById('totalCompanies').textContent = data.companies?.total || 0;
                 document.getElementById('pendingCompanies').textContent = data.companies?.pending || 0;
                 document.getElementById('approvedCompanies').textContent = data.companies?.approved || 0;
-                document.getElementById('companyBadge').textContent = `${data.companies?.pending || 0} 待审核`;
+                const companyBadge = document.getElementById('companyBadge');
+                companyBadge.innerHTML = `${data.companies?.pending || 0} <span data-zh="待审核" data-en="Pending">${t('pending')}</span>`;
 
                 // 投资人统计
                 document.getElementById('totalInvestors').textContent = data.investors?.total || 0;
                 document.getElementById('pendingInvestors').textContent = data.investors?.pending || 0;
                 document.getElementById('approvedInvestors').textContent = data.investors?.approved || 0;
-                document.getElementById('investorBadge').textContent = `${data.investors?.pending || 0} 待审核`;
+                const investorBadge = document.getElementById('investorBadge');
+                investorBadge.innerHTML = `${data.investors?.pending || 0} <span data-zh="待审核" data-en="Pending">${t('pending')}</span>`;
 
                 // 请求统计
                 document.getElementById('pendingRequests').textContent = data.requests?.pending || 0;
                 document.getElementById('totalRequests').textContent = data.requests?.total || 0;
-                document.getElementById('requestBadge').textContent = `${data.requests?.pending || 0} 待处理`;
+                const requestBadge = document.getElementById('requestBadge');
+                requestBadge.innerHTML = `${data.requests?.pending || 0} <span data-zh="待处理" data-en="Pending">${t('pendingProcess')}</span>`;
 
                 // 用户总数
                 document.getElementById('totalUsers').textContent = 
                     (data.companies?.total || 0) + (data.investors?.total || 0);
 
             } catch (error) {
-                console.error('加载统计数据失败:', error);
+                console.error('Load stats failed:', error);
             }
         }
 
@@ -645,7 +684,7 @@
                 const container = document.getElementById('recentCompanies');
                 
                 if (!data.companies || data.companies.length === 0) {
-                    container.innerHTML = '<li class="empty-state">暂无企业数据</li>';
+                    container.innerHTML = `<li class="empty-state">${t('noCompanyData')}</li>`;
                     return;
                 }
 
@@ -656,35 +695,30 @@
                         rejected: '#EF4444',
                         draft: '#6B7280'
                     };
-                    const statusLabels = {
-                        pending: '待审核',
-                        approved: '已通过',
-                        rejected: '已拒绝',
-                        draft: '草稿'
-                    };
+                    const statusLabel = t(c.status) || c.status;
                     return `
                         <li class="activity-item">
                             <div class="icon" style="background: #EBF5FF; color: var(--primary-color);">
                                 <i class="fas fa-building"></i>
                             </div>
                             <div class="content">
-                                <div class="title">${c.name_cn || c.name_en || '未命名企业'}</div>
+                                <div class="title">${c.name_cn || c.name_en || t('unnamed')}</div>
                                 <div class="time">
-                                    <span style="color: ${statusColors[c.status] || '#6B7280'};">● ${statusLabels[c.status] || c.status}</span>
-                                    · ${c.industry_primary || '未设置行业'}
+                                    <span style="color: ${statusColors[c.status] || '#6B7280'};">● ${statusLabel}</span>
+                                    · ${c.industry_primary || t('noIndustry')}
                                     · ${new Date(c.created_at).toLocaleDateString()}
                                 </div>
                             </div>
                             <a href="/admin/fundraising.html" class="btn btn-secondary" style="font-size: 0.75rem;">
-                                查看
+                                ${t('view')}
                             </a>
                         </li>
                     `;
                 }).join('');
             } catch (error) {
-                console.error('加载企业列表失败:', error);
+                console.error('Load companies failed:', error);
                 document.getElementById('recentCompanies').innerHTML = 
-                    '<li class="empty-state">加载失败</li>';
+                    `<li class="empty-state">${t('loadFailed')}</li>`;
             }
         }
 
@@ -694,9 +728,9 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                document.getElementById('emailStatus').textContent = data.configured ? '已配置' : '未配置';
+                document.getElementById('emailStatus').textContent = data.configured ? t('configured') : t('notConfigured');
             } catch (error) {
-                document.getElementById('emailStatus').textContent = '未知';
+                document.getElementById('emailStatus').textContent = t('unknown');
             }
         }
 
@@ -717,12 +751,12 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             if (newPassword !== confirmPassword) {
-                alert('两次输入的新密码不一致');
+                alert(t('passwordMismatch'));
                 return;
             }
 
             if (newPassword.length < 6) {
-                alert('新密码长度至少6位');
+                alert(t('passwordTooShort'));
                 return;
             }
 
@@ -739,10 +773,10 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '修改失败');
+                    throw new Error(result.error || t('changeFailed'));
                 }
 
-                alert('密码修改成功！');
+                alert(t('passwordChanged'));
                 closeChangePasswordModal();
             } catch (error) {
                 alert(error.message);
