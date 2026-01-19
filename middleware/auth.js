@@ -59,14 +59,20 @@ const requireRole = (...roles) => {
     };
 };
 
-// 检查是否是管理员
+// 检查是否是超级管理员
 const requireAdmin = requireRole('admin');
 
-// 检查是否是企业用户
-const requireCompany = requireRole('company', 'admin');
+// 检查是否是管理员（包括普通管理员）
+const requireStaffOrAdmin = requireRole('staff', 'admin');
+
+// 检查是否是企业用户（普通管理员也可以管理企业）
+const requireCompany = requireRole('company', 'staff', 'admin');
 
 // 检查是否是投资人
 const requireInvestor = requireRole('investor', 'admin');
+
+// 检查是否是普通管理员
+const requireStaff = requireRole('staff');
 
 // 可选认证（不强制）
 const optionalAuth = async (req, res, next) => {
@@ -91,6 +97,8 @@ module.exports = {
     authenticate,
     requireRole,
     requireAdmin,
+    requireStaffOrAdmin,
+    requireStaff,
     requireCompany,
     requireInvestor,
     optionalAuth,

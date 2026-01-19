@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运营管理 - EON Protocol</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0D43F9;
+            --secondary-color: #4AD8FD;
+            --success-color: #10B981;
+            --warning-color: #F59E0B;
+            --danger-color: #EF4444;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-color: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .layout { display: flex; min-height: 100vh; }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-menu { list-style: none; }
+        .nav-item { margin-bottom: 0.5rem; }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: rgba(13, 67, 249, 0.05);
+            color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background: rgba(13, 67, 249, 0.1);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .nav-link i { width: 20px; text-align: center; }
+
+        /* 主内容 */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-email { font-weight: 500; }
+
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+        }
+
+        /* 卡片 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-card .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* 面板 */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* 表单 */
+        .form-group { margin-bottom: 1rem; }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 67, 249, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .required { color: var(--danger-color); }
+
+        /* 按钮 */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0939d4;
+        }
+
+        .btn-secondary {
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        /* 表格 */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        tr:hover {
+            background: rgba(13, 67, 249, 0.02);
+        }
+
+        /* 状态徽章 */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-draft { background: #E5E7EB; color: #374151; }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-approved { background: #D1FAE5; color: #065F46; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+
+        /* 消息提示 */
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .message-success { background: #D1FAE5; color: #065F46; }
+        .message-error { background: #FEE2E2; color: #991B1B; }
+        .message-warning { background: #FEF3C7; color: #92400E; }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title { font-size: 1.25rem; font-weight: 600; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .modal-body { padding: 1.5rem; }
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        /* 文件上传 */
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+            background: rgba(13, 67, 249, 0.02);
+        }
+
+        .file-upload i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .file-upload input { display: none; }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* 加载 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 复选框组 */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            position: relative;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-user-tie"></i>
+                运营管理
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#overview" class="nav-link active" data-panel="overview">
+                            <i class="fas fa-home"></i>
+                            <span>概览</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#companies" class="nav-link" data-panel="companies">
+                            <i class="fas fa-building"></i>
+                            <span>企业管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#requests" class="nav-link" data-panel="requests">
+                            <i class="fas fa-inbox"></i>
+                            <span>访问请求</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#investors" class="nav-link" data-panel="investors">
+                            <i class="fas fa-users"></i>
+                            <span>投资人</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#messages" class="nav-link" data-panel="messages">
+                            <i class="fas fa-envelope"></i>
+                            <span>消息</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" style="margin-top: 2rem;">
+                        <a href="/" class="nav-link">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>返回首页</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容 -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="user-info">
+                    <span>运营管理员：</span>
+                    <span class="user-email" id="userEmail">-</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                </button>
+            </div>
+
+            <div id="messageContainer"></div>
+
+            <!-- 概览面板 -->
+            <div id="overview" class="panel active">
+                <div class="page-header">
+                    <h1 class="page-title">运营概览</h1>
+                    <p class="page-subtitle">管理您创建的企业和对接情况</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statTotalCompanies">0</div>
+                        <div class="stat-label">创建的企业</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statPendingCompanies">0</div>
+                        <div class="stat-label">待审核</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statApprovedCompanies">0</div>
+                        <div class="stat-label">已通过</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statPendingRequests">0</div>
+                        <div class="stat-label">待处理请求</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-plus-circle"></i> 快速操作</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="openCreateCompanyModal()">
+                            <i class="fas fa-building"></i> 创建新企业
+                        </button>
+                        <button class="btn btn-secondary" onclick="showPanel('companies')">
+                            <i class="fas fa-list"></i> 查看所有企业
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 推荐码 -->
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-share-alt"></i> 我的推荐码</h3>
+                    <p class="form-hint" style="margin-bottom: 1rem;">分享您的推荐码，邀请用户注册。</p>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                        <input type="text" class="form-control" id="myReferralCode" readonly style="flex: 1; font-size: 1.25rem; font-weight: bold; text-align: center; letter-spacing: 2px;">
+                        <button class="btn btn-primary" onclick="copyReferralCode()">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <input type="text" class="form-control" id="myReferralLink" readonly style="flex: 1; font-size: 0.875rem;">
+                        <button class="btn btn-secondary" onclick="copyReferralLink()">
+                            <i class="fas fa-link"></i> 复制链接
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 企业管理面板 -->
+            <div id="companies" class="panel">
+                <div class="page-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h1 class="page-title">企业管理</h1>
+                            <p class="page-subtitle">管理您创建的企业信息</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openCreateCompanyModal()">
+                            <i class="fas fa-plus"></i> 创建企业
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>企业名称</th>
+                                    <th>行业</th>
+                                    <th>阶段</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="companiesTableBody">
+                                <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 访问请求面板 -->
+            <div id="requests" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">访问请求</h1>
+                    <p class="page-subtitle">投资人对您的企业发起的访问请求</p>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>投资人</th>
+                                    <th>企业</th>
+                                    <th>请求类型</th>
+                                    <th>状态</th>
+                                    <th>时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestsTableBody">
+                                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 投资人面板 -->
+            <div id="investors" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">投资人列表</h1>
+                    <p class="page-subtitle">浏览已审核的投资人</p>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>姓名</th>
+                                    <th>类型</th>
+                                    <th>机构</th>
+                                    <th>邮箱</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="investorsTableBody">
+                                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 消息面板 -->
+            <div id="messages" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title">消息中心</h1>
+                    <p class="page-subtitle">向投资人发送消息</p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-paper-plane"></i> 发送新消息</h3>
+                    <form id="messageForm">
+                        <div class="form-group">
+                            <label class="form-label">选择投资人 <span class="required">*</span></label>
+                            <select class="form-control" id="msgRecipient" required>
+                                <option value="">请选择投资人</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">关联企业（可选）</label>
+                            <select class="form-control" id="msgCompany">
+                                <option value="">不关联企业</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">主题 <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="msgSubject" required placeholder="消息主题">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">内容 <span class="required">*</span></label>
+                            <textarea class="form-control" id="msgContent" rows="5" required placeholder="消息内容"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> 发送消息
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-history"></i> 已发送消息</h3>
+                    <div id="sentMessagesList">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 创建企业模态框 -->
+    <div class="modal" id="createCompanyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">创建新企业</h2>
+                <button class="modal-close" onclick="closeModal('createCompanyModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createCompanyForm">
+                    <h4 style="margin-bottom: 1rem; color: var(--primary-color);">基本信息</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">公司中文名称 <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="name_cn" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">公司英文名称</label>
+                            <input type="text" class="form-control" name="name_en">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">主要行业 <span class="required">*</span></label>
+                            <select class="form-control" name="industry_primary" required>
+                                <option value="">请选择</option>
+                                <option value="technology">科技/互联网</option>
+                                <option value="healthcare">医疗健康</option>
+                                <option value="finance">金融科技</option>
+                                <option value="manufacturing">制造业</option>
+                                <option value="consumer">消费品</option>
+                                <option value="energy">能源/环保</option>
+                                <option value="education">教育</option>
+                                <option value="logistics">物流</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">融资阶段 <span class="required">*</span></label>
+                            <select class="form-control" name="stage" required>
+                                <option value="">请选择</option>
+                                <option value="seed">种子轮</option>
+                                <option value="angel">天使轮</option>
+                                <option value="pre_a">Pre-A轮</option>
+                                <option value="a">A轮</option>
+                                <option value="b">B轮</option>
+                                <option value="c">C轮及以后</option>
+                                <option value="pre_ipo">Pre-IPO</option>
+                                <option value="ipo">已上市</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">总部所在地 <span class="required">*</span></label>
+                        <input type="text" class="form-control" name="location_headquarters" required placeholder="如：中国深圳">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">一句话简介 <span class="required">*</span></label>
+                        <input type="text" class="form-control" name="description" required placeholder="用一句话描述公司做什么">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">详细介绍</label>
+                        <textarea class="form-control" name="description_detail" rows="3" placeholder="公司详细介绍"></textarea>
+                    </div>
+
+                    <h4 style="margin: 1.5rem 0 1rem; color: var(--primary-color);">联系人信息</h4>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">联系人姓名 <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="contact_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">联系人邮箱 <span class="required">*</span></label>
+                            <input type="email" class="form-control" name="contact_email" required>
+                            <p class="form-hint">此邮箱将作为企业账户的登录邮箱</p>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">联系人职务</label>
+                            <input type="text" class="form-control" name="contact_title" placeholder="如：CEO、CFO">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">联系电话</label>
+                            <input type="tel" class="form-control" name="contact_phone">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createCompanyModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitCreateCompany()">
+                    <i class="fas fa-check"></i> 创建企业
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 企业详情模态框 -->
+    <div class="modal" id="companyDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="companyDetailTitle">企业详情</h2>
+                <button class="modal-close" onclick="closeModal('companyDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="companyDetailContent">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let token = localStorage.getItem('token');
+        let companies = [];
+        let investors = [];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!token) {
+                window.location.href = '/auth/login.html?redirect=/staff';
+                return;
+            }
+
+            await loadUserInfo();
+            await loadStats();
+            await loadReferralInfo();
+            setupEventListeners();
+        });
+
+        // 加载用户信息
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取用户信息失败');
+
+                const data = await response.json();
+                currentUser = data.user;
+
+                // 检查权限（只允许 staff 和 admin）
+                if (currentUser.role !== 'staff' && currentUser.role !== 'admin') {
+                    showMessage('您没有权限访问此页面', 'error');
+                    setTimeout(() => window.location.href = '/', 2000);
+                    return;
+                }
+
+                document.getElementById('userEmail').textContent = currentUser.email;
+            } catch (error) {
+                console.error('加载用户信息错误:', error);
+                showMessage('请重新登录', 'error');
+                setTimeout(() => window.location.href = '/auth/login.html', 2000);
+            }
+        }
+
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/staff/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取统计数据失败');
+
+                const data = await response.json();
+                
+                document.getElementById('statTotalCompanies').textContent = data.companies.total;
+                document.getElementById('statPendingCompanies').textContent = data.companies.pending;
+                document.getElementById('statApprovedCompanies').textContent = data.companies.approved;
+                document.getElementById('statPendingRequests').textContent = data.requests.pending;
+            } catch (error) {
+                console.error('加载统计数据错误:', error);
+            }
+        }
+
+        // 加载推荐码信息
+        async function loadReferralInfo() {
+            try {
+                const response = await fetch('/api/auth/referral', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取推荐码失败');
+
+                const data = await response.json();
+                
+                document.getElementById('myReferralCode').value = data.referral_code || '加载中...';
+                document.getElementById('myReferralLink').value = window.location.origin + data.referral_link;
+            } catch (error) {
+                console.error('加载推荐码错误:', error);
+            }
+        }
+
+        // 复制推荐码
+        function copyReferralCode() {
+            const code = document.getElementById('myReferralCode').value;
+            navigator.clipboard.writeText(code).then(() => {
+                showMessage('推荐码已复制到剪贴板', 'success');
+            });
+        }
+
+        // 复制推荐链接
+        function copyReferralLink() {
+            const link = document.getElementById('myReferralLink').value;
+            navigator.clipboard.writeText(link).then(() => {
+                showMessage('推荐链接已复制到剪贴板', 'success');
+            });
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 导航切换
+            document.querySelectorAll('.nav-link[data-panel]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const panel = link.dataset.panel;
+                    showPanel(panel);
+                });
+            });
+
+            // 消息表单
+            document.getElementById('messageForm').addEventListener('submit', sendMessage);
+        }
+
+        // 显示面板
+        function showPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+
+            document.getElementById(panelId).classList.add('active');
+            document.querySelector(`[data-panel="${panelId}"]`)?.classList.add('active');
+
+            // 加载面板数据
+            if (panelId === 'companies') loadCompanies();
+            if (panelId === 'requests') loadRequests();
+            if (panelId === 'investors') loadInvestors();
+            if (panelId === 'messages') {
+                loadInvestorsForSelect();
+                loadCompaniesForSelect();
+                loadSentMessages();
+            }
+        }
+
+        // 加载企业列表
+        async function loadCompanies() {
+            try {
+                const response = await fetch('/api/staff/companies', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取企业列表失败');
+
+                const data = await response.json();
+                companies = data.companies;
+                
+                const tbody = document.getElementById('companiesTableBody');
+                
+                if (companies.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-building"></i><p>暂无企业，点击上方按钮创建</p></td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = companies.map(company => `
+                    <tr>
+                        <td><strong>${company.name_cn}</strong>${company.name_en ? `<br><small style="color: #666;">${company.name_en}</small>` : ''}</td>
+                        <td>${getIndustryLabel(company.industry_primary)}</td>
+                        <td>${getStageLabel(company.stage)}</td>
+                        <td><span class="status-badge status-${company.status}">${getStatusLabel(company.status)}</span></td>
+                        <td>${new Date(company.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-secondary" onclick="viewCompany('${company.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                <i class="fas fa-eye"></i> 查看
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('加载企业列表错误:', error);
+                showMessage('加载企业列表失败', 'error');
+            }
+        }
+
+        // 加载访问请求
+        async function loadRequests() {
+            try {
+                const response = await fetch('/api/staff/requests', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取请求失败');
+
+                const data = await response.json();
+                const tbody = document.getElementById('requestsTableBody');
+                
+                if (data.requests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-inbox"></i><p>暂无访问请求</p></td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.requests.map(req => `
+                    <tr>
+                        <td>${req.investor?.investorProfile?.name || req.investor?.email || '-'}</td>
+                        <td>${req.company?.name_cn || '-'}</td>
+                        <td>${getRequestTypeLabel(req.request_type)}</td>
+                        <td><span class="status-badge status-${req.status}">${getStatusLabel(req.status)}</span></td>
+                        <td>${new Date(req.created_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('加载请求列表错误:', error);
+            }
+        }
+
+        // 加载投资人列表
+        async function loadInvestors() {
+            try {
+                const response = await fetch('/api/staff/investors', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取投资人失败');
+
+                const data = await response.json();
+                investors = data.investors;
+                
+                const tbody = document.getElementById('investorsTableBody');
+                
+                if (investors.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-users"></i><p>暂无已审核投资人</p></td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = investors.map(inv => `
+                    <tr>
+                        <td>${inv.name}</td>
+                        <td>${getInvestorTypeLabel(inv.investor_type)}</td>
+                        <td>${inv.organization || '-'}</td>
+                        <td>${inv.user?.email || '-'}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="openMessageToInvestor('${inv.user?.id}', '${inv.name}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                <i class="fas fa-envelope"></i> 发消息
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('加载投资人列表错误:', error);
+            }
+        }
+
+        // 加载投资人下拉选项
+        async function loadInvestorsForSelect() {
+            try {
+                const response = await fetch('/api/staff/investors?limit=100', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const select = document.getElementById('msgRecipient');
+                
+                select.innerHTML = '<option value="">请选择投资人</option>' +
+                    data.investors.map(inv => 
+                        `<option value="${inv.user?.id}">${inv.name} (${inv.user?.email})</option>`
+                    ).join('');
+            } catch (error) {
+                console.error('加载投资人选项错误:', error);
+            }
+        }
+
+        // 加载企业下拉选项
+        async function loadCompaniesForSelect() {
+            try {
+                const response = await fetch('/api/staff/companies?limit=100', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const select = document.getElementById('msgCompany');
+                
+                select.innerHTML = '<option value="">不关联企业</option>' +
+                    data.companies.map(c => 
+                        `<option value="${c.id}">${c.name_cn}</option>`
+                    ).join('');
+            } catch (error) {
+                console.error('加载企业选项错误:', error);
+            }
+        }
+
+        // 加载已发送消息
+        async function loadSentMessages() {
+            try {
+                const response = await fetch('/api/staff/messages/sent', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const container = document.getElementById('sentMessagesList');
+                
+                if (data.messages.length === 0) {
+                    container.innerHTML = '<p class="form-hint">暂无已发送消息</p>';
+                    return;
+                }
+
+                container.innerHTML = data.messages.map(msg => `
+                    <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <strong>${msg.subject}</strong>
+                            <small style="color: var(--text-secondary);">${new Date(msg.created_at).toLocaleString()}</small>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">收件人: ${msg.recipient?.email || '-'}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('加载消息错误:', error);
+            }
+        }
+
+        // 发送消息
+        async function sendMessage(e) {
+            e.preventDefault();
+            
+            const recipient_id = document.getElementById('msgRecipient').value;
+            const company_id = document.getElementById('msgCompany').value;
+            const subject = document.getElementById('msgSubject').value;
+            const content = document.getElementById('msgContent').value;
+
+            if (!recipient_id || !subject || !content) {
+                showMessage('请填写完整信息', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/staff/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ recipient_id, company_id: company_id || null, subject, content })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '发送失败');
+                }
+
+                showMessage('消息发送成功', 'success');
+                document.getElementById('messageForm').reset();
+                loadSentMessages();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 打开创建企业模态框
+        function openCreateCompanyModal() {
+            document.getElementById('createCompanyForm').reset();
+            document.getElementById('createCompanyModal').classList.add('active');
+        }
+
+        // 提交创建企业
+        async function submitCreateCompany() {
+            const form = document.getElementById('createCompanyForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/staff/companies', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '创建失败');
+                }
+
+                showMessage('企业创建成功', 'success');
+                closeModal('createCompanyModal');
+                loadStats();
+                loadCompanies();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 查看企业详情
+        async function viewCompany(id) {
+            document.getElementById('companyDetailModal').classList.add('active');
+            document.getElementById('companyDetailContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            try {
+                const response = await fetch(`/api/staff/companies/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('获取企业详情失败');
+
+                const data = await response.json();
+                const company = data.company;
+
+                document.getElementById('companyDetailTitle').textContent = company.name_cn;
+                document.getElementById('companyDetailContent').innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <p><strong>英文名称：</strong>${company.name_en || '-'}</p>
+                            <p><strong>行业：</strong>${getIndustryLabel(company.industry_primary)}</p>
+                            <p><strong>阶段：</strong>${getStageLabel(company.stage)}</p>
+                            <p><strong>总部：</strong>${company.location_headquarters}</p>
+                            <p><strong>状态：</strong><span class="status-badge status-${company.status}">${getStatusLabel(company.status)}</span></p>
+                        </div>
+                        <div>
+                            <p><strong>联系人：</strong>${company.contact_name}</p>
+                            <p><strong>邮箱：</strong>${company.contact_email}</p>
+                            <p><strong>电话：</strong>${company.contact_phone || '-'}</p>
+                            <p><strong>职务：</strong>${company.contact_title || '-'}</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <p><strong>简介：</strong>${company.description}</p>
+                        ${company.description_detail ? `<p style="margin-top: 0.5rem;"><strong>详细介绍：</strong>${company.description_detail}</p>` : ''}
+                    </div>
+                    ${company.fundraisingInfo ? `
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                            <h4 style="margin-bottom: 0.5rem;">融资信息</h4>
+                            <p><strong>融资金额：</strong>${(company.fundraisingInfo.amount_min/10000).toFixed(0)} - ${(company.fundraisingInfo.amount_max/10000).toFixed(0)} 万美元</p>
+                            <p><strong>时间窗口：</strong>${company.fundraisingInfo.timeline || '-'}</p>
+                        </div>
+                    ` : ''}
+                    ${company.documents && company.documents.length > 0 ? `
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                            <h4 style="margin-bottom: 0.5rem;">文档 (${company.documents.length})</h4>
+                            ${company.documents.map(doc => `
+                                <p><i class="fas fa-file"></i> ${doc.filename}</p>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                `;
+            } catch (error) {
+                document.getElementById('companyDetailContent').innerHTML = `<p class="message message-error">${error.message}</p>`;
+            }
+        }
+
+        // 打开向投资人发消息
+        function openMessageToInvestor(userId, name) {
+            showPanel('messages');
+            setTimeout(() => {
+                document.getElementById('msgRecipient').value = userId;
+                document.getElementById('msgSubject').focus();
+            }, 100);
+        }
+
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="message message-${type}"><i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${text}</div>`;
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/auth/login.html';
+        }
+
+        // 辅助函数
+        function getIndustryLabel(industry) {
+            const map = {
+                'technology': '科技/互联网',
+                'healthcare': '医疗健康',
+                'finance': '金融科技',
+                'manufacturing': '制造业',
+                'consumer': '消费品',
+                'energy': '能源/环保',
+                'education': '教育',
+                'logistics': '物流',
+                'other': '其他'
+            };
+            return map[industry] || industry;
+        }
+
+        function getStageLabel(stage) {
+            const map = {
+                'seed': '种子轮',
+                'angel': '天使轮',
+                'pre_a': 'Pre-A轮',
+                'a': 'A轮',
+                'b': 'B轮',
+                'c': 'C轮+',
+                'pre_ipo': 'Pre-IPO',
+                'ipo': '已上市'
+            };
+            return map[stage] || stage;
+        }
+
+        function getStatusLabel(status) {
+            const map = {
+                'draft': '草稿',
+                'pending': '待审核',
+                'approved': '已通过',
+                'rejected': '已拒绝'
+            };
+            return map[status] || status;
+        }
+
+        function getRequestTypeLabel(type) {
+            const map = {
+                'bp_access': 'BP访问',
+                'introduction': '引荐',
+                'meeting': '会议',
+                'dataroom': '数据室'
+            };
+            return map[type] || type;
+        }
+
+        function getInvestorTypeLabel(type) {
+            const map = {
+                'individual': '个人投资人',
+                'family_office': '家族办公室',
+                'vc': '风险投资',
+                'pe': '私募股权',
+                'corporate': '企业战投',
+                'other': '其他'
+            };
+            return map[type] || type;
+        }
+    </script>
+</body>
+</html>

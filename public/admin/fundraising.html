@@ -694,8 +694,10 @@
                     <select class="filter-select" name="role" required style="width: 100%;">
                         <option value="company">企业用户</option>
                         <option value="investor">投资人</option>
-                        <option value="admin">管理员</option>
+                        <option value="staff">普通管理员</option>
+                        <option value="admin">超级管理员</option>
                     </select>
+                    <p style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">普通管理员可创建多个企业并管理</p>
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">姓名</label>
@@ -1433,7 +1435,7 @@
         }
 
         function formatRole(role) {
-            const roles = { 'admin': '管理员', 'company': '企业', 'investor': '投资人' };
+            const roles = { 'admin': '超级管理员', 'staff': '普通管理员', 'company': '企业', 'investor': '投资人' };
             return roles[role] || role;
         }
 

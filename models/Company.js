@@ -15,6 +15,16 @@ const Company = sequelize.define('Company', {
             key: 'id'
         }
     },
+    // 创建者（普通管理员创建企业时使用）
+    created_by: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        comment: '创建此企业的管理员用户ID'
+    },
     // 基本信息
     name_cn: {
         type: DataTypes.STRING,

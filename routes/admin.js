@@ -423,7 +423,7 @@ router.post('/users', authenticate, requireAdmin, async (req, res) => {
         }
 
         // 验证角色
-        if (!['admin', 'company', 'investor'].includes(role)) {
+        if (!['admin', 'staff', 'company', 'investor'].includes(role)) {
             return res.status(400).json({ error: '无效的角色类型' });
         }
 

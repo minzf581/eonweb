@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth');
 const companyRoutes = require('./routes/company');
 const investorRoutes = require('./routes/investor');
 const adminRoutes = require('./routes/admin');
+const staffRoutes = require('./routes/staff');
 
 // Initialize Express app
 const app = express();
@@ -52,6 +53,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/investor', investorRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/staff', staffRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {
@@ -107,7 +109,15 @@ app.get('*', (req, res) => {
         const adminPath = path.join(__dirname, 'public', 'admin', 'index.html');
         if (fs.existsSync(adminPath)) {
             return sendFileWithErrorHandling(res, adminPath, 'admin');
-                }
+        }
+    }
+
+    // For staff routes, serve staff/index.html
+    if (req.path.startsWith('/staff')) {
+        const staffPath = path.join(__dirname, 'public', 'staff', 'index.html');
+        if (fs.existsSync(staffPath)) {
+            return sendFileWithErrorHandling(res, staffPath, 'staff');
+        }
     }
 
     // For auth routes, try to serve the exact file

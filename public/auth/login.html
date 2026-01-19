@@ -344,9 +344,11 @@
                 window.location.href = '/investor';
             } else if (role === 'admin') {
                 window.location.href = '/admin';
-                        } else {
+            } else if (role === 'staff') {
+                window.location.href = '/staff';
+            } else {
                 window.location.href = '/dashboard';
-                        }
+            }
         }
 
         function showLoading(show) {
