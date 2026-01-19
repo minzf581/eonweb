@@ -45,6 +45,28 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true
     },
+    // 推荐码功能
+    referral_code: {
+        type: DataTypes.STRING(12),
+        allowNull: true,
+        unique: true
+    },
+    referred_by: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
+    },
+    referral_count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    is_priority: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
@@ -85,8 +107,25 @@ User.prototype.toSafeObject = function() {
         role: this.role,
         status: this.status,
         name: this.name,
+        referral_code: this.referral_code,
+        referral_count: this.referral_count,
+        is_priority: this.is_priority,
         created_at: this.created_at
     };
 };
 
+// 生成推荐码
+function generateReferralCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+// 添加为模型的静态方法
+User.generateReferralCode = generateReferralCode;
+
 module.exports = User;
+module.exports.generateReferralCode = generateReferralCode;
