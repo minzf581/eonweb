@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -722,7 +722,7 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">公司官网</label>
+                            <label class="form-label" data-zh="公司官网" data-en="Website">Website</label>
                             <input type="url" class="form-control" name="website" placeholder="https://">
                         </div>
                         <div class="form-group">
@@ -733,102 +733,102 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">主要行业 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="主要行业" data-en="Primary Industry">Primary Industry</span> <span class="required">*</span></label>
                             <select class="form-control" name="industry_primary" required>
-                                <option value="">请选择</option>
-                                <option value="technology">科技/互联网</option>
-                                <option value="healthcare">医疗健康</option>
-                                <option value="finance">金融科技</option>
-                                <option value="manufacturing">制造业</option>
-                                <option value="consumer">消费品</option>
-                                <option value="energy">能源/环保</option>
-                                <option value="education">教育</option>
-                                <option value="logistics">物流/供应链</option>
-                                <option value="other">其他</option>
+                                <option value="" data-zh="请选择" data-en="Select...">Select...</option>
+                                <option value="technology" data-zh="科技/互联网" data-en="Technology">Technology</option>
+                                <option value="healthcare" data-zh="医疗健康" data-en="Healthcare">Healthcare</option>
+                                <option value="finance" data-zh="金融科技" data-en="FinTech">FinTech</option>
+                                <option value="manufacturing" data-zh="制造业" data-en="Manufacturing">Manufacturing</option>
+                                <option value="consumer" data-zh="消费品" data-en="Consumer">Consumer</option>
+                                <option value="energy" data-zh="能源/环保" data-en="Energy/Green">Energy/Green</option>
+                                <option value="education" data-zh="教育" data-en="Education">Education</option>
+                                <option value="logistics" data-zh="物流/供应链" data-en="Logistics">Logistics</option>
+                                <option value="other" data-zh="其他" data-en="Other">Other</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">次要行业</label>
+                            <label class="form-label" data-zh="次要行业" data-en="Secondary Industry">Secondary Industry</label>
                             <select class="form-control" name="industry_secondary">
-                                <option value="">请选择</option>
-                                <option value="technology">科技/互联网</option>
-                                <option value="healthcare">医疗健康</option>
-                                <option value="finance">金融科技</option>
-                                <option value="manufacturing">制造业</option>
-                                <option value="consumer">消费品</option>
-                                <option value="energy">能源/环保</option>
-                                <option value="education">教育</option>
-                                <option value="logistics">物流/供应链</option>
-                                <option value="other">其他</option>
+                                <option value="" data-zh="请选择" data-en="Select...">Select...</option>
+                                <option value="technology" data-zh="科技/互联网" data-en="Technology">Technology</option>
+                                <option value="healthcare" data-zh="医疗健康" data-en="Healthcare">Healthcare</option>
+                                <option value="finance" data-zh="金融科技" data-en="FinTech">FinTech</option>
+                                <option value="manufacturing" data-zh="制造业" data-en="Manufacturing">Manufacturing</option>
+                                <option value="consumer" data-zh="消费品" data-en="Consumer">Consumer</option>
+                                <option value="energy" data-zh="能源/环保" data-en="Energy/Green">Energy/Green</option>
+                                <option value="education" data-zh="教育" data-en="Education">Education</option>
+                                <option value="logistics" data-zh="物流/供应链" data-en="Logistics">Logistics</option>
+                                <option value="other" data-zh="其他" data-en="Other">Other</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">总部所在地 <span class="required">*</span></label>
-                            <input type="text" class="form-control" name="location_headquarters" required placeholder="如：中国深圳">
+                            <label class="form-label"><span data-zh="总部所在地" data-en="Headquarters">Headquarters</span> <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="location_headquarters" required data-placeholder-zh="如：中国深圳" data-placeholder-en="e.g. Shenzhen, China" placeholder="e.g. Shenzhen, China">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">研发中心所在地</label>
-                            <input type="text" class="form-control" name="location_rd" placeholder="如：中国北京">
+                            <label class="form-label" data-zh="研发中心所在地" data-en="R&D Center">R&D Center</label>
+                            <input type="text" class="form-control" name="location_rd" data-placeholder-zh="如：中国北京" data-placeholder-en="e.g. Beijing, China" placeholder="e.g. Beijing, China">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">一句话产品简介 <span class="required">*</span></label>
-                        <input type="text" class="form-control" name="description" required maxlength="200" placeholder="用一句话描述您的产品或服务">
-                        <p class="form-hint">最多200字</p>
+                        <label class="form-label"><span data-zh="一句话产品简介" data-en="One-line Description">One-line Description</span> <span class="required">*</span></label>
+                        <input type="text" class="form-control" name="description" required maxlength="200" data-placeholder-zh="用一句话描述您的产品或服务" data-placeholder-en="Describe your product/service in one sentence" placeholder="Describe your product/service in one sentence">
+                        <p class="form-hint" data-zh="最多200字" data-en="Max 200 characters">Max 200 characters</p>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">详细公司介绍</label>
-                        <textarea class="form-control" name="description_detail" rows="4" placeholder="详细介绍您的公司、产品、市场等"></textarea>
+                        <label class="form-label" data-zh="详细公司介绍" data-en="Company Description">Company Description</label>
+                        <textarea class="form-control" name="description_detail" rows="4" data-placeholder-zh="详细介绍您的公司、产品、市场等" data-placeholder-en="Detailed introduction of your company, products, market, etc." placeholder="Detailed introduction of your company, products, market, etc."></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">融资阶段 <span class="required">*</span></label>
+                        <label class="form-label"><span data-zh="融资阶段" data-en="Funding Stage">Funding Stage</span> <span class="required">*</span></label>
                         <select class="form-control" name="stage" required>
-                            <option value="">请选择</option>
-                            <option value="seed">种子轮</option>
-                            <option value="angel">天使轮</option>
-                            <option value="pre_a">Pre-A轮</option>
-                            <option value="a">A轮</option>
-                            <option value="b">B轮</option>
-                            <option value="c">C轮及以后</option>
-                            <option value="pre_ipo">Pre-IPO</option>
-                            <option value="ipo">已上市</option>
-                            <option value="post_ipo">上市后融资</option>
+                            <option value="" data-zh="请选择" data-en="Select...">Select...</option>
+                            <option value="seed" data-zh="种子轮" data-en="Seed">Seed</option>
+                            <option value="angel" data-zh="天使轮" data-en="Angel">Angel</option>
+                            <option value="pre_a" data-zh="Pre-A轮" data-en="Pre-A">Pre-A</option>
+                            <option value="a" data-zh="A轮" data-en="Series A">Series A</option>
+                            <option value="b" data-zh="B轮" data-en="Series B">Series B</option>
+                            <option value="c" data-zh="C轮及以后" data-en="Series C+">Series C+</option>
+                            <option value="pre_ipo" data-zh="Pre-IPO" data-en="Pre-IPO">Pre-IPO</option>
+                            <option value="ipo" data-zh="已上市" data-en="IPO">IPO</option>
+                            <option value="post_ipo" data-zh="上市后融资" data-en="Post-IPO">Post-IPO</option>
                         </select>
                     </div>
 
-                    <h3 class="card-title" style="margin-top: 2rem;">联系人信息</h3>
+                    <h3 class="card-title" style="margin-top: 2rem;" data-zh="联系人信息" data-en="Contact Information">Contact Information</h3>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">联系人姓名 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="联系人姓名" data-en="Contact Name">Contact Name</span> <span class="required">*</span></label>
                             <input type="text" class="form-control" name="contact_name" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">联系人职务</label>
-                            <input type="text" class="form-control" name="contact_title" placeholder="如：CEO、CFO">
+                            <label class="form-label" data-zh="联系人职务" data-en="Title">Title</label>
+                            <input type="text" class="form-control" name="contact_title" data-placeholder-zh="如：CEO、CFO" data-placeholder-en="e.g. CEO, CFO" placeholder="e.g. CEO, CFO">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">联系人邮箱 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="联系人邮箱" data-en="Contact Email">Contact Email</span> <span class="required">*</span></label>
                             <input type="email" class="form-control" name="contact_email" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">联系人电话</label>
+                            <label class="form-label" data-zh="联系人电话" data-en="Phone">Phone</label>
                             <input type="tel" class="form-control" name="contact_phone">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">微信</label>
+                            <label class="form-label" data-zh="微信" data-en="WeChat">WeChat</label>
                             <input type="text" class="form-control" name="contact_wechat">
                         </div>
                         <div class="form-group">
@@ -839,10 +839,10 @@
 
                     <div class="btn-group">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> 保存
+                            <i class="fas fa-save"></i> <span data-zh="保存" data-en="Save">Save</span>
                         </button>
                         <button type="button" class="btn btn-secondary" onclick="showPanel('overview')">
-                            返回
+                            <span data-zh="返回" data-en="Back">Back</span>
                         </button>
                     </div>
                 </form>
@@ -851,135 +851,135 @@
             <!-- 融资信息面板 -->
             <div id="fundraising" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">融资信息</h1>
-                    <p class="page-subtitle">填写您的融资需求</p>
+                    <h1 class="page-title" data-zh="融资信息" data-en="Fundraising Information">Fundraising Information</h1>
+                    <p class="page-subtitle" data-zh="填写您的融资需求" data-en="Enter your fundraising requirements">Enter your fundraising requirements</p>
                 </div>
 
                 <form id="fundraisingForm" class="card">
                     <div class="form-group">
-                        <label class="form-label">融资目的 <span class="required">*</span></label>
+                        <label class="form-label"><span data-zh="融资目的" data-en="Funding Purpose">Funding Purpose</span> <span class="required">*</span></label>
                         <div class="checkbox-group">
                             <label class="checkbox-item">
-                                <input type="checkbox" name="purpose" value="expansion"> 海外扩张
+                                <input type="checkbox" name="purpose" value="expansion"> <span data-zh="海外扩张" data-en="Overseas Expansion">Overseas Expansion</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="purpose" value="rd"> 研发投入
+                                <input type="checkbox" name="purpose" value="rd"> <span data-zh="研发投入" data-en="R&D">R&D</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="purpose" value="marketing"> 市场营销
+                                <input type="checkbox" name="purpose" value="marketing"> <span data-zh="市场营销" data-en="Marketing">Marketing</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="purpose" value="ma"> 并购
+                                <input type="checkbox" name="purpose" value="ma"> <span data-zh="并购" data-en="M&A">M&A</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="purpose" value="working_capital"> 营运资金
+                                <input type="checkbox" name="purpose" value="working_capital"> <span data-zh="营运资金" data-en="Working Capital">Working Capital</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="purpose" value="factory"> 建厂
+                                <input type="checkbox" name="purpose" value="factory"> <span data-zh="建厂" data-en="Factory">Factory</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">融资类型偏好 <span class="required">*</span></label>
+                        <label class="form-label"><span data-zh="融资类型偏好" data-en="Financing Type">Financing Type</span> <span class="required">*</span></label>
                         <div class="checkbox-group">
                             <label class="checkbox-item">
-                                <input type="checkbox" name="financing_type" value="equity"> 股权融资
+                                <input type="checkbox" name="financing_type" value="equity"> <span data-zh="股权融资" data-en="Equity">Equity</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="financing_type" value="debt"> 债权融资
+                                <input type="checkbox" name="financing_type" value="debt"> <span data-zh="债权融资" data-en="Debt">Debt</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="financing_type" value="convertible"> 可转债
+                                <input type="checkbox" name="financing_type" value="convertible"> <span data-zh="可转债" data-en="Convertible">Convertible</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="financing_type" value="project"> 项目融资
+                                <input type="checkbox" name="financing_type" value="project"> <span data-zh="项目融资" data-en="Project">Project</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="financing_type" value="rwa"> RWA/代币化
+                                <input type="checkbox" name="financing_type" value="rwa"> <span data-zh="RWA/代币化" data-en="RWA/Tokenization">RWA/Tokenization</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">融资金额（最低）<span class="required">*</span></label>
-                            <input type="number" class="form-control" name="amount_min" required placeholder="万美元">
-                            <p class="form-hint">单位：万美元</p>
+                            <label class="form-label"><span data-zh="融资金额（最低）" data-en="Min Amount">Min Amount</span><span class="required">*</span></label>
+                            <input type="number" class="form-control" name="amount_min" required data-placeholder-zh="万美元" data-placeholder-en="USD (10K)" placeholder="USD (10K)">
+                            <p class="form-hint" data-zh="单位：万美元" data-en="Unit: USD 10,000">Unit: USD 10,000</p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">融资金额（最高）<span class="required">*</span></label>
-                            <input type="number" class="form-control" name="amount_max" required placeholder="万美元">
-                            <p class="form-hint">单位：万美元</p>
+                            <label class="form-label"><span data-zh="融资金额（最高）" data-en="Max Amount">Max Amount</span><span class="required">*</span></label>
+                            <input type="number" class="form-control" name="amount_max" required data-placeholder-zh="万美元" data-placeholder-en="USD (10K)" placeholder="USD (10K)">
+                            <p class="form-hint" data-zh="单位：万美元" data-en="Unit: USD 10,000">Unit: USD 10,000</p>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">融资时间窗口 <span class="required">*</span></label>
+                        <label class="form-label"><span data-zh="融资时间窗口" data-en="Timeline">Timeline</span> <span class="required">*</span></label>
                         <select class="form-control" name="timeline" required>
-                            <option value="">请选择</option>
-                            <option value="0-3months">0-3个月</option>
-                            <option value="3-6months">3-6个月</option>
-                            <option value="6-12months">6-12个月</option>
-                            <option value="12+months">12个月以上</option>
+                            <option value="" data-zh="请选择" data-en="Select...">Select...</option>
+                            <option value="0-3months" data-zh="0-3个月" data-en="0-3 months">0-3 months</option>
+                            <option value="3-6months" data-zh="3-6个月" data-en="3-6 months">3-6 months</option>
+                            <option value="6-12months" data-zh="6-12个月" data-en="6-12 months">6-12 months</option>
+                            <option value="12+months" data-zh="12个月以上" data-en="12+ months">12+ months</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">估值预期</label>
-                        <input type="text" class="form-control" name="valuation_expectation" placeholder="如：5000-8000万美元">
+                        <label class="form-label" data-zh="估值预期" data-en="Valuation Expectation">Valuation Expectation</label>
+                        <input type="text" class="form-control" name="valuation_expectation" data-placeholder-zh="如：5000-8000万美元" data-placeholder-en="e.g. $50M-$80M" placeholder="e.g. $50M-$80M">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">资金用途说明</label>
-                        <textarea class="form-control" name="use_of_funds" rows="3" placeholder="详细说明资金用途分配"></textarea>
+                        <label class="form-label" data-zh="资金用途说明" data-en="Use of Funds">Use of Funds</label>
+                        <textarea class="form-control" name="use_of_funds" rows="3" data-placeholder-zh="详细说明资金用途分配" data-placeholder-en="Detailed description of fund allocation" placeholder="Detailed description of fund allocation"></textarea>
                     </div>
 
-                    <h3 class="card-title" style="margin-top: 2rem;">海外结构</h3>
+                    <h3 class="card-title" style="margin-top: 2rem;" data-zh="海外结构" data-en="Overseas Structure">Overseas Structure</h3>
 
                     <div class="form-group">
-                        <label class="form-label">是否已有海外主体</label>
+                        <label class="form-label" data-zh="是否已有海外主体" data-en="Existing Overseas Entities">Existing Overseas Entities</label>
                         <div class="checkbox-group">
                             <label class="checkbox-item">
-                                <input type="checkbox" name="overseas_sg"> 新加坡
+                                <input type="checkbox" name="overseas_sg"> <span data-zh="新加坡" data-en="Singapore">Singapore</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="overseas_hk"> 香港
+                                <input type="checkbox" name="overseas_hk"> <span data-zh="香港" data-en="Hong Kong">Hong Kong</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="overseas_us"> 美国
+                                <input type="checkbox" name="overseas_us"> <span data-zh="美国" data-en="USA">USA</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="overseas_other"> 其他
+                                <input type="checkbox" name="overseas_other"> <span data-zh="其他" data-en="Other">Other</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">IP归属情况</label>
-                        <input type="text" class="form-control" name="ip_ownership" placeholder="如：中国境内公司持有">
+                        <label class="form-label" data-zh="IP归属情况" data-en="IP Ownership">IP Ownership</label>
+                        <input type="text" class="form-control" name="ip_ownership" data-placeholder-zh="如：中国境内公司持有" data-placeholder-en="e.g. Owned by PRC entity" placeholder="e.g. Owned by PRC entity">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">数据敏感性</label>
+                        <label class="form-label" data-zh="数据敏感性" data-en="Data Sensitivity">Data Sensitivity</label>
                         <select class="form-control" name="data_sensitivity">
-                            <option value="low">低 - 不涉及敏感数据</option>
-                            <option value="medium" selected>中 - 涉及部分用户数据</option>
-                            <option value="high">高 - 涉及敏感行业数据</option>
+                            <option value="low" data-zh="低 - 不涉及敏感数据" data-en="Low - No sensitive data">Low - No sensitive data</option>
+                            <option value="medium" selected data-zh="中 - 涉及部分用户数据" data-en="Medium - Some user data">Medium - Some user data</option>
+                            <option value="high" data-zh="高 - 涉及敏感行业数据" data-en="High - Sensitive industry data">High - Sensitive industry data</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">其他补充信息</label>
-                        <textarea class="form-control" name="additional_info" rows="3" placeholder="任何您认为重要的补充信息"></textarea>
+                        <label class="form-label" data-zh="其他补充信息" data-en="Additional Information">Additional Information</label>
+                        <textarea class="form-control" name="additional_info" rows="3" data-placeholder-zh="任何您认为重要的补充信息" data-placeholder-en="Any other important information" placeholder="Any other important information"></textarea>
                     </div>
 
                     <div class="btn-group">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> 保存
+                            <i class="fas fa-save"></i> <span data-zh="保存" data-en="Save">Save</span>
                         </button>
                         <button type="button" class="btn btn-secondary" onclick="showPanel('overview')">
-                            返回
+                            <span data-zh="返回" data-en="Back">Back</span>
                         </button>
                     </div>
                 </form>
@@ -988,25 +988,25 @@
             <!-- 文档上传面板 -->
             <div id="documents" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">BP/文档管理</h1>
-                    <p class="page-subtitle">上传您的商业计划书或填写 BP 链接</p>
+                    <h1 class="page-title" data-zh="BP/文档管理" data-en="BP/Document Management">BP/Document Management</h1>
+                    <p class="page-subtitle" data-zh="上传您的商业计划书或填写 BP 链接" data-en="Upload your business plan or provide a BP link">Upload your business plan or provide a BP link</p>
                 </div>
 
                 <!-- BP 提交方式选择 -->
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-file-powerpoint"></i> 提交 BP（二选一）</h3>
+                    <h3 class="card-title"><i class="fas fa-file-powerpoint"></i> <span data-zh="提交 BP（二选一）" data-en="Submit BP (Choose One)">Submit BP (Choose One)</span></h3>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                         <!-- 方式一：上传文件 -->
                         <div style="border: 2px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
                             <h4 style="margin-bottom: 1rem; color: var(--primary-color);">
-                                <i class="fas fa-upload"></i> 方式一：上传文件
+                                <i class="fas fa-upload"></i> <span data-zh="方式一：上传文件" data-en="Option 1: Upload File">Option 1: Upload File</span>
                             </h4>
                             <div class="file-upload" onclick="document.getElementById('fileInput').click()" style="margin: 0;">
                                 <i class="fas fa-cloud-upload-alt"></i>
-                                <p>点击或拖拽文件到此处上传</p>
-                                <p class="form-hint">支持 PDF、PPT、PPTX、DOC、DOCX 格式</p>
-                                <p class="form-hint" style="color: #F59E0B;"><i class="fas fa-exclamation-triangle"></i> 文件大小不超过 2MB</p>
+                                <p data-zh="点击或拖拽文件到此处上传" data-en="Click or drag file to upload">Click or drag file to upload</p>
+                                <p class="form-hint" data-zh="支持 PDF、PPT、PPTX、DOC、DOCX 格式" data-en="Supports PDF, PPT, PPTX, DOC, DOCX">Supports PDF, PPT, PPTX, DOC, DOCX</p>
+                                <p class="form-hint" style="color: #F59E0B;"><i class="fas fa-exclamation-triangle"></i> <span data-zh="文件大小不超过 2MB" data-en="Max file size: 2MB">Max file size: 2MB</span></p>
                                 <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,.doc,.docx" onchange="uploadFile(this)">
                             </div>
                         </div>
@@ -1014,44 +1014,44 @@
                         <!-- 方式二：填写链接 -->
                         <div style="border: 2px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
                             <h4 style="margin-bottom: 1rem; color: var(--primary-color);">
-                                <i class="fas fa-link"></i> 方式二：填写 BP 链接
+                                <i class="fas fa-link"></i> <span data-zh="方式二：填写 BP 链接" data-en="Option 2: BP Link">Option 2: BP Link</span>
                             </h4>
-                            <p class="form-hint" style="margin-bottom: 1rem;">如果您的 BP 已经在网上（如 Google Drive、OneDrive、Docsend 等），可以直接填写链接</p>
+                            <p class="form-hint" style="margin-bottom: 1rem;" data-zh="如果您的 BP 已经在网上（如 Google Drive、OneDrive、Docsend 等），可以直接填写链接" data-en="If your BP is already online (Google Drive, OneDrive, Docsend, etc.), you can provide the link directly">If your BP is already online (Google Drive, OneDrive, Docsend, etc.), you can provide the link directly</p>
                             <div class="form-group" style="margin-bottom: 1rem;">
                                 <input type="url" class="form-control" id="bpLinkUrl" placeholder="https://drive.google.com/file/d/...">
                             </div>
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <input type="text" class="form-control" id="bpLinkDesc" placeholder="描述（可选），如：2024年最新BP">
+                                <input type="text" class="form-control" id="bpLinkDesc" data-placeholder-zh="描述（可选），如：2024年最新BP" data-placeholder-en="Description (optional), e.g. Latest BP 2024" placeholder="Description (optional), e.g. Latest BP 2024">
                             </div>
                             <button type="button" class="btn btn-primary" onclick="saveBPLink()" style="width: 100%;">
-                                <i class="fas fa-save"></i> 保存 BP 链接
+                                <i class="fas fa-save"></i> <span data-zh="保存 BP 链接" data-en="Save BP Link">Save BP Link</span>
                             </button>
                         </div>
                     </div>
                     
                     <p class="form-hint" style="text-align: center; color: var(--text-secondary);">
-                        <i class="fas fa-info-circle"></i> 您只需选择以上两种方式之一即可提交审核
+                        <i class="fas fa-info-circle"></i> <span data-zh="您只需选择以上两种方式之一即可提交审核" data-en="Choose either option above to submit for review">Choose either option above to submit for review</span>
                     </p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-file-alt"></i> 已提交的 BP</h3>
+                    <h3 class="card-title"><i class="fas fa-file-alt"></i> <span data-zh="已提交的 BP" data-en="Submitted BP">Submitted BP</span></h3>
                     <div id="fileList">
-                        <p class="form-hint">暂无已提交的 BP</p>
+                        <p class="form-hint" data-zh="暂无已提交的 BP" data-en="No BP submitted yet">No BP submitted yet</p>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-database"></i> 数据室链接（可选）</h3>
+                    <h3 class="card-title"><i class="fas fa-database"></i> <span data-zh="数据室链接（可选）" data-en="Data Room Link (Optional)">Data Room Link (Optional)</span></h3>
                     <div class="form-group">
-                        <input type="url" class="form-control" id="dataroomLink" placeholder="如：https://docsend.com/your-dataroom">
-                        <p class="form-hint">如果您有完整的在线数据室，可以在此额外填写链接</p>
+                        <input type="url" class="form-control" id="dataroomLink" placeholder="https://docsend.com/your-dataroom">
+                        <p class="form-hint" data-zh="如果您有完整的在线数据室，可以在此额外填写链接" data-en="If you have a complete online data room, you can add the link here">If you have a complete online data room, you can add the link here</p>
                     </div>
                 </div>
 
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" onclick="showPanel('overview')">
-                        返回概览
+                        <span data-zh="返回概览" data-en="Back to Overview">Back to Overview</span>
                     </button>
                 </div>
             </div>
@@ -1059,8 +1059,8 @@
             <!-- 提交状态面板 -->
             <div id="status" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">提交状态</h1>
-                    <p class="page-subtitle">查看您的提交进度和审核状态</p>
+                    <h1 class="page-title" data-zh="提交状态" data-en="Submission Status">Submission Status</h1>
+                    <p class="page-subtitle" data-zh="查看您的提交进度和审核状态" data-en="View your submission progress and review status">View your submission progress and review status</p>
                 </div>
 
                 <div class="card" id="statusDetails">
@@ -1099,7 +1099,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('获取用户信息失败');
+                    throw new Error(getLangText('获取用户信息失败', 'Failed to get user info'));
                 }
 
                 const data = await response.json();
@@ -1107,15 +1107,15 @@
 
                 // 检查用户角色
                 if (currentUser.role !== 'company' && currentUser.role !== 'admin') {
-                    showMessage('您没有权限访问企业门户', 'error');
+                    showMessage(getLangText('您没有权限访问企业门户', 'No permission to access company portal'), 'error');
                     setTimeout(() => window.location.href = '/', 2000);
                     return;
                 }
 
                 document.getElementById('userEmail').textContent = currentUser.email;
             } catch (error) {
-                console.error('加载用户信息错误:', error);
-                showMessage('请重新登录', 'error');
+                console.error('Load user info error:', error);
+                showMessage(getLangText('请重新登录', 'Please log in again'), 'error');
                 setTimeout(() => window.location.href = '/auth/login.html', 2000);
             }
         }
@@ -1127,17 +1127,19 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取推荐码失败');
+                if (!response.ok) throw new Error(getLangText('获取推荐码失败', 'Failed to get referral code'));
 
                 const data = await response.json();
                 
-                document.getElementById('myReferralCode').value = data.referral_code || '加载中...';
+                document.getElementById('myReferralCode').value = data.referral_code || getLangText('加载中...', 'Loading...');
                 document.getElementById('myReferralLink').value = window.location.origin + data.referral_link;
-                document.getElementById('referralStats').textContent = 
-                    `已成功推荐 ${data.referral_count || 0} 位用户`;
+                const lang = localStorage.getItem('eon_language') || 'en';
+                document.getElementById('referralStats').textContent = lang === 'zh' 
+                    ? `已成功推荐 ${data.referral_count || 0} 位用户`
+                    : `Successfully referred ${data.referral_count || 0} user(s)`;
             } catch (error) {
-                console.error('加载推荐码错误:', error);
-                document.getElementById('myReferralCode').value = '获取失败';
+                console.error('Load referral code error:', error);
+                document.getElementById('myReferralCode').value = getLangText('获取失败', 'Failed');
             }
         }
 
@@ -1145,9 +1147,9 @@
         function copyReferralCode() {
             const code = document.getElementById('myReferralCode').value;
             navigator.clipboard.writeText(code).then(() => {
-                showMessage('推荐码已复制到剪贴板', 'success');
+                showMessage(getLangText('推荐码已复制到剪贴板', 'Referral code copied'), 'success');
             }).catch(() => {
-                showMessage('复制失败，请手动复制', 'error');
+                showMessage(getLangText('复制失败，请手动复制', 'Copy failed, please copy manually'), 'error');
             });
         }
 
@@ -1155,9 +1157,9 @@
         function copyReferralLink() {
             const link = document.getElementById('myReferralLink').value;
             navigator.clipboard.writeText(link).then(() => {
-                showMessage('推荐链接已复制到剪贴板', 'success');
+                showMessage(getLangText('推荐链接已复制到剪贴板', 'Referral link copied'), 'success');
             }).catch(() => {
-                showMessage('复制失败，请手动复制', 'error');
+                showMessage(getLangText('复制失败，请手动复制', 'Copy failed, please copy manually'), 'error');
             });
         }
 
@@ -1169,7 +1171,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('获取企业信息失败');
+                    throw new Error(getLangText('获取企业信息失败', 'Failed to get company info'));
                 }
 
                 const data = await response.json();
@@ -1205,13 +1207,20 @@
             document.getElementById('submitBtn').disabled = !canSubmit;
         }
 
+        // 多语言文本
+        function getLangText(zh, en) {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            return lang === 'zh' ? zh : en;
+        }
+
         // 更新状态显示
         function updateStatusDisplay() {
+            const lang = localStorage.getItem('eon_language') || 'en';
             const statusMap = {
-                'draft': { text: '草稿', class: 'status-draft' },
-                'pending': { text: '待审核', class: 'status-pending' },
-                'approved': { text: '已通过', class: 'status-approved' },
-                'rejected': { text: '已拒绝', class: 'status-rejected' }
+                'draft': { text: lang === 'zh' ? '草稿' : 'Draft', class: 'status-draft' },
+                'pending': { text: lang === 'zh' ? '待审核' : 'Pending', class: 'status-pending' },
+                'approved': { text: lang === 'zh' ? '已通过' : 'Approved', class: 'status-approved' },
+                'rejected': { text: lang === 'zh' ? '已拒绝' : 'Rejected', class: 'status-rejected' }
             };
 
             const status = companyData?.status || 'draft';
@@ -1400,7 +1409,7 @@
                     throw new Error(result.error || '保存失败');
                 }
 
-                showMessage('企业资料已保存', 'success');
+                showMessage(getLangText('企业资料已保存', 'Company profile saved'), 'success');
                 await loadCompanyData();
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -1452,7 +1461,7 @@
                     throw new Error(result.error || '保存失败');
                 }
 
-                showMessage('融资信息已保存', 'success');
+                showMessage(getLangText('融资信息已保存', 'Fundraising info saved'), 'success');
                 await loadCompanyData();
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -1468,7 +1477,11 @@
             
             // 检查文件大小 (2MB 限制)
             if (file.size > MAX_SIZE) {
-                showMessage(`文件大小不能超过 2MB（当前: ${(file.size / 1024 / 1024).toFixed(1)}MB）。请压缩文件后重试。`, 'error');
+                const msg = getLangText(
+                    `文件大小不能超过 2MB（当前: ${(file.size / 1024 / 1024).toFixed(1)}MB）。请压缩文件后重试。`,
+                    `File size cannot exceed 2MB (current: ${(file.size / 1024 / 1024).toFixed(1)}MB). Please compress and try again.`
+                );
+                showMessage(msg, 'error');
                 input.value = '';
                 return;
             }
@@ -1496,16 +1509,16 @@
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try {
                         const result = JSON.parse(xhr.responseText);
-                        showMessage(`文件 "${file.name}" 上传成功！`, 'success');
+                        showMessage(getLangText(`文件 "${file.name}" 上传成功！`, `File "${file.name}" uploaded successfully!`), 'success');
                         await loadCompanyData();
                         await loadDocuments();
                     } catch (e) {
-                        showMessage('上传成功', 'success');
+                        showMessage(getLangText('上传成功', 'Upload successful'), 'success');
                         await loadCompanyData();
                         await loadDocuments();
                     }
                 } else {
-                    let errorMsg = '上传失败';
+                    let errorMsg = getLangText('上传失败', 'Upload failed');
                     try {
                         const result = JSON.parse(xhr.responseText);
                         errorMsg = result.error || errorMsg;
@@ -1517,13 +1530,13 @@
             // 上传错误
             xhr.addEventListener('error', () => {
                 hideUploadProgress();
-                showMessage('网络错误，上传失败', 'error');
+                showMessage(getLangText('网络错误，上传失败', 'Network error, upload failed'), 'error');
             });
 
             // 上传超时
             xhr.addEventListener('timeout', () => {
                 hideUploadProgress();
-                showMessage('上传超时，请检查网络后重试', 'error');
+                showMessage(getLangText('上传超时，请检查网络后重试', 'Upload timeout, please check network and retry'), 'error');
             });
 
             // 配置请求
@@ -1588,9 +1601,9 @@
             document.getElementById('uploadPercentText').textContent = `${percent}%`;
             
             if (percent < 100) {
-                document.getElementById('uploadProgressText').textContent = '正在上传...';
+                document.getElementById('uploadProgressText').textContent = getLangText('正在上传...', 'Uploading...');
             } else {
-                document.getElementById('uploadProgressText').textContent = '正在保存到服务器...';
+                document.getElementById('uploadProgressText').textContent = getLangText('正在保存到服务器...', 'Saving to server...');
             }
         }
 
@@ -1600,7 +1613,7 @@
             const description = document.getElementById('bpLinkDesc').value.trim();
 
             if (!url) {
-                showMessage('请输入 BP 链接', 'error');
+                showMessage(getLangText('请输入 BP 链接', 'Please enter BP link'), 'error');
                 return;
             }
 
@@ -1608,7 +1621,7 @@
             try {
                 new URL(url);
             } catch (e) {
-                showMessage('请输入有效的 URL 链接', 'error');
+                showMessage(getLangText('请输入有效的 URL 链接', 'Please enter a valid URL'), 'error');
                 return;
             }
 
@@ -1628,7 +1641,7 @@
                     throw new Error(result.error || '保存失败');
                 }
 
-                showMessage('BP 链接保存成功！', 'success');
+                showMessage(getLangText('BP 链接保存成功！', 'BP link saved successfully!'), 'success');
                 document.getElementById('bpLinkUrl').value = '';
                 document.getElementById('bpLinkDesc').value = '';
                 await loadCompanyData();
@@ -1649,7 +1662,7 @@
         // 下载文档（带认证）
         async function downloadDocument(docId, filename) {
             try {
-                showMessage('正在下载...', 'info');
+                showMessage(getLangText('正在下载...', 'Downloading...'), 'info');
                 
                 const response = await fetch(`/api/company/documents/${docId}/download`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -1673,7 +1686,7 @@
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 
-                showMessage('下载成功', 'success');
+                showMessage(getLangText('下载成功', 'Download successful'), 'success');
             } catch (error) {
                 showMessage(error.message, 'error');
             }
@@ -1681,7 +1694,7 @@
 
         // 删除文档
         async function deleteDocument(docId) {
-            if (!confirm('确定要删除这个文档吗？')) return;
+            if (!confirm(getLangText('确定要删除这个文档吗？', 'Are you sure you want to delete this document?'))) return;
 
             try {
                 const response = await fetch(`/api/company/documents/${docId}`, {
@@ -1693,7 +1706,7 @@
                     throw new Error('删除失败');
                 }
 
-                showMessage('文档已删除', 'success');
+                showMessage(getLangText('文档已删除', 'Document deleted'), 'success');
                 await loadCompanyData();
                 await loadDocuments();
             } catch (error) {
@@ -1703,7 +1716,7 @@
 
         // 提交审核
         async function submitForReview() {
-            if (!confirm('确定要提交审核吗？提交后将无法修改信息，直到审核完成。')) return;
+            if (!confirm(getLangText('确定要提交审核吗？提交后将无法修改信息，直到审核完成。', 'Submit for review? You cannot modify until review is complete.'))) return;
 
             try {
                 const response = await fetch('/api/company/submit', {
@@ -1717,7 +1730,7 @@
                     throw new Error(result.error || '提交失败');
                 }
 
-                showMessage('已提交审核，请等待管理员处理', 'success');
+                showMessage(getLangText('已提交审核，请等待管理员处理', 'Submitted for review, please wait for admin processing'), 'success');
                 await loadCompanyData();
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -1794,17 +1807,17 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             if (!currentPassword || !newPassword || !confirmPassword) {
-                showToast('请填写所有字段', 'warning');
+                showMessage(getLangText('请填写所有字段', 'Please fill in all fields'), 'warning');
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                showToast('两次输入的新密码不一致', 'warning');
+                showMessage(getLangText('两次输入的新密码不一致', 'Passwords do not match'), 'warning');
                 return;
             }
 
             if (newPassword.length < 6) {
-                showToast('新密码长度不能少于6位', 'warning');
+                showMessage(getLangText('新密码长度不能少于6位', 'Password must be at least 6 characters'), 'warning');
                 return;
             }
 
@@ -1821,14 +1834,14 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showToast('密码修改成功', 'success');
+                    showMessage(getLangText('密码修改成功', 'Password changed successfully'), 'success');
                     closePasswordModal();
                 } else {
-                    showToast(data.error || '密码修改失败', 'error');
+                    showMessage(data.error || getLangText('密码修改失败', 'Failed to change password'), 'error');
                 }
             } catch (error) {
-                console.error('修改密码错误:', error);
-                showToast('密码修改失败，请稍后重试', 'error');
+                console.error('Change password error:', error);
+                showMessage(getLangText('密码修改失败，请稍后重试', 'Failed to change password, please try again'), 'error');
             }
         }
     </script>

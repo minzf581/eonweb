@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -574,50 +574,50 @@
                         </div>
                     </div>
 
-                    <h3 class="card-title" style="margin-top: 2rem;">投资偏好</h3>
+                    <h3 class="card-title" style="margin-top: 2rem;" data-zh="投资偏好" data-en="Investment Preferences">投资偏好</h3>
 
                     <div class="form-group">
-                        <label class="form-label">关注行业</label>
+                        <label class="form-label" data-zh="关注行业" data-en="Industries of Interest">关注行业</label>
                         <div class="checkbox-group">
-                            <label class="checkbox-item"><input type="checkbox" name="industries" value="technology"> 科技/互联网</label>
-                            <label class="checkbox-item"><input type="checkbox" name="industries" value="healthcare"> 医疗健康</label>
-                            <label class="checkbox-item"><input type="checkbox" name="industries" value="finance"> 金融科技</label>
-                            <label class="checkbox-item"><input type="checkbox" name="industries" value="manufacturing"> 制造业</label>
-                            <label class="checkbox-item"><input type="checkbox" name="industries" value="consumer"> 消费品</label>
-                            <label class="checkbox-item"><input type="checkbox" name="industries" value="energy"> 能源/环保</label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="technology"> <span data-zh="科技/互联网" data-en="Technology">科技/互联网</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="healthcare"> <span data-zh="医疗健康" data-en="Healthcare">医疗健康</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="finance"> <span data-zh="金融科技" data-en="FinTech">金融科技</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="manufacturing"> <span data-zh="制造业" data-en="Manufacturing">制造业</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="consumer"> <span data-zh="消费品" data-en="Consumer">消费品</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="industries" value="energy"> <span data-zh="能源/环保" data-en="Energy/Green">能源/环保</span></label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">关注阶段</label>
+                        <label class="form-label" data-zh="关注阶段" data-en="Investment Stages">关注阶段</label>
                         <div class="checkbox-group">
-                            <label class="checkbox-item"><input type="checkbox" name="stages" value="seed"> 种子轮</label>
-                            <label class="checkbox-item"><input type="checkbox" name="stages" value="angel"> 天使轮</label>
-                            <label class="checkbox-item"><input type="checkbox" name="stages" value="a"> A轮</label>
-                            <label class="checkbox-item"><input type="checkbox" name="stages" value="b"> B轮</label>
-                            <label class="checkbox-item"><input type="checkbox" name="stages" value="pre_ipo"> Pre-IPO</label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="seed"> <span data-zh="种子轮" data-en="Seed">种子轮</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="angel"> <span data-zh="天使轮" data-en="Angel">天使轮</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="a"> <span data-zh="A轮" data-en="Series A">A轮</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="b"> <span data-zh="B轮" data-en="Series B">B轮</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="stages" value="pre_ipo"> <span data-zh="Pre-IPO" data-en="Pre-IPO">Pre-IPO</span></label>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">投资金额区间（万美元）</label>
+                            <label class="form-label" data-zh="投资金额区间（万美元）" data-en="Investment Range (USD 10K)">投资金额区间（万美元）</label>
                             <div style="display: flex; gap: 1rem; align-items: center;">
-                                <input type="number" class="form-control" name="ticket_size_min" placeholder="最小">
+                                <input type="number" class="form-control" name="ticket_size_min" data-placeholder-zh="最小" data-placeholder-en="Min" placeholder="Min">
                                 <span>-</span>
-                                <input type="number" class="form-control" name="ticket_size_max" placeholder="最大">
+                                <input type="number" class="form-control" name="ticket_size_max" data-placeholder-zh="最大" data-placeholder-en="Max" placeholder="Max">
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">个人简介</label>
-                        <textarea class="form-control" name="bio" rows="4" placeholder="简单介绍您的投资经历和偏好"></textarea>
+                        <label class="form-label" data-zh="个人简介" data-en="Bio">个人简介</label>
+                        <textarea class="form-control" name="bio" rows="4" data-placeholder-zh="简单介绍您的投资经历和偏好" data-placeholder-en="Briefly describe your investment experience and preferences" placeholder="Briefly describe your investment experience and preferences"></textarea>
                     </div>
 
                     <div class="btn-group">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> 保存
+                            <i class="fas fa-save"></i> <span data-zh="保存" data-en="Save">Save</span>
                         </button>
                     </div>
                 </form>
@@ -626,8 +626,8 @@
             <!-- 我的请求面板 -->
             <div id="requests" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">我的请求</h1>
-                    <p class="page-subtitle">查看您的引荐请求记录</p>
+                    <h1 class="page-title" data-zh="我的请求" data-en="My Requests">My Requests</h1>
+                    <p class="page-subtitle" data-zh="查看您的引荐请求记录" data-en="View your referral request history">View your referral request history</p>
                 </div>
 
                 <div class="card">
@@ -638,14 +638,14 @@
 
                 <!-- 推荐码 -->
                 <div class="card" style="margin-top: 2rem;">
-                    <h3 style="margin-bottom: 1rem; color: var(--primary-color);"><i class="fas fa-share-alt"></i> 我的推荐码</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.875rem;">分享您的推荐码，邀请其他用户注册。使用您推荐码注册的用户将获得优先处理。</p>
+                    <h3 style="margin-bottom: 1rem; color: var(--primary-color);"><i class="fas fa-share-alt"></i> <span data-zh="我的推荐码" data-en="My Referral Code">My Referral Code</span></h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.875rem;" data-zh="分享您的推荐码，邀请其他用户注册。使用您推荐码注册的用户将获得优先处理。" data-en="Share your referral code to invite other users. Users who register with your code will receive priority processing.">Share your referral code to invite other users. Users who register with your code will receive priority processing.</p>
                     <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
                         <div style="flex: 1;">
                             <input type="text" class="form-control" id="myReferralCode" readonly style="font-size: 1.25rem; font-weight: bold; text-align: center; letter-spacing: 2px;">
                         </div>
                         <button class="btn btn-primary" onclick="copyReferralCode()" style="white-space: nowrap;">
-                            <i class="fas fa-copy"></i> 复制
+                            <i class="fas fa-copy"></i> <span data-zh="复制" data-en="Copy">Copy</span>
                         </button>
                     </div>
                     <div style="display: flex; gap: 1rem; align-items: center;">
@@ -653,7 +653,7 @@
                             <input type="text" class="form-control" id="myReferralLink" readonly style="font-size: 0.875rem;">
                         </div>
                         <button class="btn btn-secondary" onclick="copyReferralLink()" style="white-space: nowrap;">
-                            <i class="fas fa-link"></i> 复制链接
+                            <i class="fas fa-link"></i> <span data-zh="复制链接" data-en="Copy Link">Copy Link</span>
                         </button>
                     </div>
                     <p id="referralStats" style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);"></p>
@@ -697,13 +697,13 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取用户信息失败');
+                if (!response.ok) throw new Error(t('loadUserFailed'));
 
                 const data = await response.json();
                 currentUser = data.user;
 
                 if (currentUser.role !== 'investor' && currentUser.role !== 'admin') {
-                    showMessage('您没有权限访问投资人门户', 'error');
+                    showMessage(t('noAccessInvestor'), 'error');
                     setTimeout(() => window.location.href = '/', 2000);
                     return;
                 }
@@ -715,25 +715,25 @@
 
                 // 根据状态显示内容
                 if (investorProfile && investorProfile.status === 'approved') {
-                    document.getElementById('accountStatus').textContent = '已认证';
+                    document.getElementById('accountStatus').textContent = t('verified');
                     document.getElementById('accountStatus').className = 'status-badge status-approved';
                     await loadProjects();
                 } else {
-                    document.getElementById('accountStatus').textContent = '待审核';
+                    document.getElementById('accountStatus').textContent = t('pendingReview');
                     document.getElementById('accountStatus').className = 'status-badge status-pending';
                     document.getElementById('pendingNotice').style.display = 'flex';
                     document.getElementById('projectsGrid').innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-clock"></i>
-                            <p>账户审核中，请先完善您的投资人资料</p>
+                            <p>${t('accountPendingMsg')}</p>
                         </div>
                     `;
                 }
 
                 await loadMyRequests();
             } catch (error) {
-                console.error('加载用户信息错误:', error);
-                showMessage('请重新登录', 'error');
+                console.error('Load user info error:', error);
+                showMessage(t('pleaseRelogin'), 'error');
                 setTimeout(() => window.location.href = '/auth/login.html', 2000);
             }
         }
@@ -745,17 +745,16 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取推荐码失败');
+                if (!response.ok) throw new Error(t('loadReferralFailed'));
 
                 const data = await response.json();
                 
-                document.getElementById('myReferralCode').value = data.referral_code || '加载中...';
+                document.getElementById('myReferralCode').value = data.referral_code || t('loading');
                 document.getElementById('myReferralLink').value = window.location.origin + data.referral_link;
-                document.getElementById('referralStats').textContent = 
-                    `已成功推荐 ${data.referral_count || 0} 位用户`;
+                document.getElementById('referralStats').textContent = t('referredUsers').replace('{count}', data.referral_count || 0);
             } catch (error) {
-                console.error('加载推荐码错误:', error);
-                document.getElementById('myReferralCode').value = '获取失败';
+                console.error('Load referral info error:', error);
+                document.getElementById('myReferralCode').value = t('loadFailed');
             }
         }
 
@@ -763,9 +762,9 @@
         function copyReferralCode() {
             const code = document.getElementById('myReferralCode').value;
             navigator.clipboard.writeText(code).then(() => {
-                showMessage('推荐码已复制到剪贴板', 'success');
+                showMessage(t('codeCopied'), 'success');
             }).catch(() => {
-                showMessage('复制失败，请手动复制', 'error');
+                showMessage(t('copyFailed'), 'error');
             });
         }
 
@@ -773,9 +772,9 @@
         function copyReferralLink() {
             const link = document.getElementById('myReferralLink').value;
             navigator.clipboard.writeText(link).then(() => {
-                showMessage('推荐链接已复制到剪贴板', 'success');
+                showMessage(t('linkCopied'), 'success');
             }).catch(() => {
-                showMessage('复制失败，请手动复制', 'error');
+                showMessage(t('copyFailed'), 'error');
             });
         }
 
@@ -785,7 +784,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取资料失败');
+                if (!response.ok) throw new Error(t('loadProfileFailed'));
 
                 const data = await response.json();
                 investorProfile = data.profile;
@@ -794,7 +793,7 @@
                     populateProfileForm();
                 }
             } catch (error) {
-                console.error('加载投资人资料错误:', error);
+                console.error('Load investor profile error:', error);
             }
         }
 
@@ -852,13 +851,13 @@
                     document.getElementById('projectsGrid').innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-lock"></i>
-                            <p>账户审核通过后即可浏览项目</p>
+                            <p>${t('accountApprovedBrowse')}</p>
                         </div>
                     `;
                     return;
                 }
 
-                if (!response.ok) throw new Error('获取项目失败');
+                if (!response.ok) throw new Error(t('loadProjectsFailed'));
 
                 const data = await response.json();
 
@@ -891,13 +890,13 @@
                     document.getElementById('projectsGrid').innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-search"></i>
-                            <p>暂无符合条件的项目</p>
+                            <p>${t('noMatchingProjects')}</p>
                         </div>
                     `;
                 }
             } catch (error) {
-                console.error('加载项目错误:', error);
-                showMessage('加载项目失败', 'error');
+                console.error('Load projects error:', error);
+                showMessage(t('loadProjectsFailed'), 'error');
             }
         }
 
@@ -910,7 +909,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取项目详情失败');
+                if (!response.ok) throw new Error(t('loadProjectDetailFailed'));
 
                 const data = await response.json();
                 const p = data.project;
@@ -918,51 +917,51 @@
                 document.getElementById('modalProjectName').textContent = p.name_cn;
                 document.getElementById('modalContent').innerHTML = `
                     <div class="detail-section">
-                        <h4>基本信息</h4>
+                        <h4>${t('basicInfo')}</h4>
                         <div class="detail-grid">
                             <div class="detail-item">
-                                <div class="detail-label">公司名称</div>
+                                <div class="detail-label">${t('companyName')}</div>
                                 <div class="detail-value">${p.name_cn}${p.name_en ? ` / ${p.name_en}` : ''}</div>
                             </div>
                             <div class="detail-item">
-                                <div class="detail-label">行业</div>
+                                <div class="detail-label">${t('industry')}</div>
                                 <div class="detail-value">${formatIndustry(p.industry_primary)}</div>
                             </div>
                             <div class="detail-item">
-                                <div class="detail-label">融资阶段</div>
+                                <div class="detail-label">${t('fundingStage')}</div>
                                 <div class="detail-value">${formatStage(p.stage)}</div>
                             </div>
                             <div class="detail-item">
-                                <div class="detail-label">所在地</div>
+                                <div class="detail-label">${t('location')}</div>
                                 <div class="detail-value">${p.location_headquarters}</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="detail-section">
-                        <h4>公司简介</h4>
+                        <h4>${t('companyDesc')}</h4>
                         <p>${p.description}</p>
                         ${p.description_detail ? `<p style="margin-top: 0.5rem; color: var(--text-secondary);">${p.description_detail}</p>` : ''}
                     </div>
 
                     ${p.fundraising ? `
                         <div class="detail-section">
-                            <h4>融资需求</h4>
+                            <h4>${t('fundraisingNeeds')}</h4>
                             <div class="detail-grid">
                                 <div class="detail-item">
-                                    <div class="detail-label">融资金额</div>
+                                    <div class="detail-label">${t('fundraisingAmount')}</div>
                                     <div class="detail-value">${formatAmount(p.fundraising.amount_min)} - ${formatAmount(p.fundraising.amount_max)}</div>
                                 </div>
                                 <div class="detail-item">
-                                    <div class="detail-label">时间窗口</div>
+                                    <div class="detail-label">${t('timeWindow')}</div>
                                     <div class="detail-value">${formatTimeline(p.fundraising.timeline)}</div>
                                 </div>
                                 <div class="detail-item">
-                                    <div class="detail-label">融资目的</div>
+                                    <div class="detail-label">${t('fundraisingPurpose')}</div>
                                     <div class="detail-value">${p.fundraising.purpose?.join(', ') || '-'}</div>
                                 </div>
                                 <div class="detail-item">
-                                    <div class="detail-label">融资类型</div>
+                                    <div class="detail-label">${t('financingType')}</div>
                                     <div class="detail-value">${p.fundraising.financing_type?.join(', ') || '-'}</div>
                                 </div>
                             </div>
@@ -971,14 +970,14 @@
 
                     ${p.contact ? `
                         <div class="detail-section">
-                            <h4>联系人信息</h4>
+                            <h4>${t('contactInfo')}</h4>
                             <div class="detail-grid">
                                 <div class="detail-item">
-                                    <div class="detail-label">联系人</div>
+                                    <div class="detail-label">${t('contactPerson')}</div>
                                     <div class="detail-value">${p.contact.name}${p.contact.title ? ` (${p.contact.title})` : ''}</div>
                                 </div>
                                 <div class="detail-item">
-                                    <div class="detail-label">邮箱</div>
+                                    <div class="detail-label">${t('email')}</div>
                                     <div class="detail-value">${p.contact.email}</div>
                                 </div>
                             </div>
@@ -986,39 +985,39 @@
                     ` : `
                         <div class="message message-info">
                             <i class="fas fa-info-circle"></i>
-                            <span>联系人信息需要申请引荐后查看</span>
+                            <span>${t('contactAfterReferral')}</span>
                         </div>
                     `}
 
                     <div class="btn-group">
                         ${!p.hasAccess ? `
                             <button class="btn btn-primary" onclick="requestAccess('${p.id}', 'bp_access')">
-                                <i class="fas fa-file-alt"></i> 请求BP访问
+                                <i class="fas fa-file-alt"></i> ${t('requestBPAccess')}
                             </button>
                             <button class="btn btn-success" onclick="requestAccess('${p.id}', 'referral')">
-                                <i class="fas fa-handshake"></i> 请求引荐
+                                <i class="fas fa-handshake"></i> ${t('requestReferral')}
                             </button>
                         ` : `
                             <button class="btn btn-secondary" disabled>
-                                <i class="fas fa-check"></i> 已获得访问权限
+                                <i class="fas fa-check"></i> ${t('accessGranted')}
                             </button>
                         `}
-                        <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+                        <button class="btn btn-secondary" onclick="closeModal()">${t('close')}</button>
                     </div>
                 `;
             } catch (error) {
-                console.error('加载项目详情错误:', error);
+                console.error('Load project detail error:', error);
                 document.getElementById('modalContent').innerHTML = `
                     <div class="message message-error">
                         <i class="fas fa-exclamation-circle"></i>
-                        加载失败，请稍后重试
+                        ${t('loadFailedRetry')}
                     </div>
                 `;
             }
         }
 
         async function requestAccess(companyId, requestType) {
-            const message = prompt('请简单说明您的投资意向或问题（可选）：');
+            const message = prompt(t('investmentIntentPrompt'));
 
             try {
                 const response = await fetch('/api/investor/request-access', {
@@ -1037,10 +1036,10 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '请求失败');
+                    throw new Error(result.error || t('requestFailed'));
                 }
 
-                showMessage('请求已提交，请等待管理员处理', 'success');
+                showMessage(t('requestSubmitted'), 'success');
                 closeModal();
                 await loadMyRequests();
             } catch (error) {
@@ -1054,7 +1053,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取请求记录失败');
+                if (!response.ok) throw new Error(t('loadRequestsFailed'));
 
                 const data = await response.json();
 
@@ -1062,7 +1061,7 @@
                     document.getElementById('requestsList').innerHTML = data.requests.map(r => `
                         <div class="request-item">
                             <div class="request-info">
-                                <div class="request-company">${r.company?.name_cn || '未知企业'}</div>
+                                <div class="request-company">${r.company?.name_cn || t('unknownCompany')}</div>
                                 <div class="request-type">${formatRequestType(r.request_type)}</div>
                                 <div class="request-date">${new Date(r.created_at).toLocaleDateString()}</div>
                             </div>
@@ -1073,12 +1072,12 @@
                     document.getElementById('requestsList').innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-inbox"></i>
-                            <p>暂无请求记录</p>
+                            <p>${t('noRequests')}</p>
                         </div>
                     `;
                 }
             } catch (error) {
-                console.error('加载请求记录错误:', error);
+                console.error('Load requests error:', error);
             }
         }
 
@@ -1141,10 +1140,10 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '保存失败');
+                    throw new Error(result.error || t('saveFailed'));
                 }
 
-                showMessage('资料已保存', 'success');
+                showMessage(t('profileSaved'), 'success');
                 await loadInvestorProfile();
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -1167,47 +1166,73 @@
         }
 
         function formatStage(stage) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 'seed': '种子轮', 'angel': '天使轮', 'pre_a': 'Pre-A轮',
                 'a': 'A轮', 'b': 'B轮', 'c': 'C轮+',
                 'pre_ipo': 'Pre-IPO', 'ipo': '已上市', 'post_ipo': '上市后'
+            } : {
+                'seed': 'Seed', 'angel': 'Angel', 'pre_a': 'Pre-A',
+                'a': 'Series A', 'b': 'Series B', 'c': 'Series C+',
+                'pre_ipo': 'Pre-IPO', 'ipo': 'IPO', 'post_ipo': 'Post-IPO'
             };
             return map[stage] || stage;
         }
 
         function formatIndustry(industry) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 'technology': '科技/互联网', 'healthcare': '医疗健康', 'finance': '金融科技',
                 'manufacturing': '制造业', 'consumer': '消费品', 'energy': '能源/环保',
                 'education': '教育', 'logistics': '物流/供应链', 'other': '其他'
+            } : {
+                'technology': 'Technology', 'healthcare': 'Healthcare', 'finance': 'FinTech',
+                'manufacturing': 'Manufacturing', 'consumer': 'Consumer', 'energy': 'Energy/Green',
+                'education': 'Education', 'logistics': 'Logistics', 'other': 'Other'
             };
             return map[industry] || industry;
         }
 
         function formatAmount(amount) {
             if (!amount) return '-';
-            if (amount >= 100000000) return (amount / 100000000).toFixed(1) + '亿美元';
-            if (amount >= 10000) return (amount / 10000).toFixed(0) + '万美元';
-            return amount + '美元';
+            const lang = localStorage.getItem('eon_language') || 'en';
+            if (lang === 'zh') {
+                if (amount >= 100000000) return (amount / 100000000).toFixed(1) + '亿美元';
+                if (amount >= 10000) return (amount / 10000).toFixed(0) + '万美元';
+                return amount + '美元';
+            } else {
+                if (amount >= 1000000) return '$' + (amount / 1000000).toFixed(1) + 'M';
+                if (amount >= 1000) return '$' + (amount / 1000).toFixed(0) + 'K';
+                return '$' + amount;
+            }
         }
 
         function formatTimeline(timeline) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 '0-3months': '0-3个月', '3-6months': '3-6个月',
                 '6-12months': '6-12个月', '12+months': '12个月+'
+            } : {
+                '0-3months': '0-3 months', '3-6months': '3-6 months',
+                '6-12months': '6-12 months', '12+months': '12+ months'
             };
             return map[timeline] || timeline;
         }
 
         function formatRequestType(type) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 'bp_access': 'BP访问', 'referral': '引荐', 'meeting': '会议', 'dataroom': '数据室'
+            } : {
+                'bp_access': 'BP Access', 'referral': 'Referral', 'meeting': 'Meeting', 'dataroom': 'Data Room'
             };
             return map[type] || type;
         }
 
         function formatStatus(status) {
-            const map = { 'pending': '待处理', 'approved': '已通过', 'rejected': '已拒绝', 'expired': '已过期' };
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? { 'pending': '待处理', 'approved': '已通过', 'rejected': '已拒绝', 'expired': '已过期' }
+                : { 'pending': 'Pending', 'approved': 'Approved', 'rejected': 'Rejected', 'expired': 'Expired' };
             return map[status] || status;
         }
 
@@ -1235,17 +1260,17 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             if (!currentPassword || !newPassword || !confirmPassword) {
-                showToast('请填写所有字段', 'warning');
+                showMessage(t('fillAllFields'), 'warning');
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                showToast('两次输入的新密码不一致', 'warning');
+                showMessage(t('passwordMismatch'), 'warning');
                 return;
             }
 
             if (newPassword.length < 6) {
-                showToast('新密码长度不能少于6位', 'warning');
+                showMessage(t('passwordTooShort'), 'warning');
                 return;
             }
 
@@ -1262,15 +1287,75 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showToast('密码修改成功', 'success');
+                    showMessage(t('passwordChanged'), 'success');
                     closePasswordModal();
                 } else {
-                    showToast(data.error || '密码修改失败', 'error');
+                    showMessage(data.error || t('passwordChangeFailed'), 'error');
                 }
             } catch (error) {
-                console.error('修改密码错误:', error);
-                showToast('密码修改失败，请稍后重试', 'error');
+                console.error('Change password error:', error);
+                showMessage(t('passwordChangeFailed'), 'error');
             }
+        }
+
+        // 多语言翻译函数
+        const i18n = {
+            loadUserFailed: { zh: '获取用户信息失败', en: 'Failed to load user info' },
+            noAccessInvestor: { zh: '您没有权限访问投资人门户', en: 'You do not have access to the investor portal' },
+            verified: { zh: '已认证', en: 'Verified' },
+            pendingReview: { zh: '待审核', en: 'Pending Review' },
+            accountPendingMsg: { zh: '账户审核中，请先完善您的投资人资料', en: 'Account under review, please complete your investor profile' },
+            pleaseRelogin: { zh: '请重新登录', en: 'Please log in again' },
+            loadReferralFailed: { zh: '获取推荐码失败', en: 'Failed to load referral code' },
+            loading: { zh: '加载中...', en: 'Loading...' },
+            loadFailed: { zh: '获取失败', en: 'Load failed' },
+            referredUsers: { zh: '已成功推荐 {count} 位用户', en: 'Successfully referred {count} users' },
+            codeCopied: { zh: '推荐码已复制到剪贴板', en: 'Referral code copied to clipboard' },
+            linkCopied: { zh: '推荐链接已复制到剪贴板', en: 'Referral link copied to clipboard' },
+            copyFailed: { zh: '复制失败，请手动复制', en: 'Copy failed, please copy manually' },
+            loadProfileFailed: { zh: '获取资料失败', en: 'Failed to load profile' },
+            accountApprovedBrowse: { zh: '账户审核通过后即可浏览项目', en: 'You can browse projects once your account is approved' },
+            loadProjectsFailed: { zh: '加载项目失败', en: 'Failed to load projects' },
+            noMatchingProjects: { zh: '暂无符合条件的项目', en: 'No matching projects found' },
+            loadProjectDetailFailed: { zh: '获取项目详情失败', en: 'Failed to load project details' },
+            basicInfo: { zh: '基本信息', en: 'Basic Information' },
+            companyName: { zh: '公司名称', en: 'Company Name' },
+            industry: { zh: '行业', en: 'Industry' },
+            fundingStage: { zh: '融资阶段', en: 'Funding Stage' },
+            location: { zh: '所在地', en: 'Location' },
+            companyDesc: { zh: '公司简介', en: 'Company Description' },
+            fundraisingNeeds: { zh: '融资需求', en: 'Fundraising Needs' },
+            fundraisingAmount: { zh: '融资金额', en: 'Fundraising Amount' },
+            timeWindow: { zh: '时间窗口', en: 'Time Window' },
+            fundraisingPurpose: { zh: '融资目的', en: 'Fundraising Purpose' },
+            financingType: { zh: '融资类型', en: 'Financing Type' },
+            contactInfo: { zh: '联系人信息', en: 'Contact Information' },
+            contactPerson: { zh: '联系人', en: 'Contact Person' },
+            email: { zh: '邮箱', en: 'Email' },
+            contactAfterReferral: { zh: '联系人信息需要申请引荐后查看', en: 'Contact info available after referral request' },
+            requestBPAccess: { zh: '请求BP访问', en: 'Request BP Access' },
+            requestReferral: { zh: '请求引荐', en: 'Request Referral' },
+            accessGranted: { zh: '已获得访问权限', en: 'Access Granted' },
+            close: { zh: '关闭', en: 'Close' },
+            loadFailedRetry: { zh: '加载失败，请稍后重试', en: 'Load failed, please try again' },
+            investmentIntentPrompt: { zh: '请简单说明您的投资意向或问题（可选）：', en: 'Please briefly describe your investment intent or questions (optional):' },
+            requestFailed: { zh: '请求失败', en: 'Request failed' },
+            requestSubmitted: { zh: '请求已提交，请等待管理员处理', en: 'Request submitted, please wait for admin processing' },
+            loadRequestsFailed: { zh: '获取请求记录失败', en: 'Failed to load requests' },
+            unknownCompany: { zh: '未知企业', en: 'Unknown Company' },
+            noRequests: { zh: '暂无请求记录', en: 'No requests yet' },
+            saveFailed: { zh: '保存失败', en: 'Save failed' },
+            profileSaved: { zh: '资料已保存', en: 'Profile saved' },
+            fillAllFields: { zh: '请填写所有字段', en: 'Please fill in all fields' },
+            passwordMismatch: { zh: '两次输入的新密码不一致', en: 'Passwords do not match' },
+            passwordTooShort: { zh: '新密码长度不能少于6位', en: 'Password must be at least 6 characters' },
+            passwordChanged: { zh: '密码修改成功', en: 'Password changed successfully' },
+            passwordChangeFailed: { zh: '密码修改失败，请稍后重试', en: 'Password change failed, please try again' }
+        };
+
+        function t(key) {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            return i18n[key] ? (i18n[key][lang] || i18n[key].en) : key;
         }
     </script>
 

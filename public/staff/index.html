@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -649,8 +649,8 @@
             <!-- 访问请求面板 -->
             <div id="requests" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">访问请求</h1>
-                    <p class="page-subtitle">投资人对您的企业发起的访问请求</p>
+                    <h1 class="page-title" data-zh="访问请求" data-en="Access Requests">Access Requests</h1>
+                    <p class="page-subtitle" data-zh="投资人对您的企业发起的访问请求" data-en="Access requests from investors for your companies">Access requests from investors for your companies</p>
                 </div>
 
                 <div class="card">
@@ -658,11 +658,11 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>投资人</th>
-                                    <th>企业</th>
-                                    <th>请求类型</th>
-                                    <th>状态</th>
-                                    <th>时间</th>
+                                    <th data-zh="投资人" data-en="Investor">Investor</th>
+                                    <th data-zh="企业" data-en="Company">Company</th>
+                                    <th data-zh="请求类型" data-en="Request Type">Request Type</th>
+                                    <th data-zh="状态" data-en="Status">Status</th>
+                                    <th data-zh="时间" data-en="Time">Time</th>
                                 </tr>
                             </thead>
                             <tbody id="requestsTableBody">
@@ -676,8 +676,8 @@
             <!-- 投资人面板 -->
             <div id="investors" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">投资人列表</h1>
-                    <p class="page-subtitle">浏览已审核的投资人</p>
+                    <h1 class="page-title" data-zh="投资人列表" data-en="Investor List">Investor List</h1>
+                    <p class="page-subtitle" data-zh="浏览已审核的投资人" data-en="Browse approved investors">Browse approved investors</p>
                 </div>
 
                 <div class="card">
@@ -685,11 +685,11 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>姓名</th>
-                                    <th>类型</th>
-                                    <th>机构</th>
-                                    <th>邮箱</th>
-                                    <th>操作</th>
+                                    <th data-zh="姓名" data-en="Name">Name</th>
+                                    <th data-zh="类型" data-en="Type">Type</th>
+                                    <th data-zh="机构" data-en="Organization">Organization</th>
+                                    <th data-zh="邮箱" data-en="Email">Email</th>
+                                    <th data-zh="操作" data-en="Actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="investorsTableBody">
@@ -703,41 +703,41 @@
             <!-- 消息面板 -->
             <div id="messages" class="panel">
                 <div class="page-header">
-                    <h1 class="page-title">消息中心</h1>
-                    <p class="page-subtitle">向投资人发送消息</p>
+                    <h1 class="page-title" data-zh="消息中心" data-en="Message Center">Message Center</h1>
+                    <p class="page-subtitle" data-zh="向投资人发送消息" data-en="Send messages to investors">Send messages to investors</p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-paper-plane"></i> 发送新消息</h3>
+                    <h3 class="card-title"><i class="fas fa-paper-plane"></i> <span data-zh="发送新消息" data-en="Send New Message">Send New Message</span></h3>
                     <form id="messageForm">
                         <div class="form-group">
-                            <label class="form-label">选择投资人 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="选择投资人" data-en="Select Investor">Select Investor</span> <span class="required">*</span></label>
                             <select class="form-control" id="msgRecipient" required>
-                                <option value="">请选择投资人</option>
+                                <option value="" data-zh="请选择投资人" data-en="Select an investor">Select an investor</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">关联企业（可选）</label>
+                            <label class="form-label" data-zh="关联企业（可选）" data-en="Related Company (optional)">Related Company (optional)</label>
                             <select class="form-control" id="msgCompany">
-                                <option value="">不关联企业</option>
+                                <option value="" data-zh="不关联企业" data-en="No company">No company</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">主题 <span class="required">*</span></label>
-                            <input type="text" class="form-control" id="msgSubject" required placeholder="消息主题">
+                            <label class="form-label"><span data-zh="主题" data-en="Subject">Subject</span> <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="msgSubject" required data-placeholder-zh="消息主题" data-placeholder-en="Message subject" placeholder="Message subject">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">内容 <span class="required">*</span></label>
-                            <textarea class="form-control" id="msgContent" rows="5" required placeholder="消息内容"></textarea>
+                            <label class="form-label"><span data-zh="内容" data-en="Content">Content</span> <span class="required">*</span></label>
+                            <textarea class="form-control" id="msgContent" rows="5" required data-placeholder-zh="消息内容" data-placeholder-en="Message content" placeholder="Message content"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i> 发送消息
+                            <i class="fas fa-paper-plane"></i> <span data-zh="发送消息" data-en="Send Message">Send Message</span>
                         </button>
                     </form>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-history"></i> 已发送消息</h3>
+                    <h3 class="card-title"><i class="fas fa-history"></i> <span data-zh="已发送消息" data-en="Sent Messages">Sent Messages</span></h3>
                     <div id="sentMessagesList">
                         <div class="loading"><div class="spinner"></div></div>
                     </div>
@@ -750,101 +750,101 @@
     <div class="modal" id="createCompanyModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">创建新企业</h2>
+                <h2 class="modal-title" data-zh="创建新企业" data-en="Create New Company">Create New Company</h2>
                 <button class="modal-close" onclick="closeModal('createCompanyModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="createCompanyForm">
-                    <h4 style="margin-bottom: 1rem; color: var(--primary-color);">基本信息</h4>
+                    <h4 style="margin-bottom: 1rem; color: var(--primary-color);" data-zh="基本信息" data-en="Basic Information">Basic Information</h4>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">公司中文名称 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="公司中文名称" data-en="Company Name (Chinese)">Company Name (Chinese)</span> <span class="required">*</span></label>
                             <input type="text" class="form-control" name="name_cn" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">公司英文名称</label>
+                            <label class="form-label" data-zh="公司英文名称" data-en="Company Name (English)">Company Name (English)</label>
                             <input type="text" class="form-control" name="name_en">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">主要行业 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="主要行业" data-en="Primary Industry">Primary Industry</span> <span class="required">*</span></label>
                             <select class="form-control" name="industry_primary" required>
-                                <option value="">请选择</option>
-                                <option value="technology">科技/互联网</option>
-                                <option value="healthcare">医疗健康</option>
-                                <option value="finance">金融科技</option>
-                                <option value="manufacturing">制造业</option>
-                                <option value="consumer">消费品</option>
-                                <option value="energy">能源/环保</option>
-                                <option value="education">教育</option>
-                                <option value="logistics">物流</option>
-                                <option value="other">其他</option>
+                                <option value="" data-zh="请选择" data-en="Select...">Select...</option>
+                                <option value="technology" data-zh="科技/互联网" data-en="Technology">Technology</option>
+                                <option value="healthcare" data-zh="医疗健康" data-en="Healthcare">Healthcare</option>
+                                <option value="finance" data-zh="金融科技" data-en="FinTech">FinTech</option>
+                                <option value="manufacturing" data-zh="制造业" data-en="Manufacturing">Manufacturing</option>
+                                <option value="consumer" data-zh="消费品" data-en="Consumer">Consumer</option>
+                                <option value="energy" data-zh="能源/环保" data-en="Energy/Green">Energy/Green</option>
+                                <option value="education" data-zh="教育" data-en="Education">Education</option>
+                                <option value="logistics" data-zh="物流" data-en="Logistics">Logistics</option>
+                                <option value="other" data-zh="其他" data-en="Other">Other</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">融资阶段 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="融资阶段" data-en="Funding Stage">Funding Stage</span> <span class="required">*</span></label>
                             <select class="form-control" name="stage" required>
-                                <option value="">请选择</option>
-                                <option value="seed">种子轮</option>
-                                <option value="angel">天使轮</option>
-                                <option value="pre_a">Pre-A轮</option>
-                                <option value="a">A轮</option>
-                                <option value="b">B轮</option>
-                                <option value="c">C轮及以后</option>
-                                <option value="pre_ipo">Pre-IPO</option>
-                                <option value="ipo">已上市</option>
+                                <option value="" data-zh="请选择" data-en="Select...">Select...</option>
+                                <option value="seed" data-zh="种子轮" data-en="Seed">Seed</option>
+                                <option value="angel" data-zh="天使轮" data-en="Angel">Angel</option>
+                                <option value="pre_a" data-zh="Pre-A轮" data-en="Pre-A">Pre-A</option>
+                                <option value="a" data-zh="A轮" data-en="Series A">Series A</option>
+                                <option value="b" data-zh="B轮" data-en="Series B">Series B</option>
+                                <option value="c" data-zh="C轮及以后" data-en="Series C+">Series C+</option>
+                                <option value="pre_ipo" data-zh="Pre-IPO" data-en="Pre-IPO">Pre-IPO</option>
+                                <option value="ipo" data-zh="已上市" data-en="IPO">IPO</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">总部所在地 <span class="required">*</span></label>
-                        <input type="text" class="form-control" name="location_headquarters" required placeholder="如：中国深圳">
+                        <label class="form-label"><span data-zh="总部所在地" data-en="Headquarters Location">Headquarters Location</span> <span class="required">*</span></label>
+                        <input type="text" class="form-control" name="location_headquarters" required data-placeholder-zh="如：中国深圳" data-placeholder-en="e.g., Shenzhen, China" placeholder="e.g., Shenzhen, China">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">一句话简介 <span class="required">*</span></label>
-                        <input type="text" class="form-control" name="description" required placeholder="用一句话描述公司做什么">
+                        <label class="form-label"><span data-zh="一句话简介" data-en="One-line Description">One-line Description</span> <span class="required">*</span></label>
+                        <input type="text" class="form-control" name="description" required data-placeholder-zh="用一句话描述公司做什么" data-placeholder-en="Describe what the company does in one sentence" placeholder="Describe what the company does in one sentence">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">详细介绍</label>
-                        <textarea class="form-control" name="description_detail" rows="3" placeholder="公司详细介绍"></textarea>
+                        <label class="form-label" data-zh="详细介绍" data-en="Detailed Description">Detailed Description</label>
+                        <textarea class="form-control" name="description_detail" rows="3" data-placeholder-zh="公司详细介绍" data-placeholder-en="Detailed company description" placeholder="Detailed company description"></textarea>
                     </div>
 
-                    <h4 style="margin: 1.5rem 0 1rem; color: var(--primary-color);">联系人信息</h4>
+                    <h4 style="margin: 1.5rem 0 1rem; color: var(--primary-color);" data-zh="联系人信息" data-en="Contact Information">Contact Information</h4>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">联系人姓名 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="联系人姓名" data-en="Contact Name">Contact Name</span> <span class="required">*</span></label>
                             <input type="text" class="form-control" name="contact_name" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">联系人邮箱 <span class="required">*</span></label>
+                            <label class="form-label"><span data-zh="联系人邮箱" data-en="Contact Email">Contact Email</span> <span class="required">*</span></label>
                             <input type="email" class="form-control" name="contact_email" required>
-                            <p class="form-hint">此邮箱将作为企业账户的登录邮箱</p>
+                            <p class="form-hint" data-zh="此邮箱将作为企业账户的登录邮箱" data-en="This email will be used as the company account login">This email will be used as the company account login</p>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">联系人职务</label>
-                            <input type="text" class="form-control" name="contact_title" placeholder="如：CEO、CFO">
+                            <label class="form-label" data-zh="联系人职务" data-en="Contact Title">Contact Title</label>
+                            <input type="text" class="form-control" name="contact_title" data-placeholder-zh="如：CEO、CFO" data-placeholder-en="e.g., CEO, CFO" placeholder="e.g., CEO, CFO">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">联系电话</label>
+                            <label class="form-label" data-zh="联系电话" data-en="Contact Phone">Contact Phone</label>
                             <input type="tel" class="form-control" name="contact_phone">
                         </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('createCompanyModal')">取消</button>
+                <button class="btn btn-secondary" onclick="closeModal('createCompanyModal')" data-zh="取消" data-en="Cancel">Cancel</button>
                 <button class="btn btn-primary" onclick="submitCreateCompany()">
-                    <i class="fas fa-check"></i> 创建企业
+                    <i class="fas fa-check"></i> <span data-zh="创建企业" data-en="Create Company">Create Company</span>
                 </button>
             </div>
         </div>
@@ -854,7 +854,7 @@
     <div class="modal" id="companyDetailModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="companyDetailTitle">企业详情</h2>
+                <h2 class="modal-title" id="companyDetailTitle" data-zh="企业详情" data-en="Company Details">Company Details</h2>
                 <button class="modal-close" onclick="closeModal('companyDetailModal')">&times;</button>
             </div>
             <div class="modal-body" id="companyDetailContent">
@@ -889,22 +889,22 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取用户信息失败');
+                if (!response.ok) throw new Error(t('loadUserFailed'));
 
                 const data = await response.json();
                 currentUser = data.user;
 
                 // 检查权限（只允许 staff 和 admin）
                 if (currentUser.role !== 'staff' && currentUser.role !== 'admin') {
-                    showMessage('您没有权限访问此页面', 'error');
+                    showMessage(t('noAccessPage'), 'error');
                     setTimeout(() => window.location.href = '/', 2000);
                     return;
                 }
 
                 document.getElementById('userEmail').textContent = currentUser.email;
             } catch (error) {
-                console.error('加载用户信息错误:', error);
-                showMessage('请重新登录', 'error');
+                console.error('Load user info error:', error);
+                showMessage(t('pleaseRelogin'), 'error');
                 setTimeout(() => window.location.href = '/auth/login.html', 2000);
             }
         }
@@ -916,7 +916,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取统计数据失败');
+                if (!response.ok) throw new Error(t('loadStatsFailed'));
 
                 const data = await response.json();
                 
@@ -925,7 +925,7 @@
                 document.getElementById('statApprovedCompanies').textContent = data.companies.approved;
                 document.getElementById('statPendingRequests').textContent = data.requests.pending;
             } catch (error) {
-                console.error('加载统计数据错误:', error);
+                console.error('Load stats error:', error);
             }
         }
 
@@ -936,14 +936,14 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取推荐码失败');
+                if (!response.ok) throw new Error(t('loadReferralFailed'));
 
                 const data = await response.json();
                 
-                document.getElementById('myReferralCode').value = data.referral_code || '加载中...';
+                document.getElementById('myReferralCode').value = data.referral_code || t('loading');
                 document.getElementById('myReferralLink').value = window.location.origin + data.referral_link;
             } catch (error) {
-                console.error('加载推荐码错误:', error);
+                console.error('Load referral info error:', error);
             }
         }
 
@@ -951,7 +951,7 @@
         function copyReferralCode() {
             const code = document.getElementById('myReferralCode').value;
             navigator.clipboard.writeText(code).then(() => {
-                showMessage('推荐码已复制到剪贴板', 'success');
+                showMessage(t('codeCopied'), 'success');
             });
         }
 
@@ -959,7 +959,7 @@
         function copyReferralLink() {
             const link = document.getElementById('myReferralLink').value;
             navigator.clipboard.writeText(link).then(() => {
-                showMessage('推荐链接已复制到剪贴板', 'success');
+                showMessage(t('linkCopied'), 'success');
             });
         }
 
@@ -1004,7 +1004,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取企业列表失败');
+                if (!response.ok) throw new Error(t('loadCompaniesFailed'));
 
                 const data = await response.json();
                 companies = data.companies;
@@ -1012,7 +1012,7 @@
                 const tbody = document.getElementById('companiesTableBody');
                 
                 if (companies.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-building"></i><p>暂无企业，点击上方按钮创建</p></td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="fas fa-building"></i><p>${t('noCompaniesCreate')}</p></td></tr>`;
                     return;
                 }
 
@@ -1025,14 +1025,14 @@
                         <td>${new Date(company.created_at).toLocaleDateString()}</td>
                         <td>
                             <button class="btn btn-secondary" onclick="viewCompany('${company.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                                <i class="fas fa-eye"></i> 查看
+                                <i class="fas fa-eye"></i> ${t('view')}
                             </button>
                         </td>
                     </tr>
                 `).join('');
             } catch (error) {
-                console.error('加载企业列表错误:', error);
-                showMessage('加载企业列表失败', 'error');
+                console.error('Load companies error:', error);
+                showMessage(t('loadCompaniesFailed'), 'error');
             }
         }
 
@@ -1043,13 +1043,13 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取请求失败');
+                if (!response.ok) throw new Error(t('loadRequestsFailed'));
 
                 const data = await response.json();
                 const tbody = document.getElementById('requestsTableBody');
                 
                 if (data.requests.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-inbox"></i><p>暂无访问请求</p></td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fas fa-inbox"></i><p>${t('noRequests')}</p></td></tr>`;
                     return;
                 }
 
@@ -1063,7 +1063,7 @@
                     </tr>
                 `).join('');
             } catch (error) {
-                console.error('加载请求列表错误:', error);
+                console.error('Load requests error:', error);
             }
         }
 
@@ -1074,7 +1074,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取投资人失败');
+                if (!response.ok) throw new Error(t('loadInvestorsFailed'));
 
                 const data = await response.json();
                 investors = data.investors;
@@ -1082,7 +1082,7 @@
                 const tbody = document.getElementById('investorsTableBody');
                 
                 if (investors.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-users"></i><p>暂无已审核投资人</p></td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fas fa-users"></i><p>${t('noApprovedInvestors')}</p></td></tr>`;
                     return;
                 }
 
@@ -1094,13 +1094,13 @@
                         <td>${inv.user?.email || '-'}</td>
                         <td>
                             <button class="btn btn-primary" onclick="openMessageToInvestor('${inv.user?.id}', '${inv.name}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                                <i class="fas fa-envelope"></i> 发消息
+                                <i class="fas fa-envelope"></i> ${t('sendMessage')}
                             </button>
                         </td>
                     </tr>
                 `).join('');
             } catch (error) {
-                console.error('加载投资人列表错误:', error);
+                console.error('Load investors error:', error);
             }
         }
 
@@ -1116,12 +1116,12 @@
                 const data = await response.json();
                 const select = document.getElementById('msgRecipient');
                 
-                select.innerHTML = '<option value="">请选择投资人</option>' +
+                select.innerHTML = `<option value="">${t('selectInvestor')}</option>` +
                     data.investors.map(inv => 
                         `<option value="${inv.user?.id}">${inv.name} (${inv.user?.email})</option>`
                     ).join('');
             } catch (error) {
-                console.error('加载投资人选项错误:', error);
+                console.error('Load investor options error:', error);
             }
         }
 
@@ -1137,12 +1137,12 @@
                 const data = await response.json();
                 const select = document.getElementById('msgCompany');
                 
-                select.innerHTML = '<option value="">不关联企业</option>' +
+                select.innerHTML = `<option value="">${t('noCompany')}</option>` +
                     data.companies.map(c => 
                         `<option value="${c.id}">${c.name_cn}</option>`
                     ).join('');
             } catch (error) {
-                console.error('加载企业选项错误:', error);
+                console.error('Load company options error:', error);
             }
         }
 
@@ -1159,7 +1159,7 @@
                 const container = document.getElementById('sentMessagesList');
                 
                 if (data.messages.length === 0) {
-                    container.innerHTML = '<p class="form-hint">暂无已发送消息</p>';
+                    container.innerHTML = `<p class="form-hint">${t('noSentMessages')}</p>`;
                     return;
                 }
 
@@ -1169,11 +1169,11 @@
                             <strong>${msg.subject}</strong>
                             <small style="color: var(--text-secondary);">${new Date(msg.created_at).toLocaleString()}</small>
                         </div>
-                        <p style="color: var(--text-secondary); font-size: 0.875rem;">收件人: ${msg.recipient?.email || '-'}</p>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">${t('recipient')}: ${msg.recipient?.email || '-'}</p>
                     </div>
                 `).join('');
             } catch (error) {
-                console.error('加载消息错误:', error);
+                console.error('Load messages error:', error);
             }
         }
 
@@ -1187,7 +1187,7 @@
             const content = document.getElementById('msgContent').value;
 
             if (!recipient_id || !subject || !content) {
-                showMessage('请填写完整信息', 'error');
+                showMessage(t('fillAllFields'), 'error');
                 return;
             }
 
@@ -1204,10 +1204,10 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '发送失败');
+                    throw new Error(result.error || t('sendFailed'));
                 }
 
-                showMessage('消息发送成功', 'success');
+                showMessage(t('messageSent'), 'success');
                 document.getElementById('messageForm').reset();
                 loadSentMessages();
             } catch (error) {
@@ -1240,10 +1240,10 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '创建失败');
+                    throw new Error(result.error || t('createFailed'));
                 }
 
-                showMessage('企业创建成功', 'success');
+                showMessage(t('companyCreated'), 'success');
                 closeModal('createCompanyModal');
                 loadStats();
                 loadCompanies();
@@ -1262,7 +1262,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('获取企业详情失败');
+                if (!response.ok) throw new Error(t('loadCompanyDetailFailed'));
 
                 const data = await response.json();
                 const company = data.company;
@@ -1271,33 +1271,33 @@
                 document.getElementById('companyDetailContent').innerHTML = `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <p><strong>英文名称：</strong>${company.name_en || '-'}</p>
-                            <p><strong>行业：</strong>${getIndustryLabel(company.industry_primary)}</p>
-                            <p><strong>阶段：</strong>${getStageLabel(company.stage)}</p>
-                            <p><strong>总部：</strong>${company.location_headquarters}</p>
-                            <p><strong>状态：</strong><span class="status-badge status-${company.status}">${getStatusLabel(company.status)}</span></p>
+                            <p><strong>${t('englishName')}:</strong> ${company.name_en || '-'}</p>
+                            <p><strong>${t('industry')}:</strong> ${getIndustryLabel(company.industry_primary)}</p>
+                            <p><strong>${t('stage')}:</strong> ${getStageLabel(company.stage)}</p>
+                            <p><strong>${t('headquarters')}:</strong> ${company.location_headquarters}</p>
+                            <p><strong>${t('status')}:</strong> <span class="status-badge status-${company.status}">${getStatusLabel(company.status)}</span></p>
                         </div>
                         <div>
-                            <p><strong>联系人：</strong>${company.contact_name}</p>
-                            <p><strong>邮箱：</strong>${company.contact_email}</p>
-                            <p><strong>电话：</strong>${company.contact_phone || '-'}</p>
-                            <p><strong>职务：</strong>${company.contact_title || '-'}</p>
+                            <p><strong>${t('contactPerson')}:</strong> ${company.contact_name}</p>
+                            <p><strong>${t('email')}:</strong> ${company.contact_email}</p>
+                            <p><strong>${t('phone')}:</strong> ${company.contact_phone || '-'}</p>
+                            <p><strong>${t('title')}:</strong> ${company.contact_title || '-'}</p>
                         </div>
                     </div>
                     <div style="margin-top: 1rem;">
-                        <p><strong>简介：</strong>${company.description}</p>
-                        ${company.description_detail ? `<p style="margin-top: 0.5rem;"><strong>详细介绍：</strong>${company.description_detail}</p>` : ''}
+                        <p><strong>${t('description')}:</strong> ${company.description}</p>
+                        ${company.description_detail ? `<p style="margin-top: 0.5rem;"><strong>${t('detailedDesc')}:</strong> ${company.description_detail}</p>` : ''}
                     </div>
                     ${company.fundraisingInfo ? `
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                            <h4 style="margin-bottom: 0.5rem;">融资信息</h4>
-                            <p><strong>融资金额：</strong>${(company.fundraisingInfo.amount_min/10000).toFixed(0)} - ${(company.fundraisingInfo.amount_max/10000).toFixed(0)} 万美元</p>
-                            <p><strong>时间窗口：</strong>${company.fundraisingInfo.timeline || '-'}</p>
+                            <h4 style="margin-bottom: 0.5rem;">${t('fundraisingInfo')}</h4>
+                            <p><strong>${t('fundraisingAmount')}:</strong> ${formatAmount(company.fundraisingInfo.amount_min)} - ${formatAmount(company.fundraisingInfo.amount_max)}</p>
+                            <p><strong>${t('timeWindow')}:</strong> ${company.fundraisingInfo.timeline || '-'}</p>
                         </div>
                     ` : ''}
                     ${company.documents && company.documents.length > 0 ? `
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                            <h4 style="margin-bottom: 0.5rem;">文档 (${company.documents.length})</h4>
+                            <h4 style="margin-bottom: 0.5rem;">${t('documents')} (${company.documents.length})</h4>
                             ${company.documents.map(doc => `
                                 <p><i class="fas fa-file"></i> ${doc.filename}</p>
                             `).join('')}
@@ -1306,6 +1306,21 @@
                 `;
             } catch (error) {
                 document.getElementById('companyDetailContent').innerHTML = `<p class="message message-error">${error.message}</p>`;
+            }
+        }
+
+        // 格式化金额
+        function formatAmount(amount) {
+            if (!amount) return '-';
+            const lang = localStorage.getItem('eon_language') || 'en';
+            if (lang === 'zh') {
+                if (amount >= 100000000) return (amount / 100000000).toFixed(1) + '亿美元';
+                if (amount >= 10000) return (amount / 10000).toFixed(0) + '万美元';
+                return amount + '美元';
+            } else {
+                if (amount >= 1000000) return '$' + (amount / 1000000).toFixed(1) + 'M';
+                if (amount >= 1000) return '$' + (amount / 1000).toFixed(0) + 'K';
+                return '$' + amount;
             }
         }
 
@@ -1339,7 +1354,8 @@
 
         // 辅助函数
         function getIndustryLabel(industry) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 'technology': '科技/互联网',
                 'healthcare': '医疗健康',
                 'finance': '金融科技',
@@ -1349,12 +1365,23 @@
                 'education': '教育',
                 'logistics': '物流',
                 'other': '其他'
+            } : {
+                'technology': 'Technology',
+                'healthcare': 'Healthcare',
+                'finance': 'FinTech',
+                'manufacturing': 'Manufacturing',
+                'consumer': 'Consumer',
+                'energy': 'Energy/Green',
+                'education': 'Education',
+                'logistics': 'Logistics',
+                'other': 'Other'
             };
             return map[industry] || industry;
         }
 
         function getStageLabel(stage) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 'seed': '种子轮',
                 'angel': '天使轮',
                 'pre_a': 'Pre-A轮',
@@ -1363,40 +1390,123 @@
                 'c': 'C轮+',
                 'pre_ipo': 'Pre-IPO',
                 'ipo': '已上市'
+            } : {
+                'seed': 'Seed',
+                'angel': 'Angel',
+                'pre_a': 'Pre-A',
+                'a': 'Series A',
+                'b': 'Series B',
+                'c': 'Series C+',
+                'pre_ipo': 'Pre-IPO',
+                'ipo': 'IPO'
             };
             return map[stage] || stage;
         }
 
         function getStatusLabel(status) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 'draft': '草稿',
                 'pending': '待审核',
                 'approved': '已通过',
                 'rejected': '已拒绝'
+            } : {
+                'draft': 'Draft',
+                'pending': 'Pending',
+                'approved': 'Approved',
+                'rejected': 'Rejected'
             };
             return map[status] || status;
         }
 
         function getRequestTypeLabel(type) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 'bp_access': 'BP访问',
                 'introduction': '引荐',
                 'meeting': '会议',
                 'dataroom': '数据室'
+            } : {
+                'bp_access': 'BP Access',
+                'introduction': 'Referral',
+                'meeting': 'Meeting',
+                'dataroom': 'Data Room'
             };
             return map[type] || type;
         }
 
         function getInvestorTypeLabel(type) {
-            const map = {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
                 'individual': '个人投资人',
                 'family_office': '家族办公室',
                 'vc': '风险投资',
                 'pe': '私募股权',
                 'corporate': '企业战投',
                 'other': '其他'
+            } : {
+                'individual': 'Individual',
+                'family_office': 'Family Office',
+                'vc': 'Venture Capital',
+                'pe': 'Private Equity',
+                'corporate': 'Corporate VC',
+                'other': 'Other'
             };
             return map[type] || type;
+        }
+
+        // 多语言翻译
+        const i18n = {
+            loadUserFailed: { zh: '获取用户信息失败', en: 'Failed to load user info' },
+            noAccessPage: { zh: '您没有权限访问此页面', en: 'You do not have access to this page' },
+            pleaseRelogin: { zh: '请重新登录', en: 'Please log in again' },
+            loadStatsFailed: { zh: '获取统计数据失败', en: 'Failed to load stats' },
+            loadReferralFailed: { zh: '获取推荐码失败', en: 'Failed to load referral code' },
+            loading: { zh: '加载中...', en: 'Loading...' },
+            codeCopied: { zh: '推荐码已复制到剪贴板', en: 'Referral code copied to clipboard' },
+            linkCopied: { zh: '推荐链接已复制到剪贴板', en: 'Referral link copied to clipboard' },
+            loadCompaniesFailed: { zh: '获取企业列表失败', en: 'Failed to load companies' },
+            noCompaniesCreate: { zh: '暂无企业，点击上方按钮创建', en: 'No companies yet. Click the button above to create one.' },
+            view: { zh: '查看', en: 'View' },
+            loadRequestsFailed: { zh: '获取请求失败', en: 'Failed to load requests' },
+            noRequests: { zh: '暂无访问请求', en: 'No access requests' },
+            loadInvestorsFailed: { zh: '获取投资人失败', en: 'Failed to load investors' },
+            noApprovedInvestors: { zh: '暂无已审核投资人', en: 'No approved investors' },
+            sendMessage: { zh: '发消息', en: 'Message' },
+            selectInvestor: { zh: '请选择投资人', en: 'Select an investor' },
+            noCompany: { zh: '不关联企业', en: 'No company' },
+            noSentMessages: { zh: '暂无已发送消息', en: 'No sent messages' },
+            recipient: { zh: '收件人', en: 'Recipient' },
+            fillAllFields: { zh: '请填写完整信息', en: 'Please fill in all fields' },
+            sendFailed: { zh: '发送失败', en: 'Send failed' },
+            messageSent: { zh: '消息发送成功', en: 'Message sent successfully' },
+            createFailed: { zh: '创建失败', en: 'Create failed' },
+            companyCreated: { zh: '企业创建成功', en: 'Company created successfully' },
+            loadCompanyDetailFailed: { zh: '获取企业详情失败', en: 'Failed to load company details' },
+            englishName: { zh: '英文名称', en: 'English Name' },
+            industry: { zh: '行业', en: 'Industry' },
+            stage: { zh: '阶段', en: 'Stage' },
+            headquarters: { zh: '总部', en: 'Headquarters' },
+            status: { zh: '状态', en: 'Status' },
+            contactPerson: { zh: '联系人', en: 'Contact' },
+            email: { zh: '邮箱', en: 'Email' },
+            phone: { zh: '电话', en: 'Phone' },
+            title: { zh: '职务', en: 'Title' },
+            description: { zh: '简介', en: 'Description' },
+            detailedDesc: { zh: '详细介绍', en: 'Detailed Description' },
+            fundraisingInfo: { zh: '融资信息', en: 'Fundraising Info' },
+            fundraisingAmount: { zh: '融资金额', en: 'Fundraising Amount' },
+            timeWindow: { zh: '时间窗口', en: 'Time Window' },
+            documents: { zh: '文档', en: 'Documents' },
+            passwordMismatch: { zh: '两次输入的新密码不一致', en: 'Passwords do not match' },
+            passwordTooShort: { zh: '新密码长度不能少于6位', en: 'Password must be at least 6 characters' },
+            passwordChanged: { zh: '密码修改成功', en: 'Password changed successfully' },
+            passwordChangeFailed: { zh: '密码修改失败，请稍后重试', en: 'Password change failed, please try again' }
+        };
+
+        function t(key) {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            return i18n[key] ? (i18n[key][lang] || i18n[key].en) : key;
         }
 
         // ==================== 修改密码功能 ====================
@@ -1417,17 +1527,17 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             if (!currentPassword || !newPassword || !confirmPassword) {
-                showToast('请填写所有字段', 'warning');
+                showMessage(t('fillAllFields'), 'warning');
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                showToast('两次输入的新密码不一致', 'warning');
+                showMessage(t('passwordMismatch'), 'warning');
                 return;
             }
 
             if (newPassword.length < 6) {
-                showToast('新密码长度不能少于6位', 'warning');
+                showMessage(t('passwordTooShort'), 'warning');
                 return;
             }
 
@@ -1444,14 +1554,14 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showToast('密码修改成功', 'success');
+                    showMessage(t('passwordChanged'), 'success');
                     closePasswordModal();
                 } else {
-                    showToast(data.error || '密码修改失败', 'error');
+                    showMessage(data.error || t('passwordChangeFailed'), 'error');
                 }
             } catch (error) {
-                console.error('修改密码错误:', error);
-                showToast('密码修改失败，请稍后重试', 'error');
+                console.error('Change password error:', error);
+                showMessage(t('passwordChangeFailed'), 'error');
             }
         }
     </script>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -779,13 +779,13 @@
                 <div class="form-group" style="margin-bottom: 1rem;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <input type="checkbox" name="send_email" id="sendEmailCheckbox">
-                        <span>同时发送邮件通知</span>
-                        <span id="emailNotConfigured" style="color: #F59E0B; font-size: 0.875rem; display: none;">（邮件服务未配置）</span>
+                        <span data-zh="同时发送邮件通知" data-en="Also send email notification">同时发送邮件通知</span>
+                        <span id="emailNotConfigured" style="color: #F59E0B; font-size: 0.875rem; display: none;" data-zh="（邮件服务未配置）" data-en="(Email not configured)">（邮件服务未配置）</span>
                     </label>
                 </div>
                 <div class="btn-group" style="margin-top: 1.5rem;">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> 发送</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('sendMessageModal')">取消</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> <span data-zh="发送" data-en="Send">发送</span></button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('sendMessageModal')" data-zh="取消" data-en="Cancel">取消</button>
                 </div>
             </form>
         </div>
@@ -837,15 +837,16 @@
             loadFailed: { zh: '加载失败', en: 'Load failed' },
             operationSuccess: { zh: '操作成功', en: 'Operation successful' },
             operationFailed: { zh: '操作失败', en: 'Operation failed' },
-            confirmDelete: { zh: '确定要删除此用户吗？此操作不可恢复。', en: 'Are you sure you want to delete this user? This cannot be undone.' },
+            confirmDelete: { zh: '确定要删除用户 {email} 吗？此操作不可恢复。', en: 'Are you sure you want to delete user {email}? This cannot be undone.' },
             userCreated: { zh: '用户创建成功', en: 'User created successfully' },
+            userDeleted: { zh: '用户已删除', en: 'User deleted successfully' },
             messageSent: { zh: '消息发送成功', en: 'Message sent successfully' },
             passwordReset: { zh: '密码重置成功', en: 'Password reset successfully' },
             passwordChanged: { zh: '密码修改成功', en: 'Password changed successfully' },
             passwordMismatch: { zh: '两次输入的密码不一致', en: 'Passwords do not match' },
             company: { zh: '企业', en: 'Company' },
             investor: { zh: '投资人', en: 'Investor' },
-            admin: { zh: '管理员', en: 'Admin' },
+            admin: { zh: '超级管理员', en: 'Admin' },
             staff: { zh: '普通管理员', en: 'Staff' },
             bp_access: { zh: 'BP访问', en: 'BP Access' },
             introduction: { zh: '引荐请求', en: 'Introduction' },
@@ -853,6 +854,50 @@
             data_room: { zh: '数据室', en: 'Data Room' },
             active: { zh: '活跃', en: 'Active' },
             suspended: { zh: '已暂停', en: 'Suspended' },
+            // 确认对话框
+            confirmApproveCompany: { zh: '确定要通过该企业吗？', en: 'Are you sure you want to approve this company?' },
+            confirmRejectCompany: { zh: '确定要拒绝该企业吗？', en: 'Are you sure you want to reject this company?' },
+            confirmApproveInvestor: { zh: '确定要通过该投资人吗？', en: 'Are you sure you want to approve this investor?' },
+            confirmRejectInvestor: { zh: '确定要拒绝该投资人吗？', en: 'Are you sure you want to reject this investor?' },
+            confirmSuspendInvestor: { zh: '确定要暂停该投资人吗？', en: 'Are you sure you want to suspend this investor?' },
+            confirmApproveRequest: { zh: '确定要通过该请求吗？', en: 'Are you sure you want to approve this request?' },
+            confirmRejectRequest: { zh: '确定要拒绝该请求吗？', en: 'Are you sure you want to reject this request?' },
+            // 下载和预览
+            downloading: { zh: '正在下载...', en: 'Downloading...' },
+            downloadFailed: { zh: '下载失败', en: 'Download failed' },
+            loadingPreview: { zh: '正在加载预览...', en: 'Loading preview...' },
+            previewFailed: { zh: '预览失败', en: 'Preview failed' },
+            // 消息相关
+            emailConfigured: { zh: '邮件服务已配置', en: 'Email service configured' },
+            emailNotConfigured: { zh: '邮件服务未配置', en: 'Email not configured' },
+            sent: { zh: '已发送', en: 'Sent' },
+            notSent: { zh: '未发送', en: 'Not sent' },
+            selectRecipient: { zh: '选择收件人...', en: 'Select recipient...' },
+            selectCompany: { zh: '选择企业...', en: 'Select company...' },
+            selectStatus: { zh: '选择新状态...', en: 'Select status...' },
+            emailSent: { zh: '邮件已发送', en: 'Email sent' },
+            statusChangedTo: { zh: '状态已变更为', en: 'Status changed to' },
+            recipient: { zh: '收件人', en: 'Recipient' },
+            subject: { zh: '主题', en: 'Subject' },
+            content: { zh: '内容', en: 'Content' },
+            attachments: { zh: '附件', en: 'Attachments' },
+            emailSentStatus: { zh: '邮件已发送', en: 'Email sent' },
+            yes: { zh: '是', en: 'Yes' },
+            no: { zh: '否', en: 'No' },
+            // 消息类型
+            msgType_general: { zh: '普通消息', en: 'General' },
+            msgType_status_change: { zh: '状态变更', en: 'Status Change' },
+            msgType_review_feedback: { zh: '审核反馈', en: 'Review Feedback' },
+            msgType_notification: { zh: '系统通知', en: 'Notification' },
+            // 邮件配置
+            smtpServer: { zh: 'SMTP 服务器', en: 'SMTP Server' },
+            smtpConfigHint: { zh: '请在 Railway 环境变量中配置以下参数：', en: 'Please configure the following environment variables in Railway:' },
+            smtpHostDesc: { zh: 'SMTP 服务器地址', en: 'SMTP server address' },
+            smtpPortDesc: { zh: 'SMTP 端口（默认587）', en: 'SMTP port (default 587)' },
+            smtpUserDesc: { zh: 'SMTP 用户名', en: 'SMTP username' },
+            smtpPassDesc: { zh: 'SMTP 密码', en: 'SMTP password' },
+            smtpFromDesc: { zh: '发件人邮箱（可选）', en: 'Sender email (optional)' },
+            smtpSecureDesc: { zh: '是否使用SSL（可选，true/false）', en: 'Use SSL (optional, true/false)' },
             // 企业详情模态框
             companyName: { zh: '公司名称', en: 'Company Name' },
             companyNameEn: { zh: '英文名称', en: 'English Name' },
@@ -932,8 +977,8 @@
         };
 
         function t(key) {
-            const lang = localStorage.getItem('eon_language') || 'zh';
-            return i18n[key] ? (i18n[key][lang] || i18n[key].zh) : key;
+            const lang = localStorage.getItem('eon_language') || 'en';
+            return i18n[key] ? (i18n[key][lang] || i18n[key].en) : key;
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1053,13 +1098,13 @@
                 const data = await response.json();
 
                 document.getElementById('statCompanies').textContent = data.companies.total;
-                document.getElementById('statCompaniesPending').textContent = `待审核: ${data.companies.pending}`;
+                document.getElementById('statCompaniesPending').innerHTML = `<span data-zh="待审核" data-en="Pending">${t('pending')}</span>: ${data.companies.pending}`;
                 document.getElementById('statInvestors').textContent = data.investors.total;
-                document.getElementById('statInvestorsPending').textContent = `待审核: ${data.investors.pending}`;
+                document.getElementById('statInvestorsPending').innerHTML = `<span data-zh="待审核" data-en="Pending">${t('pending')}</span>: ${data.investors.pending}`;
                 document.getElementById('statRequests').textContent = data.requests.total;
-                document.getElementById('statRequestsPending').textContent = `待处理: ${data.requests.pending}`;
+                document.getElementById('statRequestsPending').innerHTML = `<span data-zh="待处理" data-en="Pending">${t('pendingProcess')}</span>: ${data.requests.pending}`;
             } catch (error) {
-                console.error('加载统计数据失败:', error);
+                console.error('Load stats failed:', error);
             }
         }
 
@@ -1085,17 +1130,17 @@
                             <td>${new Date(c.created_at).toLocaleDateString()}</td>
                             <td>
                                 <div class="btn-group">
-                                    <button class="btn btn-primary btn-sm" onclick="viewCompany('${c.id}')">查看</button>
+                                    <button class="btn btn-primary btn-sm" onclick="viewCompany('${c.id}')">${t('view')}</button>
                                     ${c.status === 'pending' ? `
-                                        <button class="btn btn-success btn-sm" onclick="reviewCompany('${c.id}', 'approved')">通过</button>
-                                        <button class="btn btn-danger btn-sm" onclick="reviewCompany('${c.id}', 'rejected')">拒绝</button>
+                                        <button class="btn btn-success btn-sm" onclick="reviewCompany('${c.id}', 'approved')">${t('approve')}</button>
+                                        <button class="btn btn-danger btn-sm" onclick="reviewCompany('${c.id}', 'rejected')">${t('reject')}</button>
                                     ` : ''}
                                 </div>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    document.getElementById('companiesTable').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">暂无数据</td></tr>';
+                    document.getElementById('companiesTable').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">${t('noData')}</td></tr>`;
                 }
             } catch (error) {
                 console.error('加载企业列表失败:', error);
@@ -1125,17 +1170,17 @@
                             <td>
                                 <div class="btn-group">
                                     ${i.status === 'pending' ? `
-                                        <button class="btn btn-success btn-sm" onclick="reviewInvestor('${i.id}', 'approved')">通过</button>
-                                        <button class="btn btn-danger btn-sm" onclick="reviewInvestor('${i.id}', 'rejected')">拒绝</button>
+                                        <button class="btn btn-success btn-sm" onclick="reviewInvestor('${i.id}', 'approved')">${t('approve')}</button>
+                                        <button class="btn btn-danger btn-sm" onclick="reviewInvestor('${i.id}', 'rejected')">${t('reject')}</button>
                                     ` : `
-                                        <button class="btn btn-secondary btn-sm" onclick="reviewInvestor('${i.id}', 'suspended')">暂停</button>
+                                        <button class="btn btn-secondary btn-sm" onclick="reviewInvestor('${i.id}', 'suspended')">${t('suspended')}</button>
                                     `}
                                 </div>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    document.getElementById('investorsTable').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">暂无数据</td></tr>';
+                    document.getElementById('investorsTable').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">${t('noData')}</td></tr>`;
                 }
             } catch (error) {
                 console.error('加载投资人列表失败:', error);
@@ -1165,15 +1210,15 @@
                             <td>
                                 ${r.status === 'pending' ? `
                                     <div class="btn-group">
-                                        <button class="btn btn-success btn-sm" onclick="processRequest('${r.id}', 'approved')">通过</button>
-                                        <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">拒绝</button>
+                                        <button class="btn btn-success btn-sm" onclick="processRequest('${r.id}', 'approved')">${t('approve')}</button>
+                                        <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">${t('reject')}</button>
                                     </div>
                                 ` : '-'}
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    document.getElementById('requestsTable').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">暂无数据</td></tr>';
+                    document.getElementById('requestsTable').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);">${t('noData')}</td></tr>`;
                 }
             } catch (error) {
                 console.error('加载请求列表失败:', error);
@@ -1295,7 +1340,7 @@
         // 下载文档（带认证）
         async function downloadDocument(docId, filename) {
             try {
-                showMessage('正在下载...', 'info');
+                showMessage(t('downloading'), 'info');
                 
                 const response = await fetch(`/api/admin/documents/${docId}/download`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -1303,7 +1348,7 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.error || '下载失败');
+                    throw new Error(error.error || t('downloadFailed'));
                 }
 
                 // 获取文件 blob
@@ -1319,7 +1364,7 @@
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 
-                showMessage('下载成功', 'success');
+                showMessage(t('operationSuccess'), 'success');
             } catch (error) {
                 showMessage(error.message, 'error');
             }
@@ -1328,7 +1373,7 @@
         // 预览文档（带认证）
         async function previewDocument(docId, filename, mimetype) {
             try {
-                showMessage('正在加载预览...', 'info');
+                showMessage(t('loadingPreview'), 'info');
                 
                 const response = await fetch(`/api/admin/documents/${docId}/preview`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -1336,7 +1381,7 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.error || '预览失败');
+                    throw new Error(error.error || t('previewFailed'));
                 }
 
                 // 获取文件 blob
@@ -1390,9 +1435,9 @@
                     })
                 });
 
-                if (!response.ok) throw new Error('操作失败');
+                if (!response.ok) throw new Error(t('operationFailed'));
 
-                showMessage('已保存', 'success');
+                showMessage(t('operationSuccess'), 'success');
                 closeModal('companyModal');
                 loadCompanies();
                 loadStats();
@@ -1402,7 +1447,8 @@
         }
 
         async function reviewCompany(id, status) {
-            if (!confirm(`确定要${status === 'approved' ? '通过' : '拒绝'}该企业吗？`)) return;
+            const confirmMsg = status === 'approved' ? t('confirmApproveCompany') : t('confirmRejectCompany');
+            if (!confirm(confirmMsg)) return;
 
             try {
                 const response = await fetch(`/api/admin/companies/${id}/review`, {
@@ -1414,9 +1460,9 @@
                     body: JSON.stringify({ status, visibility: status === 'approved' ? 'investors' : 'private' })
                 });
 
-                if (!response.ok) throw new Error('操作失败');
+                if (!response.ok) throw new Error(t('operationFailed'));
 
-                showMessage('操作成功', 'success');
+                showMessage(t('operationSuccess'), 'success');
                 loadCompanies();
                 loadStats();
             } catch (error) {
@@ -1425,7 +1471,10 @@
         }
 
         async function reviewInvestor(id, status) {
-            if (!confirm(`确定要${status === 'approved' ? '通过' : status === 'rejected' ? '拒绝' : '暂停'}该投资人吗？`)) return;
+            let confirmMsg = t('confirmApproveInvestor');
+            if (status === 'rejected') confirmMsg = t('confirmRejectInvestor');
+            else if (status === 'suspended') confirmMsg = t('confirmSuspendInvestor');
+            if (!confirm(confirmMsg)) return;
 
             try {
                 const response = await fetch(`/api/admin/investors/${id}/review`, {
@@ -1437,9 +1486,9 @@
                     body: JSON.stringify({ status })
                 });
 
-                if (!response.ok) throw new Error('操作失败');
+                if (!response.ok) throw new Error(t('operationFailed'));
 
-                showMessage('操作成功', 'success');
+                showMessage(t('operationSuccess'), 'success');
                 loadInvestors();
                 loadStats();
             } catch (error) {
@@ -1448,7 +1497,8 @@
         }
 
         async function processRequest(id, status) {
-            if (!confirm(`确定要${status === 'approved' ? '通过' : '拒绝'}该请求吗？`)) return;
+            const confirmMsg = status === 'approved' ? t('confirmApproveRequest') : t('confirmRejectRequest');
+            if (!confirm(confirmMsg)) return;
 
             try {
                 const response = await fetch(`/api/admin/requests/${id}`, {
@@ -1463,9 +1513,9 @@
                     })
                 });
 
-                if (!response.ok) throw new Error('操作失败');
+                if (!response.ok) throw new Error(t('operationFailed'));
 
-                showMessage('操作成功', 'success');
+                showMessage(t('operationSuccess'), 'success');
                 loadRequests();
                 loadStats();
             } catch (error) {
@@ -1552,29 +1602,27 @@
                             <td>${new Date(u.created_at).toLocaleDateString()}</td>
                             <td>
                                 <div class="btn-group">
-                                    <button class="btn btn-secondary btn-sm" onclick="showResetPasswordModal('${u.id}', '${u.email}')">重置密码</button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}', '${u.email}')">删除</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="showResetPasswordModal('${u.id}', '${u.email}')">${t('resetPassword')}</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}', '${u.email}')">${t('delete')}</button>
                                 </div>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    document.getElementById('usersTable').innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无用户</td></tr>';
+                    document.getElementById('usersTable').innerHTML = `<tr><td colspan="6" style="text-align:center;">${t('noData')}</td></tr>`;
                 }
             } catch (error) {
-                console.error('加载用户失败:', error);
-                document.getElementById('usersTable').innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;">加载失败</td></tr>';
+                console.error('Load users failed:', error);
+                document.getElementById('usersTable').innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">${t('loadFailed')}</td></tr>`;
             }
         }
 
         function formatRole(role) {
-            const roles = { 'admin': '超级管理员', 'staff': '普通管理员', 'company': '企业', 'investor': '投资人' };
-            return roles[role] || role;
+            return t(role) || role;
         }
 
         function formatUserStatus(status) {
-            const statuses = { 'active': '活跃', 'pending': '待激活', 'suspended': '已禁用' };
-            return statuses[status] || status;
+            return t(status) || status;
         }
 
         function showCreateUserModal() {
@@ -1601,7 +1649,7 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
 
-                showMessage('用户创建成功', 'success');
+                showMessage(t('userCreated'), 'success');
                 closeModal('createUserModal');
                 loadUsers();
                 loadStats();
@@ -1635,7 +1683,7 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
 
-                showMessage('密码重置成功', 'success');
+                showMessage(t('passwordReset'), 'success');
                 closeModal('resetPasswordModal');
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -1643,7 +1691,7 @@
         }
 
         async function deleteUser(userId, email) {
-            if (!confirm(`确定要删除用户 ${email} 吗？此操作不可恢复。`)) return;
+            if (!confirm(t('confirmDelete').replace('{email}', email))) return;
 
             try {
                 const response = await fetch(`/api/admin/users/${userId}`, {
@@ -1654,7 +1702,7 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
 
-                showMessage('用户已删除', 'success');
+                showMessage(t('userDeleted'), 'success');
                 loadUsers();
                 loadStats();
             } catch (error) {
@@ -1676,15 +1724,15 @@
                 const badge = document.getElementById('emailStatusBadge');
                 if (emailConfigured) {
                     badge.className = 'stat-badge success';
-                    badge.textContent = '邮件服务已配置';
+                    badge.textContent = t('emailConfigured');
                 } else {
                     badge.className = 'stat-badge pending';
-                    badge.textContent = '邮件服务未配置';
+                    badge.textContent = t('emailNotConfigured');
                 }
 
                 document.getElementById('emailNotConfigured').style.display = emailConfigured ? 'none' : 'inline';
             } catch (error) {
-                console.error('检查邮件状态失败:', error);
+                console.error('Check email status failed:', error);
             }
         }
 
@@ -1701,30 +1749,24 @@
                             <td>${m.recipient?.email || '-'}</td>
                             <td>${m.subject}</td>
                             <td>${formatMessageType(m.type)}</td>
-                            <td>${m.attachments?.length || 0} 个</td>
-                            <td>${m.email_sent ? '<span class="status-badge status-approved">已发送</span>' : '<span class="status-badge status-draft">未发送</span>'}</td>
+                            <td>${m.attachments?.length || 0}</td>
+                            <td>${m.email_sent ? `<span class="status-badge status-approved">${t('sent')}</span>` : `<span class="status-badge status-draft">${t('notSent')}</span>`}</td>
                             <td>${new Date(m.created_at).toLocaleString()}</td>
                             <td>
-                                <button class="btn btn-secondary btn-sm" onclick="viewMessage('${m.id}')">查看</button>
+                                <button class="btn btn-secondary btn-sm" onclick="viewMessage('${m.id}')">${t('view')}</button>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    document.getElementById('messagesTable').innerHTML = '<tr><td colspan="7" style="text-align:center;">暂无消息</td></tr>';
+                    document.getElementById('messagesTable').innerHTML = `<tr><td colspan="7" style="text-align:center;">${t('noData')}</td></tr>`;
                 }
             } catch (error) {
-                console.error('加载消息失败:', error);
+                console.error('Load messages failed:', error);
             }
         }
 
         function formatMessageType(type) {
-            const types = {
-                'general': '普通消息',
-                'status_change': '状态变更',
-                'review_feedback': '审核反馈',
-                'notification': '系统通知'
-            };
-            return types[type] || type;
+            return t('msgType_' + type) || type;
         }
 
         async function showSendMessageModal() {
@@ -1739,7 +1781,7 @@
                 const data = await response.json();
 
                 const select = document.getElementById('messageRecipient');
-                select.innerHTML = '<option value="">选择收件人...</option>' +
+                select.innerHTML = `<option value="">${t('selectRecipient')}</option>` +
                     data.users.filter(u => u.role !== 'admin').map(u =>
                         `<option value="${u.id}">${u.email} (${formatRole(u.role)})</option>`
                     ).join('');
@@ -1751,13 +1793,13 @@
                 const compData = await compResponse.json();
 
                 const compSelect = document.getElementById('messageCompany');
-                compSelect.innerHTML = '<option value="">选择企业...</option>' +
+                compSelect.innerHTML = `<option value="">${t('selectCompany')}</option>` +
                     compData.companies.map(c =>
                         `<option value="${c.id}">${c.name_cn}</option>`
                     ).join('');
 
             } catch (error) {
-                console.error('加载收件人失败:', error);
+                console.error('Load recipients failed:', error);
             }
 
             checkEmailStatus();
@@ -1776,19 +1818,19 @@
             statusSelect.style.display = 'block';
             if (entityType === 'company') {
                 statusSelect.innerHTML = `
-                    <option value="">选择新状态...</option>
-                    <option value="approved">通过审核</option>
-                    <option value="rejected">拒绝</option>
-                    <option value="pending">待审核</option>
-                    <option value="draft">草稿</option>
+                    <option value="">${t('selectStatus')}</option>
+                    <option value="approved">${t('approved')}</option>
+                    <option value="rejected">${t('rejected')}</option>
+                    <option value="pending">${t('pending')}</option>
+                    <option value="draft">${t('draft')}</option>
                 `;
             } else {
                 statusSelect.innerHTML = `
-                    <option value="">选择新状态...</option>
-                    <option value="approved">通过审核</option>
-                    <option value="rejected">拒绝</option>
-                    <option value="pending">待审核</option>
-                    <option value="suspended">禁用</option>
+                    <option value="">${t('selectStatus')}</option>
+                    <option value="approved">${t('approved')}</option>
+                    <option value="rejected">${t('rejected')}</option>
+                    <option value="pending">${t('pending')}</option>
+                    <option value="suspended">${t('suspended')}</option>
                 `;
             }
         }
@@ -1824,9 +1866,9 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
 
-                let msg = '消息发送成功';
-                if (result.data.email_sent) msg += '，邮件已发送';
-                if (result.data.status_change) msg += `，状态已变更为 ${result.data.status_change.to}`;
+                let msg = t('messageSent');
+                if (result.data.email_sent) msg += ', ' + t('emailSent');
+                if (result.data.status_change) msg += ', ' + t('statusChangedTo') + ' ' + result.data.status_change.to;
 
                 showMessage(msg, 'success');
                 closeModal('sendMessageModal');
@@ -1846,9 +1888,9 @@
                 const data = await response.json();
                 const m = data.message;
 
-                alert(`收件人: ${m.recipient?.email}\n主题: ${m.subject}\n内容: ${m.content}\n\n附件: ${m.attachments?.length || 0} 个\n邮件已发送: ${m.email_sent ? '是' : '否'}`);
+                alert(`${t('recipient')}: ${m.recipient?.email}\n${t('subject')}: ${m.subject}\n${t('content')}: ${m.content}\n\n${t('attachments')}: ${m.attachments?.length || 0}\n${t('emailSentStatus')}: ${m.email_sent ? t('yes') : t('no')}`);
             } catch (error) {
-                showMessage('获取消息详情失败', 'error');
+                showMessage(t('loadFailed'), 'error');
             }
         }
 
@@ -1860,7 +1902,7 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             if (newPassword !== confirmPassword) {
-                showMessage('两次输入的密码不一致', 'error');
+                showMessage(t('passwordMismatch'), 'error');
                 return;
             }
 
@@ -1877,7 +1919,7 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
 
-                showMessage('密码修改成功', 'success');
+                showMessage(t('passwordChanged'), 'success');
                 document.getElementById('changePasswordForm').reset();
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -1894,27 +1936,27 @@
                 const container = document.getElementById('emailConfigStatus');
                 if (data.configured) {
                     container.innerHTML = `
-                        <p style="color: var(--success-color);"><i class="fas fa-check-circle"></i> 邮件服务已配置</p>
-                        <p style="margin-top: 0.5rem; color: var(--text-secondary);">SMTP 服务器: ${data.smtp_host}</p>
+                        <p style="color: var(--success-color);"><i class="fas fa-check-circle"></i> ${t('emailConfigured')}</p>
+                        <p style="margin-top: 0.5rem; color: var(--text-secondary);">${t('smtpServer')}: ${data.smtp_host}</p>
                     `;
                 } else {
                     container.innerHTML = `
-                        <p style="color: var(--warning-color);"><i class="fas fa-exclamation-triangle"></i> 邮件服务未配置</p>
+                        <p style="color: var(--warning-color);"><i class="fas fa-exclamation-triangle"></i> ${t('emailNotConfigured')}</p>
                         <p style="margin-top: 0.5rem; color: var(--text-secondary);">
-                            请在 Railway 环境变量中配置以下参数：
+                            ${t('smtpConfigHint')}
                         </p>
                         <ul style="margin-top: 0.5rem; color: var(--text-secondary); padding-left: 1.5rem;">
-                            <li>SMTP_HOST - SMTP 服务器地址</li>
-                            <li>SMTP_PORT - SMTP 端口（默认587）</li>
-                            <li>SMTP_USER - SMTP 用户名</li>
-                            <li>SMTP_PASS - SMTP 密码</li>
-                            <li>SMTP_FROM - 发件人邮箱（可选）</li>
-                            <li>SMTP_SECURE - 是否使用SSL（可选，true/false）</li>
+                            <li>SMTP_HOST - ${t('smtpHostDesc')}</li>
+                            <li>SMTP_PORT - ${t('smtpPortDesc')}</li>
+                            <li>SMTP_USER - ${t('smtpUserDesc')}</li>
+                            <li>SMTP_PASS - ${t('smtpPassDesc')}</li>
+                            <li>SMTP_FROM - ${t('smtpFromDesc')}</li>
+                            <li>SMTP_SECURE - ${t('smtpSecureDesc')}</li>
                         </ul>
                     `;
                 }
             } catch (error) {
-                document.getElementById('emailConfigStatus').innerHTML = '<p style="color:red;">加载配置失败</p>';
+                document.getElementById('emailConfigStatus').innerHTML = `<p style="color:red;">${t('loadFailed')}</p>`;
             }
         }
 

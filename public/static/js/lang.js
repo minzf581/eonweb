@@ -13,9 +13,8 @@ class LanguageSwitcher {
     }
 
     detectLanguage() {
-        const browserLang = navigator.language || navigator.userLanguage;
-        const isChinese = browserLang.toLowerCase().startsWith('zh');
-        return isChinese ? 'zh' : 'en';
+        // 默认使用英文
+        return 'en';
     }
 
     init() {
@@ -106,6 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 导出到全局
 window.LanguageSwitcher = LanguageSwitcher;
-window.getLang = () => langSwitcher?.getCurrentLang() || 'zh';
+window.getLang = () => langSwitcher?.getCurrentLang() || 'en';
 window.switchLang = (lang) => langSwitcher?.switchLanguage(lang);
 window.toggleLang = () => langSwitcher?.toggleLanguage();
