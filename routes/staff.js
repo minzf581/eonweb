@@ -502,6 +502,88 @@ router.post('/companies/:id/submit', authenticate, requireStaffOrAdmin, async (r
     }
 });
 
+// 预览企业文档（Staff）- 直接在浏览器中显示
+router.get('/documents/:id/preview', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        const document = await Document.findByPk(req.params.id, {
+            include: [{ model: Company, as: 'company' }]
+        });
+        
+        if (!document) {
+            return res.status(404).json({ error: '文档不存在' });
+        }
+
+        // 检查是否有权限访问该企业
+        const hasAccess = await checkCompanyAccess(req.user, document.company_id);
+        if (!hasAccess) {
+            return res.status(403).json({ error: '无权访问该文档' });
+        }
+
+        // 如果是外部链接
+        if (document.dataroom_link) {
+            return res.redirect(document.dataroom_link);
+        }
+
+        if (!document.file_content) {
+            return res.status(404).json({ error: '文件内容不存在' });
+        }
+
+        // 将 Base64 内容转换回 Buffer
+        const fileBuffer = Buffer.from(document.file_content, 'base64');
+
+        // 设置响应头 - inline 显示而不是下载
+        res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Content-Length', fileBuffer.length);
+
+        res.send(fileBuffer);
+    } catch (error) {
+        console.error('[Staff] 预览文档错误:', error);
+        res.status(500).json({ error: '预览失败' });
+    }
+});
+
+// 下载企业文档（Staff）
+router.get('/documents/:id/download', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        const document = await Document.findByPk(req.params.id, {
+            include: [{ model: Company, as: 'company' }]
+        });
+        
+        if (!document) {
+            return res.status(404).json({ error: '文档不存在' });
+        }
+
+        // 检查是否有权限访问该企业
+        const hasAccess = await checkCompanyAccess(req.user, document.company_id);
+        if (!hasAccess) {
+            return res.status(403).json({ error: '无权访问该文档' });
+        }
+
+        // 如果是外部链接
+        if (document.dataroom_link) {
+            return res.redirect(document.dataroom_link);
+        }
+
+        if (!document.file_content) {
+            return res.status(404).json({ error: '文件内容不存在' });
+        }
+
+        // 将 Base64 内容转换回 Buffer
+        const fileBuffer = Buffer.from(document.file_content, 'base64');
+
+        // 设置响应头 - attachment 下载
+        res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(document.filename)}"`);
+        res.setHeader('Content-Length', fileBuffer.length);
+
+        res.send(fileBuffer);
+    } catch (error) {
+        console.error('[Staff] 下载文档错误:', error);
+        res.status(500).json({ error: '下载失败' });
+    }
+});
+
 // 删除企业文档
 router.delete('/companies/:companyId/documents/:docId', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {

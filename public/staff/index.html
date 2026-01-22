@@ -1299,7 +1299,23 @@
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                             <h4 style="margin-bottom: 0.5rem;">${t('documents')} (${company.documents.length})</h4>
                             ${company.documents.map(doc => `
-                                <p><i class="fas fa-file"></i> ${doc.filename}</p>
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: #f9fafb; border-radius: 6px; margin-bottom: 0.5rem;">
+                                    <span><i class="fas fa-file-pdf" style="color: var(--danger-color);"></i> ${doc.filename}</span>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        ${doc.dataroom_link ? `
+                                            <a href="${doc.dataroom_link}" target="_blank" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                                <i class="fas fa-external-link-alt"></i> ${t('openLink')}
+                                            </a>
+                                        ` : `
+                                            <button class="btn btn-primary" onclick="previewDocument('${doc.id}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                                <i class="fas fa-eye"></i> ${t('preview')}
+                                            </button>
+                                            <button class="btn btn-secondary" onclick="downloadDocument('${doc.id}', '${doc.filename}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                                <i class="fas fa-download"></i> ${t('download')}
+                                            </button>
+                                        `}
+                                    </div>
+                                </div>
                             `).join('')}
                         </div>
                     ` : ''}
@@ -1331,6 +1347,19 @@
                 document.getElementById('msgRecipient').value = userId;
                 document.getElementById('msgSubject').focus();
             }, 100);
+        }
+
+        // 预览文档
+        function previewDocument(docId) {
+            window.open(`/api/staff/documents/${docId}/preview`, '_blank');
+        }
+
+        // 下载文档
+        function downloadDocument(docId, filename) {
+            const link = document.createElement('a');
+            link.href = `/api/staff/documents/${docId}/download`;
+            link.download = filename;
+            link.click();
         }
 
         // 关闭模态框
@@ -1498,6 +1527,9 @@
             fundraisingAmount: { zh: '融资金额', en: 'Fundraising Amount' },
             timeWindow: { zh: '时间窗口', en: 'Time Window' },
             documents: { zh: '文档', en: 'Documents' },
+            preview: { zh: '预览', en: 'Preview' },
+            download: { zh: '下载', en: 'Download' },
+            openLink: { zh: '打开链接', en: 'Open Link' },
             passwordMismatch: { zh: '两次输入的新密码不一致', en: 'Passwords do not match' },
             passwordTooShort: { zh: '新密码长度不能少于6位', en: 'Password must be at least 6 characters' },
             passwordChanged: { zh: '密码修改成功', en: 'Password changed successfully' },
