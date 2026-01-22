@@ -612,59 +612,60 @@ router.get('/investors/:id', authenticate, requireStaffOrAdmin, async (req, res)
 
 // ==================== 消息发送 ====================
 
-// 发送消息给投资人
+// Staff 只能向自己创建的企业发送消息
 router.post('/messages', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
-        const { recipient_id, subject, content, company_id, send_email = false } = req.body;
+        const { company_id, subject, content, send_email = false } = req.body;
 
-        if (!recipient_id || !subject || !content) {
-            return res.status(400).json({ error: '请填写收件人、主题和内容' });
+        if (!company_id || !subject || !content) {
+            return res.status(400).json({ error: '请选择企业并填写主题和内容' });
         }
 
-        // 验证收件人是投资人
-        const recipient = await User.findByPk(recipient_id);
-        if (!recipient || recipient.role !== 'investor') {
-            return res.status(400).json({ error: '收件人必须是投资人' });
+        // Staff 只能向自己创建的企业发送消息
+        const companyWhere = req.user.role === 'admin' 
+            ? { id: company_id }
+            : { id: company_id, created_by: req.user.id };
+
+        const company = await Company.findOne({ 
+            where: companyWhere,
+            include: [{ model: User, as: 'user', attributes: ['id', 'email', 'name'] }]
+        });
+        
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在或无权访问' });
         }
 
-        // 如果指定了企业，验证是否有权限
-        let company = null;
-        if (company_id) {
-            const companyWhere = req.user.role === 'admin' 
-                ? { id: company_id }
-                : { id: company_id, created_by: req.user.id };
-
-            company = await Company.findOne({ where: companyWhere });
-            if (!company) {
-                return res.status(404).json({ error: '企业不存在或无权访问' });
-            }
+        if (!company.user) {
+            return res.status(400).json({ error: '该企业没有关联的用户账户' });
         }
 
-        // 创建消息
+        // 创建消息 - 发送给企业用户
         const message = await Message.create({
             sender_id: req.user.id,
-            recipient_id,
+            recipient_id: company.user.id,
+            company_id: company.id,
+            type: 'general',
             subject,
-            content,
-            related_company_id: company_id || null
+            content
         });
 
         // 发送邮件通知
         let emailSent = false;
         if ((send_email === true || send_email === 'true') && emailService.isConfigured()) {
             const result = await emailService.sendMessageNotification({
-                to: recipient.email,
+                to: company.user.email,
                 senderName: req.user.name || 'EON Protocol',
                 subject,
                 content: content.replace(/\n/g, '<br>')
             });
             emailSent = result.success;
             if (result.success) {
-                console.log(`[Staff] 邮件发送成功: ${recipient.email}`);
+                await message.update({ email_sent: true, email_sent_at: new Date() });
+                console.log(`[Staff] 邮件发送成功: ${company.user.email}`);
             }
         }
 
-        console.log(`[Staff] 用户 ${req.user.email} 发送消息给 ${recipient.email}: ${subject}`);
+        console.log(`[Staff] 用户 ${req.user.email} 发送消息给企业 ${company.name_cn}: ${subject}`);
 
         res.json({ 
             message: '消息发送成功', 
@@ -674,6 +675,39 @@ router.post('/messages', authenticate, requireStaffOrAdmin, async (req, res) => 
     } catch (error) {
         console.error('[Staff] 发送消息错误:', error);
         res.status(500).json({ error: '发送消息失败' });
+    }
+});
+
+// 获取发送给我管理的企业的消息列表（包括企业回复）
+router.get('/messages', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        // 获取我创建的企业
+        const myCompanyIds = await Company.findAll({
+            where: req.user.role === 'admin' ? {} : { created_by: req.user.id },
+            attributes: ['id']
+        }).then(companies => companies.map(c => c.id));
+
+        if (myCompanyIds.length === 0) {
+            return res.json({ messages: [] });
+        }
+
+        // 获取与这些企业相关的所有消息
+        const messages = await Message.findAll({
+            where: {
+                company_id: { [Op.in]: myCompanyIds }
+            },
+            include: [
+                { model: User, as: 'sender', attributes: ['id', 'email', 'name', 'role'] },
+                { model: User, as: 'recipient', attributes: ['id', 'email', 'name', 'role'] },
+                { model: Company, as: 'company', attributes: ['id', 'name_cn', 'name_en'] }
+            ],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ messages });
+    } catch (error) {
+        console.error('[Staff] 获取消息列表错误:', error);
+        res.status(500).json({ error: '获取消息列表失败' });
     }
 });
 

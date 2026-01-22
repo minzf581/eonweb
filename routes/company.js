@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { Company, FundraisingInfo, Document, AccessRequest } = require('../models');
+const { User, Company, FundraisingInfo, Document, AccessRequest, Message } = require('../models');
 const { authenticate, requireCompany } = require('../middleware/auth');
+const emailService = require('../services/EmailService');
 
 // 配置文件上传 - 使用内存存储（Railway不支持本地文件系统写入）
 // 注意：Railway 平台上传大文件容易超时，建议文件大小不超过 2MB
@@ -532,6 +533,159 @@ router.get('/documents/:id/download', authenticate, requireCompany, async (req, 
     } catch (error) {
         console.error('[Company] 下载文档错误:', error);
         res.status(500).json({ error: '下载失败' });
+    }
+});
+
+// ==================== 消息功能 ====================
+
+// 获取企业收到的消息列表
+router.get('/messages', authenticate, requireCompany, async (req, res) => {
+    try {
+        const messages = await Message.findAll({
+            where: { recipient_id: req.user.id },
+            include: [
+                { model: User, as: 'sender', attributes: ['id', 'email', 'name', 'role'] },
+                { model: Company, as: 'company', attributes: ['id', 'name_cn', 'name_en'] }
+            ],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ messages });
+    } catch (error) {
+        console.error('[Company] 获取消息列表错误:', error);
+        res.status(500).json({ error: '获取消息列表失败' });
+    }
+});
+
+// 获取消息详情
+router.get('/messages/:id', authenticate, requireCompany, async (req, res) => {
+    try {
+        const message = await Message.findOne({
+            where: { 
+                id: req.params.id,
+                recipient_id: req.user.id 
+            },
+            include: [
+                { model: User, as: 'sender', attributes: ['id', 'email', 'name', 'role'] },
+                { model: Company, as: 'company', attributes: ['id', 'name_cn', 'name_en'] }
+            ]
+        });
+
+        if (!message) {
+            return res.status(404).json({ error: '消息不存在' });
+        }
+
+        // 标记为已读
+        if (!message.is_read) {
+            await message.update({ is_read: true, read_at: new Date() });
+        }
+
+        res.json({ message });
+    } catch (error) {
+        console.error('[Company] 获取消息详情错误:', error);
+        res.status(500).json({ error: '获取消息详情失败' });
+    }
+});
+
+// 回复消息 - 企业只能回复收到的消息
+router.post('/messages/:id/reply', authenticate, requireCompany, async (req, res) => {
+    try {
+        const { content, send_email = false } = req.body;
+
+        if (!content) {
+            return res.status(400).json({ error: '请填写回复内容' });
+        }
+
+        // 获取原消息，确保是发给当前用户的
+        const originalMessage = await Message.findOne({
+            where: { 
+                id: req.params.id,
+                recipient_id: req.user.id 
+            },
+            include: [
+                { model: User, as: 'sender', attributes: ['id', 'email', 'name', 'role'] }
+            ]
+        });
+
+        if (!originalMessage) {
+            return res.status(404).json({ error: '原消息不存在或无权回复' });
+        }
+
+        // 获取企业信息
+        const company = await Company.findOne({ where: { user_id: req.user.id } });
+
+        // 创建回复消息 - 发送给原消息的发送者
+        const replyMessage = await Message.create({
+            sender_id: req.user.id,
+            recipient_id: originalMessage.sender_id,
+            company_id: originalMessage.company_id || company?.id,
+            type: 'reply',
+            subject: `Re: ${originalMessage.subject}`,
+            content
+        });
+
+        // 发送邮件通知
+        let emailSent = false;
+        if ((send_email === true || send_email === 'true') && emailService.isConfigured() && originalMessage.sender) {
+            const result = await emailService.sendMessageNotification({
+                to: originalMessage.sender.email,
+                senderName: company?.name_cn || req.user.name || '企业用户',
+                subject: `Re: ${originalMessage.subject}`,
+                content: content.replace(/\n/g, '<br>')
+            });
+            emailSent = result.success;
+            if (result.success) {
+                await replyMessage.update({ email_sent: true, email_sent_at: new Date() });
+                console.log(`[Company] 回复邮件发送成功: ${originalMessage.sender.email}`);
+            }
+        }
+
+        console.log(`[Company] 企业 ${req.user.email} 回复消息: ${originalMessage.subject}`);
+
+        res.json({ 
+            message: '回复发送成功', 
+            data: replyMessage,
+            email_sent: emailSent
+        });
+    } catch (error) {
+        console.error('[Company] 回复消息错误:', error);
+        res.status(500).json({ error: '回复失败' });
+    }
+});
+
+// 获取企业发送的消息（回复）
+router.get('/messages/sent', authenticate, requireCompany, async (req, res) => {
+    try {
+        const messages = await Message.findAll({
+            where: { sender_id: req.user.id },
+            include: [
+                { model: User, as: 'recipient', attributes: ['id', 'email', 'name', 'role'] },
+                { model: Company, as: 'company', attributes: ['id', 'name_cn', 'name_en'] }
+            ],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ messages });
+    } catch (error) {
+        console.error('[Company] 获取已发送消息错误:', error);
+        res.status(500).json({ error: '获取消息列表失败' });
+    }
+});
+
+// 获取未读消息数量
+router.get('/messages/unread-count', authenticate, requireCompany, async (req, res) => {
+    try {
+        const count = await Message.count({
+            where: { 
+                recipient_id: req.user.id,
+                is_read: false
+            }
+        });
+
+        res.json({ unread_count: count });
+    } catch (error) {
+        console.error('[Company] 获取未读消息数量错误:', error);
+        res.status(500).json({ error: '获取未读消息数量失败' });
     }
 });
 
