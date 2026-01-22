@@ -27,12 +27,34 @@ const upload = multer({
 
 // ==================== 仪表盘统计 ====================
 
-// 获取普通管理员的统计数据（仅自己创建的企业）
+// 获取普通管理员的统计数据（包括自己创建的企业和被授权访问的企业）
 router.get('/stats', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
-        const whereClause = req.user.role === 'admin' 
-            ? {} 
-            : { created_by: req.user.id };
+        let whereClause;
+        
+        if (req.user.role === 'admin') {
+            whereClause = {};
+        } else {
+            // 获取被授权访问的企业ID
+            const permittedCompanyIds = await CompanyPermission.findAll({
+                where: {
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                },
+                attributes: ['company_id']
+            }).then(perms => perms.map(p => p.company_id));
+
+            whereClause = {
+                [Op.or]: [
+                    { created_by: req.user.id },
+                    ...(permittedCompanyIds.length > 0 ? [{ id: { [Op.in]: permittedCompanyIds } }] : [])
+                ]
+            };
+        }
 
         const [
             totalCompanies,
@@ -77,14 +99,37 @@ router.get('/stats', authenticate, requireStaffOrAdmin, async (req, res) => {
 
 // ==================== 企业管理 ====================
 
-// 获取我创建的企业列表
+// 获取我创建的企业列表（包括被授权访问的企业）
 router.get('/companies', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
         const { status, page = 1, limit = 20 } = req.query;
         
-        const whereClause = req.user.role === 'admin' 
-            ? {} 
-            : { created_by: req.user.id };
+        let whereClause;
+        
+        if (req.user.role === 'admin') {
+            // 管理员可以看到所有企业
+            whereClause = {};
+        } else {
+            // Staff 可以看到：1) 自己创建的企业 2) 被授权访问的企业
+            const permittedCompanyIds = await CompanyPermission.findAll({
+                where: {
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                },
+                attributes: ['company_id']
+            }).then(perms => perms.map(p => p.company_id));
+
+            whereClause = {
+                [Op.or]: [
+                    { created_by: req.user.id },
+                    ...(permittedCompanyIds.length > 0 ? [{ id: { [Op.in]: permittedCompanyIds } }] : [])
+                ]
+            };
+        }
 
         if (status) {
             whereClause.status = status;
@@ -119,12 +164,14 @@ router.get('/companies', authenticate, requireStaffOrAdmin, async (req, res) => 
 // 获取单个企业详情
 router.get('/companies/:id', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
-        const whereClause = req.user.role === 'admin' 
-            ? { id: req.params.id }
-            : { id: req.params.id, created_by: req.user.id };
+        // 使用权限检查函数
+        const hasAccess = await checkCompanyAccess(req.user, req.params.id);
+        if (!hasAccess) {
+            return res.status(404).json({ error: '企业不存在或无权访问' });
+        }
 
         const company = await Company.findOne({
-            where: whereClause,
+            where: { id: req.params.id },
             include: [
                 { model: FundraisingInfo, as: 'fundraisingInfo' },
                 { model: Document, as: 'documents' },
