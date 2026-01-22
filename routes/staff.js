@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const { Op } = require('sequelize');
-const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message } = require('../models');
+const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message, CompanyComment, CompanyPermission } = require('../models');
 const { authenticate, requireStaffOrAdmin } = require('../middleware/auth');
 const emailService = require('../services/EmailService');
 
@@ -736,5 +736,195 @@ router.get('/messages/sent', authenticate, requireStaffOrAdmin, async (req, res)
         res.status(500).json({ error: '获取消息失败' });
     }
 });
+
+// ==================== 企业反馈/评论功能 ====================
+
+// 获取企业的所有反馈评论（Staff 需要有权限或是创建者）
+router.get('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        // 检查权限：管理员、创建者或被授权的 Staff
+        const hasAccess = await checkCompanyAccess(req.user, req.params.id);
+        if (!hasAccess) {
+            return res.status(403).json({ error: '无权访问该企业' });
+        }
+
+        const comments = await CompanyComment.findAll({
+            where: { company_id: req.params.id },
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
+            ],
+            order: [['created_at', 'ASC']]
+        });
+
+        // 标记已读
+        await CompanyComment.update(
+            { is_read_by_admin: true, admin_read_at: new Date() },
+            { where: { company_id: req.params.id, user_role: 'company', is_read_by_admin: false } }
+        );
+
+        res.json({ comments });
+    } catch (error) {
+        console.error('[Staff] 获取企业评论错误:', error);
+        res.status(500).json({ error: '获取评论失败' });
+    }
+});
+
+// 添加评论/反馈
+router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        const { content } = req.body;
+
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: '请输入评论内容' });
+        }
+
+        // 检查权限
+        const hasAccess = await checkCompanyAccess(req.user, req.params.id);
+        if (!hasAccess) {
+            return res.status(403).json({ error: '无权访问该企业' });
+        }
+
+        const company = await Company.findByPk(req.params.id);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        const comment = await CompanyComment.create({
+            company_id: req.params.id,
+            user_id: req.user.id,
+            content: content.trim(),
+            user_role: req.user.role,
+            is_read_by_admin: true,
+            is_read_by_company: false
+        });
+
+        // 获取完整的评论信息
+        const fullComment = await CompanyComment.findByPk(comment.id, {
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
+            ]
+        });
+
+        console.log(`[Staff] 用户 ${req.user.email} 给企业 ${company.name_cn} 添加反馈`);
+
+        res.status(201).json({ 
+            message: '反馈已添加',
+            comment: fullComment
+        });
+    } catch (error) {
+        console.error('[Staff] 添加评论错误:', error);
+        res.status(500).json({ error: '添加评论失败' });
+    }
+});
+
+// 获取企业未读反馈数量
+router.get('/companies/:id/comments/unread-count', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        const hasAccess = await checkCompanyAccess(req.user, req.params.id);
+        if (!hasAccess) {
+            return res.status(403).json({ error: '无权访问该企业' });
+        }
+
+        const count = await CompanyComment.count({
+            where: { 
+                company_id: req.params.id,
+                user_role: 'company',
+                is_read_by_admin: false
+            }
+        });
+
+        res.json({ unread_count: count });
+    } catch (error) {
+        console.error('[Staff] 获取未读评论数量错误:', error);
+        res.status(500).json({ error: '获取未读数量失败' });
+    }
+});
+
+// 获取我管理的所有企业的未读反馈汇总
+router.get('/comments/unread-summary', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        const { QueryTypes } = require('sequelize');
+        const { sequelize } = require('../config/database');
+
+        let query;
+        if (req.user.role === 'admin') {
+            // 管理员看所有
+            query = `
+                SELECT 
+                    c.id as company_id,
+                    c.name_cn,
+                    c.name_en,
+                    COUNT(cc.id) as unread_count
+                FROM companies c
+                LEFT JOIN company_comments cc ON c.id = cc.company_id 
+                    AND cc.user_role = 'company' 
+                    AND cc.is_read_by_admin = false
+                GROUP BY c.id, c.name_cn, c.name_en
+                HAVING COUNT(cc.id) > 0
+                ORDER BY unread_count DESC
+            `;
+        } else {
+            // Staff 只看自己创建的或有权限的
+            query = `
+                SELECT 
+                    c.id as company_id,
+                    c.name_cn,
+                    c.name_en,
+                    COUNT(cc.id) as unread_count
+                FROM companies c
+                LEFT JOIN company_comments cc ON c.id = cc.company_id 
+                    AND cc.user_role = 'company' 
+                    AND cc.is_read_by_admin = false
+                WHERE c.created_by = '${req.user.id}'
+                   OR c.id IN (SELECT company_id FROM company_permissions WHERE user_id = '${req.user.id}' AND is_active = true)
+                GROUP BY c.id, c.name_cn, c.name_en
+                HAVING COUNT(cc.id) > 0
+                ORDER BY unread_count DESC
+            `;
+        }
+
+        const results = await sequelize.query(query, { type: QueryTypes.SELECT });
+
+        res.json({ summary: results });
+    } catch (error) {
+        console.error('[Staff] 获取未读汇总错误:', error);
+        res.status(500).json({ error: '获取未读汇总失败' });
+    }
+});
+
+// 辅助函数：检查用户是否有权限访问企业
+async function checkCompanyAccess(user, companyId) {
+    if (user.role === 'admin') {
+        return true;
+    }
+
+    // 检查是否是创建者
+    const company = await Company.findByPk(companyId);
+    if (!company) {
+        return false;
+    }
+    if (company.created_by === user.id) {
+        return true;
+    }
+
+    // 检查是否有被授予的权限
+    const permission = await CompanyPermission.findOne({
+        where: {
+            company_id: companyId,
+            user_id: user.id,
+            is_active: true
+        }
+    });
+
+    if (permission) {
+        // 检查是否过期
+        if (permission.expires_at && new Date(permission.expires_at) < new Date()) {
+            return false;
+        }
+        return true;
+    }
+
+    return false;
+}
 
 module.exports = router;

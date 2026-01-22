@@ -3,7 +3,7 @@ const router = express.Router();
 const { Op } = require('sequelize');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
-const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message } = require('../models');
+const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message, CompanyComment, CompanyPermission } = require('../models');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const emailService = require('../services/EmailService');
 
@@ -893,6 +893,346 @@ router.get('/documents/:id/preview', authenticate, requireAdmin, async (req, res
     } catch (error) {
         console.error('[Admin] 预览文档错误:', error);
         res.status(500).json({ error: '预览失败' });
+    }
+});
+
+// ============ 企业反馈/评论功能 ============
+
+// 获取企业的所有反馈评论
+router.get('/companies/:id/comments', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const company = await Company.findByPk(req.params.id);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        const comments = await CompanyComment.findAll({
+            where: { company_id: req.params.id },
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
+            ],
+            order: [['created_at', 'ASC']]
+        });
+
+        // 标记管理员已读
+        await CompanyComment.update(
+            { is_read_by_admin: true, admin_read_at: new Date() },
+            { where: { company_id: req.params.id, user_role: 'company', is_read_by_admin: false } }
+        );
+
+        res.json({ comments });
+    } catch (error) {
+        console.error('[Admin] 获取企业评论错误:', error);
+        res.status(500).json({ error: '获取评论失败' });
+    }
+});
+
+// 添加评论/反馈
+router.post('/companies/:id/comments', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { content } = req.body;
+
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: '请输入评论内容' });
+        }
+
+        const company = await Company.findByPk(req.params.id, {
+            include: [{ model: User, as: 'user', attributes: ['id', 'email', 'name'] }]
+        });
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        const comment = await CompanyComment.create({
+            company_id: req.params.id,
+            user_id: req.user.id,
+            content: content.trim(),
+            user_role: req.user.role,
+            is_read_by_admin: true, // 管理员自己发的，自己已读
+            is_read_by_company: false // 企业未读
+        });
+
+        // 获取完整的评论信息
+        const fullComment = await CompanyComment.findByPk(comment.id, {
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
+            ]
+        });
+
+        console.log(`[Admin] 管理员 ${req.user.email} 给企业 ${company.name_cn} 添加反馈`);
+
+        res.status(201).json({ 
+            message: '反馈已添加',
+            comment: fullComment
+        });
+    } catch (error) {
+        console.error('[Admin] 添加评论错误:', error);
+        res.status(500).json({ error: '添加评论失败' });
+    }
+});
+
+// 获取企业未读反馈数量（管理员视角 - 查看企业发送的未读）
+router.get('/companies/:id/comments/unread-count', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const count = await CompanyComment.count({
+            where: { 
+                company_id: req.params.id,
+                user_role: 'company',
+                is_read_by_admin: false
+            }
+        });
+
+        res.json({ unread_count: count });
+    } catch (error) {
+        console.error('[Admin] 获取未读评论数量错误:', error);
+        res.status(500).json({ error: '获取未读数量失败' });
+    }
+});
+
+// 获取所有企业的未读反馈汇总
+router.get('/comments/unread-summary', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { QueryTypes } = require('sequelize');
+        const { sequelize } = require('../config/database');
+
+        // 查询每个企业的未读评论数
+        const results = await sequelize.query(`
+            SELECT 
+                c.id as company_id,
+                c.name_cn,
+                c.name_en,
+                COUNT(cc.id) as unread_count
+            FROM companies c
+            LEFT JOIN company_comments cc ON c.id = cc.company_id 
+                AND cc.user_role = 'company' 
+                AND cc.is_read_by_admin = false
+            GROUP BY c.id, c.name_cn, c.name_en
+            HAVING COUNT(cc.id) > 0
+            ORDER BY unread_count DESC
+        `, { type: QueryTypes.SELECT });
+
+        res.json({ summary: results });
+    } catch (error) {
+        console.error('[Admin] 获取未读汇总错误:', error);
+        res.status(500).json({ error: '获取未读汇总失败' });
+    }
+});
+
+// ============ 企业权限管理功能 ============
+
+// 获取企业的权限列表
+router.get('/companies/:id/permissions', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const company = await Company.findByPk(req.params.id);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        const permissions = await CompanyPermission.findAll({
+            where: { company_id: req.params.id },
+            include: [
+                { model: User, as: 'permittedUser', attributes: ['id', 'email', 'name', 'role'] },
+                { model: User, as: 'grantedByUser', attributes: ['id', 'email', 'name'] }
+            ],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ permissions });
+    } catch (error) {
+        console.error('[Admin] 获取企业权限列表错误:', error);
+        res.status(500).json({ error: '获取权限列表失败' });
+    }
+});
+
+// 添加/更新企业权限
+router.post('/companies/:id/permissions', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { user_id, permission_type, expires_at, notes } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({ error: '请选择要授权的用户' });
+        }
+
+        const company = await Company.findByPk(req.params.id);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        // 验证用户存在且是 staff 或 investor
+        const targetUser = await User.findByPk(user_id);
+        if (!targetUser) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+        if (!['staff', 'investor'].includes(targetUser.role)) {
+            return res.status(400).json({ error: '只能授权给 Staff 或投资人' });
+        }
+
+        // 检查是否已存在权限，存在则更新
+        let permission = await CompanyPermission.findOne({
+            where: { company_id: req.params.id, user_id }
+        });
+
+        if (permission) {
+            await permission.update({
+                permission_type: permission_type || 'view',
+                expires_at: expires_at || null,
+                notes: notes || null,
+                granted_by: req.user.id,
+                is_active: true
+            });
+        } else {
+            permission = await CompanyPermission.create({
+                company_id: req.params.id,
+                user_id,
+                permission_type: permission_type || 'view',
+                granted_by: req.user.id,
+                expires_at: expires_at || null,
+                notes: notes || null
+            });
+        }
+
+        // 获取完整的权限信息
+        const fullPermission = await CompanyPermission.findByPk(permission.id, {
+            include: [
+                { model: User, as: 'permittedUser', attributes: ['id', 'email', 'name', 'role'] },
+                { model: User, as: 'grantedByUser', attributes: ['id', 'email', 'name'] }
+            ]
+        });
+
+        console.log(`[Admin] 管理员 ${req.user.email} 授权用户 ${targetUser.email} 访问企业 ${company.name_cn}`);
+
+        res.status(201).json({ 
+            message: '权限已设置',
+            permission: fullPermission
+        });
+    } catch (error) {
+        console.error('[Admin] 设置企业权限错误:', error);
+        res.status(500).json({ error: '设置权限失败' });
+    }
+});
+
+// 批量设置企业权限
+router.post('/companies/:id/permissions/batch', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { user_ids, permission_type, expires_at, notes } = req.body;
+
+        if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
+            return res.status(400).json({ error: '请选择要授权的用户' });
+        }
+
+        const company = await Company.findByPk(req.params.id);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        const results = [];
+        for (const user_id of user_ids) {
+            const targetUser = await User.findByPk(user_id);
+            if (!targetUser || !['staff', 'investor'].includes(targetUser.role)) {
+                results.push({ user_id, success: false, error: '用户不存在或角色不符' });
+                continue;
+            }
+
+            try {
+                let permission = await CompanyPermission.findOne({
+                    where: { company_id: req.params.id, user_id }
+                });
+
+                if (permission) {
+                    await permission.update({
+                        permission_type: permission_type || 'view',
+                        expires_at: expires_at || null,
+                        notes: notes || null,
+                        granted_by: req.user.id,
+                        is_active: true
+                    });
+                } else {
+                    permission = await CompanyPermission.create({
+                        company_id: req.params.id,
+                        user_id,
+                        permission_type: permission_type || 'view',
+                        granted_by: req.user.id,
+                        expires_at: expires_at || null,
+                        notes: notes || null
+                    });
+                }
+                results.push({ user_id, success: true });
+            } catch (e) {
+                results.push({ user_id, success: false, error: e.message });
+            }
+        }
+
+        console.log(`[Admin] 管理员 ${req.user.email} 批量授权企业 ${company.name_cn}: ${user_ids.length} 个用户`);
+
+        res.json({ 
+            message: '批量授权完成',
+            results
+        });
+    } catch (error) {
+        console.error('[Admin] 批量设置权限错误:', error);
+        res.status(500).json({ error: '批量设置失败' });
+    }
+});
+
+// 删除企业权限
+router.delete('/companies/:companyId/permissions/:permissionId', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const permission = await CompanyPermission.findOne({
+            where: { 
+                id: req.params.permissionId,
+                company_id: req.params.companyId
+            },
+            include: [
+                { model: User, as: 'permittedUser', attributes: ['email'] }
+            ]
+        });
+
+        if (!permission) {
+            return res.status(404).json({ error: '权限记录不存在' });
+        }
+
+        const userEmail = permission.permittedUser?.email;
+        await permission.destroy();
+
+        console.log(`[Admin] 管理员 ${req.user.email} 移除了用户 ${userEmail} 对企业的访问权限`);
+
+        res.json({ message: '权限已移除' });
+    } catch (error) {
+        console.error('[Admin] 删除权限错误:', error);
+        res.status(500).json({ error: '删除权限失败' });
+    }
+});
+
+// 获取可授权的用户列表（Staff 和已审核的投资人）
+router.get('/permissible-users', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { role } = req.query;
+        
+        const where = {
+            role: ['staff', 'investor'],
+            status: 'active'
+        };
+
+        if (role && ['staff', 'investor'].includes(role)) {
+            where.role = role;
+        }
+
+        const users = await User.findAll({
+            where,
+            attributes: ['id', 'email', 'name', 'role'],
+            include: [{
+                model: InvestorProfile,
+                as: 'investorProfile',
+                required: false,
+                attributes: ['name', 'organization', 'investor_type']
+            }],
+            order: [['role', 'ASC'], ['email', 'ASC']]
+        });
+
+        res.json({ users });
+    } catch (error) {
+        console.error('[Admin] 获取可授权用户列表错误:', error);
+        res.status(500).json({ error: '获取用户列表失败' });
     }
 });
 

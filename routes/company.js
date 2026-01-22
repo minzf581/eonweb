@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { User, Company, FundraisingInfo, Document, AccessRequest, Message } = require('../models');
+const { User, Company, FundraisingInfo, Document, AccessRequest, Message, CompanyComment } = require('../models');
 const { authenticate, requireCompany } = require('../middleware/auth');
 const emailService = require('../services/EmailService');
 
@@ -686,6 +686,109 @@ router.get('/messages/unread-count', authenticate, requireCompany, async (req, r
     } catch (error) {
         console.error('[Company] 获取未读消息数量错误:', error);
         res.status(500).json({ error: '获取未读消息数量失败' });
+    }
+});
+
+// ==================== 企业反馈/评论功能 ====================
+
+// 获取企业收到的所有反馈评论
+router.get('/feedback', authenticate, requireCompany, async (req, res) => {
+    try {
+        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        if (!company) {
+            return res.json({ comments: [] });
+        }
+
+        const comments = await CompanyComment.findAll({
+            where: { company_id: company.id },
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
+            ],
+            order: [['created_at', 'ASC']]
+        });
+
+        // 标记企业已读
+        await CompanyComment.update(
+            { is_read_by_company: true, company_read_at: new Date() },
+            { 
+                where: { 
+                    company_id: company.id, 
+                    user_role: { [require('sequelize').Op.in]: ['admin', 'staff'] },
+                    is_read_by_company: false 
+                } 
+            }
+        );
+
+        res.json({ comments });
+    } catch (error) {
+        console.error('[Company] 获取反馈错误:', error);
+        res.status(500).json({ error: '获取反馈失败' });
+    }
+});
+
+// 企业添加回复/评论
+router.post('/feedback', authenticate, requireCompany, async (req, res) => {
+    try {
+        const { content } = req.body;
+
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: '请输入回复内容' });
+        }
+
+        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        if (!company) {
+            return res.status(400).json({ error: '请先创建企业信息' });
+        }
+
+        const comment = await CompanyComment.create({
+            company_id: company.id,
+            user_id: req.user.id,
+            content: content.trim(),
+            user_role: 'company',
+            is_read_by_company: true, // 企业自己发的，自己已读
+            is_read_by_admin: false // 管理员未读
+        });
+
+        // 获取完整的评论信息
+        const fullComment = await CompanyComment.findByPk(comment.id, {
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
+            ]
+        });
+
+        console.log(`[Company] 企业 ${company.name_cn} 添加了反馈回复`);
+
+        res.status(201).json({ 
+            message: '回复已发送',
+            comment: fullComment
+        });
+    } catch (error) {
+        console.error('[Company] 添加回复错误:', error);
+        res.status(500).json({ error: '发送回复失败' });
+    }
+});
+
+// 获取企业未读反馈数量（管理员/Staff发的未读）
+router.get('/feedback/unread-count', authenticate, requireCompany, async (req, res) => {
+    try {
+        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        if (!company) {
+            return res.json({ unread_count: 0 });
+        }
+
+        const { Op } = require('sequelize');
+        const count = await CompanyComment.count({
+            where: { 
+                company_id: company.id,
+                user_role: { [Op.in]: ['admin', 'staff'] },
+                is_read_by_company: false
+            }
+        });
+
+        res.json({ unread_count: count });
+    } catch (error) {
+        console.error('[Company] 获取未读反馈数量错误:', error);
+        res.status(500).json({ error: '获取未读数量失败' });
     }
 });
 

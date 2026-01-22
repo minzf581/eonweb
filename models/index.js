@@ -6,6 +6,8 @@ const Document = require('./Document');
 const InvestorProfile = require('./InvestorProfile');
 const AccessRequest = require('./AccessRequest');
 const Message = require('./Message');
+const CompanyComment = require('./CompanyComment');
+const CompanyPermission = require('./CompanyPermission');
 
 // 设置关联关系
 
@@ -42,6 +44,23 @@ Message.belongsTo(User, { foreignKey: 'recipient_id', as: 'recipient' });
 Company.hasMany(Message, { foreignKey: 'company_id', as: 'messages' });
 Message.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
 
+// CompanyComment 关联 (持续反馈系统)
+Company.hasMany(CompanyComment, { foreignKey: 'company_id', as: 'comments' });
+CompanyComment.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+User.hasMany(CompanyComment, { foreignKey: 'user_id', as: 'companyComments' });
+CompanyComment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// CompanyPermission 关联 (权限控制)
+Company.hasMany(CompanyPermission, { foreignKey: 'company_id', as: 'permissions' });
+CompanyPermission.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+User.hasMany(CompanyPermission, { foreignKey: 'user_id', as: 'companyPermissions' });
+CompanyPermission.belongsTo(User, { foreignKey: 'user_id', as: 'permittedUser' });
+
+User.hasMany(CompanyPermission, { foreignKey: 'granted_by', as: 'grantedPermissions' });
+CompanyPermission.belongsTo(User, { foreignKey: 'granted_by', as: 'grantedByUser' });
+
 // 同步数据库
 const syncDatabase = async (force = false) => {
     try {
@@ -63,5 +82,7 @@ module.exports = {
     InvestorProfile,
     AccessRequest,
     Message,
+    CompanyComment,
+    CompanyPermission,
     syncDatabase
 };

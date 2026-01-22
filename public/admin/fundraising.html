@@ -923,7 +923,7 @@
             investors: { zh: '对投资人可见', en: 'Visible to Investors' },
             whitelist: { zh: '白名单可见', en: 'Whitelist Only' },
             adminNotes: { zh: '管理员备注', en: 'Admin Notes' },
-            adminFeedback: { zh: '给企业的反馈', en: 'Feedback to Company' },
+            adminFeedback: { zh: '反馈交流', en: 'Feedback' },
             approveAndSave: { zh: '通过并保存', en: 'Approve & Save' },
             close: { zh: '关闭', en: 'Close' },
             downloading: { zh: '正在下载...', en: 'Downloading...' },
@@ -973,7 +973,31 @@
             dataroom: { zh: '数据室', en: 'Data Room' },
             // 投资人详情用的
             linkedin: { zh: 'LinkedIn', en: 'LinkedIn' },
-            whatsapp: { zh: 'WhatsApp', en: 'WhatsApp' }
+            whatsapp: { zh: 'WhatsApp', en: 'WhatsApp' },
+            // 反馈功能
+            feedbackSection: { zh: '反馈交流', en: 'Feedback' },
+            feedbackPlaceholder: { zh: '输入您的反馈或回复...', en: 'Enter your feedback or reply...' },
+            sendFeedback: { zh: '发送反馈', en: 'Send Feedback' },
+            noFeedback: { zh: '暂无反馈记录', en: 'No feedback yet' },
+            feedbackSent: { zh: '反馈已发送', en: 'Feedback sent' },
+            newFeedback: { zh: '新反馈', en: 'New' },
+            loadingFeedback: { zh: '加载反馈中...', en: 'Loading feedback...' },
+            // 权限管理
+            permissionSection: { zh: '访问权限管理', en: 'Access Permissions' },
+            addPermission: { zh: '添加权限', en: 'Add Permission' },
+            selectUser: { zh: '选择用户...', en: 'Select user...' },
+            permissionType: { zh: '权限类型', en: 'Permission Type' },
+            permView: { zh: '仅查看', en: 'View Only' },
+            permReview: { zh: '可审核', en: 'Can Review' },
+            permFull: { zh: '完全访问', en: 'Full Access' },
+            expiresAt: { zh: '过期时间', en: 'Expires At' },
+            noExpiry: { zh: '永不过期', en: 'Never Expires' },
+            permissionAdded: { zh: '权限已添加', en: 'Permission added' },
+            permissionRemoved: { zh: '权限已移除', en: 'Permission removed' },
+            noPermissions: { zh: '暂无授权用户', en: 'No authorized users' },
+            confirmRemovePermission: { zh: '确定要移除该用户的访问权限吗？', en: 'Are you sure you want to remove this user\'s access?' },
+            grantedBy: { zh: '授权人', en: 'Granted By' },
+            grantedAt: { zh: '授权时间', en: 'Granted At' }
         };
 
         function t(key) {
@@ -1310,13 +1334,48 @@
                             <option value="whitelist" ${c.visibility === 'whitelist' ? 'selected' : ''}>${t('whitelist')}</option>
                         </select>
                     </div>
+                    <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-comments" style="color: var(--primary-color);"></i> ${t('feedbackSection')}</h4>
+                    <div id="feedbackSection" style="background: #f9f9f9; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <div id="feedbackMessages" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem;">
+                            <p style="color: #666; text-align: center;">${t('loadingFeedback')}</p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <textarea id="feedbackInput" class="form-control" rows="2" placeholder="${t('feedbackPlaceholder')}" style="flex: 1; resize: none;"></textarea>
+                            <button class="btn btn-primary" onclick="sendFeedback('${c.id}')" style="align-self: flex-end;">
+                                <i class="fas fa-paper-plane"></i> ${t('sendFeedback')}
+                            </button>
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-user-lock" style="color: var(--warning-color);"></i> ${t('permissionSection')}</h4>
+                    <div id="permissionSection" style="background: #f9f9f9; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <div id="permissionsList" style="margin-bottom: 1rem;">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <label style="font-size: 0.75rem; color: #666;">${t('selectUser')}</label>
+                                <select id="permissionUserSelect" class="filter-select" style="width: 100%;">
+                                    <option value="">${t('selectUser')}</option>
+                                </select>
+                            </div>
+                            <div style="min-width: 120px;">
+                                <label style="font-size: 0.75rem; color: #666;">${t('permissionType')}</label>
+                                <select id="permissionTypeSelect" class="filter-select" style="width: 100%;">
+                                    <option value="view">${t('permView')}</option>
+                                    <option value="review">${t('permReview')}</option>
+                                    <option value="full">${t('permFull')}</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="addPermission('${c.id}')">
+                                <i class="fas fa-plus"></i> ${t('addPermission')}
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">${t('adminNotes')}</label>
-                        <textarea class="form-control" id="adminNotes" rows="6" style="min-height: 150px; resize: vertical;">${c.admin_notes || ''}</textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">${t('adminFeedback')}</label>
-                        <textarea class="form-control" id="adminFeedback" rows="6" style="min-height: 150px; resize: vertical;">${c.admin_feedback || ''}</textarea>
+                        <textarea class="form-control" id="adminNotes" rows="4" style="min-height: 100px; resize: vertical;">${c.admin_notes || ''}</textarea>
                     </div>
                     <div class="btn-group" style="margin-top: 1rem;">
                         <button class="btn btn-success" onclick="saveCompanyReview('${c.id}', 'approved')">${t('approveAndSave')}</button>
@@ -1324,6 +1383,11 @@
                         <button class="btn btn-secondary" onclick="closeModal('companyModal')">${t('close')}</button>
                     </div>
                 `;
+
+                // 加载反馈和权限数据
+                loadFeedback(c.id);
+                loadPermissions(c.id);
+                loadPermissibleUsers();
             } catch (error) {
                 document.getElementById('companyModalContent').innerHTML = `<p style="color:red;">${t('loadFailed')}</p>`;
             }
@@ -1980,6 +2044,221 @@
 
         function openModal(id) {
             document.getElementById(id).classList.add('active');
+        }
+
+        // ============ 反馈功能 ============
+        let currentCompanyId = null;
+
+        async function loadFeedback(companyId) {
+            currentCompanyId = companyId;
+            const container = document.getElementById('feedbackMessages');
+            
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/comments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.comments && data.comments.length > 0) {
+                    container.innerHTML = data.comments.map(c => `
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: ${c.user_role === 'company' ? '#e3f2fd' : '#fff'}; border-radius: 8px; border-left: 3px solid ${c.user_role === 'company' ? '#2196f3' : '#4CAF50'};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="font-size: 0.875rem;">
+                                    <i class="fas ${c.user_role === 'company' ? 'fa-building' : 'fa-user-shield'}" style="margin-right: 0.25rem;"></i>
+                                    ${c.user?.name || c.user?.email || '-'}
+                                    <span style="color: #999; font-weight: normal;">(${formatRole(c.user_role)})</span>
+                                </strong>
+                                <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                            </div>
+                            <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
+                        </div>
+                    `).join('');
+                    
+                    // 滚动到底部
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = `<p style="color: #666; text-align: center;">${t('noFeedback')}</p>`;
+                }
+            } catch (error) {
+                console.error('Load feedback failed:', error);
+                container.innerHTML = `<p style="color: red; text-align: center;">${t('loadFailed')}</p>`;
+            }
+        }
+
+        async function sendFeedback(companyId) {
+            const input = document.getElementById('feedbackInput');
+            const content = input.value.trim();
+
+            if (!content) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                input.value = '';
+                showMessage(t('feedbackSent'), 'success');
+                loadFeedback(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 转义 HTML 防止 XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============ 权限管理功能 ============
+        let permissibleUsers = [];
+
+        async function loadPermissibleUsers() {
+            try {
+                const response = await fetch('/api/admin/permissible-users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                permissibleUsers = data.users || [];
+
+                const select = document.getElementById('permissionUserSelect');
+                if (select) {
+                    select.innerHTML = `<option value="">${t('selectUser')}</option>` +
+                        permissibleUsers.map(u => {
+                            const displayName = u.investorProfile?.name || u.name || u.email;
+                            const org = u.investorProfile?.organization ? ` - ${u.investorProfile.organization}` : '';
+                            return `<option value="${u.id}">${displayName}${org} (${formatRole(u.role)})</option>`;
+                        }).join('');
+                }
+            } catch (error) {
+                console.error('Load permissible users failed:', error);
+            }
+        }
+
+        async function loadPermissions(companyId) {
+            const container = document.getElementById('permissionsList');
+            
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/permissions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.permissions && data.permissions.length > 0) {
+                    container.innerHTML = `
+                        <table style="width: 100%; font-size: 0.875rem;">
+                            <thead>
+                                <tr style="background: #eee;">
+                                    <th style="padding: 0.5rem; text-align: left;">${t('name')}</th>
+                                    <th style="padding: 0.5rem; text-align: left;">${t('email')}</th>
+                                    <th style="padding: 0.5rem; text-align: left;">${t('permissionType')}</th>
+                                    <th style="padding: 0.5rem; text-align: left;">${t('grantedBy')}</th>
+                                    <th style="padding: 0.5rem; text-align: center;">${t('delete')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.permissions.map(p => `
+                                    <tr>
+                                        <td style="padding: 0.5rem;">${p.permittedUser?.name || '-'}</td>
+                                        <td style="padding: 0.5rem;">${p.permittedUser?.email || '-'}</td>
+                                        <td style="padding: 0.5rem;">
+                                            <span class="status-badge ${p.permission_type === 'full' ? 'status-approved' : p.permission_type === 'review' ? 'status-pending' : 'status-draft'}">
+                                                ${formatPermissionType(p.permission_type)}
+                                            </span>
+                                        </td>
+                                        <td style="padding: 0.5rem;">${p.grantedByUser?.name || p.grantedByUser?.email || '-'}</td>
+                                        <td style="padding: 0.5rem; text-align: center;">
+                                            <button class="btn btn-danger btn-sm" onclick="removePermission('${companyId}', '${p.id}')" title="${t('delete')}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    container.innerHTML = `<p style="color: #666; text-align: center;">${t('noPermissions')}</p>`;
+                }
+            } catch (error) {
+                console.error('Load permissions failed:', error);
+                container.innerHTML = `<p style="color: red; text-align: center;">${t('loadFailed')}</p>`;
+            }
+        }
+
+        function formatPermissionType(type) {
+            const types = {
+                'view': t('permView'),
+                'review': t('permReview'),
+                'full': t('permFull')
+            };
+            return types[type] || type;
+        }
+
+        async function addPermission(companyId) {
+            const userSelect = document.getElementById('permissionUserSelect');
+            const typeSelect = document.getElementById('permissionTypeSelect');
+            
+            const userId = userSelect.value;
+            const permissionType = typeSelect.value;
+
+            if (!userId) {
+                showMessage(t('selectUser'), 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/permissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        permission_type: permissionType
+                    })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage(t('permissionAdded'), 'success');
+                userSelect.value = '';
+                loadPermissions(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function removePermission(companyId, permissionId) {
+            if (!confirm(t('confirmRemovePermission'))) return;
+
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/permissions/${permissionId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage(t('permissionRemoved'), 'success');
+                loadPermissions(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
         }
     </script>
     <script src="/static/js/lang.js"></script>

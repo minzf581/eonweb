@@ -654,9 +654,23 @@
                 <div class="card">
                     <h3 class="card-title"><i class="fas fa-info-circle"></i> <span data-zh="当前状态" data-en="Current Status">当前状态</span></h3>
                     <p><span data-zh="审核状态：" data-en="Review Status: ">审核状态：</span><span class="status-badge" id="currentStatus">-</span></p>
-                    <p id="adminFeedback" style="margin-top: 1rem; display: none;">
-                        <strong data-zh="管理员反馈：" data-en="Admin Feedback: ">管理员反馈：</strong><span id="feedbackText"></span>
-                    </p>
+                </div>
+
+                <!-- 反馈交流 -->
+                <div class="card" id="feedbackCard">
+                    <h3 class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span><i class="fas fa-comments"></i> <span data-zh="反馈交流" data-en="Feedback">反馈交流</span></span>
+                        <span id="unreadBadge" class="status-badge status-pending" style="display: none;">0 <span data-zh="条新消息" data-en="new">条新消息</span></span>
+                    </h3>
+                    <div id="feedbackMessages" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem; padding: 0.5rem; background: #f9f9f9; border-radius: 8px;">
+                        <p style="color: #666; text-align: center;" data-zh="加载中..." data-en="Loading...">加载中...</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <textarea id="feedbackInput" class="form-control" rows="2" style="flex: 1; resize: none;" data-zh-placeholder="输入您的回复或问题..." data-en-placeholder="Enter your reply or question..." placeholder="输入您的回复或问题..."></textarea>
+                        <button class="btn btn-primary" onclick="sendFeedback()" style="align-self: flex-end;">
+                            <i class="fas fa-paper-plane"></i> <span data-zh="发送" data-en="Send">发送</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 快速操作 -->
@@ -1230,11 +1244,9 @@
             statusBadge.textContent = statusInfo.text;
             statusBadge.className = `status-badge ${statusInfo.class}`;
 
-            // 显示管理员反馈
-            if (companyData?.admin_feedback) {
-                document.getElementById('adminFeedback').style.display = 'block';
-                document.getElementById('feedbackText').textContent = companyData.admin_feedback;
-            }
+            // 加载反馈交流
+            loadFeedback();
+            loadUnreadCount();
         }
 
         // 填充企业资料表单
@@ -1844,6 +1856,109 @@
                 showMessage(getLangText('密码修改失败，请稍后重试', 'Failed to change password, please try again'), 'error');
             }
         }
+
+        // ==================== 反馈功能 ====================
+        async function loadFeedback() {
+            const container = document.getElementById('feedbackMessages');
+            const token = localStorage.getItem('token');
+            
+            try {
+                const response = await fetch('/api/company/feedback', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.comments && data.comments.length > 0) {
+                    container.innerHTML = data.comments.map(c => `
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: ${c.user_role === 'company' ? '#e8f5e9' : '#e3f2fd'}; border-radius: 8px; border-left: 3px solid ${c.user_role === 'company' ? '#4CAF50' : '#2196f3'};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="font-size: 0.875rem;">
+                                    <i class="fas ${c.user_role === 'company' ? 'fa-building' : 'fa-user-shield'}" style="margin-right: 0.25rem;"></i>
+                                    ${c.user?.name || (c.user_role === 'company' ? getLangText('您', 'You') : getLangText('管理员', 'Admin'))}
+                                </strong>
+                                <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                            </div>
+                            <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
+                        </div>
+                    `).join('');
+                    
+                    // 滚动到底部
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = `<p style="color: #666; text-align: center;">${getLangText('暂无反馈记录，管理员审核后会在这里与您交流', 'No feedback yet. Admin will communicate with you here after review.')}</p>`;
+                }
+            } catch (error) {
+                console.error('Load feedback failed:', error);
+                container.innerHTML = `<p style="color: #666; text-align: center;">${getLangText('加载失败', 'Load failed')}</p>`;
+            }
+        }
+
+        async function sendFeedback() {
+            const input = document.getElementById('feedbackInput');
+            const content = input.value.trim();
+            const token = localStorage.getItem('token');
+
+            if (!content) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/company/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                input.value = '';
+                showMessage(getLangText('回复已发送', 'Reply sent'), 'success');
+                loadFeedback();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function loadUnreadCount() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch('/api/company/feedback/unread-count', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                const badge = document.getElementById('unreadBadge');
+                if (data.unread_count > 0) {
+                    badge.textContent = `${data.unread_count} ${getLangText('条新消息', 'new')}`;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Load unread count failed:', error);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 页面加载时调用
+        document.addEventListener('DOMContentLoaded', () => {
+            // 延迟加载反馈，确保用户已验证
+            setTimeout(() => {
+                if (localStorage.getItem('token')) {
+                    loadFeedback();
+                    loadUnreadCount();
+                }
+            }, 500);
+        });
     </script>
 
     <!-- 修改密码模态框 -->
