@@ -3,31 +3,15 @@ const router = express.Router();
 const { Op } = require('sequelize');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
 const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message } = require('../models');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const emailService = require('../services/EmailService');
 
 // 配置文件上传 - 内存存储用于附件
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
-
-// 配置邮件发送（可选）
-const createEmailTransporter = () => {
-    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-        return nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT || 587,
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            }
-        });
-    }
-    return null;
-};
 
 // 仪表盘统计
 router.get('/stats', authenticate, requireAdmin, async (req, res) => {
@@ -146,13 +130,16 @@ router.get('/companies/:id', authenticate, requireAdmin, async (req, res) => {
 // 审核企业
 router.put('/companies/:id/review', authenticate, requireAdmin, async (req, res) => {
     try {
-        const { status, visibility, admin_notes, admin_feedback, tags } = req.body;
+        const { status, visibility, admin_notes, admin_feedback, tags, send_email = false } = req.body;
 
-        const company = await Company.findByPk(req.params.id);
+        const company = await Company.findByPk(req.params.id, {
+            include: [{ model: User, as: 'user', attributes: ['id', 'email', 'name'] }]
+        });
         if (!company) {
             return res.status(404).json({ error: '企业不存在' });
         }
 
+        const oldStatus = company.status;
         const updateData = {
             reviewed_at: new Date(),
             reviewed_by: req.user.id
@@ -166,9 +153,30 @@ router.put('/companies/:id/review', authenticate, requireAdmin, async (req, res)
 
         await company.update(updateData);
 
+        // 如果状态发生变化，发送邮件通知
+        let emailSent = false;
+        if (status && status !== oldStatus && company.user?.email) {
+            const shouldSendEmail = send_email === true || send_email === 'true' || 
+                                   (status === 'approved' || status === 'rejected');
+            if (shouldSendEmail) {
+                const result = await emailService.sendReviewNotification({
+                    to: company.user.email,
+                    entityType: 'company',
+                    entityName: company.name_cn || company.name_en,
+                    status,
+                    feedback: admin_feedback
+                });
+                emailSent = result.success;
+                if (result.success) {
+                    console.log(`[Admin] 已发送企业审核通知邮件: ${company.user.email}`);
+                }
+            }
+        }
+
         res.json({ 
             message: '企业信息已更新',
-            company 
+            company,
+            email_sent: emailSent
         });
     } catch (error) {
         console.error('[Admin] 审核企业错误:', error);
@@ -213,13 +221,16 @@ router.get('/investors', authenticate, requireAdmin, async (req, res) => {
 // 审核投资人
 router.put('/investors/:id/review', authenticate, requireAdmin, async (req, res) => {
     try {
-        const { status, admin_notes } = req.body;
+        const { status, admin_notes, send_email = false } = req.body;
 
-        const profile = await InvestorProfile.findByPk(req.params.id);
+        const profile = await InvestorProfile.findByPk(req.params.id, {
+            include: [{ model: User, as: 'user', attributes: ['id', 'email', 'name'] }]
+        });
         if (!profile) {
             return res.status(404).json({ error: '投资人不存在' });
         }
 
+        const oldStatus = profile.status;
         const updateData = {
             reviewed_at: new Date(),
             reviewed_by: req.user.id
@@ -238,9 +249,30 @@ router.put('/investors/:id/review', authenticate, requireAdmin, async (req, res)
             );
         }
 
+        // 如果状态发生变化，发送邮件通知
+        let emailSent = false;
+        if (status && status !== oldStatus && profile.user?.email) {
+            const shouldSendEmail = send_email === true || send_email === 'true' || 
+                                   (status === 'approved' || status === 'rejected');
+            if (shouldSendEmail) {
+                const result = await emailService.sendReviewNotification({
+                    to: profile.user.email,
+                    entityType: 'investor',
+                    entityName: profile.name || profile.user.name,
+                    status,
+                    feedback: admin_notes
+                });
+                emailSent = result.success;
+                if (result.success) {
+                    console.log(`[Admin] 已发送投资人审核通知邮件: ${profile.user.email}`);
+                }
+            }
+        }
+
         res.json({ 
             message: '投资人信息已更新',
-            profile 
+            profile,
+            email_sent: emailSent
         });
     } catch (error) {
         console.error('[Admin] 审核投资人错误:', error);
@@ -288,7 +320,12 @@ router.put('/requests/:id', authenticate, requireAdmin, async (req, res) => {
     try {
         const { status, admin_response, expires_days } = req.body;
 
-        const request = await AccessRequest.findByPk(req.params.id);
+        const request = await AccessRequest.findByPk(req.params.id, {
+            include: [
+                { model: User, as: 'investor', attributes: ['id', 'email', 'name'] },
+                { model: Company, as: 'company', attributes: ['id', 'name_cn', 'name_en'] }
+            ]
+        });
         if (!request) {
             return res.status(404).json({ error: '请求不存在' });
         }
@@ -310,9 +347,26 @@ router.put('/requests/:id', authenticate, requireAdmin, async (req, res) => {
 
         await request.update(updateData);
 
+        // 发送邮件通知投资人
+        let emailSent = false;
+        if ((status === 'approved' || status === 'rejected') && request.investor?.email) {
+            const result = await emailService.sendAccessRequestNotification({
+                to: request.investor.email,
+                companyName: request.company?.name_cn || request.company?.name_en || '未知企业',
+                requestType: request.request_type,
+                status,
+                adminResponse: admin_response
+            });
+            emailSent = result.success;
+            if (result.success) {
+                console.log(`[Admin] 已发送访问请求处理通知邮件: ${request.investor.email}`);
+            }
+        }
+
         res.json({ 
             message: '请求已处理',
-            request 
+            request,
+            email_sent: emailSent
         });
     } catch (error) {
         console.error('[Admin] 处理请求错误:', error);
@@ -595,36 +649,27 @@ router.post('/messages', authenticate, requireAdmin, upload.array('attachments',
         // 可选发送邮件
         let emailSent = false;
         if (send_email === 'true' || send_email === true) {
-            const transporter = createEmailTransporter();
-            if (transporter) {
+            if (emailService.isConfigured()) {
                 try {
-                    const emailAttachments = attachments.map(att => ({
-                        filename: att.filename,
-                        content: Buffer.from(att.content, 'base64'),
-                        contentType: att.mimetype
-                    }));
+                    const statusChangeText = statusChange 
+                        ? `您的状态已更新为: ${statusChange.to}` 
+                        : null;
 
-                    await transporter.sendMail({
-                        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                    const result = await emailService.sendMessageNotification({
                         to: recipient.email,
-                        subject: subject,
-                        html: `
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                                <h2 style="color: #0D43F9;">EON Protocol</h2>
-                                <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
-                                    ${content.replace(/\n/g, '<br>')}
-                                </div>
-                                ${statusChange ? `<p style="color: #666; margin-top: 20px;">您的状态已更新为: <strong>${statusChange.to}</strong></p>` : ''}
-                                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                                <p style="color: #999; font-size: 12px;">此邮件由 EON Protocol 系统自动发送</p>
-                            </div>
-                        `,
-                        attachments: emailAttachments
+                        senderName: req.user.name || 'EON Protocol 管理员',
+                        subject,
+                        content: content.replace(/\n/g, '<br>'),
+                        statusChange: statusChangeText
                     });
 
-                    emailSent = true;
-                    await message.update({ email_sent: true, email_sent_at: new Date() });
-                    console.log(`[Admin] 邮件发送成功: ${recipient.email}`);
+                    if (result.success) {
+                        emailSent = true;
+                        await message.update({ email_sent: true, email_sent_at: new Date() });
+                        console.log(`[Admin] 邮件发送成功: ${recipient.email}`);
+                    } else {
+                        console.error('[Admin] 邮件发送失败:', result.error);
+                    }
                 } catch (emailError) {
                     console.error('[Admin] 邮件发送失败:', emailError);
                 }
@@ -767,11 +812,8 @@ router.get('/messages/:id/attachments/:index', authenticate, requireAdmin, async
 
 // 获取邮件配置状态
 router.get('/email-status', authenticate, requireAdmin, async (req, res) => {
-    const configured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
-    res.json({ 
-        configured,
-        smtp_host: configured ? process.env.SMTP_HOST : null
-    });
+    const status = emailService.getStatus();
+    res.json(status);
 });
 
 // ============ 文档管理 ============

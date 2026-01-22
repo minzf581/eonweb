@@ -1312,11 +1312,11 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">${t('adminNotes')}</label>
-                        <textarea class="form-control" id="adminNotes" rows="2">${c.admin_notes || ''}</textarea>
+                        <textarea class="form-control" id="adminNotes" rows="6" style="min-height: 150px; resize: vertical;">${c.admin_notes || ''}</textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label">${t('adminFeedback')}</label>
-                        <textarea class="form-control" id="adminFeedback" rows="2">${c.admin_feedback || ''}</textarea>
+                        <textarea class="form-control" id="adminFeedback" rows="6" style="min-height: 150px; resize: vertical;">${c.admin_feedback || ''}</textarea>
                     </div>
                     <div class="btn-group" style="margin-top: 1rem;">
                         <button class="btn btn-success" onclick="saveCompanyReview('${c.id}', 'approved')">${t('approveAndSave')}</button>
@@ -1936,27 +1936,45 @@
                 const container = document.getElementById('emailConfigStatus');
                 if (data.configured) {
                     container.innerHTML = `
-                        <p style="color: var(--success-color);"><i class="fas fa-check-circle"></i> ${t('emailConfigured')}</p>
-                        <p style="margin-top: 0.5rem; color: var(--text-secondary);">${t('smtpServer')}: ${data.smtp_host}</p>
+                        <p style="color: var(--success-color);"><i class="fas fa-check-circle"></i> 邮件服务已配置</p>
+                        <p style="margin-top: 0.5rem; color: var(--text-secondary);">
+                            服务提供商: <strong>${data.provider}</strong>
+                            ${data.smtp_host ? `<br>SMTP 服务器: ${data.smtp_host}` : ''}
+                        </p>
+                        <div style="margin-top: 1rem; padding: 12px; background: #D1FAE5; border-radius: 8px;">
+                            <p style="margin: 0; color: #065F46; font-size: 0.875rem;">
+                                <i class="fas fa-info-circle"></i> 
+                                ${data.provider === 'Resend' ? 'Resend API 已配置，邮件将通过 Resend 发送' : 'SMTP 已配置，邮件将通过 SMTP 发送'}
+                            </p>
+                        </div>
                     `;
                 } else {
                     container.innerHTML = `
-                        <p style="color: var(--warning-color);"><i class="fas fa-exclamation-triangle"></i> ${t('emailNotConfigured')}</p>
+                        <p style="color: var(--warning-color);"><i class="fas fa-exclamation-triangle"></i> 邮件服务未配置</p>
                         <p style="margin-top: 0.5rem; color: var(--text-secondary);">
-                            ${t('smtpConfigHint')}
+                            请在 Railway 环境变量中配置以下参数之一：
                         </p>
-                        <ul style="margin-top: 0.5rem; color: var(--text-secondary); padding-left: 1.5rem;">
-                            <li>SMTP_HOST - ${t('smtpHostDesc')}</li>
-                            <li>SMTP_PORT - ${t('smtpPortDesc')}</li>
-                            <li>SMTP_USER - ${t('smtpUserDesc')}</li>
-                            <li>SMTP_PASS - ${t('smtpPassDesc')}</li>
-                            <li>SMTP_FROM - ${t('smtpFromDesc')}</li>
-                            <li>SMTP_SECURE - ${t('smtpSecureDesc')}</li>
-                        </ul>
+                        <div style="margin-top: 1rem; padding: 1rem; background: #F3F4F6; border-radius: 8px;">
+                            <h4 style="margin: 0 0 0.75rem 0; color: var(--text-color);">方式一：Resend（推荐）</h4>
+                            <ul style="margin: 0; color: var(--text-secondary); padding-left: 1.5rem;">
+                                <li><code>RESEND_API_KEY</code> - Resend API 密钥</li>
+                                <li><code>EMAIL_FROM</code> - 发件人邮箱（可选）</li>
+                            </ul>
+                        </div>
+                        <div style="margin-top: 1rem; padding: 1rem; background: #F3F4F6; border-radius: 8px;">
+                            <h4 style="margin: 0 0 0.75rem 0; color: var(--text-color);">方式二：SMTP</h4>
+                            <ul style="margin: 0; color: var(--text-secondary); padding-left: 1.5rem;">
+                                <li><code>SMTP_HOST</code> - SMTP 服务器地址</li>
+                                <li><code>SMTP_PORT</code> - SMTP 端口（默认587）</li>
+                                <li><code>SMTP_USER</code> - SMTP 用户名</li>
+                                <li><code>SMTP_PASS</code> - SMTP 密码</li>
+                                <li><code>SMTP_FROM</code> - 发件人邮箱（可选）</li>
+                            </ul>
+                        </div>
                     `;
                 }
             } catch (error) {
-                document.getElementById('emailConfigStatus').innerHTML = `<p style="color:red;">${t('loadFailed')}</p>`;
+                document.getElementById('emailConfigStatus').innerHTML = `<p style="color:red;">加载配置失败</p>`;
             }
         }
 

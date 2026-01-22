@@ -5,6 +5,7 @@ const path = require('path');
 const { Op } = require('sequelize');
 const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message } = require('../models');
 const { authenticate, requireStaffOrAdmin } = require('../middleware/auth');
+const emailService = require('../services/EmailService');
 
 // 配置文件上传 - 内存存储
 const storage = multer.memoryStorage();
@@ -614,7 +615,7 @@ router.get('/investors/:id', authenticate, requireStaffOrAdmin, async (req, res)
 // 发送消息给投资人
 router.post('/messages', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
-        const { recipient_id, subject, content, company_id } = req.body;
+        const { recipient_id, subject, content, company_id, send_email = false } = req.body;
 
         if (!recipient_id || !subject || !content) {
             return res.status(400).json({ error: '请填写收件人、主题和内容' });
@@ -627,12 +628,13 @@ router.post('/messages', authenticate, requireStaffOrAdmin, async (req, res) => 
         }
 
         // 如果指定了企业，验证是否有权限
+        let company = null;
         if (company_id) {
             const companyWhere = req.user.role === 'admin' 
                 ? { id: company_id }
                 : { id: company_id, created_by: req.user.id };
 
-            const company = await Company.findOne({ where: companyWhere });
+            company = await Company.findOne({ where: companyWhere });
             if (!company) {
                 return res.status(404).json({ error: '企业不存在或无权访问' });
             }
@@ -647,13 +649,38 @@ router.post('/messages', authenticate, requireStaffOrAdmin, async (req, res) => 
             related_company_id: company_id || null
         });
 
+        // 发送邮件通知
+        let emailSent = false;
+        if ((send_email === true || send_email === 'true') && emailService.isConfigured()) {
+            const result = await emailService.sendMessageNotification({
+                to: recipient.email,
+                senderName: req.user.name || 'EON Protocol',
+                subject,
+                content: content.replace(/\n/g, '<br>')
+            });
+            emailSent = result.success;
+            if (result.success) {
+                console.log(`[Staff] 邮件发送成功: ${recipient.email}`);
+            }
+        }
+
         console.log(`[Staff] 用户 ${req.user.email} 发送消息给 ${recipient.email}: ${subject}`);
 
-        res.json({ message: '消息发送成功', data: message });
+        res.json({ 
+            message: '消息发送成功', 
+            data: message,
+            email_sent: emailSent
+        });
     } catch (error) {
         console.error('[Staff] 发送消息错误:', error);
         res.status(500).json({ error: '发送消息失败' });
     }
+});
+
+// 获取邮件配置状态
+router.get('/email-status', authenticate, requireStaffOrAdmin, async (req, res) => {
+    const status = emailService.getStatus();
+    res.json(status);
 });
 
 // 获取已发送的消息
