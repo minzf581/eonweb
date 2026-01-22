@@ -161,7 +161,7 @@ router.get('/companies', authenticate, requireStaffOrAdmin, async (req, res) => 
     }
 });
 
-// 获取单个企业详情
+// 获取单个企业详情（包含权限信息）
 router.get('/companies/:id', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
         // 使用权限检查函数
@@ -183,7 +183,38 @@ router.get('/companies/:id', authenticate, requireStaffOrAdmin, async (req, res)
             return res.status(404).json({ error: '企业不存在或无权访问' });
         }
 
-        res.json({ company });
+        // 获取用户对该企业的权限类型
+        let permissionType = null;
+        let isCreator = false;
+
+        if (req.user.role === 'admin') {
+            permissionType = 'full';
+        } else if (company.created_by === req.user.id) {
+            permissionType = 'full';
+            isCreator = true;
+        } else {
+            // 检查授权权限
+            const permission = await CompanyPermission.findOne({
+                where: {
+                    company_id: req.params.id,
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                }
+            });
+            if (permission) {
+                permissionType = permission.permission_type;
+            }
+        }
+
+        res.json({ 
+            company,
+            permissionType,
+            isCreator
+        });
     } catch (error) {
         console.error('[Staff] 获取企业详情错误:', error);
         res.status(500).json({ error: '获取企业详情失败' });
@@ -898,7 +929,7 @@ router.get('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (
     }
 });
 
-// 添加评论/反馈
+// 添加评论/反馈（需要 full 权限）
 router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
         const { content } = req.body;
@@ -907,15 +938,39 @@ router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async 
             return res.status(400).json({ error: '请输入评论内容' });
         }
 
-        // 检查权限
-        const hasAccess = await checkCompanyAccess(req.user, req.params.id);
-        if (!hasAccess) {
-            return res.status(403).json({ error: '无权访问该企业' });
-        }
-
         const company = await Company.findByPk(req.params.id);
         if (!company) {
             return res.status(404).json({ error: '企业不存在' });
+        }
+
+        // 检查是否有 full 权限（管理员、创建者、或 full 权限的被授权用户）
+        let canComment = false;
+        
+        if (req.user.role === 'admin') {
+            canComment = true;
+        } else if (company.created_by === req.user.id) {
+            canComment = true;
+        } else {
+            // 检查授权权限类型
+            const permission = await CompanyPermission.findOne({
+                where: {
+                    company_id: req.params.id,
+                    user_id: req.user.id,
+                    is_active: true,
+                    permission_type: 'full',
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                }
+            });
+            if (permission) {
+                canComment = true;
+            }
+        }
+
+        if (!canComment) {
+            return res.status(403).json({ error: '您没有发送反馈的权限（需要完整权限）' });
         }
 
         const comment = await CompanyComment.create({

@@ -1252,6 +1252,10 @@
             }
         }
 
+        // 当前查看的企业ID和权限
+        let currentViewingCompanyId = null;
+        let currentPermissionType = null;
+
         // 查看企业详情
         async function viewCompany(id) {
             document.getElementById('companyDetailModal').classList.add('active');
@@ -1266,6 +1270,10 @@
 
                 const data = await response.json();
                 const company = data.company;
+                currentViewingCompanyId = id;
+                currentPermissionType = data.permissionType;
+
+                const canEdit = (data.permissionType === 'full');
 
                 document.getElementById('companyDetailTitle').textContent = company.name_cn;
                 document.getElementById('companyDetailContent').innerHTML = `
@@ -1293,6 +1301,7 @@
                             <h4 style="margin-bottom: 0.5rem;">${t('fundraisingInfo')}</h4>
                             <p><strong>${t('fundraisingAmount')}:</strong> ${formatAmount(company.fundraisingInfo.amount_min)} - ${formatAmount(company.fundraisingInfo.amount_max)}</p>
                             <p><strong>${t('timeWindow')}:</strong> ${company.fundraisingInfo.timeline || '-'}</p>
+                            ${company.fundraisingInfo.use_of_funds ? `<p><strong>${t('useOfFunds')}:</strong> ${company.fundraisingInfo.use_of_funds}</p>` : ''}
                         </div>
                     ` : ''}
                     ${company.documents && company.documents.length > 0 ? `
@@ -1319,10 +1328,125 @@
                             `).join('')}
                         </div>
                     ` : ''}
+
+                    <!-- 反馈交流区域 -->
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-comments" style="color: var(--primary-color); margin-right: 0.5rem;"></i>${t('feedbackSection')}</h4>
+                        <div id="feedbackSection" style="background: #f9f9f9; border-radius: 8px; padding: 1rem;">
+                            <div id="feedbackMessages" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem;">
+                                <p style="color: #666; text-align: center;">${t('loadingFeedback')}</p>
+                            </div>
+                            ${canEdit ? `
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <textarea id="feedbackInput" class="form-control" rows="2" placeholder="${t('feedbackPlaceholder')}" style="flex: 1; resize: none;"></textarea>
+                                    <button class="btn btn-primary" onclick="sendFeedback('${id}')" style="align-self: flex-end;">
+                                        <i class="fas fa-paper-plane"></i> ${t('sendFeedback')}
+                                    </button>
+                                </div>
+                            ` : `
+                                <p style="color: #999; font-size: 0.875rem; text-align: center; margin: 0;">
+                                    <i class="fas fa-lock" style="margin-right: 0.25rem;"></i>${t('readOnlyMode')}
+                                </p>
+                            `}
+                        </div>
+                    </div>
                 `;
+
+                // 加载反馈
+                loadFeedback(id);
             } catch (error) {
                 document.getElementById('companyDetailContent').innerHTML = `<p class="message message-error">${error.message}</p>`;
             }
+        }
+
+        // 加载反馈
+        async function loadFeedback(companyId) {
+            const container = document.getElementById('feedbackMessages');
+            
+            try {
+                const response = await fetch(`/api/staff/companies/${companyId}/comments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.comments && data.comments.length > 0) {
+                    container.innerHTML = data.comments.map(c => `
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: ${c.user_role === 'company' ? '#e3f2fd' : '#fff'}; border-radius: 8px; border-left: 3px solid ${c.user_role === 'company' ? '#2196f3' : '#4CAF50'};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="font-size: 0.875rem;">
+                                    <i class="fas ${c.user_role === 'company' ? 'fa-building' : 'fa-user-shield'}" style="margin-right: 0.25rem;"></i>
+                                    ${c.user?.name || c.user?.email || '-'}
+                                    <span style="color: #999; font-weight: normal;">(${formatRole(c.user_role)})</span>
+                                </strong>
+                                <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                            </div>
+                            <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
+                        </div>
+                    `).join('');
+                    
+                    // 滚动到底部
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = `<p style="color: #666; text-align: center;">${t('noFeedback')}</p>`;
+                }
+            } catch (error) {
+                console.error('Load feedback failed:', error);
+                container.innerHTML = `<p style="color: red; text-align: center;">${t('loadFailed')}</p>`;
+            }
+        }
+
+        // 发送反馈
+        async function sendFeedback(companyId) {
+            const input = document.getElementById('feedbackInput');
+            const content = input.value.trim();
+
+            if (!content) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/staff/companies/${companyId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                input.value = '';
+                showMessage(t('feedbackSent'), 'success');
+                loadFeedback(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 格式化角色
+        function formatRole(role) {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
+                'admin': '管理员',
+                'staff': '运营',
+                'company': '企业',
+                'investor': '投资人'
+            } : {
+                'admin': 'Admin',
+                'staff': 'Staff',
+                'company': 'Company',
+                'investor': 'Investor'
+            };
+            return map[role] || role;
+        }
+
+        // 转义 HTML 防止 XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // 格式化金额
@@ -1599,6 +1723,16 @@
             previewFailed: { zh: '预览失败', en: 'Preview failed' },
             downloading: { zh: '正在下载...', en: 'Downloading...' },
             downloadFailed: { zh: '下载失败', en: 'Download failed' },
+            // 反馈功能
+            feedbackSection: { zh: '反馈交流', en: 'Feedback' },
+            feedbackPlaceholder: { zh: '输入您的反馈或回复...', en: 'Enter your feedback or reply...' },
+            sendFeedback: { zh: '发送反馈', en: 'Send Feedback' },
+            noFeedback: { zh: '暂无反馈记录', en: 'No feedback yet' },
+            feedbackSent: { zh: '反馈已发送', en: 'Feedback sent' },
+            loadingFeedback: { zh: '加载反馈中...', en: 'Loading feedback...' },
+            readOnlyMode: { zh: '您当前为只读权限，无法发送反馈', en: 'Read-only access, cannot send feedback' },
+            useOfFunds: { zh: '资金用途', en: 'Use of Funds' },
+            loadFailed: { zh: '加载失败', en: 'Load failed' },
             passwordMismatch: { zh: '两次输入的新密码不一致', en: 'Passwords do not match' },
             passwordTooShort: { zh: '新密码长度不能少于6位', en: 'Password must be at least 6 characters' },
             passwordChanged: { zh: '密码修改成功', en: 'Password changed successfully' },
