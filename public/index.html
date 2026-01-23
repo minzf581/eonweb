@@ -269,7 +269,15 @@
             gap: 2rem;
         }
 
-        .solution-item {
+        /* "我们服务哪些企业" 区块专用样式 */
+        .serve-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .serve-item {
             text-align: center;
             padding: 2rem;
             background: var(--card-bg);
@@ -277,28 +285,32 @@
             transition: transform 0.3s;
             border: 1px solid var(--border-color);
             color: var(--text-color);
+            flex: 1 1 280px;
+            max-width: 350px;
         }
 
-        .solution-item:hover {
+        .serve-item:hover {
             transform: translateY(-10px);
             border-color: var(--secondary-color);
         }
 
-        .solution-item i {
-            font-size: 2.5rem;
+        .serve-item i {
+            font-size: 3rem;
             color: var(--primary-color);
             margin-bottom: 1.5rem;
+            display: block;
         }
 
-        .solution-item h3 {
+        .serve-item h3 {
             font-size: 1.5rem;
             margin-bottom: 1rem;
             color: var(--text-color);
         }
 
-        .solution-item p {
+        .serve-item p {
             color: var(--text-color);
             line-height: 1.6;
+            margin-top: 1rem;
         }
 
         @media (max-width: 768px) {
@@ -2059,22 +2071,22 @@ footer p {
     <section id="who-we-serve" class="solution-section">
         <div class="solution-container">
             <h2 data-zh="我们服务哪些企业？" data-en="Which Enterprises Do We Serve?">我们服务哪些企业？</h2>
-            <div class="solution-grid">
-                <div class="solution-item">
-                    <i class="fas fa-seedling" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1.5rem;"></i>
+            <div class="serve-grid">
+                <div class="serve-item">
+                    <i class="fas fa-seedling"></i>
                     <h3 data-zh="🌱 初创企业" data-en="🌱 Startups">🌱 初创企业</h3>
-                    <p style="margin-top: 1rem; color: var(--text-color);" data-zh="构建国际化融资架构，对接早期投资人与产业伙伴" data-en="Build international financing structure, connect with early investors and partners">构建国际化融资架构，对接早期投资人与产业伙伴</p>
-            </div>
-                <div class="solution-item">
-                    <i class="fas fa-rocket" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1.5rem;"></i>
+                    <p data-zh="构建国际化融资架构，对接早期投资人与产业伙伴" data-en="Build international financing structure, connect with early investors and partners">构建国际化融资架构，对接早期投资人与产业伙伴</p>
+                </div>
+                <div class="serve-item">
+                    <i class="fas fa-rocket"></i>
                     <h3 data-zh="🚀 成长型企业" data-en="🚀 Growth-Stage">🚀 成长型企业</h3>
-                    <p style="margin-top: 1rem; color: var(--text-color);" data-zh="设计中长期资本路径，对接基金、家办与战略资本" data-en="Design mid-to-long-term capital path, connect with funds, family offices and strategic capital">设计中长期资本路径，对接基金、家办与战略资本</p>
-            </div>
-                <div class="solution-item">
-                    <i class="fas fa-building" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1.5rem;"></i>
+                    <p data-zh="设计中长期资本路径，对接基金、家办与战略资本" data-en="Design mid-to-long-term capital path, connect with funds, family offices and strategic capital">设计中长期资本路径，对接基金、家办与战略资本</p>
+                </div>
+                <div class="serve-item">
+                    <i class="fas fa-building"></i>
                     <h3 data-zh="🏢 成熟企业" data-en="🏢 Mature Companies">🏢 成熟企业</h3>
-                    <p style="margin-top: 1rem; color: var(--text-color);" data-zh="支持海外扩张、并购融资，提供多元化融资工具" data-en="Support overseas expansion, M&A financing, provide diversified financing tools">支持海外扩张、并购融资，提供多元化融资工具</p>
-            </div>
+                    <p data-zh="支持海外扩张、并购融资，提供多元化融资工具" data-en="Support overseas expansion, M&A financing, provide diversified financing tools">支持海外扩张、并购融资，提供多元化融资工具</p>
+                </div>
             </div>
         </div>
     </section>

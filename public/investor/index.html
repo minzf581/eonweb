@@ -1057,6 +1057,13 @@
                         ${p.description_detail ? `<p style="margin-top: 0.5rem; color: var(--text-secondary);">${p.description_detail}</p>` : ''}
                     </div>
 
+                    ${p.admin_notes ? `
+                        <div class="detail-section" style="background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 1rem;">
+                            <h4 style="color: #92400e;"><i class="fas fa-sticky-note"></i> ${t('adminNotes')}</h4>
+                            <p style="white-space: pre-wrap; color: #78350f;">${escapeHtml(p.admin_notes)}</p>
+                        </div>
+                    ` : ''}
+
                     ${p.fundraising ? `
                         <div class="detail-section">
                             <h4>${t('fundraisingNeeds')}</h4>
@@ -1642,7 +1649,8 @@
             loadingPreview: { zh: '正在加载预览...', en: 'Loading preview...' },
             previewFailed: { zh: '预览失败', en: 'Preview failed' },
             downloading: { zh: '正在下载...', en: 'Downloading...' },
-            downloadFailed: { zh: '下载失败', en: 'Download failed' }
+            downloadFailed: { zh: '下载失败', en: 'Download failed' },
+            adminNotes: { zh: '管理员备注', en: 'Admin Notes' }
         };
 
         function t(key) {

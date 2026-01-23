@@ -1296,6 +1296,12 @@
                         <p><strong>${t('description')}:</strong> ${company.description}</p>
                         ${company.description_detail ? `<p style="margin-top: 0.5rem;"><strong>${t('detailedDesc')}:</strong> ${company.description_detail}</p>` : ''}
                     </div>
+                    ${company.admin_notes ? `
+                        <div style="margin-top: 1rem; padding: 1rem; background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px;">
+                            <h4 style="margin-bottom: 0.5rem; color: #92400e;"><i class="fas fa-sticky-note" style="margin-right: 0.5rem;"></i>${t('adminNotes')}</h4>
+                            <p style="white-space: pre-wrap; word-break: break-word; color: #78350f;">${escapeHtml(company.admin_notes)}</p>
+                        </div>
+                    ` : ''}
                     ${company.fundraisingInfo ? `
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                             <h4 style="margin-bottom: 0.5rem;">${t('fundraisingInfo')}</h4>
@@ -1733,6 +1739,7 @@
             readOnlyMode: { zh: '您当前为只读权限，无法发送反馈', en: 'Read-only access, cannot send feedback' },
             useOfFunds: { zh: '资金用途', en: 'Use of Funds' },
             loadFailed: { zh: '加载失败', en: 'Load failed' },
+            adminNotes: { zh: '管理员备注', en: 'Admin Notes' },
             passwordMismatch: { zh: '两次输入的新密码不一致', en: 'Passwords do not match' },
             passwordTooShort: { zh: '新密码长度不能少于6位', en: 'Password must be at least 6 characters' },
             passwordChanged: { zh: '密码修改成功', en: 'Password changed successfully' },

@@ -277,6 +277,9 @@ router.get('/projects/:id', authenticate, requireInvestor, async (req, res) => {
         const hasFullAccess = (permission && permission.permission_type === 'full') || !!accessRequest;
 
         // 返回数据（根据权限决定是否包含详细信息）
+        // 有被授权访问的权限（非公开）时显示管理员备注
+        const canViewAdminNotes = permission && permission.permission_type;
+        
         const projectData = {
             id: company.id,
             name_cn: company.name_cn,
@@ -289,6 +292,8 @@ router.get('/projects/:id', authenticate, requireInvestor, async (req, res) => {
             stage: company.stage,
             status: company.status,
             tags: company.tags,
+            // 有授权权限时显示管理员备注
+            admin_notes: canViewAdminNotes ? company.admin_notes : null,
             hasPermission: !!permission,
             permissionType: permission?.permission_type || null,
             fundraising: company.fundraisingInfo ? {
