@@ -1,8 +1,42 @@
 const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
-const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, CompanyPermission } = require('../models');
+const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, CompanyPermission, CompanyComment } = require('../models');
 const { authenticate, requireInvestor } = require('../middleware/auth');
+
+// 检查投资人对企业的访问权限
+async function checkInvestorAccess(userId, companyId) {
+    const permission = await CompanyPermission.findOne({
+        where: {
+            company_id: companyId,
+            user_id: userId,
+            is_active: true,
+            [Op.or]: [
+                { expires_at: null },
+                { expires_at: { [Op.gt]: new Date() } }
+            ]
+        }
+    });
+    
+    if (permission) {
+        return { hasAccess: true, permissionType: permission.permission_type };
+    }
+    
+    // 检查公开可见的企业
+    const company = await Company.findOne({
+        where: {
+            id: companyId,
+            status: 'approved',
+            visibility: { [Op.in]: ['investors', 'whitelist'] }
+        }
+    });
+    
+    if (company) {
+        return { hasAccess: true, permissionType: 'public' };
+    }
+    
+    return { hasAccess: false, permissionType: null };
+}
 
 // 获取投资人资料
 router.get('/profile', authenticate, requireInvestor, async (req, res) => {
@@ -376,6 +410,198 @@ router.get('/my-requests', authenticate, requireInvestor, async (req, res) => {
     } catch (error) {
         console.error('[Investor] 获取请求记录错误:', error);
         res.status(500).json({ error: '获取请求记录失败' });
+    }
+});
+
+// ==================== 企业反馈/评论功能 ====================
+
+// 获取企业的所有反馈评论（需要有权限）
+router.get('/projects/:id/comments', authenticate, requireInvestor, async (req, res) => {
+    try {
+        // 检查投资人状态
+        const profile = await InvestorProfile.findOne({ where: { user_id: req.user.id } });
+        if (!profile || profile.status !== 'approved') {
+            return res.status(403).json({ error: '您的投资人账户尚未通过审核' });
+        }
+
+        // 检查权限
+        const { hasAccess } = await checkInvestorAccess(req.user.id, req.params.id);
+        if (!hasAccess) {
+            return res.status(403).json({ error: '无权访问该企业' });
+        }
+
+        const comments = await CompanyComment.findAll({
+            where: { company_id: req.params.id },
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
+            ],
+            order: [['created_at', 'ASC']]
+        });
+
+        res.json({ comments });
+    } catch (error) {
+        console.error('[Investor] 获取企业评论错误:', error);
+        res.status(500).json({ error: '获取评论失败' });
+    }
+});
+
+// 添加评论/反馈（需要 full 权限）
+router.post('/projects/:id/comments', authenticate, requireInvestor, async (req, res) => {
+    try {
+        const { content } = req.body;
+
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: '请输入评论内容' });
+        }
+
+        // 检查投资人状态
+        const profile = await InvestorProfile.findOne({ where: { user_id: req.user.id } });
+        if (!profile || profile.status !== 'approved') {
+            return res.status(403).json({ error: '您的投资人账户尚未通过审核' });
+        }
+
+        const company = await Company.findByPk(req.params.id);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        // 检查是否有 full 权限
+        const { hasAccess, permissionType } = await checkInvestorAccess(req.user.id, req.params.id);
+        if (!hasAccess || permissionType !== 'full') {
+            return res.status(403).json({ error: '您没有发送反馈的权限（需要完整权限）' });
+        }
+
+        const comment = await CompanyComment.create({
+            company_id: req.params.id,
+            user_id: req.user.id,
+            content: content.trim(),
+            user_role: 'investor',
+            is_read_by_admin: false,
+            is_read_by_company: false
+        });
+
+        // 获取完整的评论信息
+        const fullComment = await CompanyComment.findByPk(comment.id, {
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
+            ]
+        });
+
+        console.log(`[Investor] 用户 ${req.user.email} 给企业 ${company.name_cn} 添加反馈`);
+
+        res.status(201).json({ 
+            message: '反馈已添加',
+            comment: fullComment
+        });
+    } catch (error) {
+        console.error('[Investor] 添加评论错误:', error);
+        res.status(500).json({ error: '添加评论失败' });
+    }
+});
+
+// ==================== 文档预览/下载功能 ====================
+
+// 预览文档（需要有权限）
+router.get('/documents/:id/preview', authenticate, requireInvestor, async (req, res) => {
+    try {
+        // 检查投资人状态
+        const profile = await InvestorProfile.findOne({ where: { user_id: req.user.id } });
+        if (!profile || profile.status !== 'approved') {
+            return res.status(403).json({ error: '您的投资人账户尚未通过审核' });
+        }
+
+        const document = await Document.findByPk(req.params.id);
+        if (!document) {
+            return res.status(404).json({ error: '文档不存在' });
+        }
+
+        // 检查对企业的访问权限
+        const { hasAccess, permissionType } = await checkInvestorAccess(req.user.id, document.company_id);
+        
+        // 如果是公开文档或有授权权限
+        if (!document.is_public && (!hasAccess || permissionType === 'public')) {
+            // 检查是否有访问请求被批准
+            const accessRequest = await AccessRequest.findOne({
+                where: {
+                    investor_id: req.user.id,
+                    company_id: document.company_id,
+                    status: 'approved'
+                }
+            });
+            
+            if (!accessRequest) {
+                return res.status(403).json({ error: '您没有权限查看该文档' });
+            }
+        }
+
+        if (!document.content) {
+            return res.status(404).json({ error: '文档内容不存在' });
+        }
+
+        // 解码 base64 文件内容
+        const fileBuffer = Buffer.from(document.content, 'base64');
+
+        res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Content-Length', fileBuffer.length);
+        res.send(fileBuffer);
+
+        console.log(`[Investor] 用户 ${req.user.email} 预览文档 ${document.original_name}`);
+    } catch (error) {
+        console.error('[Investor] 预览文档错误:', error);
+        res.status(500).json({ error: '预览失败' });
+    }
+});
+
+// 下载文档（需要有权限）
+router.get('/documents/:id/download', authenticate, requireInvestor, async (req, res) => {
+    try {
+        // 检查投资人状态
+        const profile = await InvestorProfile.findOne({ where: { user_id: req.user.id } });
+        if (!profile || profile.status !== 'approved') {
+            return res.status(403).json({ error: '您的投资人账户尚未通过审核' });
+        }
+
+        const document = await Document.findByPk(req.params.id);
+        if (!document) {
+            return res.status(404).json({ error: '文档不存在' });
+        }
+
+        // 检查对企业的访问权限
+        const { hasAccess, permissionType } = await checkInvestorAccess(req.user.id, document.company_id);
+        
+        // 如果是公开文档或有授权权限
+        if (!document.is_public && (!hasAccess || permissionType === 'public')) {
+            // 检查是否有访问请求被批准
+            const accessRequest = await AccessRequest.findOne({
+                where: {
+                    investor_id: req.user.id,
+                    company_id: document.company_id,
+                    status: 'approved'
+                }
+            });
+            
+            if (!accessRequest) {
+                return res.status(403).json({ error: '您没有权限下载该文档' });
+            }
+        }
+
+        if (!document.content) {
+            return res.status(404).json({ error: '文档内容不存在' });
+        }
+
+        // 解码 base64 文件内容
+        const fileBuffer = Buffer.from(document.content, 'base64');
+
+        res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(document.original_name)}"`);
+        res.setHeader('Content-Length', fileBuffer.length);
+        res.send(fileBuffer);
+
+        console.log(`[Investor] 用户 ${req.user.email} 下载文档 ${document.original_name}`);
+    } catch (error) {
+        console.error('[Investor] 下载文档错误:', error);
+        res.status(500).json({ error: '下载失败' });
     }
 });
 

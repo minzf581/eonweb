@@ -401,6 +401,85 @@
         }
         .empty-state i { font-size: 3rem; margin-bottom: 1rem; }
 
+        /* 反馈交流区域样式 */
+        .feedback-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+        .feedback-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: var(--bg-color);
+            border-radius: 8px;
+        }
+        .feedback-message {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            background: white;
+        }
+        .feedback-message.admin { border-left: 3px solid var(--primary-color); }
+        .feedback-message.company { border-left: 3px solid var(--success-color); }
+        .feedback-message.staff { border-left: 3px solid var(--warning-color); }
+        .feedback-message.investor { border-left: 3px solid #8B5CF6; }
+        .feedback-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .feedback-role {
+            font-weight: 600;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+        .feedback-role.admin { background: #DBEAFE; color: #1E40AF; }
+        .feedback-role.company { background: #D1FAE5; color: #065F46; }
+        .feedback-role.staff { background: #FEF3C7; color: #92400E; }
+        .feedback-role.investor { background: #EDE9FE; color: #5B21B6; }
+        .feedback-content { font-size: 0.875rem; line-height: 1.5; }
+        .feedback-input-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .feedback-input-area textarea {
+            flex: 1;
+            resize: none;
+            height: 60px;
+        }
+        .readonly-notice {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: #F3F4F6;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        /* 文档链接样式 */
+        .doc-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .doc-link:hover { text-decoration: underline; }
+        .doc-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+        }
+
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); z-index: 1000; }
             .main-content { margin-left: 0; }
@@ -900,9 +979,13 @@
             }
         }
 
+        let currentProjectId = null;
+        let currentPermissionType = null;
+
         async function openProjectDetail(projectId) {
             document.getElementById('projectModal').classList.add('active');
             document.getElementById('modalContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            currentProjectId = projectId;
 
             try {
                 const response = await fetch(`/api/investor/projects/${projectId}`, {
@@ -913,6 +996,36 @@
 
                 const data = await response.json();
                 const p = data.project;
+                currentPermissionType = p.permissionType;
+
+                // 渲染文档列表
+                let documentsHtml = '';
+                if (p.documents && p.documents.length > 0) {
+                    documentsHtml = `
+                        <div class="detail-section">
+                            <h4><i class="fas fa-file-alt"></i> ${t('documents')}</h4>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                ${p.documents.map(doc => `
+                                    <div class="detail-item" style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span><i class="fas fa-file"></i> ${escapeHtml(doc.original_name)}</span>
+                                        <div class="doc-actions">
+                                            <span class="doc-link" onclick="previewDocument('${doc.id}', '${escapeHtml(doc.original_name)}')">
+                                                <i class="fas fa-eye"></i> ${t('preview')}
+                                            </span>
+                                            <span class="doc-link" onclick="downloadDocument('${doc.id}', '${escapeHtml(doc.original_name)}')">
+                                                <i class="fas fa-download"></i> ${t('download')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 判断是否有权限查看反馈
+                const canViewFeedback = p.hasPermission && p.permissionType && p.permissionType !== 'public';
+                const canSendFeedback = p.permissionType === 'full';
 
                 document.getElementById('modalProjectName').textContent = p.name_cn;
                 document.getElementById('modalContent').innerHTML = `
@@ -989,6 +1102,30 @@
                         </div>
                     `}
 
+                    ${documentsHtml}
+
+                    ${canViewFeedback ? `
+                        <div class="feedback-section">
+                            <h4><i class="fas fa-comments"></i> ${t('feedbackExchange')}</h4>
+                            <div id="feedbackMessages" class="feedback-messages">
+                                <div class="loading"><div class="spinner"></div></div>
+                            </div>
+                            ${canSendFeedback ? `
+                                <div class="feedback-input-area">
+                                    <textarea id="feedbackInput" class="form-control" placeholder="${t('enterFeedback')}"></textarea>
+                                    <button class="btn btn-primary" onclick="sendFeedback()">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            ` : `
+                                <div class="readonly-notice">
+                                    <i class="fas fa-lock"></i>
+                                    <span>${t('viewOnlyPermission')}</span>
+                                </div>
+                            `}
+                        </div>
+                    ` : ''}
+
                     <div class="btn-group">
                         ${!p.hasAccess ? `
                             <button class="btn btn-primary" onclick="requestAccess('${p.id}', 'bp_access')">
@@ -1005,6 +1142,11 @@
                         <button class="btn btn-secondary" onclick="closeModal()">${t('close')}</button>
                     </div>
                 `;
+
+                // 如果有权限，加载反馈
+                if (canViewFeedback) {
+                    await loadFeedback(projectId);
+                }
             } catch (error) {
                 console.error('Load project detail error:', error);
                 document.getElementById('modalContent').innerHTML = `
@@ -1014,6 +1156,140 @@
                     </div>
                 `;
             }
+        }
+
+        // 加载反馈消息
+        async function loadFeedback(projectId) {
+            try {
+                const response = await fetch(`/api/investor/projects/${projectId}/comments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error(t('loadFeedbackFailed'));
+
+                const data = await response.json();
+                const container = document.getElementById('feedbackMessages');
+
+                if (data.comments && data.comments.length > 0) {
+                    container.innerHTML = data.comments.map(c => `
+                        <div class="feedback-message ${c.user_role}">
+                            <div class="feedback-header">
+                                <span class="feedback-role ${c.user_role}">${formatRole(c.user_role)}</span>
+                                <span>${new Date(c.created_at).toLocaleString()}</span>
+                            </div>
+                            <div class="feedback-content">${escapeHtml(c.content)}</div>
+                        </div>
+                    `).join('');
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = `<div class="empty-state" style="padding: 1rem;"><p>${t('noFeedback')}</p></div>`;
+                }
+            } catch (error) {
+                console.error('Load feedback error:', error);
+                document.getElementById('feedbackMessages').innerHTML = `<div class="message message-error">${t('loadFeedbackFailed')}</div>`;
+            }
+        }
+
+        // 发送反馈
+        async function sendFeedback() {
+            const input = document.getElementById('feedbackInput');
+            const content = input.value.trim();
+
+            if (!content) {
+                showMessage(t('enterFeedbackPlease'), 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/investor/projects/${currentProjectId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || t('sendFailed'));
+                }
+
+                input.value = '';
+                await loadFeedback(currentProjectId);
+                showMessage(t('feedbackSent'), 'success');
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 预览文档
+        async function previewDocument(docId, filename) {
+            showMessage(t('loadingPreview'), 'info');
+            try {
+                const response = await fetch(`/api/investor/documents/${docId}/preview`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || t('previewFailed'));
+                }
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (error) {
+                console.error('Preview error:', error);
+                showMessage(error.message || t('previewFailed'), 'error');
+            }
+        }
+
+        // 下载文档
+        async function downloadDocument(docId, filename) {
+            showMessage(t('downloading'), 'info');
+            try {
+                const response = await fetch(`/api/investor/documents/${docId}/download`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || t('downloadFailed'));
+                }
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename || 'document';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Download error:', error);
+                showMessage(error.message || t('downloadFailed'), 'error');
+            }
+        }
+
+        // 格式化角色
+        function formatRole(role) {
+            const lang = localStorage.getItem('eon_language') || 'en';
+            const map = lang === 'zh' ? {
+                'admin': '管理员', 'staff': '工作人员', 'company': '企业', 'investor': '投资人'
+            } : {
+                'admin': 'Admin', 'staff': 'Staff', 'company': 'Company', 'investor': 'Investor'
+            };
+            return map[role] || role;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         async function requestAccess(companyId, requestType) {
@@ -1350,7 +1626,23 @@
             passwordMismatch: { zh: '两次输入的新密码不一致', en: 'Passwords do not match' },
             passwordTooShort: { zh: '新密码长度不能少于6位', en: 'Password must be at least 6 characters' },
             passwordChanged: { zh: '密码修改成功', en: 'Password changed successfully' },
-            passwordChangeFailed: { zh: '密码修改失败，请稍后重试', en: 'Password change failed, please try again' }
+            passwordChangeFailed: { zh: '密码修改失败，请稍后重试', en: 'Password change failed, please try again' },
+            // 文档和反馈相关翻译
+            documents: { zh: '相关文档', en: 'Documents' },
+            preview: { zh: '预览', en: 'Preview' },
+            download: { zh: '下载', en: 'Download' },
+            feedbackExchange: { zh: '反馈交流', en: 'Feedback Exchange' },
+            enterFeedback: { zh: '输入您的反馈...', en: 'Enter your feedback...' },
+            enterFeedbackPlease: { zh: '请输入反馈内容', en: 'Please enter feedback content' },
+            viewOnlyPermission: { zh: '您只有查看权限，无法发送反馈', en: 'You have view-only permission and cannot send feedback' },
+            noFeedback: { zh: '暂无反馈消息', en: 'No feedback messages yet' },
+            loadFeedbackFailed: { zh: '加载反馈失败', en: 'Failed to load feedback' },
+            feedbackSent: { zh: '反馈已发送', en: 'Feedback sent' },
+            sendFailed: { zh: '发送失败', en: 'Send failed' },
+            loadingPreview: { zh: '正在加载预览...', en: 'Loading preview...' },
+            previewFailed: { zh: '预览失败', en: 'Preview failed' },
+            downloading: { zh: '正在下载...', en: 'Downloading...' },
+            downloadFailed: { zh: '下载失败', en: 'Download failed' }
         };
 
         function t(key) {
