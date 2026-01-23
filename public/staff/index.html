@@ -1488,9 +1488,23 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                // 检查内容类型，判断是否为 JSON 响应（可能是重定向信息）
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (data.redirect && data.url) {
+                        // 外部链接，直接打开
+                        window.open(data.url, '_blank');
+                        showMessage('', 'success');
+                        return;
+                    }
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                }
+
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || t('previewFailed'));
+                    throw new Error(t('previewFailed'));
                 }
 
                 // 获取文件 blob
@@ -1535,9 +1549,23 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                // 检查内容类型，判断是否为 JSON 响应（可能是重定向信息）
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (data.redirect && data.url) {
+                        // 外部链接，直接打开
+                        window.open(data.url, '_blank');
+                        showMessage('', 'success');
+                        return;
+                    }
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                }
+
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || t('downloadFailed'));
+                    throw new Error(t('downloadFailed'));
                 }
 
                 // 获取文件 blob

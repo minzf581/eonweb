@@ -997,7 +997,11 @@
             noPermissions: { zh: '暂无授权用户', en: 'No authorized users' },
             confirmRemovePermission: { zh: '确定要移除该用户的访问权限吗？', en: 'Are you sure you want to remove this user\'s access?' },
             grantedBy: { zh: '授权人', en: 'Granted By' },
-            grantedAt: { zh: '授权时间', en: 'Granted At' }
+            grantedAt: { zh: '授权时间', en: 'Granted At' },
+            // 外部链接相关
+            openLink: { zh: '打开链接', en: 'Open Link' },
+            externalLink: { zh: '外部链接', en: 'External Link' },
+            linkNotAvailable: { zh: '链接不可用', en: 'Link not available' }
         };
 
         function t(key) {
@@ -1265,28 +1269,45 @@
                 if (c.documents && c.documents.length > 0) {
                     documentsHtml = `
                         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                            ${c.documents.map(doc => `
+                            ${c.documents.map(doc => {
+                                // 判断是否为外部链接（有 dataroom_link 且没有 filesize）
+                                const isExternalLink = doc.dataroom_link && !doc.filesize;
+                                const icon = isExternalLink 
+                                    ? '<i class="fas fa-external-link-alt" style="color: #3B82F6; font-size: 1.5rem;"></i>'
+                                    : '<i class="fas fa-file-pdf" style="color: #EF4444; font-size: 1.5rem;"></i>';
+                                
+                                const buttons = isExternalLink 
+                                    ? `<button onclick="openExternalLink('${doc.dataroom_link}')" class="btn btn-primary btn-sm" title="${t('openLink') || '打开链接'}">
+                                         <i class="fas fa-external-link-alt"></i> ${t('openLink') || '打开'}
+                                       </button>`
+                                    : `<button onclick="previewDocument('${doc.id}', '${doc.filename}', '${doc.mimetype || 'application/pdf'}')" class="btn btn-secondary btn-sm" title="${t('preview')}">
+                                         <i class="fas fa-eye"></i>
+                                       </button>
+                                       <button onclick="downloadDocument('${doc.id}', '${doc.filename}')" class="btn btn-primary btn-sm" title="${t('download')}">
+                                         <i class="fas fa-download"></i>
+                                       </button>`;
+                                
+                                const sizeInfo = isExternalLink 
+                                    ? ` · <span style="color: #3B82F6;">${t('externalLink') || '外部链接'}</span>`
+                                    : (doc.filesize ? ` · ${formatFileSize(doc.filesize)}` : '');
+                                
+                                return `
                                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: #f8f9fa; border-radius: 8px;">
                                     <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                        <i class="fas fa-file-pdf" style="color: #EF4444; font-size: 1.5rem;"></i>
+                                        ${icon}
                                         <div>
                                             <div style="font-weight: 500;">${doc.filename}</div>
                                             <div style="font-size: 0.75rem; color: #666;">
                                                 ${doc.type === 'bp' ? 'Business Plan' : doc.type}
-                                                ${doc.filesize ? ` · ${formatFileSize(doc.filesize)}` : ''}
+                                                ${sizeInfo}
                                             </div>
                                         </div>
                                     </div>
                                     <div class="btn-group">
-                                        <button onclick="previewDocument('${doc.id}', '${doc.filename}', '${doc.mimetype || 'application/pdf'}')" class="btn btn-secondary btn-sm" title="${t('preview')}">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button onclick="downloadDocument('${doc.id}', '${doc.filename}')" class="btn btn-primary btn-sm" title="${t('download')}">
-                                            <i class="fas fa-download"></i>
-                                        </button>
+                                        ${buttons}
                                     </div>
-                                </div>
-                            `).join('')}
+                                </div>`;
+                            }).join('')}
                         </div>
                     `;
                 }
@@ -1401,6 +1422,15 @@
             return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         }
 
+        // 打开外部链接
+        function openExternalLink(url) {
+            if (!url) {
+                showMessage(t('linkNotAvailable') || '链接不可用', 'error');
+                return;
+            }
+            window.open(url, '_blank');
+        }
+
         // 下载文档（带认证）
         async function downloadDocument(docId, filename) {
             try {
@@ -1410,9 +1440,23 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                // 检查内容类型，判断是否为 JSON 响应（可能是重定向信息）
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (data.redirect && data.url) {
+                        // 外部链接，直接打开
+                        window.open(data.url, '_blank');
+                        showMessage('', 'info');
+                        return;
+                    }
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                }
+
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || t('downloadFailed'));
+                    throw new Error(t('downloadFailed'));
                 }
 
                 // 获取文件 blob
@@ -1443,9 +1487,23 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                // 检查内容类型，判断是否为 JSON 响应（可能是重定向信息）
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (data.redirect && data.url) {
+                        // 外部链接，直接打开
+                        window.open(data.url, '_blank');
+                        showMessage('', 'info');
+                        return;
+                    }
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                }
+
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || t('previewFailed'));
+                    throw new Error(t('previewFailed'));
                 }
 
                 // 获取文件 blob
@@ -2261,6 +2319,5 @@
             }
         }
     </script>
-    <script src="/static/js/lang.js"></script>
 </body>
 </html>

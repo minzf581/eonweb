@@ -78,7 +78,7 @@ router.get('/companies', authenticate, requireAdmin, async (req, res) => {
             include: [
                 { model: User, as: 'user', attributes: ['email'] },
                 { model: FundraisingInfo, as: 'fundraisingInfo' },
-                { model: Document, as: 'documents', attributes: ['id', 'type', 'filename'] }
+                { model: Document, as: 'documents', attributes: ['id', 'type', 'filename', 'filesize', 'mimetype', 'dataroom_link'] }
             ],
             order: [['created_at', 'DESC']],
             limit: parseInt(limit),
@@ -843,6 +843,15 @@ router.get('/documents/:id/download', authenticate, requireAdmin, async (req, re
             return res.status(404).json({ error: '文档不存在' });
         }
 
+        // 如果是外部链接，返回链接信息让前端重定向
+        if (document.dataroom_link && !document.file_content) {
+            return res.json({ 
+                redirect: true, 
+                url: document.dataroom_link,
+                filename: document.filename 
+            });
+        }
+
         if (!document.file_content) {
             return res.status(404).json({ error: '文件内容不存在' });
         }
@@ -875,6 +884,15 @@ router.get('/documents/:id/preview', authenticate, requireAdmin, async (req, res
         
         if (!document) {
             return res.status(404).json({ error: '文档不存在' });
+        }
+
+        // 如果是外部链接，返回链接信息让前端重定向
+        if (document.dataroom_link && !document.file_content) {
+            return res.json({ 
+                redirect: true, 
+                url: document.dataroom_link,
+                filename: document.filename 
+            });
         }
 
         if (!document.file_content) {

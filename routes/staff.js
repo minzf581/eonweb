@@ -550,9 +550,13 @@ router.get('/documents/:id/preview', authenticate, requireStaffOrAdmin, async (r
             return res.status(403).json({ error: '无权访问该文档' });
         }
 
-        // 如果是外部链接
-        if (document.dataroom_link) {
-            return res.redirect(document.dataroom_link);
+        // 如果是外部链接，返回链接信息让前端重定向
+        if (document.dataroom_link && !document.file_content) {
+            return res.json({ 
+                redirect: true, 
+                url: document.dataroom_link,
+                filename: document.filename 
+            });
         }
 
         if (!document.file_content) {
@@ -591,9 +595,13 @@ router.get('/documents/:id/download', authenticate, requireStaffOrAdmin, async (
             return res.status(403).json({ error: '无权访问该文档' });
         }
 
-        // 如果是外部链接
-        if (document.dataroom_link) {
-            return res.redirect(document.dataroom_link);
+        // 如果是外部链接，返回链接信息让前端重定向
+        if (document.dataroom_link && !document.file_content) {
+            return res.json({ 
+                redirect: true, 
+                url: document.dataroom_link,
+                filename: document.filename 
+            });
         }
 
         if (!document.file_content) {
