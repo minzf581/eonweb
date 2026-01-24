@@ -1335,16 +1335,44 @@
                         </div>
                     ` : ''}
 
-                    <!-- 反馈交流区域 -->
+                    <!-- 内部评论区域（仅管理员和Staff可见） -->
                     <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                        <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-comments" style="color: var(--primary-color); margin-right: 0.5rem;"></i>${t('feedbackSection')}</h4>
-                        <div id="feedbackSection" style="background: #f9f9f9; border-radius: 8px; padding: 1rem;">
-                            <div id="feedbackMessages" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-lock" style="color: #EF4444; margin-right: 0.5rem;"></i>${t('internalNotesSection')}</h4>
+                        <div id="internalNotesSection" style="background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); border: 1px solid #FECACA; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                            <p style="color: #DC2626; font-size: 0.875rem; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-eye-slash"></i> ${t('internalNotesHint')}
+                            </p>
+                            <div id="internalNotesMessages" style="max-height: 200px; overflow-y: auto; margin-bottom: 1rem;">
                                 <p style="color: #666; text-align: center;">${t('loadingFeedback')}</p>
                             </div>
                             ${canEdit ? `
                                 <div style="display: flex; gap: 0.5rem;">
-                                    <textarea id="feedbackInput" class="form-control" rows="2" placeholder="${t('feedbackPlaceholder')}" style="flex: 1; resize: none;"></textarea>
+                                    <textarea id="internalNotesInput" class="form-control" rows="2" placeholder="${t('internalNotesPlaceholder')}" style="flex: 1; resize: none; background: #fff;"></textarea>
+                                    <button class="btn" onclick="sendInternalNote('${id}')" style="align-self: flex-end; background: #DC2626; color: #fff;">
+                                        <i class="fas fa-lock"></i> ${t('sendInternalNote')}
+                                    </button>
+                                </div>
+                            ` : `
+                                <p style="color: #999; font-size: 0.875rem; text-align: center; margin: 0;">
+                                    <i class="fas fa-lock" style="margin-right: 0.25rem;"></i>${t('readOnlyMode')}
+                                </p>
+                            `}
+                        </div>
+                    </div>
+
+                    <!-- 给企业的反馈区域 -->
+                    <div style="margin-top: 1rem;">
+                        <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-comments" style="color: var(--primary-color); margin-right: 0.5rem;"></i>${t('feedbackToCompany')}</h4>
+                        <div id="feedbackSection" style="background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); border: 1px solid #BBF7D0; border-radius: 8px; padding: 1rem;">
+                            <p style="color: #16A34A; font-size: 0.875rem; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-eye"></i> ${t('feedbackToCompanyHint')}
+                            </p>
+                            <div id="feedbackMessages" style="max-height: 200px; overflow-y: auto; margin-bottom: 1rem;">
+                                <p style="color: #666; text-align: center;">${t('loadingFeedback')}</p>
+                            </div>
+                            ${canEdit ? `
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <textarea id="feedbackInput" class="form-control" rows="2" placeholder="${t('feedbackPlaceholder')}" style="flex: 1; resize: none; background: #fff;"></textarea>
                                     <button class="btn btn-primary" onclick="sendFeedback('${id}')" style="align-self: flex-end;">
                                         <i class="fas fa-paper-plane"></i> ${t('sendFeedback')}
                                     </button>
@@ -1365,9 +1393,13 @@
             }
         }
 
-        // 加载反馈
+        // 加载反馈和内部评论
+        let currentCompanyIdForFeedback = null;
+
         async function loadFeedback(companyId) {
-            const container = document.getElementById('feedbackMessages');
+            currentCompanyIdForFeedback = companyId;
+            const feedbackContainer = document.getElementById('feedbackMessages');
+            const internalContainer = document.getElementById('internalNotesMessages');
             
             try {
                 const response = await fetch(`/api/staff/companies/${companyId}/comments`, {
@@ -1375,8 +1407,9 @@
                 });
                 const data = await response.json();
 
+                // 渲染外部反馈（企业可见）
                 if (data.comments && data.comments.length > 0) {
-                    container.innerHTML = data.comments.map(c => `
+                    feedbackContainer.innerHTML = data.comments.map(c => `
                         <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: ${c.user_role === 'company' ? '#e3f2fd' : '#fff'}; border-radius: 8px; border-left: 3px solid ${c.user_role === 'company' ? '#2196f3' : '#4CAF50'};">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                 <strong style="font-size: 0.875rem;">
@@ -1389,19 +1422,38 @@
                             <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
                         </div>
                     `).join('');
-                    
-                    // 滚动到底部
-                    container.scrollTop = container.scrollHeight;
+                    feedbackContainer.scrollTop = feedbackContainer.scrollHeight;
                 } else {
-                    container.innerHTML = `<p style="color: #666; text-align: center;">${t('noFeedback')}</p>`;
+                    feedbackContainer.innerHTML = `<p style="color: #666; text-align: center;">${t('noFeedback')}</p>`;
+                }
+
+                // 渲染内部评论（仅admin/staff可见）
+                if (data.internalComments && data.internalComments.length > 0) {
+                    internalContainer.innerHTML = data.internalComments.map(c => `
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border-radius: 8px; border-left: 3px solid #EF4444;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="font-size: 0.875rem;">
+                                    <i class="fas fa-user-shield" style="margin-right: 0.25rem; color: #EF4444;"></i>
+                                    ${c.user?.name || c.user?.email || '-'}
+                                    <span style="color: #999; font-weight: normal;">(${formatRole(c.user_role)})</span>
+                                </strong>
+                                <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                            </div>
+                            <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
+                        </div>
+                    `).join('');
+                    internalContainer.scrollTop = internalContainer.scrollHeight;
+                } else {
+                    internalContainer.innerHTML = `<p style="color: #666; text-align: center;">${t('noInternalNotes')}</p>`;
                 }
             } catch (error) {
                 console.error('Load feedback failed:', error);
-                container.innerHTML = `<p style="color: red; text-align: center;">${t('loadFailed')}</p>`;
+                feedbackContainer.innerHTML = `<p style="color: red; text-align: center;">${t('loadFailed')}</p>`;
+                internalContainer.innerHTML = `<p style="color: red; text-align: center;">${t('loadFailed')}</p>`;
             }
         }
 
-        // 发送反馈
+        // 发送外部反馈（企业可见）
         async function sendFeedback(companyId) {
             const input = document.getElementById('feedbackInput');
             const content = input.value.trim();
@@ -1417,7 +1469,7 @@
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ content })
+                    body: JSON.stringify({ content, is_internal: false })
                 });
 
                 const result = await response.json();
@@ -1425,6 +1477,36 @@
 
                 input.value = '';
                 showMessage(t('feedbackSent'), 'success');
+                loadFeedback(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 发送内部评论（仅admin/staff可见）
+        async function sendInternalNote(companyId) {
+            const input = document.getElementById('internalNotesInput');
+            const content = input.value.trim();
+
+            if (!content) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/staff/companies/${companyId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content, is_internal: true })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                input.value = '';
+                showMessage(t('internalNoteSent'), 'success');
                 loadFeedback(companyId);
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -1765,6 +1847,15 @@
             feedbackSent: { zh: '反馈已发送', en: 'Feedback sent' },
             loadingFeedback: { zh: '加载反馈中...', en: 'Loading feedback...' },
             readOnlyMode: { zh: '您当前为只读权限，无法发送反馈', en: 'Read-only access, cannot send feedback' },
+            // 内部评论功能
+            internalNotesSection: { zh: '内部评论', en: 'Internal Notes' },
+            internalNotesHint: { zh: '⚠️ 以下内容仅管理员和Staff可见，企业无法看到', en: '⚠️ The following content is only visible to admin and staff, not to companies' },
+            internalNotesPlaceholder: { zh: '输入内部评论...（仅内部可见）', en: 'Enter internal notes... (internal only)' },
+            sendInternalNote: { zh: '发送内部评论', en: 'Send Internal Note' },
+            noInternalNotes: { zh: '暂无内部评论', en: 'No internal notes yet' },
+            internalNoteSent: { zh: '内部评论已发送', en: 'Internal note sent' },
+            feedbackToCompany: { zh: '给企业的反馈', en: 'Feedback to Company' },
+            feedbackToCompanyHint: { zh: '💬 以下内容企业可以看到', en: '💬 The following content is visible to the company' },
             useOfFunds: { zh: '资金用途', en: 'Use of Funds' },
             loadFailed: { zh: '加载失败', en: 'Load failed' },
             adminNotes: { zh: '管理员备注', en: 'Admin Notes' },

@@ -691,7 +691,7 @@ router.get('/messages/unread-count', authenticate, requireCompany, async (req, r
 
 // ==================== 企业反馈/评论功能 ====================
 
-// 获取企业收到的所有反馈评论
+// 获取企业收到的所有反馈评论（排除内部评论）
 router.get('/feedback', authenticate, requireCompany, async (req, res) => {
     try {
         const company = await Company.findOne({ where: { user_id: req.user.id } });
@@ -699,22 +699,34 @@ router.get('/feedback', authenticate, requireCompany, async (req, res) => {
             return res.json({ comments: [] });
         }
 
+        // 企业只能看到非内部评论（is_internal = false 或 null）
+        const { Op } = require('sequelize');
         const comments = await CompanyComment.findAll({
-            where: { company_id: company.id },
+            where: { 
+                company_id: company.id,
+                [Op.or]: [
+                    { is_internal: false },
+                    { is_internal: null }
+                ]
+            },
             include: [
                 { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
             ],
             order: [['created_at', 'ASC']]
         });
 
-        // 标记企业已读
+        // 标记企业已读（仅外部评论）
         await CompanyComment.update(
             { is_read_by_company: true, company_read_at: new Date() },
             { 
                 where: { 
                     company_id: company.id, 
-                    user_role: { [require('sequelize').Op.in]: ['admin', 'staff'] },
-                    is_read_by_company: false 
+                    user_role: { [Op.in]: ['admin', 'staff'] },
+                    is_read_by_company: false,
+                    [Op.or]: [
+                        { is_internal: false },
+                        { is_internal: null }
+                    ]
                 } 
             }
         );
@@ -768,7 +780,7 @@ router.post('/feedback', authenticate, requireCompany, async (req, res) => {
     }
 });
 
-// 获取企业未读反馈数量（管理员/Staff发的未读）
+// 获取企业未读反馈数量（管理员/Staff发的未读，排除内部评论）
 router.get('/feedback/unread-count', authenticate, requireCompany, async (req, res) => {
     try {
         const company = await Company.findOne({ where: { user_id: req.user.id } });
@@ -777,11 +789,16 @@ router.get('/feedback/unread-count', authenticate, requireCompany, async (req, r
         }
 
         const { Op } = require('sequelize');
+        // 只统计非内部评论的未读数量
         const count = await CompanyComment.count({
             where: { 
                 company_id: company.id,
                 user_role: { [Op.in]: ['admin', 'staff'] },
-                is_read_by_company: false
+                is_read_by_company: false,
+                [Op.or]: [
+                    { is_internal: false },
+                    { is_internal: null }
+                ]
             }
         });
 

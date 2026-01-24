@@ -60,6 +60,12 @@ const CompanyComment = sequelize.define('CompanyComment', {
         type: DataTypes.DATE,
         allowNull: true
     },
+    // 是否为内部评论（只有admin和staff可见，企业不可见）
+    is_internal: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: '内部评论标记，true表示仅admin/staff可见'
+    },
     created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW

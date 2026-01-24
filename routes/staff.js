@@ -907,7 +907,7 @@ router.get('/messages/sent', authenticate, requireStaffOrAdmin, async (req, res)
 
 // ==================== 企业反馈/评论功能 ====================
 
-// 获取企业的所有反馈评论（Staff 需要有权限或是创建者）
+// 获取企业的所有反馈评论（Staff 需要有权限或是创建者，包括内部评论）
 router.get('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
         // 检查权限：管理员、创建者或被授权的 Staff
@@ -924,23 +924,30 @@ router.get('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (
             order: [['created_at', 'ASC']]
         });
 
-        // 标记已读
+        // 分离内部评论和外部评论
+        const externalComments = comments.filter(c => !c.is_internal);
+        const internalComments = comments.filter(c => c.is_internal);
+
+        // 标记已读（仅外部评论）
         await CompanyComment.update(
             { is_read_by_admin: true, admin_read_at: new Date() },
             { where: { company_id: req.params.id, user_role: 'company', is_read_by_admin: false } }
         );
 
-        res.json({ comments });
+        res.json({ 
+            comments: externalComments,  // 外部反馈（企业可见）
+            internalComments             // 内部评论（仅admin/staff可见）
+        });
     } catch (error) {
         console.error('[Staff] 获取企业评论错误:', error);
         res.status(500).json({ error: '获取评论失败' });
     }
 });
 
-// 添加评论/反馈（需要 full 权限）
+// 添加评论/反馈（需要 full 权限，支持内部评论）
 router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
-        const { content } = req.body;
+        const { content, is_internal = false } = req.body;
 
         if (!content || !content.trim()) {
             return res.status(400).json({ error: '请输入评论内容' });
@@ -981,13 +988,16 @@ router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async 
             return res.status(403).json({ error: '您没有发送反馈的权限（需要完整权限）' });
         }
 
+        const isInternalComment = is_internal === true || is_internal === 'true';
+        
         const comment = await CompanyComment.create({
             company_id: req.params.id,
             user_id: req.user.id,
             content: content.trim(),
             user_role: req.user.role,
+            is_internal: isInternalComment,
             is_read_by_admin: true,
-            is_read_by_company: false
+            is_read_by_company: isInternalComment ? true : false // 内部评论不需要企业读取
         });
 
         // 获取完整的评论信息
@@ -997,10 +1007,11 @@ router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async 
             ]
         });
 
-        console.log(`[Staff] 用户 ${req.user.email} 给企业 ${company.name_cn} 添加反馈`);
+        const commentType = isInternalComment ? '内部评论' : '反馈';
+        console.log(`[Staff] 用户 ${req.user.email} 给企业 ${company.name_cn} 添加${commentType}`);
 
         res.status(201).json({ 
-            message: '反馈已添加',
+            message: isInternalComment ? '内部评论已添加' : '反馈已添加',
             comment: fullComment
         });
     } catch (error) {
