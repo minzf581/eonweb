@@ -47,7 +47,7 @@ router.get('/profile', authenticate, requireCompany, async (req, res) => {
     }
 });
 
-// 创建或更新企业基本信息
+// 创建或更新企业基本信息（所有字段可选）
 router.post('/profile', authenticate, requireCompany, async (req, res) => {
     try {
         const {
@@ -60,22 +60,35 @@ router.post('/profile', authenticate, requireCompany, async (req, res) => {
             contact_phone, contact_wechat, contact_whatsapp
         } = req.body;
 
-        // 验证必填字段
-        if (!name_cn || !industry_primary || !location_headquarters || !description || !stage || !contact_name || !contact_email) {
-            return res.status(400).json({ error: '请填写所有必填字段' });
+        // 只验证公司名称（至少需要一个名称用于标识）
+        if (!name_cn && !name_en) {
+            return res.status(400).json({ 
+                error: '请至少填写公司中文名称或英文名称',
+                field: 'name'
+            });
         }
 
         let company = await Company.findOne({ where: { user_id: req.user.id } });
 
         const companyData = {
             user_id: req.user.id,
-            name_cn, name_en, website, linkedin,
-            industry_primary, industry_secondary,
-            location_headquarters, location_rd,
-            description, description_detail,
-            stage,
-            contact_name, contact_title, contact_email,
-            contact_phone, contact_wechat, contact_whatsapp,
+            name_cn: name_cn || null,
+            name_en: name_en || null,
+            website: website || null,
+            linkedin: linkedin || null,
+            industry_primary: industry_primary || null,
+            industry_secondary: industry_secondary || null,
+            location_headquarters: location_headquarters || null,
+            location_rd: location_rd || null,
+            description: description || null,
+            description_detail: description_detail || null,
+            stage: stage || null,
+            contact_name: contact_name || null,
+            contact_title: contact_title || null,
+            contact_email: contact_email || null,
+            contact_phone: contact_phone || null,
+            contact_wechat: contact_wechat || null,
+            contact_whatsapp: contact_whatsapp || null,
             status: 'draft'
         };
 

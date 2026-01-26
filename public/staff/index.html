@@ -748,30 +748,37 @@
 
     <!-- 创建企业模态框 -->
     <div class="modal" id="createCompanyModal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
                 <h2 class="modal-title" data-zh="创建新企业" data-en="Create New Company">Create New Company</h2>
                 <button class="modal-close" onclick="closeModal('createCompanyModal')">&times;</button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <p class="form-hint" style="margin-bottom: 1rem; padding: 0.75rem; background: #EFF6FF; border-radius: 8px; color: #1D4ED8;">
+                    <i class="fas fa-info-circle"></i> 
+                    <span data-zh="所有字段均为可选，您可以先创建企业，之后再完善信息。至少需要填写公司名称（中文或英文）。" data-en="All fields are optional. You can create the company first and complete the details later. At least company name (Chinese or English) is required.">
+                        所有字段均为可选，您可以先创建企业，之后再完善信息。至少需要填写公司名称（中文或英文）。
+                    </span>
+                </p>
+
                 <form id="createCompanyForm">
                     <h4 style="margin-bottom: 1rem; color: var(--primary-color);" data-zh="基本信息" data-en="Basic Information">Basic Information</h4>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label"><span data-zh="公司中文名称" data-en="Company Name (Chinese)">Company Name (Chinese)</span> <span class="required">*</span></label>
-                            <input type="text" class="form-control" name="name_cn" required>
+                            <input type="text" class="form-control" name="name_cn" data-placeholder-zh="公司中文名称" data-placeholder-en="Company name in Chinese">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-zh="公司英文名称" data-en="Company Name (English)">Company Name (English)</label>
-                            <input type="text" class="form-control" name="name_en">
+                            <input type="text" class="form-control" name="name_en" data-placeholder-zh="公司英文名称" data-placeholder-en="Company name in English">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="主要行业" data-en="Primary Industry">Primary Industry</span> <span class="required">*</span></label>
-                            <select class="form-control" name="industry_primary" required>
+                            <label class="form-label" data-zh="主要行业" data-en="Primary Industry">Primary Industry</label>
+                            <select class="form-control" name="industry_primary">
                                 <option value="" data-zh="请选择" data-en="Select...">Select...</option>
                                 <option value="technology" data-zh="科技/互联网" data-en="Technology">Technology</option>
                                 <option value="healthcare" data-zh="医疗健康" data-en="Healthcare">Healthcare</option>
@@ -785,8 +792,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="融资阶段" data-en="Funding Stage">Funding Stage</span> <span class="required">*</span></label>
-                            <select class="form-control" name="stage" required>
+                            <label class="form-label" data-zh="融资阶段" data-en="Funding Stage">Funding Stage</label>
+                            <select class="form-control" name="stage">
                                 <option value="" data-zh="请选择" data-en="Select...">Select...</option>
                                 <option value="seed" data-zh="种子轮" data-en="Seed">Seed</option>
                                 <option value="angel" data-zh="天使轮" data-en="Angel">Angel</option>
@@ -801,13 +808,13 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label"><span data-zh="总部所在地" data-en="Headquarters Location">Headquarters Location</span> <span class="required">*</span></label>
-                        <input type="text" class="form-control" name="location_headquarters" required data-placeholder-zh="如：中国深圳" data-placeholder-en="e.g., Shenzhen, China" placeholder="e.g., Shenzhen, China">
+                        <label class="form-label" data-zh="总部所在地" data-en="Headquarters Location">Headquarters Location</label>
+                        <input type="text" class="form-control" name="location_headquarters" data-placeholder-zh="如：中国深圳" data-placeholder-en="e.g., Shenzhen, China" placeholder="e.g., Shenzhen, China">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label"><span data-zh="一句话简介" data-en="One-line Description">One-line Description</span> <span class="required">*</span></label>
-                        <input type="text" class="form-control" name="description" required data-placeholder-zh="用一句话描述公司做什么" data-placeholder-en="Describe what the company does in one sentence" placeholder="Describe what the company does in one sentence">
+                        <label class="form-label" data-zh="一句话简介" data-en="One-line Description">One-line Description</label>
+                        <input type="text" class="form-control" name="description" data-placeholder-zh="用一句话描述公司做什么" data-placeholder-en="Describe what the company does in one sentence" placeholder="Describe what the company does in one sentence">
                     </div>
 
                     <div class="form-group">
@@ -819,13 +826,13 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="联系人姓名" data-en="Contact Name">Contact Name</span> <span class="required">*</span></label>
-                            <input type="text" class="form-control" name="contact_name" required>
+                            <label class="form-label" data-zh="联系人姓名" data-en="Contact Name">Contact Name</label>
+                            <input type="text" class="form-control" name="contact_name">
                         </div>
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="联系人邮箱" data-en="Contact Email">Contact Email</span> <span class="required">*</span></label>
-                            <input type="email" class="form-control" name="contact_email" required>
-                            <p class="form-hint" data-zh="此邮箱将作为企业账户的登录邮箱" data-en="This email will be used as the company account login">This email will be used as the company account login</p>
+                            <label class="form-label" data-zh="联系人邮箱" data-en="Contact Email">Contact Email</label>
+                            <input type="email" class="form-control" name="contact_email">
+                            <p class="form-hint" data-zh="如填写邮箱，将自动创建企业登录账户" data-en="If provided, a company login account will be created">If provided, a company login account will be created</p>
                         </div>
                     </div>
 
@@ -839,11 +846,29 @@
                             <input type="tel" class="form-control" name="contact_phone">
                         </div>
                     </div>
+
+                    <h4 style="margin: 1.5rem 0 1rem; color: var(--primary-color);" data-zh="BP/商业计划书" data-en="Business Plan">BP/Business Plan</h4>
+                    <p class="form-hint" style="margin-bottom: 1rem;" data-zh="您可以上传 BP 文件或提供 BP 链接（二选一）" data-en="You can upload a BP file or provide a BP link (choose one)">
+                        您可以上传 BP 文件或提供 BP 链接（二选一）
+                    </p>
+
+                    <!-- BP 上传选项 -->
+                    <div class="form-group">
+                        <label class="form-label" data-zh="上传 BP 文件" data-en="Upload BP File">Upload BP File</label>
+                        <input type="file" class="form-control" id="createCompanyBpFile" accept=".pdf,.ppt,.pptx,.doc,.docx" style="padding: 0.5rem;">
+                        <p class="form-hint" data-zh="支持 PDF、PPT、DOC 格式，最大 2MB" data-en="Supports PDF, PPT, DOC formats, max 2MB">Supports PDF, PPT, DOC formats, max 2MB</p>
+                    </div>
+
+                    <!-- BP 链接选项 -->
+                    <div class="form-group">
+                        <label class="form-label" data-zh="或输入 BP 链接" data-en="Or Enter BP Link">Or Enter BP Link</label>
+                        <input type="url" class="form-control" name="bp_link" data-placeholder-zh="如：Google Drive、Docsend 链接" data-placeholder-en="e.g., Google Drive, Docsend link" placeholder="e.g., Google Drive, Docsend link">
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('createCompanyModal')" data-zh="取消" data-en="Cancel">Cancel</button>
-                <button class="btn btn-primary" onclick="submitCreateCompany()">
+                <button class="btn btn-primary" onclick="submitCreateCompany()" id="createCompanyBtn">
                     <i class="fas fa-check"></i> <span data-zh="创建企业" data-en="Create Company">Create Company</span>
                 </button>
             </div>
@@ -1226,8 +1251,23 @@
             const form = document.getElementById('createCompanyForm');
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
+            const bpFile = document.getElementById('createCompanyBpFile').files[0];
+            const bpLink = data.bp_link;
+            delete data.bp_link; // 不发送到创建企业 API
+
+            // 验证至少有一个名称
+            if (!data.name_cn && !data.name_en) {
+                showMessage(t('companyNameRequired'), 'error');
+                return;
+            }
+
+            const btn = document.getElementById('createCompanyBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + t('creating');
 
             try {
+                // 1. 创建企业
                 const response = await fetch('/api/staff/companies', {
                     method: 'POST',
                     headers: {
@@ -1243,12 +1283,82 @@
                     throw new Error(result.error || t('createFailed'));
                 }
 
-                showMessage(t('companyCreated'), 'success');
+                const companyId = result.company.id;
+                let bpUploaded = false;
+
+                // 2. 如果有 BP 文件，上传它
+                if (bpFile) {
+                    try {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + t('uploadingBp');
+                        
+                        const bpFormData = new FormData();
+                        bpFormData.append('file', bpFile);
+                        
+                        const bpResponse = await fetch(`/api/staff/companies/${companyId}/upload-bp`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: bpFormData
+                        });
+
+                        if (bpResponse.ok) {
+                            bpUploaded = true;
+                        } else {
+                            const bpError = await bpResponse.json();
+                            console.warn('BP 上传失败:', bpError.error);
+                        }
+                    } catch (bpErr) {
+                        console.warn('BP 上传失败:', bpErr);
+                    }
+                }
+                // 3. 如果有 BP 链接，保存它
+                else if (bpLink) {
+                    try {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + t('savingBpLink');
+                        
+                        const linkResponse = await fetch(`/api/staff/companies/${companyId}/bp-link`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ url: bpLink })
+                        });
+
+                        if (linkResponse.ok) {
+                            bpUploaded = true;
+                        } else {
+                            const linkError = await linkResponse.json();
+                            console.warn('BP 链接保存失败:', linkError.error);
+                        }
+                    } catch (linkErr) {
+                        console.warn('BP 链接保存失败:', linkErr);
+                    }
+                }
+
+                // 显示成功消息
+                let successMsg = t('companyCreated');
+                if (bpUploaded) {
+                    successMsg += ' ' + t('bpSaved');
+                }
+                
+                // 弹出成功提示
+                alert(successMsg);
+                showMessage(successMsg, 'success');
+                
                 closeModal('createCompanyModal');
+                form.reset();
+                document.getElementById('createCompanyBpFile').value = '';
                 loadStats();
                 loadCompanies();
             } catch (error) {
+                // 弹出错误提示
+                alert(t('createFailed') + ': ' + error.message);
                 showMessage(error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
@@ -1816,6 +1926,11 @@
             messageSent: { zh: '消息发送成功', en: 'Message sent successfully' },
             createFailed: { zh: '创建失败', en: 'Create failed' },
             companyCreated: { zh: '企业创建成功', en: 'Company created successfully' },
+            companyNameRequired: { zh: '请至少填写公司中文名称或英文名称', en: 'Please enter at least company name (Chinese or English)' },
+            creating: { zh: '创建中...', en: 'Creating...' },
+            uploadingBp: { zh: '上传BP中...', en: 'Uploading BP...' },
+            savingBpLink: { zh: '保存BP链接中...', en: 'Saving BP link...' },
+            bpSaved: { zh: 'BP已保存', en: 'BP saved' },
             loadCompanyDetailFailed: { zh: '获取企业详情失败', en: 'Failed to load company details' },
             englishName: { zh: '英文名称', en: 'English Name' },
             industry: { zh: '行业', en: 'Industry' },

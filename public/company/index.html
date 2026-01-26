@@ -723,10 +723,17 @@
                 <form id="profileForm" class="card">
                     <h3 class="card-title" data-zh="基本信息" data-en="Basic Information">基本信息</h3>
                     
+                    <p class="form-hint" style="margin-bottom: 1rem; padding: 0.75rem; background: #EFF6FF; border-radius: 8px; color: #1D4ED8;">
+                        <i class="fas fa-info-circle"></i>
+                        <span data-zh="所有字段均为可选，您可以先保存部分信息，之后再完善。至少需要填写公司名称（中文或英文）。" data-en="All fields are optional. You can save partial information first. At least company name (Chinese or English) is required.">
+                            所有字段均为可选，您可以先保存部分信息，之后再完善。至少需要填写公司名称（中文或英文）。
+                        </span>
+                    </p>
+                    
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label"><span data-zh="公司中文名称" data-en="Company Name (CN)">公司中文名称</span> <span class="required">*</span></label>
-                            <input type="text" class="form-control" name="name_cn" required>
+                            <input type="text" class="form-control" name="name_cn">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-zh="公司英文名称" data-en="Company Name (EN)">公司英文名称</label>
@@ -747,8 +754,8 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="主要行业" data-en="Primary Industry">Primary Industry</span> <span class="required">*</span></label>
-                            <select class="form-control" name="industry_primary" required>
+                            <label class="form-label" data-zh="主要行业" data-en="Primary Industry">Primary Industry</label>
+                            <select class="form-control" name="industry_primary">
                                 <option value="" data-zh="请选择" data-en="Select...">Select...</option>
                                 <option value="technology" data-zh="科技/互联网" data-en="Technology">Technology</option>
                                 <option value="healthcare" data-zh="医疗健康" data-en="Healthcare">Healthcare</option>
@@ -780,8 +787,8 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="总部所在地" data-en="Headquarters">Headquarters</span> <span class="required">*</span></label>
-                            <input type="text" class="form-control" name="location_headquarters" required data-placeholder-zh="如：中国深圳" data-placeholder-en="e.g. Shenzhen, China" placeholder="e.g. Shenzhen, China">
+                            <label class="form-label" data-zh="总部所在地" data-en="Headquarters">Headquarters</label>
+                            <input type="text" class="form-control" name="location_headquarters" data-placeholder-zh="如：中国深圳" data-placeholder-en="e.g. Shenzhen, China" placeholder="e.g. Shenzhen, China">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-zh="研发中心所在地" data-en="R&D Center">R&D Center</label>
@@ -790,8 +797,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label"><span data-zh="一句话产品简介" data-en="One-line Description">One-line Description</span> <span class="required">*</span></label>
-                        <input type="text" class="form-control" name="description" required maxlength="200" data-placeholder-zh="用一句话描述您的产品或服务" data-placeholder-en="Describe your product/service in one sentence" placeholder="Describe your product/service in one sentence">
+                        <label class="form-label" data-zh="一句话产品简介" data-en="One-line Description">One-line Description</label>
+                        <input type="text" class="form-control" name="description" maxlength="200" data-placeholder-zh="用一句话描述您的产品或服务" data-placeholder-en="Describe your product/service in one sentence" placeholder="Describe your product/service in one sentence">
                         <p class="form-hint" data-zh="最多200字" data-en="Max 200 characters">Max 200 characters</p>
                     </div>
 
@@ -801,8 +808,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label"><span data-zh="融资阶段" data-en="Funding Stage">Funding Stage</span> <span class="required">*</span></label>
-                        <select class="form-control" name="stage" required>
+                        <label class="form-label" data-zh="融资阶段" data-en="Funding Stage">Funding Stage</label>
+                        <select class="form-control" name="stage">
                             <option value="" data-zh="请选择" data-en="Select...">Select...</option>
                             <option value="seed" data-zh="种子轮" data-en="Seed">Seed</option>
                             <option value="angel" data-zh="天使轮" data-en="Angel">Angel</option>
@@ -820,8 +827,8 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="联系人姓名" data-en="Contact Name">Contact Name</span> <span class="required">*</span></label>
-                            <input type="text" class="form-control" name="contact_name" required>
+                            <label class="form-label" data-zh="联系人姓名" data-en="Contact Name">Contact Name</label>
+                            <input type="text" class="form-control" name="contact_name">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-zh="联系人职务" data-en="Title">Title</label>
@@ -831,8 +838,8 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="联系人邮箱" data-en="Contact Email">Contact Email</span> <span class="required">*</span></label>
-                            <input type="email" class="form-control" name="contact_email" required>
+                            <label class="form-label" data-zh="联系人邮箱" data-en="Contact Email">Contact Email</label>
+                            <input type="email" class="form-control" name="contact_email">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-zh="联系人电话" data-en="Phone">Phone</label>
@@ -917,20 +924,20 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="融资金额（最低）" data-en="Min Amount">Min Amount</span><span class="required">*</span></label>
-                            <input type="number" class="form-control" name="amount_min" required data-placeholder-zh="万美元" data-placeholder-en="USD (10K)" placeholder="USD (10K)">
+                            <label class="form-label" data-zh="融资金额（最低）" data-en="Min Amount">Min Amount</label>
+                            <input type="number" class="form-control" name="amount_min" data-placeholder-zh="万美元" data-placeholder-en="USD (10K)" placeholder="USD (10K)">
                             <p class="form-hint" data-zh="单位：万美元" data-en="Unit: USD 10,000">Unit: USD 10,000</p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label"><span data-zh="融资金额（最高）" data-en="Max Amount">Max Amount</span><span class="required">*</span></label>
-                            <input type="number" class="form-control" name="amount_max" required data-placeholder-zh="万美元" data-placeholder-en="USD (10K)" placeholder="USD (10K)">
+                            <label class="form-label" data-zh="融资金额（最高）" data-en="Max Amount">Max Amount</label>
+                            <input type="number" class="form-control" name="amount_max" data-placeholder-zh="万美元" data-placeholder-en="USD (10K)" placeholder="USD (10K)">
                             <p class="form-hint" data-zh="单位：万美元" data-en="Unit: USD 10,000">Unit: USD 10,000</p>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label"><span data-zh="融资时间窗口" data-en="Timeline">Timeline</span> <span class="required">*</span></label>
-                        <select class="form-control" name="timeline" required>
+                        <label class="form-label" data-zh="融资时间窗口" data-en="Timeline">Timeline</label>
+                        <select class="form-control" name="timeline">
                             <option value="" data-zh="请选择" data-en="Select...">Select...</option>
                             <option value="0-3months" data-zh="0-3个月" data-en="0-3 months">0-3 months</option>
                             <option value="3-6months" data-zh="3-6个月" data-en="3-6 months">3-6 months</option>
@@ -1406,6 +1413,14 @@
             try {
                 const data = Object.fromEntries(formData);
 
+                // 验证至少有一个公司名称
+                if (!data.name_cn && !data.name_en) {
+                    const errorMsg = getLangText('请至少填写公司中文名称或英文名称', 'Please enter at least company name (Chinese or English)');
+                    alert(errorMsg);
+                    showMessage(errorMsg, 'error');
+                    return;
+                }
+
                 const response = await fetch('/api/company/profile', {
                     method: 'POST',
                     headers: {
@@ -1418,10 +1433,14 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '保存失败');
+                    const errorMsg = result.error || getLangText('保存失败', 'Save failed');
+                    alert(errorMsg);
+                    throw new Error(errorMsg);
                 }
 
-                showMessage(getLangText('企业资料已保存', 'Company profile saved'), 'success');
+                const successMsg = getLangText('企业资料已保存', 'Company profile saved');
+                alert(successMsg);
+                showMessage(successMsg, 'success');
                 await loadCompanyData();
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -1444,18 +1463,22 @@
                     other: formData.get('overseas_other') === 'on'
                 };
 
+                // 处理金额，允许为空
+                const amountMin = formData.get('amount_min');
+                const amountMax = formData.get('amount_max');
+
                 const data = {
                     purpose,
                     financing_type,
-                    amount_min: parseFloat(formData.get('amount_min')) * 10000, // 转换为美元
-                    amount_max: parseFloat(formData.get('amount_max')) * 10000,
-                    timeline: formData.get('timeline'),
-                    valuation_expectation: formData.get('valuation_expectation'),
-                    use_of_funds: formData.get('use_of_funds'),
+                    amount_min: amountMin ? parseFloat(amountMin) * 10000 : 0, // 转换为美元
+                    amount_max: amountMax ? parseFloat(amountMax) * 10000 : 0,
+                    timeline: formData.get('timeline') || null,
+                    valuation_expectation: formData.get('valuation_expectation') || null,
+                    use_of_funds: formData.get('use_of_funds') || null,
                     overseas_structure,
-                    ip_ownership: formData.get('ip_ownership'),
-                    data_sensitivity: formData.get('data_sensitivity'),
-                    additional_info: formData.get('additional_info')
+                    ip_ownership: formData.get('ip_ownership') || null,
+                    data_sensitivity: formData.get('data_sensitivity') || null,
+                    additional_info: formData.get('additional_info') || null
                 };
 
                 const response = await fetch('/api/company/fundraising', {
@@ -1470,10 +1493,14 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '保存失败');
+                    const errorMsg = result.error || getLangText('保存失败', 'Save failed');
+                    alert(errorMsg);
+                    throw new Error(errorMsg);
                 }
 
-                showMessage(getLangText('融资信息已保存', 'Fundraising info saved'), 'success');
+                const successMsg = getLangText('融资信息已保存', 'Fundraising info saved');
+                alert(successMsg);
+                showMessage(successMsg, 'success');
                 await loadCompanyData();
             } catch (error) {
                 showMessage(error.message, 'error');

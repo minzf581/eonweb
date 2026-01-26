@@ -221,7 +221,7 @@ router.get('/companies/:id', authenticate, requireStaffOrAdmin, async (req, res)
     }
 });
 
-// 创建新企业
+// 创建新企业（所有字段可选，除了公司名称）
 router.post('/companies', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
         const {
@@ -233,41 +233,60 @@ router.post('/companies', authenticate, requireStaffOrAdmin, async (req, res) =>
             contact_phone, contact_wechat, contact_whatsapp
         } = req.body;
 
-        // 验证必填字段
-        if (!name_cn || !industry_primary || !location_headquarters || !description || !stage || !contact_name || !contact_email) {
-            return res.status(400).json({ error: '请填写所有必填字段' });
-        }
-
-        // 创建一个虚拟用户账户（用于企业门户登录）或使用现有用户
-        let companyUser;
-        const existingUser = await User.findOne({ where: { email: contact_email } });
-        
-        if (existingUser) {
-            if (existingUser.role !== 'company') {
-                return res.status(400).json({ error: '该邮箱已被其他角色使用' });
-            }
-            companyUser = existingUser;
-        } else {
-            // 创建新用户
-            companyUser = await User.create({
-                email: contact_email,
-                password: Math.random().toString(36).slice(-12), // 随机密码，需要重置
-                role: 'company',
-                name: contact_name,
-                status: 'active'
+        // 只验证公司名称（必须有一个名称用于标识）
+        if (!name_cn && !name_en) {
+            return res.status(400).json({ 
+                error: '请至少填写公司中文名称或英文名称',
+                field: 'name'
             });
         }
 
-        // 创建企业
+        // 如果提供了联系人邮箱，创建/关联企业用户账户
+        let companyUser = null;
+        if (contact_email) {
+            const existingUser = await User.findOne({ where: { email: contact_email } });
+            
+            if (existingUser) {
+                if (existingUser.role !== 'company') {
+                    return res.status(400).json({ 
+                        error: '该邮箱已被其他角色使用，请使用其他邮箱',
+                        field: 'contact_email'
+                    });
+                }
+                companyUser = existingUser;
+            } else {
+                // 创建新用户
+                companyUser = await User.create({
+                    email: contact_email,
+                    password: Math.random().toString(36).slice(-12), // 随机密码，需要重置
+                    role: 'company',
+                    name: contact_name || name_cn || name_en,
+                    status: 'active'
+                });
+            }
+        }
+
+        // 创建企业（所有字段都是可选的）
         const company = await Company.create({
-            user_id: companyUser.id,
+            user_id: companyUser ? companyUser.id : null,
             created_by: req.user.id, // 记录创建者
-            name_cn, name_en, website, linkedin,
-            industry_primary, industry_secondary,
-            location_headquarters, location_rd,
-            description, description_detail, stage,
-            contact_name, contact_title, contact_email,
-            contact_phone, contact_wechat, contact_whatsapp,
+            name_cn: name_cn || null,
+            name_en: name_en || null,
+            website: website || null,
+            linkedin: linkedin || null,
+            industry_primary: industry_primary || null,
+            industry_secondary: industry_secondary || null,
+            location_headquarters: location_headquarters || null,
+            location_rd: location_rd || null,
+            description: description || null,
+            description_detail: description_detail || null,
+            stage: stage || null,
+            contact_name: contact_name || null,
+            contact_title: contact_title || null,
+            contact_email: contact_email || null,
+            contact_phone: contact_phone || null,
+            contact_wechat: contact_wechat || null,
+            contact_whatsapp: contact_whatsapp || null,
             status: 'draft'
         });
 
