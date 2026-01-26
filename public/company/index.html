@@ -1214,7 +1214,7 @@
 
         // 更新进度步骤
         function updateProgressSteps() {
-            const hasProfile = companyData && companyData.name_cn;
+            const hasProfile = companyData && (companyData.name_cn || companyData.name_en);
             const hasFundraising = companyData && companyData.fundraisingInfo;
             const hasDocuments = companyData && companyData.documents && companyData.documents.length > 0;
             const isSubmitted = companyData && companyData.status !== 'draft';
@@ -1224,9 +1224,17 @@
             document.getElementById('step3').className = `step ${hasDocuments ? 'completed' : hasFundraising ? 'active' : ''}`;
             document.getElementById('step4').className = `step ${isSubmitted ? 'completed' : hasDocuments ? 'active' : ''}`;
 
-            // 启用/禁用提交按钮
-            const canSubmit = hasProfile && hasFundraising && hasDocuments && companyData.status === 'draft';
+            // 启用/禁用提交按钮（只需要公司名称和 BP 即可提交，融资信息可选）
+            const canSubmit = hasProfile && hasDocuments && companyData.status === 'draft';
             document.getElementById('submitBtn').disabled = !canSubmit;
+            
+            // 更新提交按钮文字
+            const submitBtn = document.getElementById('submitBtn');
+            if (isSubmitted) {
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> ' + getLangText('已提交', 'Submitted');
+            } else {
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + getLangText('提交审核', 'Submit for Review');
+            }
         }
 
         // 多语言文本
@@ -1251,6 +1259,48 @@
             const statusBadge = document.getElementById('currentStatus');
             statusBadge.textContent = statusInfo.text;
             statusBadge.className = `status-badge ${statusInfo.class}`;
+
+            // 显示或隐藏可继续编辑的提示
+            let editHint = document.getElementById('editHintBanner');
+            if (!editHint) {
+                editHint = document.createElement('div');
+                editHint.id = 'editHintBanner';
+                editHint.style.cssText = 'margin-bottom: 1rem; padding: 1rem; border-radius: 8px; display: flex; align-items: center; gap: 0.75rem;';
+                const quickActionsCard = document.querySelector('#overview .card:nth-child(2)');
+                if (quickActionsCard) {
+                    quickActionsCard.parentNode.insertBefore(editHint, quickActionsCard);
+                }
+            }
+            
+            if (status === 'pending') {
+                editHint.style.display = 'flex';
+                editHint.style.background = 'linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 100%)';
+                editHint.style.border = '1px solid #93C5FD';
+                editHint.innerHTML = `
+                    <i class="fas fa-info-circle" style="color: #2563EB; font-size: 1.25rem;"></i>
+                    <div>
+                        <strong style="color: #1E40AF;">${getLangText('提示', 'Notice')}</strong>
+                        <p style="margin: 0.25rem 0 0 0; color: #3B82F6; font-size: 0.875rem;">
+                            ${getLangText('企业已提交审核，您仍可继续编辑公司信息和上传修改 BP 文件。', 'Company submitted for review, you can still edit company info and upload/modify BP files.')}
+                        </p>
+                    </div>
+                `;
+            } else if (status === 'approved') {
+                editHint.style.display = 'flex';
+                editHint.style.background = 'linear-gradient(135deg, #D1FAE5 0%, #ECFDF5 100%)';
+                editHint.style.border = '1px solid #86EFAC';
+                editHint.innerHTML = `
+                    <i class="fas fa-check-circle" style="color: #16A34A; font-size: 1.25rem;"></i>
+                    <div>
+                        <strong style="color: #166534;">${getLangText('审核通过', 'Approved')}</strong>
+                        <p style="margin: 0.25rem 0 0 0; color: #15803D; font-size: 0.875rem;">
+                            ${getLangText('您的企业已通过审核，仍可继续完善公司信息和更新 BP 文件。', 'Your company is approved, you can still improve company info and update BP files.')}
+                        </p>
+                    </div>
+                `;
+            } else {
+                editHint.style.display = 'none';
+            }
 
             // 加载反馈交流
             loadFeedback();

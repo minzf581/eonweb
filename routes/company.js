@@ -88,15 +88,15 @@ router.post('/profile', authenticate, requireCompany, async (req, res) => {
             contact_email: contact_email || null,
             contact_phone: contact_phone || null,
             contact_wechat: contact_wechat || null,
-            contact_whatsapp: contact_whatsapp || null,
-            status: 'draft'
+            contact_whatsapp: contact_whatsapp || null
         };
 
         if (company) {
-            // 更新
+            // 更新（保持原有状态，允许在提交后继续编辑）
             await company.update(companyData);
         } else {
-            // 创建
+            // 创建时设为草稿状态
+            companyData.status = 'draft';
             company = await Company.create(companyData);
         }
 
@@ -454,7 +454,7 @@ router.post('/bp-link', authenticate, requireCompany, async (req, res) => {
     }
 });
 
-// 提交审核
+// 提交审核（只需要公司名称和 BP 即可提交，融资信息可选）
 router.post('/submit', authenticate, requireCompany, async (req, res) => {
     try {
         const company = await Company.findOne({ 
@@ -469,12 +469,18 @@ router.post('/submit', authenticate, requireCompany, async (req, res) => {
             return res.status(400).json({ error: '请先创建企业基本信息' });
         }
 
-        if (!company.fundraisingInfo) {
-            return res.status(400).json({ error: '请先填写融资信息' });
+        // 检查企业是否已经提交或审核中
+        if (company.status !== 'draft') {
+            return res.status(400).json({ error: '企业已提交审核或已通过审核' });
+        }
+
+        // 只需要有公司名称
+        if (!company.name_cn && !company.name_en) {
+            return res.status(400).json({ error: '请先填写公司名称' });
         }
 
         // 检查是否有 BP（文件上传或链接）
-        const hasBP = company.documents.some(doc => doc.type === 'bp');
+        const hasBP = company.documents && company.documents.some(doc => doc.type === 'bp');
         if (!hasBP) {
             return res.status(400).json({ error: '请先上传 BP 文件或填写 BP 链接' });
         }
