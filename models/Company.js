@@ -25,10 +25,10 @@ const Company = sequelize.define('Company', {
         },
         comment: '创建此企业的管理员用户ID'
     },
-    // 基本信息
+    // 基本信息（所有字段可选，只需要 name_cn 或 name_en 其中一个）
     name_cn: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: '公司中文名称'
     },
     name_en: {
@@ -47,7 +47,7 @@ const Company = sequelize.define('Company', {
     // 行业信息
     industry_primary: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: '主要行业'
     },
     industry_secondary: {
@@ -58,7 +58,7 @@ const Company = sequelize.define('Company', {
     // 地区
     location_headquarters: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: '总部所在地'
     },
     location_rd: {
@@ -69,7 +69,7 @@ const Company = sequelize.define('Company', {
     // 公司简介
     description: {
         type: DataTypes.TEXT,
-        allowNull: false,
+        allowNull: true,
         comment: '一句话产品简介'
     },
     description_detail: {
@@ -80,12 +80,12 @@ const Company = sequelize.define('Company', {
     // 阶段 - 改用STRING避免Sequelize ENUM同步bug
     stage: {
         type: DataTypes.STRING(20),
-        allowNull: false
+        allowNull: true
     },
     // 联系人信息
     contact_name: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: '联系人姓名'
     },
     contact_title: {
@@ -95,7 +95,7 @@ const Company = sequelize.define('Company', {
     },
     contact_email: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: '联系人邮箱'
     },
     contact_phone: {
