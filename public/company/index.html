@@ -1051,14 +1051,15 @@
                     </div>
                     
                     <p class="form-hint" style="text-align: center; color: var(--text-secondary);">
-                        <i class="fas fa-info-circle"></i> <span data-zh="您只需选择以上两种方式之一即可提交审核" data-en="Choose either option above to submit for review">Choose either option above to submit for review</span>
+                        <i class="fas fa-info-circle"></i> <span data-zh="您可以上传多份 BP 文件或添加多个链接，所有文件都会保存" data-en="You can upload multiple BP files or add multiple links, all will be saved">You can upload multiple BP files or add multiple links, all will be saved</span>
                     </p>
                 </div>
 
                 <div class="card">
-                    <h3 class="card-title"><i class="fas fa-file-alt"></i> <span data-zh="已提交的 BP" data-en="Submitted BP">Submitted BP</span></h3>
+                    <h3 class="card-title"><i class="fas fa-file-alt"></i> <span data-zh="已上传的 BP 文件" data-en="Uploaded BP Files">Uploaded BP Files</span></h3>
+                    <p class="form-hint" style="margin-bottom: 1rem;" data-zh="您可以上传多份文件，所有文件都会展示在下方列表中" data-en="You can upload multiple files, all will be displayed in the list below">You can upload multiple files, all will be displayed in the list below</p>
                     <div id="fileList">
-                        <p class="form-hint" data-zh="暂无已提交的 BP" data-en="No BP submitted yet">No BP submitted yet</p>
+                        <p class="form-hint" data-zh="暂无已上传的 BP 文件" data-en="No BP files uploaded yet">No BP files uploaded yet</p>
                     </div>
                 </div>
 
@@ -1368,7 +1369,7 @@
                         </div>
                     `}).join('');
                 } else {
-                    fileList.innerHTML = '<p class="form-hint">暂无已提交的 BP</p>';
+                    fileList.innerHTML = '<p class="form-hint">' + getLangText('暂无已上传的 BP 文件', 'No BP files uploaded yet') + '</p>';
                 }
             } catch (error) {
                 console.error('加载文档错误:', error);

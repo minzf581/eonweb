@@ -510,7 +510,7 @@ router.post('/companies/:id/bp-link', authenticate, requireStaffOrAdmin, async (
     }
 });
 
-// 提交企业审核
+// 提交企业审核（只需要公司名称和 BP 即可提交）
 router.post('/companies/:id/submit', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
         const whereClause = req.user.role === 'admin' 
@@ -529,11 +529,18 @@ router.post('/companies/:id/submit', authenticate, requireStaffOrAdmin, async (r
             return res.status(404).json({ error: '企业不存在或无权访问' });
         }
 
-        if (!company.fundraisingInfo) {
-            return res.status(400).json({ error: '请先填写融资信息' });
+        // 检查企业是否已经提交或审核中
+        if (company.status !== 'draft') {
+            return res.status(400).json({ error: '企业已提交审核或已通过审核' });
         }
 
-        const hasBP = company.documents.some(doc => doc.type === 'bp');
+        // 只需要有公司名称
+        if (!company.name_cn && !company.name_en) {
+            return res.status(400).json({ error: '请先填写公司名称' });
+        }
+
+        // 检查是否有 BP 文件或链接
+        const hasBP = company.documents && company.documents.some(doc => doc.type === 'bp');
         if (!hasBP) {
             return res.status(400).json({ error: '请先上传 BP 文件或填写 BP 链接' });
         }
