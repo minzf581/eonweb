@@ -139,7 +139,7 @@ router.get('/companies', authenticate, requireStaffOrAdmin, async (req, res) => 
             where: whereClause,
             include: [
                 { model: FundraisingInfo, as: 'fundraisingInfo' },
-                { model: Document, as: 'documents', attributes: ['id', 'filename', 'type', 'created_at'] }
+                { model: Document, as: 'documents', attributes: ['id', 'filename', 'type', 'filesize', 'mimetype', 'dataroom_link', 'created_at'] }
             ],
             order: [['created_at', 'DESC']],
             limit: parseInt(limit),
@@ -174,7 +174,7 @@ router.get('/companies/:id', authenticate, requireStaffOrAdmin, async (req, res)
             where: { id: req.params.id },
             include: [
                 { model: FundraisingInfo, as: 'fundraisingInfo' },
-                { model: Document, as: 'documents' },
+                { model: Document, as: 'documents', attributes: ['id', 'filename', 'type', 'filesize', 'mimetype', 'dataroom_link', 'created_at'] },
                 { model: User, as: 'user', attributes: ['id', 'email', 'name'] }
             ]
         });

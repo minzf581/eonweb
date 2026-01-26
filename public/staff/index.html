@@ -1384,8 +1384,10 @@
                 currentPermissionType = data.permissionType;
 
                 const canEdit = (data.permissionType === 'full');
+                const isCreator = data.isCreator;
+                const canAddBp = isCreator && company.status === 'draft';
 
-                document.getElementById('companyDetailTitle').textContent = company.name_cn;
+                document.getElementById('companyDetailTitle').textContent = company.name_cn || company.name_en;
                 document.getElementById('companyDetailContent').innerHTML = `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
@@ -1425,7 +1427,7 @@
                             <h4 style="margin-bottom: 0.5rem;">${t('documents')} (${company.documents.length})</h4>
                             ${company.documents.map(doc => `
                                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: #f9fafb; border-radius: 6px; margin-bottom: 0.5rem;">
-                                    <span><i class="fas fa-file-pdf" style="color: var(--danger-color);"></i> ${doc.filename}</span>
+                                    <span>${doc.dataroom_link ? '<i class="fas fa-link" style="color: #3B82F6;"></i>' : '<i class="fas fa-file-pdf" style="color: var(--danger-color);"></i>'} ${doc.filename}</span>
                                     <div style="display: flex; gap: 0.5rem;">
                                         ${doc.dataroom_link ? `
                                             <a href="${doc.dataroom_link}" target="_blank" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
@@ -1442,6 +1444,43 @@
                                     </div>
                                 </div>
                             `).join('')}
+                        </div>
+                    ` : ''}
+
+                    <!-- BP 补充上传区域（仅创建者且未提交时可见） -->
+                    ${canAddBp ? `
+                        <div style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border: 1px solid #93C5FD; border-radius: 8px;">
+                            <h4 style="margin-bottom: 0.75rem; color: #1D4ED8;">
+                                <i class="fas fa-plus-circle" style="margin-right: 0.5rem;"></i>${t('addBpTitle')}
+                            </h4>
+                            <p style="color: #1E40AF; font-size: 0.875rem; margin-bottom: 1rem;">
+                                ${t('addBpHint')}
+                            </p>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <!-- BP 文件上传 -->
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #1E3A8A;">${t('uploadBpFile')}</label>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <input type="file" id="detailBpFile" accept=".pdf,.ppt,.pptx,.doc,.docx" class="form-control" style="flex: 1; padding: 0.5rem;">
+                                        <button class="btn btn-primary" onclick="uploadBpForCompany('${id}')" style="white-space: nowrap;">
+                                            <i class="fas fa-upload"></i> ${t('upload')}
+                                        </button>
+                                    </div>
+                                    <p style="color: #6B7280; font-size: 0.75rem; margin-top: 0.25rem;">${t('supportedFormats')}</p>
+                                </div>
+                                
+                                <!-- BP 链接输入 -->
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #1E3A8A;">${t('orAddBpLink')}</label>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <input type="url" id="detailBpLink" class="form-control" placeholder="https://drive.google.com/..." style="flex: 1;">
+                                        <button class="btn btn-secondary" onclick="saveBpLinkForCompany('${id}')" style="white-space: nowrap;">
+                                            <i class="fas fa-link"></i> ${t('saveLink')}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     ` : ''}
 
@@ -1732,6 +1771,90 @@
             }
         }
 
+        // 为企业上传 BP 文件
+        async function uploadBpForCompany(companyId) {
+            const fileInput = document.getElementById('detailBpFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage(t('selectFileFirst'), 'error');
+                return;
+            }
+
+            try {
+                showMessage(t('uploadingBp'), 'info');
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`/api/staff/companies/${companyId}/upload-bp`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || t('uploadFailed'));
+                }
+
+                const successMsg = t('bpUploadSuccess');
+                alert(successMsg);
+                showMessage(successMsg, 'success');
+                fileInput.value = '';
+                
+                // 刷新企业详情
+                viewCompany(companyId);
+            } catch (error) {
+                alert(t('uploadFailed') + ': ' + error.message);
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 为企业保存 BP 链接
+        async function saveBpLinkForCompany(companyId) {
+            const linkInput = document.getElementById('detailBpLink');
+            const url = linkInput.value.trim();
+
+            if (!url) {
+                showMessage(t('enterLinkFirst'), 'error');
+                return;
+            }
+
+            try {
+                showMessage(t('savingBpLink'), 'info');
+
+                const response = await fetch(`/api/staff/companies/${companyId}/bp-link`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || t('saveFailed'));
+                }
+
+                const successMsg = t('bpLinkSaveSuccess');
+                alert(successMsg);
+                showMessage(successMsg, 'success');
+                linkInput.value = '';
+                
+                // 刷新企业详情
+                viewCompany(companyId);
+            } catch (error) {
+                alert(t('saveFailed') + ': ' + error.message);
+                showMessage(error.message, 'error');
+            }
+        }
+
         // 下载文档（带认证）
         async function downloadDocument(docId, filename) {
             try {
@@ -1931,6 +2054,19 @@
             uploadingBp: { zh: '上传BP中...', en: 'Uploading BP...' },
             savingBpLink: { zh: '保存BP链接中...', en: 'Saving BP link...' },
             bpSaved: { zh: 'BP已保存', en: 'BP saved' },
+            addBpTitle: { zh: '补充 BP/商业计划书', en: 'Add BP/Business Plan' },
+            addBpHint: { zh: '企业尚未提交审核，您可以在此补充 BP 文件或链接', en: 'Company not submitted yet, you can add BP file or link here' },
+            uploadBpFile: { zh: '上传 BP 文件', en: 'Upload BP File' },
+            orAddBpLink: { zh: '或添加 BP 链接', en: 'Or Add BP Link' },
+            supportedFormats: { zh: '支持 PDF、PPT、DOC 格式，最大 2MB', en: 'Supports PDF, PPT, DOC, max 2MB' },
+            upload: { zh: '上传', en: 'Upload' },
+            saveLink: { zh: '保存链接', en: 'Save Link' },
+            selectFileFirst: { zh: '请先选择文件', en: 'Please select a file first' },
+            enterLinkFirst: { zh: '请先输入链接', en: 'Please enter a link first' },
+            uploadFailed: { zh: '上传失败', en: 'Upload failed' },
+            saveFailed: { zh: '保存失败', en: 'Save failed' },
+            bpUploadSuccess: { zh: 'BP 文件上传成功', en: 'BP file uploaded successfully' },
+            bpLinkSaveSuccess: { zh: 'BP 链接保存成功', en: 'BP link saved successfully' },
             loadCompanyDetailFailed: { zh: '获取企业详情失败', en: 'Failed to load company details' },
             englishName: { zh: '英文名称', en: 'English Name' },
             industry: { zh: '行业', en: 'Industry' },
