@@ -487,6 +487,29 @@ router.post('/submit', authenticate, requireCompany, async (req, res) => {
 
         await company.update({ status: 'pending' });
 
+        // 通知所有管理员有新公司提交审核
+        try {
+            const admins = await User.findAll({ 
+                where: { role: ['admin', 'staff'], status: 'active' },
+                attributes: ['email']
+            });
+            
+            const adminEmails = admins.map(a => a.email);
+            if (adminEmails.length > 0 && emailService.isConfigured()) {
+                const companyName = company.name_cn || company.name_en;
+                await emailService.sendCompanySubmittedNotification({
+                    to: adminEmails,
+                    companyName,
+                    submitterName: req.user.name,
+                    submitterEmail: req.user.email
+                });
+                console.log(`[Company] 已通知 ${adminEmails.length} 位管理员: ${companyName} 提交审核`);
+            }
+        } catch (emailError) {
+            console.error('[Company] 发送通知邮件失败:', emailError);
+            // 不影响主流程
+        }
+
         res.json({ 
             message: '已提交审核，请等待管理员审核',
             status: 'pending'

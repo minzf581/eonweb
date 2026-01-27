@@ -269,6 +269,184 @@ class EmailService {
 
         return this.sendEmail({ to, subject: `[EON Protocol] 新访问请求 - ${investorName} → ${companyName}`, html });
     }
+
+    /**
+     * 发送公司提交审核通知给管理员
+     */
+    async sendCompanySubmittedNotification({ to, companyName, submitterName, submitterEmail }) {
+        const html = this.generateTemplate({
+            title: '新企业提交审核',
+            content: `<p>有新企业提交了审核申请，请及时处理。</p>
+                <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500; width: 120px;">企业名称</td>
+                        <td style="padding: 12px; border: 1px solid #E5E7EB;"><strong>${companyName}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">提交人</td>
+                        <td style="padding: 12px; border: 1px solid #E5E7EB;">${submitterName || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">邮箱</td>
+                        <td style="padding: 12px; border: 1px solid #E5E7EB;">${submitterEmail}</td>
+                    </tr>
+                </table>`,
+            actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/admin/fundraising.html#companies`,
+            actionText: '审核企业'
+        });
+
+        return this.sendEmail({ to, subject: `[EON Protocol] 新企业待审核 - ${companyName}`, html });
+    }
+
+    /**
+     * 发送反馈通知（Feedback to Company）
+     * 通知：公司、所有有权浏览该公司的管理员和staff
+     */
+    async sendFeedbackNotification({ to, companyName, senderName, senderRole, content }) {
+        const roleText = { admin: '管理员', staff: '运营', company: '企业' };
+        const html = this.generateTemplate({
+            title: '新反馈消息',
+            content: `<p><strong>${roleText[senderRole] || senderRole}</strong> ${senderName} 在企业 <strong>${companyName}</strong> 的反馈交流中发送了新消息：</p>
+                <div style="margin: 20px 0; padding: 16px; background: #F0FDF4; border-radius: 8px; border-left: 4px solid #10B981;">
+                    <p style="margin: 0; white-space: pre-wrap;">${this.escapeHtml(content)}</p>
+                </div>`,
+            actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/admin/fundraising.html#companies`,
+            actionText: '查看详情'
+        });
+
+        return this.sendEmail({ to, subject: `[EON Protocol] 新反馈 - ${companyName}`, html });
+    }
+
+    /**
+     * 发送内部评论通知（Internal Notes）
+     * 仅通知：管理员和有权浏览该公司的staff
+     */
+    async sendInternalNoteNotification({ to, companyName, senderName, senderRole, content }) {
+        const roleText = { admin: '管理员', staff: '运营' };
+        const html = this.generateTemplate({
+            title: '新内部评论',
+            content: `<p><strong>${roleText[senderRole] || senderRole}</strong> ${senderName} 在企业 <strong>${companyName}</strong> 添加了内部评论：</p>
+                <div style="margin: 20px 0; padding: 16px; background: #FEF2F2; border-radius: 8px; border-left: 4px solid #EF4444;">
+                    <p style="margin: 0 0 8px 0; color: #991B1B; font-size: 12px;"><i>🔒 此为内部评论，仅管理员和相关Staff可见</i></p>
+                    <p style="margin: 0; white-space: pre-wrap;">${this.escapeHtml(content)}</p>
+                </div>`,
+            actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/admin/fundraising.html#companies`,
+            actionText: '查看详情'
+        });
+
+        return this.sendEmail({ to, subject: `[EON Protocol] 内部评论 - ${companyName}`, html });
+    }
+
+    /**
+     * 发送审核结果通知（ENGAGE/EXPLORE/PASS）
+     */
+    async sendVerdictNotification({ to, companyName, verdict, reviewerName, adminNotes }) {
+        const verdictInfo = {
+            engage: { 
+                label: 'ENGAGE', 
+                text: '跟进讨论', 
+                color: '#065F46', 
+                bg: '#D1FAE5',
+                icon: '🤝',
+                description: '管理员决定跟进该企业，将安排进一步沟通。'
+            },
+            explore: { 
+                label: 'EXPLORE', 
+                text: '需了解更多', 
+                color: '#1E40AF', 
+                bg: '#DBEAFE',
+                icon: '🔍',
+                description: '管理员需要更多信息来评估，请关注后续问题。'
+            },
+            pass: { 
+                label: 'PASS', 
+                text: '暂不跟进', 
+                color: '#991B1B', 
+                bg: '#FEE2E2',
+                icon: '⏸️',
+                description: '管理员决定暂不跟进该企业。'
+            },
+            approved: { 
+                label: 'APPROVED', 
+                text: '已通过', 
+                color: '#065F46', 
+                bg: '#D1FAE5',
+                icon: '✅',
+                description: '企业审核已通过。'
+            },
+            rejected: { 
+                label: 'REJECTED', 
+                text: '已拒绝', 
+                color: '#991B1B', 
+                bg: '#FEE2E2',
+                icon: '❌',
+                description: '企业审核未通过。'
+            }
+        };
+
+        const info = verdictInfo[verdict] || verdictInfo.pass;
+
+        const html = this.generateTemplate({
+            title: `企业审核结果: ${info.label}`,
+            content: `<p>企业 <strong>${companyName}</strong> 的审核状态已更新：</p>
+                <div style="margin: 20px 0; padding: 20px; background: ${info.bg}; border-radius: 8px; text-align: center;">
+                    <span style="font-size: 32px;">${info.icon}</span>
+                    <p style="margin: 10px 0 0 0; color: ${info.color}; font-size: 24px; font-weight: 600;">${info.label}</p>
+                    <p style="margin: 8px 0 0 0; color: ${info.color}; font-size: 14px;">${info.text}</p>
+                </div>
+                <p style="color: #6B7280;">${info.description}</p>
+                ${reviewerName ? `<p style="margin-top: 16px; color: #6B7280; font-size: 14px;">审核人: <strong>${reviewerName}</strong></p>` : ''}
+                ${adminNotes ? `<div style="margin-top: 20px;"><p style="margin-bottom: 8px; font-weight: 500; color: #374151;">备注：</p><div style="padding: 16px; background: #F9FAFB; border-radius: 8px; border-left: 4px solid #0D43F9;">${this.escapeHtml(adminNotes)}</div></div>` : ''}`,
+            actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/admin/fundraising.html#companies`,
+            actionText: '查看详情'
+        });
+
+        return this.sendEmail({ to, subject: `[EON Protocol] 审核结果: ${info.label} - ${companyName}`, html });
+    }
+
+    /**
+     * 批量发送邮件（给多个收件人发送相同内容）
+     */
+    async sendBulkEmail({ recipients, subject, html }) {
+        if (!this.isConfigured()) {
+            console.log('[EmailService] 邮件服务未配置，跳过批量发送');
+            return { success: false, error: '邮件服务未配置', sent: 0 };
+        }
+
+        const results = [];
+        for (const to of recipients) {
+            try {
+                const result = await this.sendEmail({ to, subject, html });
+                results.push({ to, ...result });
+            } catch (error) {
+                results.push({ to, success: false, error: error.message });
+            }
+        }
+
+        const successCount = results.filter(r => r.success).length;
+        console.log(`[EmailService] 批量发送完成: ${successCount}/${recipients.length} 成功`);
+        
+        return { 
+            success: successCount > 0, 
+            sent: successCount, 
+            total: recipients.length,
+            results 
+        };
+    }
+
+    /**
+     * HTML 转义
+     */
+    escapeHtml(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;')
+            .replace(/\n/g, '<br>');
+    }
 }
 
 // 导出单例实例

@@ -153,23 +153,74 @@ router.put('/companies/:id/review', authenticate, requireAdmin, async (req, res)
 
         await company.update(updateData);
 
-        // 如果状态发生变化，发送邮件通知
+        const companyName = company.name_cn || company.name_en;
+
+        // 如果状态发生变化，发送邮件通知给所有相关人员
         let emailSent = false;
-        if (status && status !== oldStatus && company.user?.email) {
-            const shouldSendEmail = send_email === true || send_email === 'true' || 
-                                   (status === 'approved' || status === 'rejected');
-            if (shouldSendEmail) {
-                const result = await emailService.sendReviewNotification({
-                    to: company.user.email,
-                    entityType: 'company',
-                    entityName: company.name_cn || company.name_en,
-                    status,
-                    feedback: admin_feedback
-                });
-                emailSent = result.success;
-                if (result.success) {
-                    console.log(`[Admin] 已发送企业审核通知邮件: ${company.user.email}`);
+        if (status && status !== oldStatus && emailService.isConfigured()) {
+            try {
+                const recipients = [];
+                
+                // 1. 通知公司（如果是外部可见的状态变更）
+                if (company.user?.email) {
+                    recipients.push(company.user.email);
                 }
+
+                // 2. 通知所有管理员（排除自己）
+                const admins = await User.findAll({
+                    where: { role: 'admin', status: 'active', id: { [Op.ne]: req.user.id } },
+                    attributes: ['email']
+                });
+                recipients.push(...admins.map(a => a.email));
+
+                // 3. 获取有权限的 staff
+                const permissions = await CompanyPermission.findAll({
+                    where: { company_id: req.params.id, is_active: true },
+                    include: [{ 
+                        model: User, 
+                        as: 'permittedUser', 
+                        where: { role: 'staff', status: 'active', id: { [Op.ne]: req.user.id } },
+                        attributes: ['email']
+                    }]
+                });
+                permissions.forEach(p => {
+                    if (p.permittedUser?.email) recipients.push(p.permittedUser.email);
+                });
+
+                // 4. 如果是 staff 创建的企业，通知该 staff
+                if (company.created_by && company.created_by !== req.user.id) {
+                    const creator = await User.findByPk(company.created_by, { attributes: ['email'] });
+                    if (creator?.email) recipients.push(creator.email);
+                }
+
+                // 去重后发送
+                const uniqueRecipients = [...new Set(recipients)];
+
+                if (uniqueRecipients.length > 0) {
+                    // 对于新的三级状态使用 Verdict 通知
+                    if (['engage', 'explore', 'pass'].includes(status)) {
+                        await emailService.sendVerdictNotification({
+                            to: uniqueRecipients,
+                            companyName,
+                            verdict: status,
+                            reviewerName: req.user.name || req.user.email,
+                            adminNotes: admin_notes
+                        });
+                    } else {
+                        // 旧的 approved/rejected 状态
+                        await emailService.sendVerdictNotification({
+                            to: uniqueRecipients,
+                            companyName,
+                            verdict: status,
+                            reviewerName: req.user.name || req.user.email,
+                            adminNotes: admin_feedback || admin_notes
+                        });
+                    }
+                    emailSent = true;
+                    console.log(`[Admin] 已发送审核结果(${status})通知邮件给 ${uniqueRecipients.length} 人`);
+                }
+            } catch (emailError) {
+                console.error('[Admin] 发送审核通知邮件失败:', emailError);
             }
         }
 
@@ -969,14 +1020,16 @@ router.post('/companies/:id/comments', authenticate, requireAdmin, async (req, r
             return res.status(404).json({ error: '企业不存在' });
         }
 
+        const isInternalComment = is_internal === true || is_internal === 'true';
+
         const comment = await CompanyComment.create({
             company_id: req.params.id,
             user_id: req.user.id,
             content: content.trim(),
             user_role: req.user.role,
-            is_internal: is_internal === true || is_internal === 'true',
+            is_internal: isInternalComment,
             is_read_by_admin: true, // 管理员/staff自己发的，自己已读
-            is_read_by_company: is_internal ? true : false // 内部评论不需要企业读取
+            is_read_by_company: isInternalComment ? true : false // 内部评论不需要企业读取
         });
 
         // 获取完整的评论信息
@@ -986,11 +1039,93 @@ router.post('/companies/:id/comments', authenticate, requireAdmin, async (req, r
             ]
         });
 
-        const commentType = is_internal ? '内部评论' : '反馈';
-        console.log(`[Admin] 管理员 ${req.user.email} 给企业 ${company.name_cn} 添加${commentType}`);
+        const commentType = isInternalComment ? '内部评论' : '反馈';
+        const companyName = company.name_cn || company.name_en;
+        console.log(`[Admin] 管理员 ${req.user.email} 给企业 ${companyName} 添加${commentType}`);
+
+        // 发送邮件通知
+        try {
+            if (emailService.isConfigured()) {
+                const recipients = [];
+                
+                if (isInternalComment) {
+                    // 内部评论：通知所有管理员和有权限的 staff（排除自己）
+                    const admins = await User.findAll({
+                        where: { role: 'admin', status: 'active', id: { [Op.ne]: req.user.id } },
+                        attributes: ['email']
+                    });
+                    recipients.push(...admins.map(a => a.email));
+
+                    // 获取有权限的 staff
+                    const permissions = await CompanyPermission.findAll({
+                        where: { company_id: req.params.id, is_active: true },
+                        include: [{ 
+                            model: User, 
+                            as: 'permittedUser', 
+                            where: { role: 'staff', status: 'active', id: { [Op.ne]: req.user.id } },
+                            attributes: ['email']
+                        }]
+                    });
+                    permissions.forEach(p => {
+                        if (p.permittedUser?.email) recipients.push(p.permittedUser.email);
+                    });
+
+                    if (recipients.length > 0) {
+                        await emailService.sendInternalNoteNotification({
+                            to: [...new Set(recipients)], // 去重
+                            companyName,
+                            senderName: req.user.name || req.user.email,
+                            senderRole: req.user.role,
+                            content: content.trim()
+                        });
+                    }
+                } else {
+                    // 外部反馈：通知公司、所有管理员和有权限的 staff（排除自己）
+                    // 通知公司
+                    if (company.user?.email) {
+                        recipients.push(company.user.email);
+                    }
+
+                    // 通知所有管理员
+                    const admins = await User.findAll({
+                        where: { role: 'admin', status: 'active', id: { [Op.ne]: req.user.id } },
+                        attributes: ['email']
+                    });
+                    recipients.push(...admins.map(a => a.email));
+
+                    // 获取有权限的 staff
+                    const permissions = await CompanyPermission.findAll({
+                        where: { company_id: req.params.id, is_active: true },
+                        include: [{ 
+                            model: User, 
+                            as: 'permittedUser', 
+                            where: { role: 'staff', status: 'active', id: { [Op.ne]: req.user.id } },
+                            attributes: ['email']
+                        }]
+                    });
+                    permissions.forEach(p => {
+                        if (p.permittedUser?.email) recipients.push(p.permittedUser.email);
+                    });
+
+                    if (recipients.length > 0) {
+                        await emailService.sendFeedbackNotification({
+                            to: [...new Set(recipients)], // 去重
+                            companyName,
+                            senderName: req.user.name || req.user.email,
+                            senderRole: req.user.role,
+                            content: content.trim()
+                        });
+                    }
+                }
+                console.log(`[Admin] 已发送${commentType}通知邮件给 ${recipients.length} 人`);
+            }
+        } catch (emailError) {
+            console.error('[Admin] 发送评论通知邮件失败:', emailError);
+            // 不影响主流程
+        }
 
         res.status(201).json({ 
-            message: is_internal ? '内部评论已添加' : '反馈已添加',
+            message: isInternalComment ? '内部评论已添加' : '反馈已添加',
             comment: fullComment
         });
     } catch (error) {
