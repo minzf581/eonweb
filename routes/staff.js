@@ -1046,6 +1046,35 @@ router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async 
     }
 });
 
+// 删除评论
+router.delete('/companies/:companyId/comments/:commentId', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        const comment = await CompanyComment.findOne({
+            where: { 
+                id: req.params.commentId,
+                company_id: req.params.companyId
+            }
+        });
+
+        if (!comment) {
+            return res.status(404).json({ error: '评论不存在' });
+        }
+
+        // 检查权限：管理员可以删除所有评论，Staff 只能删除自己的评论
+        if (req.user.role !== 'admin' && comment.user_id !== req.user.id) {
+            return res.status(403).json({ error: '只能删除自己的评论' });
+        }
+
+        await comment.destroy();
+        console.log(`[Staff] ${req.user.email} 删除了评论 ${req.params.commentId}`);
+
+        res.json({ message: '评论已删除' });
+    } catch (error) {
+        console.error('[Staff] 删除评论错误:', error);
+        res.status(500).json({ error: '删除评论失败' });
+    }
+});
+
 // 获取企业未读反馈数量
 router.get('/companies/:id/comments/unread-count', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {

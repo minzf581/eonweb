@@ -208,6 +208,10 @@
         .status-pending { background: #FEF3C7; color: #92400E; }
         .status-approved { background: #D1FAE5; color: #065F46; }
         .status-rejected { background: #FEE2E2; color: #991B1B; }
+        /* 新的三级审核状态 */
+        .status-engage { background: #D1FAE5; color: #065F46; }  /* 绿色 - 要跟进 */
+        .status-explore { background: #DBEAFE; color: #1E40AF; } /* 蓝色 - 需了解更多 */
+        .status-pass { background: #FEE2E2; color: #991B1B; }    /* 红色 - 不跟进 */
 
         /* 按钮 */
         .btn {
@@ -464,8 +468,11 @@
                     <select class="filter-select" id="companyStatusFilter" onchange="loadCompanies()">
                         <option value="" data-zh="全部状态" data-en="All Status">全部状态</option>
                         <option value="pending" data-zh="待审核" data-en="Pending">待审核</option>
-                        <option value="approved" data-zh="已通过" data-en="Approved">已通过</option>
-                        <option value="rejected" data-zh="已拒绝" data-en="Rejected">已拒绝</option>
+                        <option value="engage" data-zh="ENGAGE" data-en="ENGAGE">ENGAGE</option>
+                        <option value="explore" data-zh="EXPLORE" data-en="EXPLORE">EXPLORE</option>
+                        <option value="pass" data-zh="PASS" data-en="PASS">PASS</option>
+                        <option value="approved" data-zh="已通过(旧)" data-en="Approved(old)">已通过(旧)</option>
+                        <option value="rejected" data-zh="已拒绝(旧)" data-en="Rejected(old)">已拒绝(旧)</option>
                         <option value="draft" data-zh="草稿" data-en="Draft">草稿</option>
                     </select>
                 </div>
@@ -825,12 +832,20 @@
             approved: { zh: '已通过', en: 'Approved' },
             rejected: { zh: '已拒绝', en: 'Rejected' },
             draft: { zh: '草稿', en: 'Draft' },
+            // 新的三级审核状态
+            engage: { zh: 'ENGAGE (跟进)', en: 'ENGAGE' },
+            explore: { zh: 'EXPLORE (待了解)', en: 'EXPLORE' },
+            pass: { zh: 'PASS (不跟进)', en: 'PASS' },
             pendingProcess: { zh: '待处理', en: 'Pending' },
             authFailed: { zh: '认证失败', en: 'Authentication failed' },
             noAccess: { zh: '无权限访问', en: 'No access' },
             view: { zh: '查看', en: 'View' },
             approve: { zh: '通过', en: 'Approve' },
             reject: { zh: '拒绝', en: 'Reject' },
+            // 新的审核按钮文本
+            verdictEngage: { zh: 'ENGAGE', en: 'ENGAGE' },
+            verdictExplore: { zh: 'EXPLORE', en: 'EXPLORE' },
+            verdictPass: { zh: 'PASS', en: 'PASS' },
             delete: { zh: '删除', en: 'Delete' },
             resetPassword: { zh: '重置密码', en: 'Reset Password' },
             noData: { zh: '暂无数据', en: 'No data' },
@@ -857,11 +872,18 @@
             // 确认对话框
             confirmApproveCompany: { zh: '确定要通过该企业吗？', en: 'Are you sure you want to approve this company?' },
             confirmRejectCompany: { zh: '确定要拒绝该企业吗？', en: 'Are you sure you want to reject this company?' },
+            // 新的三级审核确认对话框
+            confirmEngageCompany: { zh: '确定要将该企业标记为 ENGAGE（跟进）吗？', en: 'Mark this company as ENGAGE (mandate discussion)?' },
+            confirmExploreCompany: { zh: '确定要将该企业标记为 EXPLORE（待了解更多）吗？', en: 'Mark this company as EXPLORE (need to understand more)?' },
+            confirmPassCompany: { zh: '确定要将该企业标记为 PASS（不跟进）吗？', en: 'Mark this company as PASS (reject)?' },
             confirmApproveInvestor: { zh: '确定要通过该投资人吗？', en: 'Are you sure you want to approve this investor?' },
             confirmRejectInvestor: { zh: '确定要拒绝该投资人吗？', en: 'Are you sure you want to reject this investor?' },
             confirmSuspendInvestor: { zh: '确定要暂停该投资人吗？', en: 'Are you sure you want to suspend this investor?' },
             confirmApproveRequest: { zh: '确定要通过该请求吗？', en: 'Are you sure you want to approve this request?' },
             confirmRejectRequest: { zh: '确定要拒绝该请求吗？', en: 'Are you sure you want to reject this request?' },
+            // 删除消息确认
+            confirmDeleteComment: { zh: '确定要删除这条评论吗？', en: 'Are you sure you want to delete this comment?' },
+            commentDeleted: { zh: '评论已删除', en: 'Comment deleted' },
             // 下载和预览
             downloading: { zh: '正在下载...', en: 'Downloading...' },
             downloadFailed: { zh: '下载失败', en: 'Download failed' },
@@ -925,6 +947,9 @@
             adminNotes: { zh: '管理员备注', en: 'Admin Notes' },
             adminFeedback: { zh: '反馈交流', en: 'Feedback' },
             approveAndSave: { zh: '通过并保存', en: 'Approve & Save' },
+            engageAndSave: { zh: 'ENGAGE 保存', en: 'ENGAGE & Save' },
+            exploreAndSave: { zh: 'EXPLORE 保存', en: 'EXPLORE & Save' },
+            passAndSave: { zh: 'PASS 保存', en: 'PASS & Save' },
             close: { zh: '关闭', en: 'Close' },
             downloading: { zh: '正在下载...', en: 'Downloading...' },
             downloadFailed: { zh: '下载失败', en: 'Download failed' },
@@ -1169,8 +1194,9 @@
                                 <div class="btn-group">
                                     <button class="btn btn-primary btn-sm" onclick="viewCompany('${c.id}')">${t('view')}</button>
                                     ${c.status === 'pending' ? `
-                                        <button class="btn btn-success btn-sm" onclick="reviewCompany('${c.id}', 'approved')">${t('approve')}</button>
-                                        <button class="btn btn-danger btn-sm" onclick="reviewCompany('${c.id}', 'rejected')">${t('reject')}</button>
+                                        <button class="btn btn-success btn-sm" onclick="reviewCompany('${c.id}', 'engage')" title="Mandate discussion">${t('verdictEngage')}</button>
+                                        <button class="btn btn-sm" style="background:#3B82F6;color:white;" onclick="reviewCompany('${c.id}', 'explore')" title="Need to understand more">${t('verdictExplore')}</button>
+                                        <button class="btn btn-danger btn-sm" onclick="reviewCompany('${c.id}', 'pass')" title="Reject">${t('verdictPass')}</button>
                                     ` : ''}
                                 </div>
                             </td>
@@ -1428,10 +1454,20 @@
                         <label class="form-label">${t('adminNotes')}</label>
                         <textarea class="form-control" id="adminNotes" rows="4" style="min-height: 100px; resize: vertical;">${c.admin_notes || ''}</textarea>
                     </div>
-                    <div class="btn-group" style="margin-top: 1rem;">
-                        <button class="btn btn-success" onclick="saveCompanyReview('${c.id}', 'approved')">${t('approveAndSave')}</button>
-                        <button class="btn btn-danger" onclick="saveCompanyReview('${c.id}', 'rejected')">${t('reject')}</button>
-                        <button class="btn btn-secondary" onclick="closeModal('companyModal')">${t('close')}</button>
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #F3F4F6; border-radius: 8px;">
+                        <label style="font-weight: 600; margin-bottom: 0.75rem; display: block;">Verdict:</label>
+                        <div class="btn-group" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <button class="btn btn-success" onclick="saveCompanyReview('${c.id}', 'engage')" title="Mandate discussion - 跟进">
+                                <i class="fas fa-handshake"></i> ENGAGE
+                            </button>
+                            <button class="btn" style="background:#3B82F6;color:white;" onclick="saveCompanyReview('${c.id}', 'explore')" title="Need to understand more - 待了解">
+                                <i class="fas fa-search"></i> EXPLORE
+                            </button>
+                            <button class="btn btn-danger" onclick="saveCompanyReview('${c.id}', 'pass')" title="Reject - 不跟进">
+                                <i class="fas fa-times"></i> PASS
+                            </button>
+                            <button class="btn btn-secondary" onclick="closeModal('companyModal')">${t('close')}</button>
+                        </div>
                     </div>
                 `;
 
@@ -1573,6 +1609,15 @@
 
         async function saveCompanyReview(id, status) {
             try {
+                // 根据状态设置默认可见性：engage 对投资人可见，其他私有
+                const visibilitySelect = document.getElementById('visibilitySelect');
+                let visibility = visibilitySelect ? visibilitySelect.value : 'private';
+                if (status === 'engage') {
+                    visibility = 'investors'; // ENGAGE 状态自动对投资人可见
+                } else if (status === 'pass' || status === 'explore') {
+                    visibility = 'private';
+                }
+
                 const response = await fetch(`/api/admin/companies/${id}/review`, {
                     method: 'PUT',
                     headers: {
@@ -1581,9 +1626,8 @@
                     },
                     body: JSON.stringify({
                         status,
-                        visibility: document.getElementById('visibilitySelect').value,
-                        admin_notes: document.getElementById('adminNotes').value,
-                        admin_feedback: document.getElementById('adminFeedback').value
+                        visibility,
+                        admin_notes: document.getElementById('adminNotes')?.value || ''
                     })
                 });
 
@@ -1599,8 +1643,23 @@
         }
 
         async function reviewCompany(id, status) {
-            const confirmMsg = status === 'approved' ? t('confirmApproveCompany') : t('confirmRejectCompany');
+            // 根据状态选择确认消息
+            let confirmMsg;
+            if (status === 'engage') {
+                confirmMsg = t('confirmEngageCompany');
+            } else if (status === 'explore') {
+                confirmMsg = t('confirmExploreCompany');
+            } else if (status === 'pass') {
+                confirmMsg = t('confirmPassCompany');
+            } else if (status === 'approved') {
+                confirmMsg = t('confirmApproveCompany');
+            } else {
+                confirmMsg = t('confirmRejectCompany');
+            }
             if (!confirm(confirmMsg)) return;
+
+            // 设置可见性：engage 和 approved 对投资人可见，其他私有
+            const visibility = (status === 'engage' || status === 'approved') ? 'investors' : 'private';
 
             try {
                 const response = await fetch(`/api/admin/companies/${id}/review`, {
@@ -1609,7 +1668,7 @@
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ status, visibility: status === 'approved' ? 'investors' : 'private' })
+                    body: JSON.stringify({ status, visibility })
                 });
 
                 if (!response.ok) throw new Error(t('operationFailed'));
@@ -2151,14 +2210,19 @@
                 // 渲染外部反馈（企业可见）
                 if (data.comments && data.comments.length > 0) {
                     feedbackContainer.innerHTML = data.comments.map(c => `
-                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: ${c.user_role === 'company' ? '#e3f2fd' : '#fff'}; border-radius: 8px; border-left: 3px solid ${c.user_role === 'company' ? '#2196f3' : '#4CAF50'};">
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: ${c.user_role === 'company' ? '#e3f2fd' : '#fff'}; border-radius: 8px; border-left: 3px solid ${c.user_role === 'company' ? '#2196f3' : '#4CAF50'}; position: relative;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                 <strong style="font-size: 0.875rem;">
                                     <i class="fas ${c.user_role === 'company' ? 'fa-building' : 'fa-user-shield'}" style="margin-right: 0.25rem;"></i>
                                     ${c.user?.name || c.user?.email || '-'}
                                     <span style="color: #999; font-weight: normal;">(${formatRole(c.user_role)})</span>
                                 </strong>
-                                <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                                    <button onclick="deleteComment('${c.id}', '${companyId}')" style="background: none; border: none; cursor: pointer; color: #999; padding: 0.25rem;" title="${t('delete')}">
+                                        <i class="fas fa-trash-alt" style="font-size: 0.75rem;"></i>
+                                    </button>
+                                </div>
                             </div>
                             <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
                         </div>
@@ -2171,14 +2235,19 @@
                 // 渲染内部评论（仅admin/staff可见）
                 if (data.internalComments && data.internalComments.length > 0) {
                     internalContainer.innerHTML = data.internalComments.map(c => `
-                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border-radius: 8px; border-left: 3px solid #EF4444;">
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border-radius: 8px; border-left: 3px solid #EF4444; position: relative;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                 <strong style="font-size: 0.875rem;">
                                     <i class="fas fa-user-shield" style="margin-right: 0.25rem; color: #EF4444;"></i>
                                     ${c.user?.name || c.user?.email || '-'}
                                     <span style="color: #999; font-weight: normal;">(${formatRole(c.user_role)})</span>
                                 </strong>
-                                <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                                    <button onclick="deleteComment('${c.id}', '${companyId}')" style="background: none; border: none; cursor: pointer; color: #999; padding: 0.25rem;" title="${t('delete')}">
+                                        <i class="fas fa-trash-alt" style="font-size: 0.75rem;"></i>
+                                    </button>
+                                </div>
                             </div>
                             <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
                         </div>
@@ -2248,6 +2317,28 @@
 
                 input.value = '';
                 showMessage(t('internalNoteSent'), 'success');
+                loadFeedback(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 删除评论
+        async function deleteComment(commentId, companyId) {
+            if (!confirm(t('confirmDeleteComment'))) return;
+            
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/comments/${commentId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || t('operationFailed'));
+                }
+
+                showMessage(t('commentDeleted'), 'success');
                 loadFeedback(companyId);
             } catch (error) {
                 showMessage(error.message, 'error');

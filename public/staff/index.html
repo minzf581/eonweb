@@ -307,6 +307,10 @@
         .status-pending { background: #FEF3C7; color: #92400E; }
         .status-approved { background: #D1FAE5; color: #065F46; }
         .status-rejected { background: #FEE2E2; color: #991B1B; }
+        /* 新的三级审核状态 */
+        .status-engage { background: #D1FAE5; color: #065F46; }  /* 绿色 - 要跟进 */
+        .status-explore { background: #DBEAFE; color: #1E40AF; } /* 蓝色 - 需了解更多 */
+        .status-pass { background: #FEE2E2; color: #991B1B; }    /* 红色 - 不跟进 */
 
         /* 消息提示 */
         .message {
@@ -1593,14 +1597,19 @@
                 // 渲染外部反馈（企业可见）
                 if (data.comments && data.comments.length > 0) {
                     feedbackContainer.innerHTML = data.comments.map(c => `
-                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: ${c.user_role === 'company' ? '#e3f2fd' : '#fff'}; border-radius: 8px; border-left: 3px solid ${c.user_role === 'company' ? '#2196f3' : '#4CAF50'};">
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: ${c.user_role === 'company' ? '#e3f2fd' : '#fff'}; border-radius: 8px; border-left: 3px solid ${c.user_role === 'company' ? '#2196f3' : '#4CAF50'}; position: relative;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                 <strong style="font-size: 0.875rem;">
                                     <i class="fas ${c.user_role === 'company' ? 'fa-building' : 'fa-user-shield'}" style="margin-right: 0.25rem;"></i>
                                     ${c.user?.name || c.user?.email || '-'}
                                     <span style="color: #999; font-weight: normal;">(${formatRole(c.user_role)})</span>
                                 </strong>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                                    <button onclick="deleteComment('${c.id}', '${companyId}')" style="background: none; border: none; cursor: pointer; color: #999; padding: 0.25rem;" title="${t('delete')}">
+                                        <i class="fas fa-trash-alt" style="font-size: 0.75rem;"></i>
+                                    </button>
+                                </div>
                             </div>
                             <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
                         </div>
@@ -1613,14 +1622,19 @@
                 // 渲染内部评论（仅admin/staff可见）
                 if (data.internalComments && data.internalComments.length > 0) {
                     internalContainer.innerHTML = data.internalComments.map(c => `
-                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border-radius: 8px; border-left: 3px solid #EF4444;">
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border-radius: 8px; border-left: 3px solid #EF4444; position: relative;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                 <strong style="font-size: 0.875rem;">
                                     <i class="fas fa-user-shield" style="margin-right: 0.25rem; color: #EF4444;"></i>
                                     ${c.user?.name || c.user?.email || '-'}
                                     <span style="color: #999; font-weight: normal;">(${formatRole(c.user_role)})</span>
                                 </strong>
-                                <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                                    <button onclick="deleteComment('${c.id}', '${companyId}')" style="background: none; border: none; cursor: pointer; color: #999; padding: 0.25rem;" title="${t('delete')}">
+                                        <i class="fas fa-trash-alt" style="font-size: 0.75rem;"></i>
+                                    </button>
+                                </div>
                             </div>
                             <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
                         </div>
@@ -1690,6 +1704,28 @@
 
                 input.value = '';
                 showMessage(t('internalNoteSent'), 'success');
+                loadFeedback(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 删除评论
+        async function deleteComment(commentId, companyId) {
+            if (!confirm(t('confirmDeleteComment'))) return;
+            
+            try {
+                const response = await fetch(`/api/staff/companies/${companyId}/comments/${commentId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || t('operationFailed'));
+                }
+
+                showMessage(t('commentDeleted'), 'success');
                 loadFeedback(companyId);
             } catch (error) {
                 showMessage(error.message, 'error');
@@ -2047,12 +2083,18 @@
                 'draft': '草稿',
                 'pending': '待审核',
                 'approved': '已通过',
-                'rejected': '已拒绝'
+                'rejected': '已拒绝',
+                'engage': 'ENGAGE (跟进)',
+                'explore': 'EXPLORE (待了解)',
+                'pass': 'PASS (不跟进)'
             } : {
                 'draft': 'Draft',
                 'pending': 'Pending',
                 'approved': 'Approved',
-                'rejected': 'Rejected'
+                'rejected': 'Rejected',
+                'engage': 'ENGAGE',
+                'explore': 'EXPLORE',
+                'pass': 'PASS'
             };
             return map[status] || status;
         }
@@ -2186,6 +2228,11 @@
             sendInternalNote: { zh: '发送内部评论', en: 'Send Internal Note' },
             noInternalNotes: { zh: '暂无内部评论', en: 'No internal notes yet' },
             internalNoteSent: { zh: '内部评论已发送', en: 'Internal note sent' },
+            // 删除评论
+            confirmDeleteComment: { zh: '确定要删除这条评论吗？', en: 'Are you sure you want to delete this comment?' },
+            commentDeleted: { zh: '评论已删除', en: 'Comment deleted' },
+            operationFailed: { zh: '操作失败', en: 'Operation failed' },
+            delete: { zh: '删除', en: 'Delete' },
             feedbackToCompany: { zh: '给企业的反馈', en: 'Feedback to Company' },
             feedbackToCompanyHint: { zh: '💬 以下内容企业可以看到', en: '💬 The following content is visible to the company' },
             useOfFunds: { zh: '资金用途', en: 'Use of Funds' },

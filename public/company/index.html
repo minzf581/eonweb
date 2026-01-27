@@ -141,6 +141,10 @@
         .status-pending { background: #FEF3C7; color: #92400E; }
         .status-approved { background: #D1FAE5; color: #065F46; }
         .status-rejected { background: #FEE2E2; color: #991B1B; }
+        /* 新的三级审核状态 */
+        .status-engage { background: #D1FAE5; color: #065F46; }  /* 绿色 - 要跟进 */
+        .status-explore { background: #DBEAFE; color: #1E40AF; } /* 蓝色 - 需了解更多 */
+        .status-pass { background: #FEE2E2; color: #991B1B; }    /* 红色 - 不跟进 */
 
         /* 进度步骤 */
         .progress-steps {
@@ -1250,7 +1254,11 @@
                 'draft': { text: lang === 'zh' ? '草稿' : 'Draft', class: 'status-draft' },
                 'pending': { text: lang === 'zh' ? '待审核' : 'Pending', class: 'status-pending' },
                 'approved': { text: lang === 'zh' ? '已通过' : 'Approved', class: 'status-approved' },
-                'rejected': { text: lang === 'zh' ? '已拒绝' : 'Rejected', class: 'status-rejected' }
+                'rejected': { text: lang === 'zh' ? '已拒绝' : 'Rejected', class: 'status-rejected' },
+                // 新的三级审核状态
+                'engage': { text: 'ENGAGE', class: 'status-engage' },
+                'explore': { text: 'EXPLORE', class: 'status-explore' },
+                'pass': { text: 'PASS', class: 'status-pass' }
             };
 
             const status = companyData?.status || 'draft';

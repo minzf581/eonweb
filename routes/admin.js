@@ -999,6 +999,30 @@ router.post('/companies/:id/comments', authenticate, requireAdmin, async (req, r
     }
 });
 
+// 删除评论
+router.delete('/companies/:companyId/comments/:commentId', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const comment = await CompanyComment.findOne({
+            where: { 
+                id: req.params.commentId,
+                company_id: req.params.companyId
+            }
+        });
+
+        if (!comment) {
+            return res.status(404).json({ error: '评论不存在' });
+        }
+
+        await comment.destroy();
+        console.log(`[Admin] 管理员 ${req.user.email} 删除了评论 ${req.params.commentId}`);
+
+        res.json({ message: '评论已删除' });
+    } catch (error) {
+        console.error('[Admin] 删除评论错误:', error);
+        res.status(500).json({ error: '删除评论失败' });
+    }
+});
+
 // 获取企业未读反馈数量（管理员视角 - 查看企业发送的未读）
 router.get('/companies/:id/comments/unread-count', authenticate, requireAdmin, async (req, res) => {
     try {
