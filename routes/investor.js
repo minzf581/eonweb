@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
-const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, CompanyPermission, CompanyComment } = require('../models');
+const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, CompanyPermission, CompanyComment, InterestExpression, DataRoomAccess } = require('../models');
 const { authenticate, requireInvestor } = require('../middleware/auth');
+const emailService = require('../services/EmailService');
 
 // 检查投资人对企业的访问权限
 async function checkInvestorAccess(userId, companyId) {
@@ -115,7 +116,11 @@ router.get('/projects', authenticate, requireInvestor, async (req, res) => {
             });
         }
 
-        const { industry, stage, amount_min, amount_max, page = 1, limit = 20 } = req.query;
+        const { 
+            industry, stage, amount_min, amount_max, 
+            deal_status, sg_ready, search,
+            page = 1, limit = 20 
+        } = req.query;
 
         // 获取被授权访问的企业ID列表
         const permittedCompanyIds = await CompanyPermission.findAll({
@@ -131,11 +136,12 @@ router.get('/projects', authenticate, requireInvestor, async (req, res) => {
         }).then(perms => perms.map(p => p.company_id));
 
         // 构建查询条件：公开可见的企业 或 被授权访问的企业
+        // engage 状态的企业也对投资人可见
         const where = {
             [Op.or]: [
-                // 公开对投资人可见的
+                // 公开对投资人可见的（包括 engage 状态）
                 {
-                    status: 'approved',
+                    status: { [Op.in]: ['approved', 'engage'] },
                     visibility: { [Op.in]: ['investors', 'whitelist'] }
                 },
                 // 被授权访问的
@@ -143,8 +149,11 @@ router.get('/projects', authenticate, requireInvestor, async (req, res) => {
             ]
         };
 
+        // 初始化 and 条件数组
+        where[Op.and] = [];
+
+        // 行业筛选
         if (industry) {
-            where[Op.and] = where[Op.and] || [];
             where[Op.and].push({
                 [Op.or]: [
                     { industry_primary: industry },
@@ -153,8 +162,35 @@ router.get('/projects', authenticate, requireInvestor, async (req, res) => {
             });
         }
 
+        // 阶段筛选
         if (stage) {
-            where.stage = stage;
+            where[Op.and].push({ stage });
+        }
+
+        // 交易状态筛选
+        if (deal_status) {
+            where[Op.and].push({ deal_status });
+        }
+
+        // SG 准备状态筛选
+        if (sg_ready) {
+            where[Op.and].push({ sg_ready });
+        }
+
+        // 搜索关键词
+        if (search) {
+            where[Op.and].push({
+                [Op.or]: [
+                    { name_cn: { [Op.iLike]: `%${search}%` } },
+                    { name_en: { [Op.iLike]: `%${search}%` } },
+                    { description: { [Op.iLike]: `%${search}%` } }
+                ]
+            });
+        }
+
+        // 清空空的 and 数组
+        if (where[Op.and].length === 0) {
+            delete where[Op.and];
         }
 
         // 查询企业
@@ -174,7 +210,20 @@ router.get('/projects', authenticate, requireInvestor, async (req, res) => {
             offset: (parseInt(page) - 1) * parseInt(limit)
         });
 
-        // 返回数据，标记是否为授权访问
+        // 获取投资人对这些企业的兴趣表达记录
+        const companyIds = companies.map(c => c.id);
+        const interests = await InterestExpression.findAll({
+            where: {
+                company_id: { [Op.in]: companyIds },
+                investor_id: req.user.id,
+                status: 'active'
+            },
+            attributes: ['company_id', 'interest_type']
+        });
+        const interestMap = {};
+        interests.forEach(i => { interestMap[i.company_id] = i.interest_type; });
+
+        // 返回数据，标记是否为授权访问和兴趣状态
         const projects = companies.map(company => ({
             id: company.id,
             name_cn: company.name_cn,
@@ -186,7 +235,12 @@ router.get('/projects', authenticate, requireInvestor, async (req, res) => {
             stage: company.stage,
             tags: company.tags,
             status: company.status,
+            deal_status: company.deal_status,
+            sg_ready: company.sg_ready,
+            data_room_enabled: company.data_room_enabled,
             hasPermission: permittedCompanyIds.includes(company.id),
+            hasExpressedInterest: !!interestMap[company.id],
+            interestType: interestMap[company.id] || null,
             fundraising: company.fundraisingInfo ? {
                 purpose: company.fundraisingInfo.purpose,
                 financing_type: company.fundraisingInfo.financing_type,
@@ -607,6 +661,201 @@ router.get('/documents/:id/download', authenticate, requireInvestor, async (req,
     } catch (error) {
         console.error('[Investor] 下载文档错误:', error);
         res.status(500).json({ error: '下载失败' });
+    }
+});
+
+// ==================== 表达兴趣功能 ====================
+
+// 表达兴趣
+router.post('/projects/:id/interest', authenticate, requireInvestor, async (req, res) => {
+    try {
+        const { interest_type = 'general', message } = req.body;
+
+        // 检查投资人状态
+        const profile = await InvestorProfile.findOne({ where: { user_id: req.user.id } });
+        if (!profile || profile.status !== 'approved') {
+            return res.status(403).json({ error: '您的投资人账户尚未通过审核' });
+        }
+
+        const company = await Company.findByPk(req.params.id, {
+            include: [{ model: User, as: 'user', attributes: ['id', 'email', 'name'] }]
+        });
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        // 检查是否已经表达过兴趣
+        let interest = await InterestExpression.findOne({
+            where: {
+                company_id: req.params.id,
+                investor_id: req.user.id
+            }
+        });
+
+        if (interest) {
+            // 更新兴趣
+            await interest.update({
+                interest_type,
+                message: message || interest.message,
+                status: 'active'
+            });
+        } else {
+            // 创建新的兴趣表达
+            interest = await InterestExpression.create({
+                company_id: req.params.id,
+                investor_id: req.user.id,
+                interest_type,
+                message
+            });
+        }
+
+        const companyName = company.name_cn || company.name_en;
+        console.log(`[Investor] 用户 ${req.user.email} 对企业 ${companyName} 表达兴趣`);
+
+        // 发送邮件通知公司和管理员
+        try {
+            if (emailService.isConfigured()) {
+                const recipients = [];
+                
+                // 通知公司
+                if (company.user?.email) {
+                    recipients.push(company.user.email);
+                }
+
+                // 通知所有管理员
+                const admins = await User.findAll({
+                    where: { role: 'admin', status: 'active' },
+                    attributes: ['email']
+                });
+                recipients.push(...admins.map(a => a.email));
+
+                if (recipients.length > 0) {
+                    const investorName = profile.name || req.user.email;
+                    const interestTypeText = {
+                        general: '一般关注',
+                        high: '高度关注',
+                        watching: '持续关注'
+                    }[interest_type] || '关注';
+
+                    const html = emailService.generateTemplate({
+                        title: '新的投资人兴趣表达',
+                        content: `<p>投资人 <strong>${investorName}</strong> 对企业 <strong>${companyName}</strong> 表达了兴趣。</p>
+                            <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500; width: 120px;">兴趣级别</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${interestTypeText}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">投资人</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${investorName} (${profile.organization || '-'})</td>
+                                </tr>
+                                ${message ? `<tr><td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">留言</td><td style="padding: 12px; border: 1px solid #E5E7EB;">${message}</td></tr>` : ''}
+                            </table>`,
+                        actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/admin/fundraising.html#companies`,
+                        actionText: '查看详情'
+                    });
+
+                    await emailService.sendEmail({
+                        to: [...new Set(recipients)],
+                        subject: `[EON Protocol] 新投资人兴趣 - ${investorName} → ${companyName}`,
+                        html
+                    });
+                }
+            }
+        } catch (emailError) {
+            console.error('[Investor] 发送兴趣通知邮件失败:', emailError);
+        }
+
+        res.json({
+            message: '已成功表达兴趣',
+            interest
+        });
+    } catch (error) {
+        console.error('[Investor] 表达兴趣错误:', error);
+        res.status(500).json({ error: '表达兴趣失败' });
+    }
+});
+
+// 撤回兴趣
+router.delete('/projects/:id/interest', authenticate, requireInvestor, async (req, res) => {
+    try {
+        const interest = await InterestExpression.findOne({
+            where: {
+                company_id: req.params.id,
+                investor_id: req.user.id
+            }
+        });
+
+        if (!interest) {
+            return res.status(404).json({ error: '未找到兴趣表达记录' });
+        }
+
+        await interest.update({ status: 'withdrawn' });
+
+        res.json({ message: '已撤回兴趣表达' });
+    } catch (error) {
+        console.error('[Investor] 撤回兴趣错误:', error);
+        res.status(500).json({ error: '撤回失败' });
+    }
+});
+
+// 获取我表达过兴趣的企业列表
+router.get('/my-interests', authenticate, requireInvestor, async (req, res) => {
+    try {
+        const profile = await InvestorProfile.findOne({ where: { user_id: req.user.id } });
+        if (!profile || profile.status !== 'approved') {
+            return res.status(403).json({ error: '您的投资人账户尚未通过审核' });
+        }
+
+        const interests = await InterestExpression.findAll({
+            where: {
+                investor_id: req.user.id,
+                status: 'active'
+            },
+            include: [{
+                model: Company,
+                as: 'company',
+                attributes: ['id', 'name_cn', 'name_en', 'industry_primary', 'stage', 'deal_status', 'description']
+            }],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ interests });
+    } catch (error) {
+        console.error('[Investor] 获取兴趣列表错误:', error);
+        res.status(500).json({ error: '获取列表失败' });
+    }
+});
+
+// 获取我的资料库访问权限列表
+router.get('/my-dataroom-access', authenticate, requireInvestor, async (req, res) => {
+    try {
+        const profile = await InvestorProfile.findOne({ where: { user_id: req.user.id } });
+        if (!profile || profile.status !== 'approved') {
+            return res.status(403).json({ error: '您的投资人账户尚未通过审核' });
+        }
+
+        const accessList = await DataRoomAccess.findAll({
+            where: {
+                user_id: req.user.id,
+                status: 'active',
+                [Op.or]: [
+                    { expires_at: null },
+                    { expires_at: { [Op.gt]: new Date() } }
+                ]
+            },
+            include: [{
+                model: Company,
+                as: 'company',
+                attributes: ['id', 'name_cn', 'name_en', 'industry_primary', 'stage', 'deal_status']
+            }],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ accessList });
+    } catch (error) {
+        console.error('[Investor] 获取资料库访问权限错误:', error);
+        res.status(500).json({ error: '获取列表失败' });
     }
 });
 

@@ -194,6 +194,7 @@
             gap: 1rem;
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .filter-select {
@@ -210,6 +211,95 @@
             border-radius: 8px;
             font-size: 0.875rem;
             min-width: 200px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0 0.75rem;
+        }
+        .search-box input {
+            border: none;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            outline: none;
+            min-width: 180px;
+        }
+        .search-box i { color: var(--text-secondary); }
+
+        /* 交易状态标签 */
+        .deal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .deal-badge.new { background: #DBEAFE; color: #1E40AF; }
+        .deal-badge.dd { background: #FEF3C7; color: #92400E; }
+        .deal-badge.term_sheet { background: #D1FAE5; color: #065F46; }
+        .deal-badge.closed { background: #E5E7EB; color: #6B7280; }
+
+        /* SG 准备状态 */
+        .sg-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+        .sg-badge.ready { background: #D1FAE5; color: #065F46; }
+        .sg-badge.in_progress { background: #FEF3C7; color: #92400E; }
+        .sg-badge.not_ready { background: #FEE2E2; color: #991B1B; }
+
+        /* 表达兴趣按钮 */
+        .interest-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .interest-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        .interest-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        .interest-btn.active:hover {
+            background: #0939d4;
+        }
+
+        /* 项目卡片额外信息 */
+        .project-badges {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .project-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
         }
 
         /* 模态框 */
@@ -516,6 +606,12 @@
                             <span data-zh="我的请求" data-en="My Requests">我的请求</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="#interests" class="nav-link" data-panel="interests">
+                            <i class="fas fa-heart"></i>
+                            <span data-zh="我的关注" data-en="My Interests">我的关注</span>
+                        </a>
+                    </li>
                     <li class="nav-item" style="margin-top: 2rem;">
                         <a href="#" class="nav-link" onclick="showPasswordModal(); return false;">
                             <i class="fas fa-key"></i>
@@ -568,6 +664,10 @@
 
                 <!-- 筛选栏 -->
                 <div class="filter-bar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="filterSearch" placeholder="搜索公司名称..." data-placeholder-zh="搜索公司名称..." data-placeholder-en="Search company..." onkeyup="debounceSearch()">
+                    </div>
                     <select class="filter-select" id="filterIndustry" onchange="loadProjects()">
                         <option value="" data-zh="全部行业" data-en="All Industries">全部行业</option>
                         <option value="technology" data-zh="科技/互联网" data-en="Technology">科技/互联网</option>
@@ -584,6 +684,18 @@
                         <option value="a" data-zh="A轮" data-en="Series A">A轮</option>
                         <option value="b" data-zh="B轮" data-en="Series B">B轮</option>
                         <option value="pre_ipo" data-zh="Pre-IPO" data-en="Pre-IPO">Pre-IPO</option>
+                    </select>
+                    <select class="filter-select" id="filterDealStatus" onchange="loadProjects()">
+                        <option value="" data-zh="全部状态" data-en="All Deal Status">全部状态</option>
+                        <option value="new" data-zh="🆕 新项目" data-en="🆕 New">🆕 新项目</option>
+                        <option value="dd" data-zh="🔍 尽调中" data-en="🔍 Due Diligence">🔍 尽调中</option>
+                        <option value="term_sheet" data-zh="📋 条款清单" data-en="📋 Term Sheet">📋 条款清单</option>
+                    </select>
+                    <select class="filter-select" id="filterSgReady" onchange="loadProjects()">
+                        <option value="" data-zh="SG准备状态" data-en="SG Readiness">SG准备状态</option>
+                        <option value="ready" data-zh="✅ 已准备" data-en="✅ Ready">✅ 已准备</option>
+                        <option value="in_progress" data-zh="🔄 进行中" data-en="🔄 In Progress">🔄 进行中</option>
+                        <option value="not_ready" data-zh="⏳ 未准备" data-en="⏳ Not Ready">⏳ 未准备</option>
                     </select>
                 </div>
 
@@ -738,6 +850,18 @@
                     <p id="referralStats" style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);"></p>
                 </div>
             </div>
+
+            <!-- 我的关注面板 -->
+            <div id="interests" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title" data-zh="我的关注" data-en="My Interests">我的关注</h1>
+                    <p class="page-subtitle" data-zh="查看您表达过兴趣的企业" data-en="View companies you've expressed interest in">查看您表达过兴趣的企业</p>
+                </div>
+
+                <div id="interestsList" class="projects-grid">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -810,6 +934,7 @@
                 }
 
                 await loadMyRequests();
+                await loadMyInterests();
             } catch (error) {
                 console.error('Load user info error:', error);
                 showMessage(t('pleaseRelogin'), 'error');
@@ -912,14 +1037,27 @@
             }
         }
 
+        // 搜索防抖
+        let searchTimeout;
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadProjects, 300);
+        }
+
         async function loadProjects() {
             const industry = document.getElementById('filterIndustry').value;
             const stage = document.getElementById('filterStage').value;
+            const dealStatus = document.getElementById('filterDealStatus').value;
+            const sgReady = document.getElementById('filterSgReady').value;
+            const search = document.getElementById('filterSearch').value.trim();
 
             try {
                 let url = '/api/investor/projects?';
                 if (industry) url += `industry=${industry}&`;
                 if (stage) url += `stage=${stage}&`;
+                if (dealStatus) url += `deal_status=${dealStatus}&`;
+                if (sgReady) url += `sg_ready=${sgReady}&`;
+                if (search) url += `search=${encodeURIComponent(search)}&`;
 
                 const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -942,16 +1080,21 @@
 
                 if (data.projects && data.projects.length > 0) {
                     document.getElementById('projectsGrid').innerHTML = data.projects.map(p => `
-                        <div class="project-card" onclick="openProjectDetail('${p.id}')">
-                            <div class="project-header">
-                                <div class="project-name">${p.name_cn}</div>
+                        <div class="project-card">
+                            <div class="project-header" onclick="openProjectDetail('${p.id}')">
+                                <div class="project-name">${p.name_cn || p.name_en || '-'}</div>
                                 <div class="project-stage">${formatStage(p.stage)}</div>
                             </div>
-                            <div class="project-industry">
+                            <div class="project-badges">
+                                ${formatDealStatus(p.deal_status)}
+                                ${formatSgReady(p.sg_ready)}
+                                ${p.data_room_enabled ? '<span class="sg-badge ready"><i class="fas fa-folder-open"></i> Data Room</span>' : ''}
+                            </div>
+                            <div class="project-industry" onclick="openProjectDetail('${p.id}')">
                                 <i class="fas fa-industry"></i> ${formatIndustry(p.industry_primary)}
                             </div>
-                            <div class="project-description">${p.description}</div>
-                            <div class="project-meta">
+                            <div class="project-description" onclick="openProjectDetail('${p.id}')">${p.description || '-'}</div>
+                            <div class="project-meta" onclick="openProjectDetail('${p.id}')">
                                 ${p.fundraising ? `
                                     <div class="project-meta-item">
                                         <i class="fas fa-dollar-sign"></i>
@@ -962,6 +1105,15 @@
                                         ${formatTimeline(p.fundraising.timeline)}
                                     </div>
                                 ` : ''}
+                            </div>
+                            <div class="project-footer">
+                                <button class="interest-btn ${p.hasExpressedInterest ? 'active' : ''}" onclick="event.stopPropagation(); toggleInterest('${p.id}', ${p.hasExpressedInterest})">
+                                    <i class="fas ${p.hasExpressedInterest ? 'fa-heart' : 'fa-heart'}"></i>
+                                    <span>${p.hasExpressedInterest ? t('interestedLabel') : t('expressInterest')}</span>
+                                </button>
+                                <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;" onclick="openProjectDetail('${p.id}')">
+                                    <i class="fas fa-eye"></i> ${t('viewDetails')}
+                                </button>
                             </div>
                         </div>
                     `).join('');
@@ -976,6 +1128,61 @@
             } catch (error) {
                 console.error('Load projects error:', error);
                 showMessage(t('loadProjectsFailed'), 'error');
+            }
+        }
+
+        // 格式化交易状态
+        function formatDealStatus(status) {
+            const statusMap = {
+                new: { label: currentLang === 'zh' ? '新项目' : 'New', icon: '🆕', class: 'new' },
+                dd: { label: currentLang === 'zh' ? '尽调中' : 'DD', icon: '🔍', class: 'dd' },
+                term_sheet: { label: currentLang === 'zh' ? '条款清单' : 'Term Sheet', icon: '📋', class: 'term_sheet' },
+                closed: { label: currentLang === 'zh' ? '已关闭' : 'Closed', icon: '✓', class: 'closed' }
+            };
+            const info = statusMap[status] || statusMap.new;
+            return `<span class="deal-badge ${info.class}">${info.icon} ${info.label}</span>`;
+        }
+
+        // 格式化 SG 准备状态
+        function formatSgReady(status) {
+            const statusMap = {
+                ready: { label: currentLang === 'zh' ? 'SG Ready' : 'SG Ready', class: 'ready' },
+                in_progress: { label: currentLang === 'zh' ? 'SG 进行中' : 'SG In Progress', class: 'in_progress' },
+                not_ready: { label: currentLang === 'zh' ? 'SG 未准备' : 'SG Not Ready', class: 'not_ready' }
+            };
+            const info = statusMap[status];
+            if (!info || status === 'not_ready') return ''; // 不显示未准备状态
+            return `<span class="sg-badge ${info.class}"><i class="fas fa-flag"></i> ${info.label}</span>`;
+        }
+
+        // 表达/撤回兴趣
+        async function toggleInterest(projectId, hasInterest) {
+            try {
+                if (hasInterest) {
+                    // 撤回兴趣
+                    const response = await fetch(`/api/investor/projects/${projectId}/interest`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) throw new Error('Failed');
+                    showMessage(t('interestWithdrawn'), 'success');
+                } else {
+                    // 表达兴趣
+                    const response = await fetch(`/api/investor/projects/${projectId}/interest`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ interest_type: 'general' })
+                    });
+                    if (!response.ok) throw new Error('Failed');
+                    showMessage(t('interestExpressed'), 'success');
+                }
+                loadProjects(); // 刷新列表
+            } catch (error) {
+                console.error('Toggle interest error:', error);
+                showMessage(t('operationFailed'), 'error');
             }
         }
 
@@ -1364,6 +1571,63 @@
             }
         }
 
+        // 加载我的关注列表
+        async function loadMyInterests() {
+            try {
+                const response = await fetch('/api/investor/my-interests', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error(t('loadFailed'));
+
+                const data = await response.json();
+
+                if (data.interests && data.interests.length > 0) {
+                    document.getElementById('interestsList').innerHTML = data.interests.map(i => {
+                        const p = i.company;
+                        return `
+                        <div class="project-card">
+                            <div class="project-header" onclick="openProjectDetail('${p.id}')">
+                                <div class="project-name">${p.name_cn || p.name_en || '-'}</div>
+                                <div class="project-stage">${formatStage(p.stage)}</div>
+                            </div>
+                            <div class="project-badges">
+                                ${formatDealStatus(p.deal_status)}
+                            </div>
+                            <div class="project-industry" onclick="openProjectDetail('${p.id}')">
+                                <i class="fas fa-industry"></i> ${formatIndustry(p.industry_primary)}
+                            </div>
+                            <div class="project-description" onclick="openProjectDetail('${p.id}')">${p.description || '-'}</div>
+                            <div class="project-footer">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                    <i class="fas fa-clock"></i> ${t('expressedAt')}: ${new Date(i.created_at).toLocaleDateString()}
+                                </div>
+                                <button class="interest-btn active" onclick="event.stopPropagation(); toggleInterest('${p.id}', true)">
+                                    <i class="fas fa-heart"></i>
+                                    <span>${t('withdrawInterest')}</span>
+                                </button>
+                            </div>
+                        </div>
+                    `}).join('');
+                } else {
+                    document.getElementById('interestsList').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-heart"></i>
+                            <p>${t('noInterests')}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Load interests error:', error);
+                document.getElementById('interestsList').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>${t('loadFailed')}</p>
+                    </div>
+                `;
+            }
+        }
+
         function setupEventListeners() {
             document.querySelectorAll('.nav-link[data-panel]').forEach(link => {
                 link.addEventListener('click', (e) => {
@@ -1650,7 +1914,29 @@
             previewFailed: { zh: '预览失败', en: 'Preview failed' },
             downloading: { zh: '正在下载...', en: 'Downloading...' },
             downloadFailed: { zh: '下载失败', en: 'Download failed' },
-            adminNotes: { zh: '管理员备注', en: 'Admin Notes' }
+            adminNotes: { zh: '管理员备注', en: 'Admin Notes' },
+            // 新增：表达兴趣相关
+            expressInterest: { zh: '表达兴趣', en: 'Express Interest' },
+            interestedLabel: { zh: '已关注', en: 'Interested' },
+            interestExpressed: { zh: '已成功表达兴趣', en: 'Interest expressed successfully' },
+            interestWithdrawn: { zh: '已撤回兴趣', en: 'Interest withdrawn' },
+            operationFailed: { zh: '操作失败', en: 'Operation failed' },
+            viewDetails: { zh: '查看详情', en: 'View Details' },
+            withdrawInterest: { zh: '取消关注', en: 'Withdraw' },
+            expressedAt: { zh: '关注时间', en: 'Expressed at' },
+            noInterests: { zh: '您还没有关注任何企业', en: 'You haven\'t expressed interest in any companies yet' },
+            // 交易状态
+            dealStatusNew: { zh: '新项目', en: 'New' },
+            dealStatusDD: { zh: '尽调中', en: 'Due Diligence' },
+            dealStatusTermSheet: { zh: '条款清单', en: 'Term Sheet' },
+            dealStatusClosed: { zh: '已关闭', en: 'Closed' },
+            // SG 状态
+            sgReady: { zh: 'SG已准备', en: 'SG Ready' },
+            sgInProgress: { zh: 'SG进行中', en: 'SG In Progress' },
+            sgNotReady: { zh: 'SG未准备', en: 'SG Not Ready' },
+            // 资料库
+            dataRoom: { zh: '资料库', en: 'Data Room' },
+            accessDataRoom: { zh: '访问资料库', en: 'Access Data Room' }
         };
 
         function t(key) {

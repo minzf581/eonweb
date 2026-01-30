@@ -8,6 +8,12 @@ const AccessRequest = require('./AccessRequest');
 const Message = require('./Message');
 const CompanyComment = require('./CompanyComment');
 const CompanyPermission = require('./CompanyPermission');
+const DataRoomFolder = require('./DataRoomFolder');
+const DataRoomFile = require('./DataRoomFile');
+const DataRoomAccess = require('./DataRoomAccess');
+const DataRoomMessage = require('./DataRoomMessage');
+const DataRoomViewLog = require('./DataRoomViewLog');
+const InterestExpression = require('./InterestExpression');
 
 // 设置关联关系
 
@@ -61,6 +67,66 @@ CompanyPermission.belongsTo(User, { foreignKey: 'user_id', as: 'permittedUser' }
 User.hasMany(CompanyPermission, { foreignKey: 'granted_by', as: 'grantedPermissions' });
 CompanyPermission.belongsTo(User, { foreignKey: 'granted_by', as: 'grantedByUser' });
 
+// DataRoomFolder 关联
+Company.hasMany(DataRoomFolder, { foreignKey: 'company_id', as: 'dataRoomFolders' });
+DataRoomFolder.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+// DataRoomFile 关联
+Company.hasMany(DataRoomFile, { foreignKey: 'company_id', as: 'dataRoomFiles' });
+DataRoomFile.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+DataRoomFolder.hasMany(DataRoomFile, { foreignKey: 'folder_id', as: 'files' });
+DataRoomFile.belongsTo(DataRoomFolder, { foreignKey: 'folder_id', as: 'folder' });
+
+User.hasMany(DataRoomFile, { foreignKey: 'uploaded_by', as: 'uploadedFiles' });
+DataRoomFile.belongsTo(User, { foreignKey: 'uploaded_by', as: 'uploader' });
+
+// DataRoomAccess 关联
+Company.hasMany(DataRoomAccess, { foreignKey: 'company_id', as: 'dataRoomAccess' });
+DataRoomAccess.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+User.hasMany(DataRoomAccess, { foreignKey: 'user_id', as: 'dataRoomPermissions' });
+DataRoomAccess.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+User.hasMany(DataRoomAccess, { foreignKey: 'granted_by', as: 'grantedDataRoomAccess' });
+DataRoomAccess.belongsTo(User, { foreignKey: 'granted_by', as: 'grantedByUser' });
+
+// DataRoomMessage 关联
+Company.hasMany(DataRoomMessage, { foreignKey: 'company_id', as: 'dataRoomMessages' });
+DataRoomMessage.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+User.hasMany(DataRoomMessage, { foreignKey: 'investor_id', as: 'investorDataRoomMessages' });
+DataRoomMessage.belongsTo(User, { foreignKey: 'investor_id', as: 'investor' });
+
+User.hasMany(DataRoomMessage, { foreignKey: 'sender_id', as: 'sentDataRoomMessages' });
+DataRoomMessage.belongsTo(User, { foreignKey: 'sender_id', as: 'messageSender' });
+
+DataRoomFile.hasMany(DataRoomMessage, { foreignKey: 'file_id', as: 'messages' });
+DataRoomMessage.belongsTo(DataRoomFile, { foreignKey: 'file_id', as: 'file' });
+
+// DataRoomViewLog 关联
+Company.hasMany(DataRoomViewLog, { foreignKey: 'company_id', as: 'dataRoomViewLogs' });
+DataRoomViewLog.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+User.hasMany(DataRoomViewLog, { foreignKey: 'user_id', as: 'viewLogs' });
+DataRoomViewLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+DataRoomFolder.hasMany(DataRoomViewLog, { foreignKey: 'folder_id', as: 'viewLogs' });
+DataRoomViewLog.belongsTo(DataRoomFolder, { foreignKey: 'folder_id', as: 'folder' });
+
+DataRoomFile.hasMany(DataRoomViewLog, { foreignKey: 'file_id', as: 'viewLogs' });
+DataRoomViewLog.belongsTo(DataRoomFile, { foreignKey: 'file_id', as: 'file' });
+
+// InterestExpression 关联
+Company.hasMany(InterestExpression, { foreignKey: 'company_id', as: 'interestExpressions' });
+InterestExpression.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+User.hasMany(InterestExpression, { foreignKey: 'investor_id', as: 'expressedInterests' });
+InterestExpression.belongsTo(User, { foreignKey: 'investor_id', as: 'investor' });
+
+User.hasMany(InterestExpression, { foreignKey: 'follow_up_by', as: 'followedInterests' });
+InterestExpression.belongsTo(User, { foreignKey: 'follow_up_by', as: 'followUpUser' });
+
 // 同步数据库
 const syncDatabase = async (force = false) => {
     try {
@@ -84,5 +150,11 @@ module.exports = {
     Message,
     CompanyComment,
     CompanyPermission,
+    DataRoomFolder,
+    DataRoomFile,
+    DataRoomAccess,
+    DataRoomMessage,
+    DataRoomViewLog,
+    InterestExpression,
     syncDatabase
 };

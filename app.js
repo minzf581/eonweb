@@ -14,6 +14,7 @@ const companyRoutes = require('./routes/company');
 const investorRoutes = require('./routes/investor');
 const adminRoutes = require('./routes/admin');
 const staffRoutes = require('./routes/staff');
+const dataroomRoutes = require('./routes/dataroom');
 
 // Initialize Express app
 const app = express();
@@ -54,6 +55,7 @@ app.use('/api/company', companyRoutes);
 app.use('/api/investor', investorRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/dataroom', dataroomRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

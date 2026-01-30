@@ -138,6 +138,24 @@ const Company = sequelize.define('Company', {
         defaultValue: [],
         comment: '标签'
     },
+    // 交易状态：new（新项目）、dd（尽职调查中）、term_sheet（条款清单阶段）、closed（已关闭）
+    deal_status: {
+        type: DataTypes.STRING(20),
+        defaultValue: 'new',
+        comment: '交易状态: new, dd, term_sheet, closed'
+    },
+    // 新加坡准备情况
+    sg_ready: {
+        type: DataTypes.STRING(20),
+        defaultValue: 'not_ready',
+        comment: 'SG准备状态: not_ready, in_progress, ready'
+    },
+    // Data Room 是否启用
+    data_room_enabled: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: '是否启用资料库'
+    },
     reviewed_at: {
         type: DataTypes.DATE,
         allowNull: true

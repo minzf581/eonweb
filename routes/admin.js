@@ -3,7 +3,7 @@ const router = express.Router();
 const { Op } = require('sequelize');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
-const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message, CompanyComment, CompanyPermission } = require('../models');
+const { User, Company, FundraisingInfo, Document, InvestorProfile, AccessRequest, Message, CompanyComment, CompanyPermission, InterestExpression, DataRoomAccess, DataRoomFolder, DataRoomFile } = require('../models');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const emailService = require('../services/EmailService');
 
@@ -130,7 +130,7 @@ router.get('/companies/:id', authenticate, requireAdmin, async (req, res) => {
 // 审核企业
 router.put('/companies/:id/review', authenticate, requireAdmin, async (req, res) => {
     try {
-        const { status, visibility, admin_notes, admin_feedback, tags, send_email = false } = req.body;
+        const { status, visibility, admin_notes, admin_feedback, tags, deal_status, sg_ready, data_room_enabled, send_email = false } = req.body;
 
         const company = await Company.findByPk(req.params.id, {
             include: [{ model: User, as: 'user', attributes: ['id', 'email', 'name'] }]
@@ -150,6 +150,9 @@ router.put('/companies/:id/review', authenticate, requireAdmin, async (req, res)
         if (admin_notes !== undefined) updateData.admin_notes = admin_notes;
         if (admin_feedback !== undefined) updateData.admin_feedback = admin_feedback;
         if (tags) updateData.tags = tags;
+        if (deal_status) updateData.deal_status = deal_status;
+        if (sg_ready) updateData.sg_ready = sg_ready;
+        if (data_room_enabled !== undefined) updateData.data_room_enabled = data_room_enabled;
 
         await company.update(updateData);
 
@@ -1420,6 +1423,132 @@ router.get('/permissible-users', authenticate, requireAdmin, async (req, res) =>
     } catch (error) {
         console.error('[Admin] 获取可授权用户列表错误:', error);
         res.status(500).json({ error: '获取用户列表失败' });
+    }
+});
+
+// ==================== 投资人兴趣表达管理 ====================
+
+// 获取企业的所有兴趣表达
+router.get('/companies/:id/interests', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const interests = await InterestExpression.findAll({
+            where: { company_id: req.params.id },
+            include: [{
+                model: User,
+                as: 'investor',
+                attributes: ['id', 'email', 'name'],
+                include: [{
+                    model: InvestorProfile,
+                    as: 'investorProfile',
+                    attributes: ['name', 'organization', 'investor_type', 'title']
+                }]
+            }],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ interests });
+    } catch (error) {
+        console.error('[Admin] 获取兴趣表达列表错误:', error);
+        res.status(500).json({ error: '获取列表失败' });
+    }
+});
+
+// 获取所有兴趣表达（汇总）
+router.get('/interests', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { status = 'active', page = 1, limit = 50 } = req.query;
+
+        const where = {};
+        if (status) where.status = status;
+
+        const { count, rows: interests } = await InterestExpression.findAndCountAll({
+            where,
+            include: [
+                {
+                    model: Company,
+                    as: 'company',
+                    attributes: ['id', 'name_cn', 'name_en', 'stage', 'deal_status']
+                },
+                {
+                    model: User,
+                    as: 'investor',
+                    attributes: ['id', 'email', 'name'],
+                    include: [{
+                        model: InvestorProfile,
+                        as: 'investorProfile',
+                        attributes: ['name', 'organization', 'investor_type']
+                    }]
+                }
+            ],
+            order: [['created_at', 'DESC']],
+            limit: parseInt(limit),
+            offset: (parseInt(page) - 1) * parseInt(limit)
+        });
+
+        res.json({
+            interests,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                pages: Math.ceil(count / parseInt(limit))
+            }
+        });
+    } catch (error) {
+        console.error('[Admin] 获取所有兴趣表达错误:', error);
+        res.status(500).json({ error: '获取列表失败' });
+    }
+});
+
+// 跟进兴趣表达
+router.put('/interests/:id/follow-up', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { follow_up_notes, status } = req.body;
+
+        const interest = await InterestExpression.findByPk(req.params.id);
+        if (!interest) {
+            return res.status(404).json({ error: '记录不存在' });
+        }
+
+        await interest.update({
+            follow_up_notes,
+            follow_up_by: req.user.id,
+            follow_up_at: new Date(),
+            ...(status && { status })
+        });
+
+        res.json({ message: '跟进记录已更新', interest });
+    } catch (error) {
+        console.error('[Admin] 更新兴趣表达跟进错误:', error);
+        res.status(500).json({ error: '更新失败' });
+    }
+});
+
+// ==================== 资料库管理 ====================
+
+// 获取企业资料库统计
+router.get('/companies/:id/dataroom-stats', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const company = await Company.findByPk(req.params.id);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        const [folderCount, fileCount, accessCount] = await Promise.all([
+            DataRoomFolder.count({ where: { company_id: req.params.id } }),
+            DataRoomFile.count({ where: { company_id: req.params.id } }),
+            DataRoomAccess.count({ where: { company_id: req.params.id, status: 'active' } })
+        ]);
+
+        res.json({
+            dataRoomEnabled: company.data_room_enabled,
+            folderCount,
+            fileCount,
+            accessCount
+        });
+    } catch (error) {
+        console.error('[Admin] 获取资料库统计错误:', error);
+        res.status(500).json({ error: '获取统计失败' });
     }
 });
 
