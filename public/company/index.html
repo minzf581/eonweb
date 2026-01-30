@@ -774,6 +774,12 @@
                     <span data-zh="欢迎，" data-en="Welcome, ">欢迎，</span>
                     <span class="user-email" id="userEmail">-</span>
                 </div>
+                <!-- 企业选择器（仅 Staff 可见） -->
+                <div id="companySelector" style="display: none; margin-right: 1rem;">
+                    <select class="form-control" id="selectedCompanyId" onchange="switchCompany()" style="min-width: 200px;">
+                        <option value="" data-zh="选择企业..." data-en="Select Company...">选择企业...</option>
+                    </select>
+                </div>
                 <button class="logout-btn" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> <span data-zh="退出登录" data-en="Logout">退出登录</span>
                 </button>
@@ -784,8 +790,16 @@
             <!-- 概览面板 -->
             <div id="overview" class="panel active">
                 <div class="page-header">
-                    <h1 class="page-title" data-zh="企业门户" data-en="Company Portal">企业门户</h1>
-                    <p class="page-subtitle" data-zh="管理您的企业信息，对接国际资本" data-en="Manage your company, connect with global capital">管理您的企业信息，对接国际资本</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h1 class="page-title" data-zh="企业门户" data-en="Company Portal">企业门户</h1>
+                            <p class="page-subtitle" data-zh="管理您的企业信息，对接国际资本" data-en="Manage your company, connect with global capital">管理您的企业信息，对接国际资本</p>
+                        </div>
+                        <!-- 创建企业按钮（仅 Staff 可见） -->
+                        <button id="createCompanyBtn" class="btn btn-primary" onclick="openCreateCompanyModal()" style="display: none;">
+                            <i class="fas fa-plus"></i> <span data-zh="创建企业" data-en="Create Company">创建企业</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 进度步骤 -->
@@ -1308,6 +1322,9 @@
         let currentUser = null;
         let companyData = null;
         let token = localStorage.getItem('token');
+        let currentCompanyId = null; // 当前选中的企业ID（staff 使用）
+        let companyList = []; // 企业列表（staff 使用）
+        let isStaffRole = false; // 是否是 staff 角色
 
         // 初始化
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1344,10 +1361,70 @@
                 }
 
                 document.getElementById('userEmail').textContent = currentUser.email;
+                
+                // 检查是否是 staff 角色
+                isStaffRole = currentUser.role === 'staff' || currentUser.role === 'admin';
+                
+                // 如果是 staff，加载企业列表并显示选择器和创建按钮
+                if (isStaffRole) {
+                    await loadCompanyList();
+                    document.getElementById('companySelector').style.display = 'block';
+                    document.getElementById('createCompanyBtn').style.display = 'inline-flex';
+                }
             } catch (error) {
                 console.error('Load user info error:', error);
                 showMessage(getLangText('请重新登录', 'Please log in again'), 'error');
                 setTimeout(() => window.location.href = '/auth/login.html', 2000);
+            }
+        }
+
+        // 加载企业列表（仅 staff）
+        async function loadCompanyList() {
+            try {
+                const response = await fetch('/api/company/companies', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load companies');
+                }
+
+                const data = await response.json();
+                companyList = data.companies || [];
+
+                // 更新企业选择器
+                const selector = document.getElementById('selectedCompanyId');
+                selector.innerHTML = '<option value="" data-zh="选择企业..." data-en="Select Company...">选择企业...</option>';
+                
+                companyList.forEach(company => {
+                    const option = document.createElement('option');
+                    option.value = company.id;
+                    option.textContent = company.name_cn || company.name_en || company.id;
+                    selector.appendChild(option);
+                });
+
+                // 如果有企业，默认选择第一个
+                if (companyList.length > 0) {
+                    currentCompanyId = companyList[0].id;
+                    selector.value = currentCompanyId;
+                    await loadCompanyData();
+                }
+            } catch (error) {
+                console.error('Load company list error:', error);
+            }
+        }
+
+        // 切换企业（仅 staff）
+        async function switchCompany() {
+            const selector = document.getElementById('selectedCompanyId');
+            currentCompanyId = selector.value;
+            
+            if (currentCompanyId) {
+                await loadCompanyData();
+            } else {
+                companyData = null;
+                updateProgressSteps();
+                updateStatusDisplay();
             }
         }
 
@@ -1397,7 +1474,13 @@
         // 加载企业数据
         async function loadCompanyData() {
             try {
-                const response = await fetch('/api/company/profile', {
+                let url = '/api/company/profile';
+                // Staff 角色通过 companyId 参数访问特定企业
+                if (isStaffRole && currentCompanyId) {
+                    url += `?companyId=${currentCompanyId}`;
+                }
+
+                const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 

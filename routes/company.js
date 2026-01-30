@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { User, Company, FundraisingInfo, Document, AccessRequest, Message, CompanyComment } = require('../models');
-const { authenticate, requireCompany } = require('../middleware/auth');
+const { Op } = require('sequelize');
+const { User, Company, FundraisingInfo, Document, AccessRequest, Message, CompanyComment, CompanyPermission } = require('../models');
+const { authenticate, requireCompany, requireStaffOrAdmin } = require('../middleware/auth');
 const emailService = require('../services/EmailService');
 
 // 配置文件上传 - 使用内存存储（Railway不支持本地文件系统写入）
@@ -25,22 +26,126 @@ const upload = multer({
     }
 });
 
-// 获取当前用户的企业信息
+// 获取企业列表（仅 staff/admin 可见）
+router.get('/companies', authenticate, requireCompany, async (req, res) => {
+    try {
+        // 只有 staff 和 admin 可以获取企业列表
+        if (req.user.role !== 'staff' && req.user.role !== 'admin') {
+            return res.status(403).json({ error: '无权访问' });
+        }
+
+        let whereClause;
+        
+        if (req.user.role === 'admin') {
+            whereClause = {};
+        } else {
+            // Staff 只能看到自己创建的企业或被授权的企业
+            const permittedCompanyIds = await CompanyPermission.findAll({
+                where: {
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                },
+                attributes: ['company_id']
+            }).then(perms => perms.map(p => p.company_id));
+
+            whereClause = {
+                [Op.or]: [
+                    { created_by: req.user.id },
+                    ...(permittedCompanyIds.length > 0 ? [{ id: { [Op.in]: permittedCompanyIds } }] : [])
+                ]
+            };
+        }
+
+        const companies = await Company.findAll({
+            where: whereClause,
+            include: [
+                { model: FundraisingInfo, as: 'fundraisingInfo', required: false },
+                { model: Document, as: 'documents', required: false }
+            ],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ companies });
+    } catch (error) {
+        console.error('[Company] 获取企业列表错误:', error);
+        res.status(500).json({ error: '获取企业列表失败' });
+    }
+});
+
+// 获取当前用户的企业信息（支持 staff 通过 companyId 参数访问特定企业）
 router.get('/profile', authenticate, requireCompany, async (req, res) => {
     try {
-        const company = await Company.findOne({
-            where: { user_id: req.user.id },
-            include: [
-                { model: FundraisingInfo, as: 'fundraisingInfo' },
-                { model: Document, as: 'documents' }
-            ]
-        });
+        const { companyId } = req.query;
+        let company;
+
+        let isCreator = false;
+        let hasPermission = false;
+
+        // Staff 或 Admin 可以通过 companyId 参数访问特定企业
+        if ((req.user.role === 'staff' || req.user.role === 'admin') && companyId) {
+            // 检查权限
+            const targetCompany = await Company.findByPk(companyId);
+            if (!targetCompany) {
+                return res.status(404).json({ error: '企业不存在' });
+            }
+
+            // 检查是否是创建者
+            isCreator = targetCompany.created_by === req.user.id;
+            
+            // 检查是否有被授权的权限
+            const permission = await CompanyPermission.findOne({
+                where: {
+                    company_id: companyId,
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                }
+            });
+
+            hasPermission = !!permission;
+
+            if (!isCreator && !hasPermission && req.user.role !== 'admin') {
+                return res.status(403).json({ error: '无权访问该企业' });
+            }
+
+            company = await Company.findOne({
+                where: { id: companyId },
+                include: [
+                    { model: FundraisingInfo, as: 'fundraisingInfo' },
+                    { model: Document, as: 'documents' }
+                ]
+            });
+        } else {
+            // Company 角色或未指定 companyId 时，获取自己的企业
+            company = await Company.findOne({
+                where: { user_id: req.user.id },
+                include: [
+                    { model: FundraisingInfo, as: 'fundraisingInfo' },
+                    { model: Document, as: 'documents' }
+                ]
+            });
+            if (company) {
+                isCreator = company.user_id === req.user.id;
+            }
+        }
 
         if (!company) {
             return res.json({ company: null, message: '尚未创建企业资料' });
         }
 
-        res.json({ company });
+        // 返回时标记是否是创建者
+        res.json({ 
+            company,
+            isCreator,
+            canManage: isCreator || req.user.role === 'admin' || hasPermission
+        });
     } catch (error) {
         console.error('[Company] 获取企业信息错误:', error);
         res.status(500).json({ error: '获取企业信息失败' });

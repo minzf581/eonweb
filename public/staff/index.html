@@ -522,6 +522,12 @@
                             <span data-zh="消息" data-en="Messages">消息</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="#dataroom" class="nav-link" data-panel="dataroom">
+                            <i class="fas fa-folder-open"></i>
+                            <span data-zh="资料库" data-en="Data Room">资料库</span>
+                        </a>
+                    </li>
                     <li class="nav-item" style="margin-top: 2rem;">
                         <a href="#" class="nav-link" onclick="showPasswordModal(); return false;">
                             <i class="fas fa-key"></i>
@@ -744,6 +750,64 @@
                     <h3 class="card-title"><i class="fas fa-history"></i> <span data-zh="已发送消息" data-en="Sent Messages">Sent Messages</span></h3>
                     <div id="sentMessagesList">
                         <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 资料库面板 -->
+            <div id="dataroom" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title" data-zh="资料库管理" data-en="Data Room Management">资料库管理</h1>
+                    <p class="page-subtitle" data-zh="管理您创建的所有企业的资料库" data-en="Manage data rooms for all your created companies">管理您创建的所有企业的资料库</p>
+                </div>
+
+                <!-- 企业选择器 -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label class="form-label"><span data-zh="选择企业" data-en="Select Company">选择企业</span></label>
+                        <select class="form-control" id="dataroomCompanySelect" onchange="loadDataRoomForCompany()" style="max-width: 400px;">
+                            <option value="" data-zh="请选择企业..." data-en="Select a company...">请选择企业...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 资料库未启用提示 -->
+                <div id="dataroomNotEnabled" class="card" style="display: none;">
+                    <div style="text-align: center; padding: 3rem;">
+                        <i class="fas fa-folder-open" style="font-size: 4rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+                        <h3 style="margin-bottom: 1rem;" data-zh="资料库尚未启用" data-en="Data Room Not Enabled">资料库尚未启用</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;" data-zh="点击下方按钮初始化资料库，系统将自动创建标准文件夹结构。" data-en="Click the button below to initialize the data room. System will create standard folder structure.">点击下方按钮初始化资料库，系统将自动创建标准文件夹结构。</p>
+                        <button class="btn btn-primary" onclick="initDataRoom()">
+                            <i class="fas fa-plus"></i> <span data-zh="初始化资料库" data-en="Initialize Data Room">初始化资料库</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 资料库已启用 -->
+                <div id="dataroomEnabled" style="display: none;">
+                    <div class="card" style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3><i class="fas fa-folder"></i> <span data-zh="文件夹" data-en="Folders">文件夹</span></h3>
+                        </div>
+                        <div id="dataroomFolders" class="dataroom-folders">
+                            <div class="loading"><div class="spinner"></div></div>
+                        </div>
+                    </div>
+
+                    <!-- 查看统计 -->
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem;"><i class="fas fa-chart-bar"></i> <span data-zh="投资人参与度" data-en="Investor Engagement">投资人参与度</span></h3>
+                        <div id="dataroomAnalytics">
+                            <p style="color: var(--text-secondary);" data-zh="管理员审核通过后，投资人可按权限级别访问资料库。" data-en="After admin approval, investors can access the data room based on their permission level.">管理员审核通过后，投资人可按权限级别访问资料库。</p>
+                        </div>
+                    </div>
+
+                    <!-- 投资人对话 -->
+                    <div class="card" style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem;"><i class="fas fa-comments"></i> <span data-zh="投资人对话" data-en="Investor Conversations">投资人对话</span></h3>
+                        <div id="dataroomConversations">
+                            <p style="color: var(--text-secondary);" data-zh="投资人的留言将显示在这里。每位投资人的对话相互独立、私密。" data-en="Investor messages will appear here. Each conversation is private and separate.">投资人的留言将显示在这里。每位投资人的对话相互独立、私密。</p>
+                        </div>
                     </div>
                 </div>
             </div>

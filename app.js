@@ -82,8 +82,8 @@ app.get('*', (req, res) => {
 
     console.log(`[${new Date().toISOString()}][Static] Processing request path: ${req.path}`);
     
-    // For company portal routes
-    if (req.path.startsWith('/company')) {
+    // For company portal routes (统一 company 和 staff)
+    if (req.path.startsWith('/company') || req.path.startsWith('/staff')) {
         const companyPath = path.join(__dirname, 'public', 'company', 'index.html');
         if (fs.existsSync(companyPath)) {
             return sendFileWithErrorHandling(res, companyPath, 'company');
@@ -114,13 +114,7 @@ app.get('*', (req, res) => {
         }
     }
 
-    // For staff routes, serve staff/index.html
-    if (req.path.startsWith('/staff')) {
-        const staffPath = path.join(__dirname, 'public', 'staff', 'index.html');
-        if (fs.existsSync(staffPath)) {
-            return sendFileWithErrorHandling(res, staffPath, 'staff');
-        }
-    }
+    // Staff routes now redirect to /company (unified portal)
 
     // For auth routes, try to serve the exact file
     if (req.path.startsWith('/auth/')) {
