@@ -156,6 +156,7 @@ router.get('/profile', authenticate, requireCompany, async (req, res) => {
 router.post('/profile', authenticate, requireCompany, async (req, res) => {
     try {
         const {
+            companyId, // Staff 使用此参数指定要更新的企业
             name_cn, name_en, website, linkedin,
             industry_primary, industry_secondary,
             location_headquarters, location_rd,
@@ -173,10 +174,42 @@ router.post('/profile', authenticate, requireCompany, async (req, res) => {
             });
         }
 
-        let company = await Company.findOne({ where: { user_id: req.user.id } });
+        let company;
+        let isUpdate = false;
+
+        // Staff 或 Admin 可以通过 companyId 更新特定企业
+        if ((req.user.role === 'staff' || req.user.role === 'admin') && companyId) {
+            company = await Company.findByPk(companyId);
+            if (!company) {
+                return res.status(404).json({ error: '企业不存在' });
+            }
+
+            // 检查权限
+            const isCreator = company.created_by === req.user.id;
+            const permission = await CompanyPermission.findOne({
+                where: {
+                    company_id: companyId,
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                }
+            });
+
+            if (!isCreator && !permission && req.user.role !== 'admin') {
+                return res.status(403).json({ error: '无权访问该企业' });
+            }
+
+            isUpdate = true;
+        } else {
+            // Company 角色获取自己的企业
+            company = await Company.findOne({ where: { user_id: req.user.id } });
+            isUpdate = !!company;
+        }
 
         const companyData = {
-            user_id: req.user.id,
             name_cn: name_cn || null,
             name_en: name_en || null,
             website: website || null,
@@ -196,17 +229,22 @@ router.post('/profile', authenticate, requireCompany, async (req, res) => {
             contact_whatsapp: contact_whatsapp || null
         };
 
+        // 只有 Company 角色创建新企业时才设置 user_id
+        if (!isUpdate && req.user.role === 'company') {
+            companyData.user_id = req.user.id;
+            companyData.status = 'draft';
+        }
+
         if (company) {
             // 更新（保持原有状态，允许在提交后继续编辑）
             await company.update(companyData);
         } else {
             // 创建时设为草稿状态
-            companyData.status = 'draft';
             company = await Company.create(companyData);
         }
 
         res.json({ 
-            message: company ? '企业信息已更新' : '企业信息已创建',
+            message: isUpdate ? '企业信息已更新' : '企业信息已创建',
             company 
         });
     } catch (error) {
@@ -218,7 +256,38 @@ router.post('/profile', authenticate, requireCompany, async (req, res) => {
 // 保存融资信息
 router.post('/fundraising', authenticate, requireCompany, async (req, res) => {
     try {
-        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        const { companyId } = req.body; // Staff 使用此参数
+        let company;
+
+        // Staff 或 Admin 可以通过 companyId 更新特定企业
+        if ((req.user.role === 'staff' || req.user.role === 'admin') && companyId) {
+            company = await Company.findByPk(companyId);
+            if (!company) {
+                return res.status(404).json({ error: '企业不存在' });
+            }
+
+            // 检查权限
+            const isCreator = company.created_by === req.user.id;
+            const permission = await CompanyPermission.findOne({
+                where: {
+                    company_id: companyId,
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                }
+            });
+
+            if (!isCreator && !permission && req.user.role !== 'admin') {
+                return res.status(403).json({ error: '无权访问该企业' });
+            }
+        } else {
+            // Company 角色获取自己的企业
+            company = await Company.findOne({ where: { user_id: req.user.id } });
+        }
+
         if (!company) {
             return res.status(400).json({ error: '请先创建企业基本信息' });
         }
@@ -298,7 +367,38 @@ router.post('/upload-bp', (req, res, next) => {
     console.log(`[Company][Upload] 开始处理文件保存`);
     
     try {
-        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        const { companyId } = req.body; // Staff 使用此参数
+        let company;
+
+        // Staff 或 Admin 可以通过 companyId 更新特定企业
+        if ((req.user.role === 'staff' || req.user.role === 'admin') && companyId) {
+            company = await Company.findByPk(companyId);
+            if (!company) {
+                return res.status(404).json({ error: '企业不存在' });
+            }
+
+            // 检查权限
+            const isCreator = company.created_by === req.user.id;
+            const permission = await CompanyPermission.findOne({
+                where: {
+                    company_id: companyId,
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                }
+            });
+
+            if (!isCreator && !permission && req.user.role !== 'admin') {
+                return res.status(403).json({ error: '无权访问该企业' });
+            }
+        } else {
+            // Company 角色获取自己的企业
+            company = await Company.findOne({ where: { user_id: req.user.id } });
+        }
+
         if (!company) {
             console.log('[Company][Upload] 错误：企业信息不存在');
             return res.status(400).json({ error: '请先创建企业基本信息' });
@@ -509,7 +609,7 @@ router.delete('/documents/:id', authenticate, requireCompany, async (req, res) =
 // 保存 BP 链接（替代上传文件）
 router.post('/bp-link', authenticate, requireCompany, async (req, res) => {
     try {
-        const { url, description } = req.body;
+        const { url, description, companyId } = req.body; // Staff 使用此参数
 
         if (!url) {
             return res.status(400).json({ error: '请输入 BP 链接' });
@@ -522,7 +622,37 @@ router.post('/bp-link', authenticate, requireCompany, async (req, res) => {
             return res.status(400).json({ error: '请输入有效的 URL 链接' });
         }
 
-        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        let company;
+
+        // Staff 或 Admin 可以通过 companyId 更新特定企业
+        if ((req.user.role === 'staff' || req.user.role === 'admin') && companyId) {
+            company = await Company.findByPk(companyId);
+            if (!company) {
+                return res.status(404).json({ error: '企业不存在' });
+            }
+
+            // 检查权限
+            const isCreator = company.created_by === req.user.id;
+            const permission = await CompanyPermission.findOne({
+                where: {
+                    company_id: companyId,
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                }
+            });
+
+            if (!isCreator && !permission && req.user.role !== 'admin') {
+                return res.status(403).json({ error: '无权访问该企业' });
+            }
+        } else {
+            // Company 角色获取自己的企业
+            company = await Company.findOne({ where: { user_id: req.user.id } });
+        }
+
         if (!company) {
             return res.status(400).json({ error: '请先创建企业基本信息' });
         }
@@ -562,13 +692,49 @@ router.post('/bp-link', authenticate, requireCompany, async (req, res) => {
 // 提交审核（只需要公司名称和 BP 即可提交，融资信息可选）
 router.post('/submit', authenticate, requireCompany, async (req, res) => {
     try {
-        const company = await Company.findOne({ 
-            where: { user_id: req.user.id },
-            include: [
-                { model: FundraisingInfo, as: 'fundraisingInfo' },
-                { model: Document, as: 'documents' }
-            ]
-        });
+        const { companyId } = req.body; // Staff 使用此参数
+        let company;
+
+        // Staff 或 Admin 可以通过 companyId 提交特定企业
+        if ((req.user.role === 'staff' || req.user.role === 'admin') && companyId) {
+            company = await Company.findOne({ 
+                where: { id: companyId },
+                include: [
+                    { model: FundraisingInfo, as: 'fundraisingInfo' },
+                    { model: Document, as: 'documents' }
+                ]
+            });
+            if (!company) {
+                return res.status(404).json({ error: '企业不存在' });
+            }
+
+            // 检查权限
+            const isCreator = company.created_by === req.user.id;
+            const permission = await CompanyPermission.findOne({
+                where: {
+                    company_id: companyId,
+                    user_id: req.user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                }
+            });
+
+            if (!isCreator && !permission && req.user.role !== 'admin') {
+                return res.status(403).json({ error: '无权访问该企业' });
+            }
+        } else {
+            // Company 角色获取自己的企业
+            company = await Company.findOne({ 
+                where: { user_id: req.user.id },
+                include: [
+                    { model: FundraisingInfo, as: 'fundraisingInfo' },
+                    { model: Document, as: 'documents' }
+                ]
+            });
+        }
 
         if (!company) {
             return res.status(400).json({ error: '请先创建企业基本信息' });

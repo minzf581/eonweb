@@ -1421,10 +1421,23 @@
             
             if (currentCompanyId) {
                 await loadCompanyData();
+                // 刷新所有相关数据
+                if (companyData) {
+                    populateProfileForm();
+                    populateFundraisingForm();
+                    loadDocuments();
+                    loadDataRoom();
+                }
             } else {
                 companyData = null;
                 updateProgressSteps();
                 updateStatusDisplay();
+                // 清空表单
+                document.getElementById('profileForm').reset();
+                document.getElementById('fundraisingForm').reset();
+                document.getElementById('fileList').innerHTML = '<p class="form-hint" data-zh="暂无已上传的 BP 文件" data-en="No BP files uploaded yet">暂无已上传的 BP 文件</p>';
+                document.getElementById('dataroomNotEnabled').style.display = 'block';
+                document.getElementById('dataroomEnabled').style.display = 'none';
             }
         }
 
@@ -1769,6 +1782,11 @@
                     return;
                 }
 
+                // Staff 角色需要添加 companyId
+                if (isStaffRole && currentCompanyId) {
+                    data.companyId = currentCompanyId;
+                }
+
                 const response = await fetch('/api/company/profile', {
                     method: 'POST',
                     headers: {
@@ -1829,6 +1847,11 @@
                     additional_info: formData.get('additional_info') || null
                 };
 
+                // Staff 角色需要添加 companyId
+                if (isStaffRole && currentCompanyId) {
+                    data.companyId = currentCompanyId;
+                }
+
                 const response = await fetch('/api/company/fundraising', {
                     method: 'POST',
                     headers: {
@@ -1875,6 +1898,11 @@
 
             const formData = new FormData();
             formData.append('file', file);
+            
+            // Staff 角色需要添加 companyId
+            if (isStaffRole && currentCompanyId) {
+                formData.append('companyId', currentCompanyId);
+            }
 
             // 显示上传进度
             showUploadProgress(0, file.name);
@@ -2013,13 +2041,20 @@
             }
 
             try {
+                const data = { url, description };
+                
+                // Staff 角色需要添加 companyId
+                if (isStaffRole && currentCompanyId) {
+                    data.companyId = currentCompanyId;
+                }
+
                 const response = await fetch('/api/company/bp-link', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ url, description })
+                    body: JSON.stringify(data)
                 });
 
                 const result = await response.json();
@@ -2106,9 +2141,20 @@
             if (!confirm(getLangText('确定要提交审核吗？提交后将无法修改信息，直到审核完成。', 'Submit for review? You cannot modify until review is complete.'))) return;
 
             try {
+                const data = {};
+                
+                // Staff 角色需要添加 companyId
+                if (isStaffRole && currentCompanyId) {
+                    data.companyId = currentCompanyId;
+                }
+
                 const response = await fetch('/api/company/submit', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: Object.keys(data).length > 0 ? JSON.stringify(data) : undefined
                 });
 
                 const result = await response.json();
@@ -2121,6 +2167,14 @@
                 await loadCompanyData();
             } catch (error) {
                 showMessage(error.message, 'error');
+            }
+        }
+
+        // 关闭模态框
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
             }
         }
 
@@ -2174,6 +2228,143 @@
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/';
+        }
+
+        // ==================== 创建企业功能（仅 Staff） ====================
+
+        function openCreateCompanyModal() {
+            if (!isStaffRole) {
+                showMessage(getLangText('无权访问', 'No permission'), 'error');
+                return;
+            }
+            document.getElementById('createCompanyForm').reset();
+            document.getElementById('createCompanyBpFile').value = '';
+            document.getElementById('createCompanyModal').classList.add('active');
+        }
+
+        // 提交创建企业
+        async function submitCreateCompany() {
+            if (!isStaffRole) {
+                showMessage(getLangText('无权访问', 'No permission'), 'error');
+                return;
+            }
+
+            const form = document.getElementById('createCompanyForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            const bpFile = document.getElementById('createCompanyBpFile').files[0];
+            const bpLink = data.bp_link;
+            delete data.bp_link; // 不发送到创建企业 API
+
+            // 验证至少有一个名称
+            if (!data.name_cn && !data.name_en) {
+                showMessage(getLangText('请至少填写公司中文名称或英文名称', 'Please enter at least company name (Chinese or English)'), 'error');
+                return;
+            }
+
+            const btn = document.getElementById('submitCreateCompanyBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + getLangText('创建中...', 'Creating...');
+
+            try {
+                // 1. 创建企业（使用 staff API）
+                const response = await fetch('/api/staff/companies', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || getLangText('创建失败', 'Create failed'));
+                }
+
+                const companyId = result.company.id;
+                let bpUploaded = false;
+
+                // 2. 如果有 BP 文件，上传它
+                if (bpFile) {
+                    try {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + getLangText('上传BP中...', 'Uploading BP...');
+                        
+                        const bpFormData = new FormData();
+                        bpFormData.append('file', bpFile);
+                        
+                        const bpResponse = await fetch(`/api/staff/companies/${companyId}/upload-bp`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: bpFormData
+                        });
+
+                        if (bpResponse.ok) {
+                            bpUploaded = true;
+                        } else {
+                            const bpError = await bpResponse.json();
+                            console.warn('BP 上传失败:', bpError.error);
+                        }
+                    } catch (bpErr) {
+                        console.warn('BP 上传失败:', bpErr);
+                    }
+                }
+                // 3. 如果有 BP 链接，保存它
+                else if (bpLink) {
+                    try {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + getLangText('保存BP链接中...', 'Saving BP link...');
+                        
+                        const linkResponse = await fetch(`/api/staff/companies/${companyId}/bp-link`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ url: bpLink })
+                        });
+
+                        if (linkResponse.ok) {
+                            bpUploaded = true;
+                        } else {
+                            const linkError = await linkResponse.json();
+                            console.warn('BP 链接保存失败:', linkError.error);
+                        }
+                    } catch (linkErr) {
+                        console.warn('BP 链接保存失败:', linkErr);
+                    }
+                }
+
+                // 显示成功消息
+                let successMsg = getLangText('企业创建成功', 'Company created successfully');
+                if (bpUploaded) {
+                    successMsg += ' ' + getLangText('BP已保存', 'BP saved');
+                }
+                
+                alert(successMsg);
+                showMessage(successMsg, 'success');
+                
+                closeModal('createCompanyModal');
+                form.reset();
+                document.getElementById('createCompanyBpFile').value = '';
+                
+                // 刷新企业列表并选择新创建的企业
+                await loadCompanyList();
+                if (companyId) {
+                    currentCompanyId = companyId;
+                    document.getElementById('selectedCompanyId').value = companyId;
+                    await loadCompanyData();
+                }
+            } catch (error) {
+                alert(getLangText('创建失败', 'Create failed') + ': ' + error.message);
+                showMessage(error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         }
 
         // ==================== 修改密码功能 ====================
@@ -2328,13 +2519,20 @@
 
         // 加载资料库
         async function loadDataRoom() {
-            if (!companyData || !companyData.id) {
+            const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+            
+            if (!targetCompanyId) {
                 document.getElementById('dataroomNotEnabled').style.display = 'block';
                 document.getElementById('dataroomEnabled').style.display = 'none';
                 return;
             }
 
-            if (!companyData.data_room_enabled) {
+            // 重新加载企业数据以获取最新的 data_room_enabled 状态
+            if (isStaffRole && currentCompanyId) {
+                await loadCompanyData();
+            }
+
+            if (!companyData || !companyData.data_room_enabled) {
                 document.getElementById('dataroomNotEnabled').style.display = 'block';
                 document.getElementById('dataroomEnabled').style.display = 'none';
                 return;
@@ -2349,13 +2547,15 @@
 
         // 初始化资料库
         async function initDataRoom() {
-            if (!companyData || !companyData.id) {
-                showMessage(getLangText('请先保存企业资料', 'Please save company profile first'), 'error');
+            const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+            
+            if (!targetCompanyId) {
+                showMessage(getLangText('请先选择或创建企业', 'Please select or create a company first'), 'error');
                 return;
             }
 
             try {
-                const response = await fetch(`/api/dataroom/companies/${companyData.id}/init`, {
+                const response = await fetch(`/api/dataroom/companies/${targetCompanyId}/init`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -2368,7 +2568,9 @@
                 showMessage(getLangText('资料库已初始化', 'Data Room initialized'), 'success');
                 
                 // 更新本地数据
-                companyData.data_room_enabled = true;
+                if (companyData) {
+                    companyData.data_room_enabled = true;
+                }
                 await loadDataRoom();
             } catch (error) {
                 console.error('Init dataroom error:', error);
@@ -2378,8 +2580,11 @@
 
         // 加载文件夹列表
         async function loadDataRoomFolders() {
+            const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+            if (!targetCompanyId) return;
+
             try {
-                const response = await fetch(`/api/dataroom/companies/${companyData.id}/folders`, {
+                const response = await fetch(`/api/dataroom/companies/${targetCompanyId}/folders`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -2479,6 +2684,12 @@
         async function uploadDataRoomFile(folderId, file) {
             if (!file) return;
 
+            const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+            if (!targetCompanyId) {
+                showMessage(getLangText('请先选择或创建企业', 'Please select or create a company first'), 'error');
+                return;
+            }
+
             if (file.size > 10 * 1024 * 1024) {
                 showMessage(getLangText('文件大小不能超过10MB', 'File size cannot exceed 10MB'), 'error');
                 return;
@@ -2511,6 +2722,12 @@
 
         // 添加外部链接
         async function addDataRoomLink(folderId) {
+            const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+            if (!targetCompanyId) {
+                showMessage(getLangText('请先选择或创建企业', 'Please select or create a company first'), 'error');
+                return;
+            }
+
             const input = document.getElementById(`linkInput-${folderId}`);
             const url = input.value.trim();
 
@@ -2610,8 +2827,11 @@
 
         // 加载投资人对话列表
         async function loadDataRoomConversations() {
+            const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+            if (!targetCompanyId) return;
+
             try {
-                const response = await fetch(`/api/dataroom/companies/${companyData.id}/conversations`, {
+                const response = await fetch(`/api/dataroom/companies/${targetCompanyId}/conversations`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -2665,6 +2885,135 @@
             }, 500);
         });
     </script>
+
+    <!-- 创建企业模态框（仅 Staff 可见） -->
+    <div class="modal" id="createCompanyModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 class="modal-title" data-zh="创建新企业" data-en="Create New Company">创建新企业</h2>
+                <button class="modal-close" onclick="closeModal('createCompanyModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <p class="form-hint" style="margin-bottom: 1rem; padding: 0.75rem; background: #EFF6FF; border-radius: 8px; color: #1D4ED8;">
+                    <i class="fas fa-info-circle"></i> 
+                    <span data-zh="所有字段均为可选，您可以先创建企业，之后再完善信息。至少需要填写公司名称（中文或英文）。" data-en="All fields are optional. You can create the company first and complete the details later. At least company name (Chinese or English) is required.">
+                        所有字段均为可选，您可以先创建企业，之后再完善信息。至少需要填写公司名称（中文或英文）。
+                    </span>
+                </p>
+
+                <form id="createCompanyForm">
+                    <h4 style="margin-bottom: 1rem; color: var(--primary-color);" data-zh="基本信息" data-en="Basic Information">基本信息</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label"><span data-zh="公司中文名称" data-en="Company Name (Chinese)">公司中文名称</span> <span class="required">*</span></label>
+                            <input type="text" class="form-control" name="name_cn" data-placeholder-zh="公司中文名称" data-placeholder-en="Company name in Chinese">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-zh="公司英文名称" data-en="Company Name (English)">公司英文名称</label>
+                            <input type="text" class="form-control" name="name_en" data-placeholder-zh="公司英文名称" data-placeholder-en="Company name in English">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" data-zh="主要行业" data-en="Primary Industry">主要行业</label>
+                            <select class="form-control" name="industry_primary">
+                                <option value="" data-zh="请选择" data-en="Select...">请选择</option>
+                                <option value="technology" data-zh="科技/互联网" data-en="Technology">科技/互联网</option>
+                                <option value="healthcare" data-zh="医疗健康" data-en="Healthcare">医疗健康</option>
+                                <option value="finance" data-zh="金融科技" data-en="FinTech">金融科技</option>
+                                <option value="manufacturing" data-zh="制造业" data-en="Manufacturing">制造业</option>
+                                <option value="consumer" data-zh="消费品" data-en="Consumer">消费品</option>
+                                <option value="energy" data-zh="能源/环保" data-en="Energy/Green">能源/环保</option>
+                                <option value="education" data-zh="教育" data-en="Education">教育</option>
+                                <option value="logistics" data-zh="物流" data-en="Logistics">物流</option>
+                                <option value="other" data-zh="其他" data-en="Other">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-zh="融资阶段" data-en="Funding Stage">融资阶段</label>
+                            <select class="form-control" name="stage">
+                                <option value="" data-zh="请选择" data-en="Select...">请选择</option>
+                                <option value="seed" data-zh="种子轮" data-en="Seed">种子轮</option>
+                                <option value="angel" data-zh="天使轮" data-en="Angel">天使轮</option>
+                                <option value="pre_a" data-zh="Pre-A轮" data-en="Pre-A">Pre-A</option>
+                                <option value="a" data-zh="A轮" data-en="Series A">A轮</option>
+                                <option value="b" data-zh="B轮" data-en="Series B">B轮</option>
+                                <option value="c" data-zh="C轮及以后" data-en="Series C+">C轮及以后</option>
+                                <option value="pre_ipo" data-zh="Pre-IPO" data-en="Pre-IPO">Pre-IPO</option>
+                                <option value="ipo" data-zh="已上市" data-en="IPO">已上市</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-zh="总部所在地" data-en="Headquarters Location">总部所在地</label>
+                        <input type="text" class="form-control" name="location_headquarters" data-placeholder-zh="如：中国深圳" data-placeholder-en="e.g., Shenzhen, China" placeholder="e.g., Shenzhen, China">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-zh="一句话简介" data-en="One-line Description">一句话简介</label>
+                        <input type="text" class="form-control" name="description" data-placeholder-zh="用一句话描述公司做什么" data-placeholder-en="Describe what the company does in one sentence" placeholder="Describe what the company does in one sentence">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-zh="详细介绍" data-en="Detailed Description">详细介绍</label>
+                        <textarea class="form-control" name="description_detail" rows="3" data-placeholder-zh="公司详细介绍" data-placeholder-en="Detailed company description" placeholder="Detailed company description"></textarea>
+                    </div>
+
+                    <h4 style="margin: 1.5rem 0 1rem; color: var(--primary-color);" data-zh="联系人信息" data-en="Contact Information">联系人信息</h4>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" data-zh="联系人姓名" data-en="Contact Name">联系人姓名</label>
+                            <input type="text" class="form-control" name="contact_name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-zh="联系人邮箱" data-en="Contact Email">联系人邮箱</label>
+                            <input type="email" class="form-control" name="contact_email">
+                            <p class="form-hint" data-zh="如填写邮箱，将自动创建企业登录账户" data-en="If provided, a company login account will be created">如填写邮箱，将自动创建企业登录账户</p>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" data-zh="联系人职务" data-en="Contact Title">联系人职务</label>
+                            <input type="text" class="form-control" name="contact_title" data-placeholder-zh="如：CEO、CFO" data-placeholder-en="e.g., CEO, CFO" placeholder="e.g., CEO, CFO">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-zh="联系电话" data-en="Contact Phone">联系电话</label>
+                            <input type="tel" class="form-control" name="contact_phone">
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 1.5rem 0 1rem; color: var(--primary-color);" data-zh="BP/商业计划书" data-en="Business Plan">BP/商业计划书</h4>
+                    <p class="form-hint" style="margin-bottom: 1rem;" data-zh="您可以上传 BP 文件或提供 BP 链接，创建后可继续添加更多" data-en="You can upload a BP file or provide a BP link, you can add more after creation">
+                        您可以上传 BP 文件或提供 BP 链接，创建后可继续添加更多
+                    </p>
+
+                    <!-- BP 上传选项 -->
+                    <div class="form-group">
+                        <label class="form-label" data-zh="上传 BP 文件" data-en="Upload BP File">上传 BP 文件</label>
+                        <input type="file" class="form-control" id="createCompanyBpFile" accept=".pdf,.ppt,.pptx,.doc,.docx" style="padding: 0.5rem;">
+                        <p class="form-hint" data-zh="支持 PDF、PPT、DOC 格式，最大 2MB" data-en="Supports PDF, PPT, DOC formats, max 2MB">支持 PDF、PPT、DOC 格式，最大 2MB</p>
+                    </div>
+
+                    <!-- BP 链接选项 -->
+                    <div class="form-group">
+                        <label class="form-label" data-zh="或输入 BP 链接" data-en="Or Enter BP Link">或输入 BP 链接</label>
+                        <input type="url" class="form-control" name="bp_link" data-placeholder-zh="如：Google Drive、Docsend 链接" data-placeholder-en="e.g., Google Drive, Docsend link" placeholder="e.g., Google Drive, Docsend link">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createCompanyModal')" data-zh="取消" data-en="Cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitCreateCompany()" id="submitCreateCompanyBtn">
+                    <i class="fas fa-check"></i> <span data-zh="创建企业" data-en="Create Company">创建企业</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- 修改密码模态框 -->
     <div id="passwordModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
