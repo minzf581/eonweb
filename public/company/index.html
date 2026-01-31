@@ -1354,7 +1354,7 @@
                 currentUser = data.user;
 
                 // 检查用户角色
-                if (currentUser.role !== 'company' && currentUser.role !== 'admin') {
+                if (currentUser.role !== 'company' && currentUser.role !== 'staff' && currentUser.role !== 'admin') {
                     showMessage(getLangText('您没有权限访问企业门户', 'No permission to access company portal'), 'error');
                     setTimeout(() => window.location.href = '/', 2000);
                     return;
@@ -1610,6 +1610,99 @@
                 `;
             } else {
                 editHint.style.display = 'none';
+            }
+
+            // 更新 status 面板的详情
+            const statusDetails = document.getElementById('statusDetails');
+            if (statusDetails) {
+                if (!companyData) {
+                    statusDetails.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <i class="fas fa-building" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+                            <h3 style="color: var(--text-secondary); margin-bottom: 0.5rem;" data-zh="尚未创建企业" data-en="No Company Yet">尚未创建企业</h3>
+                            <p style="color: var(--text-secondary);" data-zh="请先填写企业资料" data-en="Please fill in company profile first">请先填写企业资料</p>
+                        </div>
+                    `;
+                } else {
+                    const statusDetailsMap = {
+                        'draft': {
+                            icon: 'fa-file-alt',
+                            iconColor: '#6B7280',
+                            title: lang === 'zh' ? '草稿状态' : 'Draft Status',
+                            desc: lang === 'zh' ? '您的企业信息尚未提交审核，请完善信息后提交。' : 'Your company info has not been submitted for review. Please complete and submit.',
+                            steps: [
+                                { done: !!companyData.name_cn || !!companyData.name_en, text: lang === 'zh' ? '填写企业基本信息' : 'Fill in basic company info' },
+                                { done: !!companyData.funding_purpose, text: lang === 'zh' ? '填写融资信息' : 'Fill in fundraising info' },
+                                { done: companyData.documents?.length > 0 || companyData.bp_link, text: lang === 'zh' ? '上传 BP 或填写链接' : 'Upload BP or provide link' },
+                                { done: false, text: lang === 'zh' ? '提交审核' : 'Submit for review' }
+                            ]
+                        },
+                        'pending': {
+                            icon: 'fa-clock',
+                            iconColor: '#F59E0B',
+                            title: lang === 'zh' ? '审核中' : 'Under Review',
+                            desc: lang === 'zh' ? '您的企业信息已提交，正在等待管理员审核。您仍可继续编辑信息。' : 'Your company info has been submitted and is awaiting admin review. You can still edit.',
+                            steps: [
+                                { done: true, text: lang === 'zh' ? '填写企业基本信息' : 'Fill in basic company info' },
+                                { done: true, text: lang === 'zh' ? '填写融资信息' : 'Fill in fundraising info' },
+                                { done: true, text: lang === 'zh' ? '上传 BP 或填写链接' : 'Upload BP or provide link' },
+                                { done: true, text: lang === 'zh' ? '提交审核' : 'Submit for review' }
+                            ]
+                        },
+                        'engage': {
+                            icon: 'fa-handshake',
+                            iconColor: '#10B981',
+                            title: 'ENGAGE',
+                            desc: lang === 'zh' ? '恭喜！管理员决定与您的企业进行深入讨论。请关注反馈交流区的消息。' : 'Congratulations! Admin has decided to engage with your company. Please check the feedback section.',
+                            steps: null
+                        },
+                        'explore': {
+                            icon: 'fa-search',
+                            iconColor: '#3B82F6',
+                            title: 'EXPLORE',
+                            desc: lang === 'zh' ? '管理员希望进一步了解您的企业。请在反馈交流区回答问题。' : 'Admin wants to learn more about your company. Please answer questions in the feedback section.',
+                            steps: null
+                        },
+                        'pass': {
+                            icon: 'fa-times-circle',
+                            iconColor: '#EF4444',
+                            title: 'PASS',
+                            desc: lang === 'zh' ? '很遗憾，您的企业暂时未通过审核。请查看反馈了解原因。' : 'Unfortunately, your company did not pass the review. Please check feedback for details.',
+                            steps: null
+                        }
+                    };
+                    
+                    const details = statusDetailsMap[status] || statusDetailsMap['draft'];
+                    
+                    let stepsHtml = '';
+                    if (details.steps) {
+                        stepsHtml = `
+                            <div style="margin-top: 1.5rem;">
+                                <h4 style="margin-bottom: 1rem;">${lang === 'zh' ? '提交清单' : 'Submission Checklist'}</h4>
+                                ${details.steps.map(step => `
+                                    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
+                                        <i class="fas ${step.done ? 'fa-check-circle' : 'fa-circle'}" style="color: ${step.done ? '#10B981' : '#D1D5DB'};"></i>
+                                        <span style="color: ${step.done ? 'var(--text-color)' : 'var(--text-secondary)'};">${step.text}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                    
+                    statusDetails.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <i class="fas ${details.icon}" style="font-size: 4rem; color: ${details.iconColor}; margin-bottom: 1rem;"></i>
+                            <h2 style="margin-bottom: 0.5rem;">${details.title}</h2>
+                            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">${details.desc}</p>
+                        </div>
+                        ${stepsHtml}
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <button class="btn btn-primary" onclick="showPanel('overview')">
+                                <i class="fas fa-arrow-left"></i> ${lang === 'zh' ? '返回概览' : 'Back to Overview'}
+                            </button>
+                        </div>
+                    `;
+                }
             }
 
             // 加载反馈交流
