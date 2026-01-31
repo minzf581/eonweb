@@ -41,11 +41,11 @@ const AccessRequest = sequelize.define('AccessRequest', {
         type: DataTypes.STRING(20),
         defaultValue: 'pending'
     },
-    // 管理员处理
+    // 处理回复
     admin_response: {
         type: DataTypes.TEXT,
         allowNull: true,
-        comment: '管理员回复'
+        comment: '处理回复（可由管理员或企业/staff填写）'
     },
     processed_at: {
         type: DataTypes.DATE,
@@ -53,7 +53,14 @@ const AccessRequest = sequelize.define('AccessRequest', {
     },
     processed_by: {
         type: DataTypes.UUID,
-        allowNull: true
+        allowNull: true,
+        comment: '处理人ID（可以是管理员、企业或staff）'
+    },
+    // 处理人角色
+    processed_by_role: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+        comment: '处理人角色: admin, company, staff'
     },
     // 访问权限有效期
     expires_at: {

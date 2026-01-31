@@ -813,6 +813,13 @@
                             <span data-zh="资料库" data-en="Data Room">资料库</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="#access" class="nav-link" data-panel="access">
+                            <i class="fas fa-shield-alt"></i>
+                            <span data-zh="访问控制" data-en="Access Control">访问控制</span>
+                            <span id="pendingRequestsBadge" class="unread-badge" style="display: none; margin-left: 0.5rem;">0</span>
+                        </a>
+                    </li>
                     <li class="nav-item" style="margin-top: 2rem;">
                         <a href="#" class="nav-link" onclick="showPasswordModal(); return false;">
                             <i class="fas fa-key"></i>
@@ -1382,6 +1389,78 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 访问控制面板 -->
+            <div id="access" class="panel">
+                <div class="page-header">
+                    <h1 class="page-title" data-zh="访问控制" data-en="Access Control">访问控制</h1>
+                    <p class="page-subtitle" data-zh="控制谁可以看到您的企业信息" data-en="Control who can see your company information">控制谁可以看到您的企业信息</p>
+                </div>
+
+                <!-- 可见性设置 -->
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-eye"></i> <span data-zh="可见性设置" data-en="Visibility Settings">可见性设置</span></h3>
+                    <p class="form-hint" style="margin-bottom: 1.5rem;" data-zh="选择您的企业信息对外展示的级别" data-en="Choose the level of visibility for your company information">选择您的企业信息对外展示的级别</p>
+                    
+                    <div id="visibilityOptions" style="display: grid; gap: 1rem;">
+                        <label class="visibility-option" style="display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="visibility" value="private" style="margin-top: 0.25rem;">
+                            <div>
+                                <strong style="color: var(--danger-color);"><i class="fas fa-lock"></i> <span data-zh="私有" data-en="Private">私有</span></strong>
+                                <p class="form-hint" style="margin: 0.25rem 0 0 0;" data-zh="仅您自己可见，任何投资人都无法看到您的企业信息" data-en="Only visible to you. No investors can see your company.">仅您自己可见，任何投资人都无法看到您的企业信息</p>
+                            </div>
+                        </label>
+                        
+                        <label class="visibility-option" style="display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="visibility" value="admin_only" style="margin-top: 0.25rem;">
+                            <div>
+                                <strong style="color: var(--warning-color);"><i class="fas fa-user-shield"></i> <span data-zh="仅管理员" data-en="Admin Only">仅管理员</span></strong>
+                                <p class="form-hint" style="margin: 0.25rem 0 0 0;" data-zh="仅 EON Protocol 管理员可见，投资人无法看到" data-en="Only EON Protocol admins can see. Investors cannot view.">仅 EON Protocol 管理员可见，投资人无法看到</p>
+                            </div>
+                        </label>
+                        
+                        <label class="visibility-option" style="display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="visibility" value="partial" style="margin-top: 0.25rem;">
+                            <div>
+                                <strong style="color: var(--primary-color);"><i class="fas fa-user-lock"></i> <span data-zh="部分公开" data-en="Partial">部分公开</span></strong>
+                                <p class="form-hint" style="margin: 0.25rem 0 0 0;" data-zh="投资人可以看到基本信息，但 BP 和资料库需要申请审批后才能查看" data-en="Investors can see basic info. BP and Data Room require approval.">投资人可以看到基本信息，但 BP 和资料库需要申请审批后才能查看</p>
+                            </div>
+                        </label>
+                        
+                        <label class="visibility-option" style="display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="visibility" value="public" style="margin-top: 0.25rem;">
+                            <div>
+                                <strong style="color: var(--success-color);"><i class="fas fa-globe"></i> <span data-zh="完全公开" data-en="Public">完全公开</span></strong>
+                                <p class="form-hint" style="margin: 0.25rem 0 0 0;" data-zh="投资人可以看到公司信息和 BP，资料库仍需申请审批（管理员可直接查看）" data-en="Investors can see company info and BP. Data Room still requires approval (admins can view directly).">投资人可以看到公司信息和 BP，资料库仍需申请审批（管理员可直接查看）</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div style="margin-top: 1.5rem;">
+                        <button class="btn btn-primary" onclick="saveVisibility()">
+                            <i class="fas fa-save"></i> <span data-zh="保存设置" data-en="Save Settings">保存设置</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 访问请求审批 -->
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h3 class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span><i class="fas fa-clipboard-list"></i> <span data-zh="访问请求" data-en="Access Requests">访问请求</span></span>
+                        <select id="accessRequestFilter" class="form-control" style="width: auto; min-width: 120px;" onchange="loadAccessRequests()">
+                            <option value="pending" data-zh="待审批" data-en="Pending">待审批</option>
+                            <option value="approved" data-zh="已批准" data-en="Approved">已批准</option>
+                            <option value="rejected" data-zh="已拒绝" data-en="Rejected">已拒绝</option>
+                            <option value="all" data-zh="全部" data-en="All">全部</option>
+                        </select>
+                    </h3>
+                    <p class="form-hint" style="margin-bottom: 1rem;" data-zh="投资人申请查看您的 BP 或资料库时，需要您审批" data-en="When investors request to view your BP or Data Room, you need to approve.">投资人申请查看您的 BP 或资料库时，需要您审批</p>
+                    
+                    <div id="accessRequestsList">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -1495,6 +1574,9 @@
                     populateFundraisingForm();
                     loadDocuments();
                     loadDataRoom();
+                    loadVisibility();
+                    loadAccessRequests();
+                    loadPendingRequestsCount();
                 }
             } else {
                 companyData = null;
@@ -1580,6 +1662,9 @@
                     populateFundraisingForm();
                     loadDocuments();
                     loadDataRoom();
+                    loadVisibility();
+                    loadAccessRequests();
+                    loadPendingRequestsCount();
                 }
             } catch (error) {
                 console.error('加载企业数据错误:', error);
@@ -2674,6 +2759,245 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // ==================== 访问控制功能 ====================
+
+        // 加载可见性设置
+        async function loadVisibility() {
+            try {
+                const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+                if (!targetCompanyId) return;
+
+                const url = `/api/company/visibility?companyId=${targetCompanyId}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const visibility = data.visibility || 'private';
+                    
+                    // 设置选中的可见性
+                    const radioBtn = document.querySelector(`input[name="visibility"][value="${visibility}"]`);
+                    if (radioBtn) {
+                        radioBtn.checked = true;
+                        updateVisibilityOptionStyle();
+                    }
+                }
+            } catch (error) {
+                console.error('Load visibility error:', error);
+            }
+        }
+
+        // 更新可见性选项样式
+        function updateVisibilityOptionStyle() {
+            document.querySelectorAll('.visibility-option').forEach(option => {
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio.checked) {
+                    option.style.borderColor = 'var(--primary-color)';
+                    option.style.background = 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)';
+                } else {
+                    option.style.borderColor = 'var(--border-color)';
+                    option.style.background = 'white';
+                }
+            });
+        }
+
+        // 监听可见性选项变化
+        document.querySelectorAll('input[name="visibility"]').forEach(radio => {
+            radio.addEventListener('change', updateVisibilityOptionStyle);
+        });
+
+        // 保存可见性设置
+        async function saveVisibility() {
+            try {
+                const visibility = document.querySelector('input[name="visibility"]:checked')?.value;
+                if (!visibility) {
+                    showMessage(getLangText('请选择可见性设置', 'Please select visibility'), 'error');
+                    return;
+                }
+
+                const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+                if (!targetCompanyId) {
+                    showMessage(getLangText('请先创建企业', 'Please create a company first'), 'error');
+                    return;
+                }
+
+                const response = await fetch('/api/company/visibility', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ visibility, companyId: targetCompanyId })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage(getLangText('可见性设置已保存', 'Visibility settings saved'), 'success');
+            } catch (error) {
+                console.error('Save visibility error:', error);
+                showMessage(error.message || getLangText('保存失败', 'Save failed'), 'error');
+            }
+        }
+
+        // 加载访问请求
+        async function loadAccessRequests() {
+            try {
+                const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+                if (!targetCompanyId) {
+                    document.getElementById('accessRequestsList').innerHTML = `
+                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                            ${getLangText('请先创建企业', 'Please create a company first')}
+                        </p>
+                    `;
+                    return;
+                }
+
+                const status = document.getElementById('accessRequestFilter')?.value || 'pending';
+                const url = `/api/company/access-requests?companyId=${targetCompanyId}&status=${status}`;
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load');
+
+                const data = await response.json();
+                const requests = data.requests || [];
+
+                const container = document.getElementById('accessRequestsList');
+                
+                if (requests.length === 0) {
+                    container.innerHTML = `
+                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                            <i class="fas fa-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                            ${getLangText('暂无访问请求', 'No access requests')}
+                        </p>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = requests.map(req => {
+                    const statusBadgeClass = {
+                        'pending': 'status-pending',
+                        'approved': 'status-approved',
+                        'rejected': 'status-rejected'
+                    }[req.status] || 'status-draft';
+                    
+                    const statusText = {
+                        'pending': getLangText('待审批', 'Pending'),
+                        'approved': getLangText('已批准', 'Approved'),
+                        'rejected': getLangText('已拒绝', 'Rejected')
+                    }[req.status] || req.status;
+                    
+                    const requestTypeText = {
+                        'bp': 'BP ' + getLangText('访问', 'Access'),
+                        'dataroom': getLangText('资料库访问', 'Data Room Access'),
+                        'contact': getLangText('联系信息', 'Contact Info')
+                    }[req.request_type] || req.request_type;
+                    
+                    const date = new Date(req.created_at).toLocaleDateString();
+                    
+                    return `
+                        <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                <div>
+                                    <strong>${req.investor?.name || req.investor?.email || 'Unknown'}</strong>
+                                    <span class="status-badge ${statusBadgeClass}" style="margin-left: 0.5rem;">${statusText}</span>
+                                </div>
+                                <span style="color: var(--text-secondary); font-size: 0.875rem;">${date}</span>
+                            </div>
+                            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                                <i class="fas fa-tag"></i> ${requestTypeText}
+                            </p>
+                            ${req.message ? `<p style="background: #f9f9f9; padding: 0.5rem; border-radius: 4px; font-size: 0.875rem; margin-bottom: 0.75rem;">"${req.message}"</p>` : ''}
+                            ${req.status === 'pending' ? `
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                                    <button class="btn btn-success" onclick="reviewAccessRequest('${req.id}', 'approve')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                        <i class="fas fa-check"></i> ${getLangText('批准', 'Approve')}
+                                    </button>
+                                    <button class="btn btn-danger" onclick="reviewAccessRequest('${req.id}', 'reject')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                        <i class="fas fa-times"></i> ${getLangText('拒绝', 'Reject')}
+                                    </button>
+                                </div>
+                            ` : ''}
+                            ${req.admin_response ? `
+                                <p style="margin-top: 0.5rem; padding: 0.5rem; background: ${req.status === 'approved' ? '#D1FAE5' : '#FEE2E2'}; border-radius: 4px; font-size: 0.875rem;">
+                                    <strong>${getLangText('回复：', 'Response: ')}</strong>${req.admin_response}
+                                </p>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Load access requests error:', error);
+                document.getElementById('accessRequestsList').innerHTML = `
+                    <p style="color: var(--danger-color); text-align: center; padding: 1rem;">
+                        ${getLangText('加载失败', 'Load failed')}
+                    </p>
+                `;
+            }
+        }
+
+        // 审批访问请求
+        async function reviewAccessRequest(requestId, action) {
+            try {
+                const response = await prompt(getLangText(
+                    action === 'approve' ? '请输入回复（可选）：' : '请输入拒绝原因（可选）：',
+                    action === 'approve' ? 'Enter response (optional):' : 'Enter rejection reason (optional):'
+                ));
+
+                const apiResponse = await fetch(`/api/company/access-requests/${requestId}/review`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action, response })
+                });
+
+                const result = await apiResponse.json();
+                if (!apiResponse.ok) throw new Error(result.error);
+
+                showMessage(getLangText(
+                    action === 'approve' ? '请求已批准' : '请求已拒绝',
+                    action === 'approve' ? 'Request approved' : 'Request rejected'
+                ), 'success');
+
+                loadAccessRequests();
+                loadPendingRequestsCount();
+            } catch (error) {
+                console.error('Review access request error:', error);
+                showMessage(error.message || getLangText('操作失败', 'Operation failed'), 'error');
+            }
+        }
+
+        // 加载待审批请求数量
+        async function loadPendingRequestsCount() {
+            try {
+                const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+                if (!targetCompanyId) return;
+
+                const response = await fetch(`/api/company/access-requests/pending-count?companyId=${targetCompanyId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const badge = document.getElementById('pendingRequestsBadge');
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Load pending requests count error:', error);
+            }
         }
 
         // ==================== 资料库功能 ====================

@@ -1122,4 +1122,281 @@ router.get('/feedback/unread-count', authenticate, requireCompany, async (req, r
     }
 });
 
+// ==================== 访问控制功能 ====================
+
+// 获取企业可见性设置
+router.get('/visibility', authenticate, requireCompany, async (req, res) => {
+    try {
+        const { companyId } = req.query;
+        
+        let company;
+        if (req.user.role === 'staff' || req.user.role === 'admin') {
+            if (!companyId) {
+                return res.status(400).json({ error: '请指定企业ID' });
+            }
+            company = await Company.findByPk(companyId);
+        } else {
+            company = await Company.findOne({ where: { user_id: req.user.id } });
+        }
+
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        res.json({ 
+            visibility: company.visibility || 'private',
+            companyId: company.id
+        });
+    } catch (error) {
+        console.error('[Company] 获取可见性设置错误:', error);
+        res.status(500).json({ error: '获取可见性设置失败' });
+    }
+});
+
+// 更新企业可见性设置
+router.post('/visibility', authenticate, requireCompany, async (req, res) => {
+    try {
+        const { visibility, companyId } = req.body;
+        
+        // 验证可见性值
+        const validVisibilities = ['private', 'admin_only', 'partial', 'public'];
+        if (!validVisibilities.includes(visibility)) {
+            return res.status(400).json({ error: '无效的可见性设置' });
+        }
+        
+        let company;
+        if (req.user.role === 'staff' || req.user.role === 'admin') {
+            if (!companyId) {
+                return res.status(400).json({ error: '请指定企业ID' });
+            }
+            company = await Company.findByPk(companyId);
+            // 检查 staff 权限
+            if (req.user.role === 'staff' && company.created_by !== req.user.id) {
+                const permission = await CompanyPermission.findOne({
+                    where: { company_id: companyId, user_id: req.user.id, is_active: true }
+                });
+                if (!permission) {
+                    return res.status(403).json({ error: '无权修改该企业' });
+                }
+            }
+        } else {
+            company = await Company.findOne({ where: { user_id: req.user.id } });
+        }
+
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        await company.update({ visibility });
+
+        console.log(`[Company] 企业 ${company.name_cn || company.name_en} 可见性更新为 ${visibility}`);
+
+        res.json({ 
+            message: '可见性设置已更新',
+            visibility: company.visibility
+        });
+    } catch (error) {
+        console.error('[Company] 更新可见性设置错误:', error);
+        res.status(500).json({ error: '更新可见性设置失败' });
+    }
+});
+
+// 获取待审批的访问请求（投资人发来的）
+router.get('/access-requests', authenticate, requireCompany, async (req, res) => {
+    try {
+        const { companyId, status = 'pending' } = req.query;
+        
+        let whereClause = {};
+        
+        if (req.user.role === 'staff' || req.user.role === 'admin') {
+            if (companyId) {
+                whereClause.company_id = companyId;
+            } else {
+                // 获取该 staff 有权限的所有企业
+                const permittedCompanyIds = await CompanyPermission.findAll({
+                    where: { user_id: req.user.id, is_active: true },
+                    attributes: ['company_id']
+                }).then(perms => perms.map(p => p.company_id));
+                
+                const createdCompanyIds = await Company.findAll({
+                    where: { created_by: req.user.id },
+                    attributes: ['id']
+                }).then(comps => comps.map(c => c.id));
+                
+                const allCompanyIds = [...new Set([...permittedCompanyIds, ...createdCompanyIds])];
+                if (allCompanyIds.length === 0) {
+                    return res.json({ requests: [] });
+                }
+                whereClause.company_id = { [Op.in]: allCompanyIds };
+            }
+        } else {
+            // Company 角色只能看到自己企业的请求
+            const company = await Company.findOne({ where: { user_id: req.user.id } });
+            if (!company) {
+                return res.json({ requests: [] });
+            }
+            whereClause.company_id = company.id;
+        }
+        
+        if (status !== 'all') {
+            whereClause.status = status;
+        }
+
+        const requests = await AccessRequest.findAll({
+            where: whereClause,
+            include: [
+                { 
+                    model: User, 
+                    as: 'investor', 
+                    attributes: ['id', 'email', 'name']
+                },
+                {
+                    model: Company,
+                    as: 'company',
+                    attributes: ['id', 'name_cn', 'name_en']
+                }
+            ],
+            order: [['created_at', 'DESC']]
+        });
+
+        res.json({ requests });
+    } catch (error) {
+        console.error('[Company] 获取访问请求错误:', error);
+        res.status(500).json({ error: '获取访问请求失败' });
+    }
+});
+
+// 审批访问请求
+router.post('/access-requests/:id/review', authenticate, requireCompany, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { action, response } = req.body; // action: 'approve' 或 'reject'
+        
+        if (!['approve', 'reject'].includes(action)) {
+            return res.status(400).json({ error: '无效的操作' });
+        }
+
+        const request = await AccessRequest.findByPk(id, {
+            include: [
+                { model: User, as: 'investor', attributes: ['id', 'email', 'name'] },
+                { model: Company, as: 'company' }
+            ]
+        });
+
+        if (!request) {
+            return res.status(404).json({ error: '请求不存在' });
+        }
+
+        // 检查权限
+        let hasPermission = false;
+        if (req.user.role === 'admin') {
+            hasPermission = true;
+        } else if (req.user.role === 'staff') {
+            // Staff 需要是创建者或有权限
+            if (request.company.created_by === req.user.id) {
+                hasPermission = true;
+            } else {
+                const permission = await CompanyPermission.findOne({
+                    where: { company_id: request.company_id, user_id: req.user.id, is_active: true }
+                });
+                hasPermission = !!permission;
+            }
+        } else {
+            // Company 角色需要是企业所有者
+            hasPermission = request.company.user_id === req.user.id;
+        }
+
+        if (!hasPermission) {
+            return res.status(403).json({ error: '无权审批该请求' });
+        }
+
+        // 更新请求状态
+        await request.update({
+            status: action === 'approve' ? 'approved' : 'rejected',
+            admin_response: response,
+            processed_at: new Date(),
+            processed_by: req.user.id,
+            processed_by_role: req.user.role
+        });
+
+        const companyName = request.company.name_cn || request.company.name_en;
+        console.log(`[Company] 用户 ${req.user.email} ${action === 'approve' ? '批准' : '拒绝'}了访问请求 (企业: ${companyName})`);
+
+        // 发送邮件通知投资人
+        try {
+            if (emailService.isConfigured() && request.investor?.email) {
+                const statusText = action === 'approve' ? '已批准' : '已拒绝';
+                const html = emailService.generateTemplate({
+                    title: `访问请求${statusText}`,
+                    content: `<p>您对企业 <strong>${companyName}</strong> 的访问请求已被${statusText}。</p>
+                        ${response ? `<p><strong>回复：</strong>${response}</p>` : ''}
+                        ${action === 'approve' ? '<p>您现在可以查看该企业的详细信息和文档。</p>' : ''}`,
+                    actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/investor`,
+                    actionText: '查看详情'
+                });
+
+                await emailService.sendEmail({
+                    to: request.investor.email,
+                    subject: `[EON Protocol] 访问请求${statusText} - ${companyName}`,
+                    html
+                });
+            }
+        } catch (emailError) {
+            console.error('[Company] 发送访问请求审批邮件失败:', emailError);
+        }
+
+        res.json({ 
+            message: action === 'approve' ? '请求已批准' : '请求已拒绝',
+            request
+        });
+    } catch (error) {
+        console.error('[Company] 审批访问请求错误:', error);
+        res.status(500).json({ error: '审批失败' });
+    }
+});
+
+// 获取待审批请求数量
+router.get('/access-requests/pending-count', authenticate, requireCompany, async (req, res) => {
+    try {
+        const { companyId } = req.query;
+        
+        let whereClause = { status: 'pending' };
+        
+        if (req.user.role === 'staff' || req.user.role === 'admin') {
+            if (companyId) {
+                whereClause.company_id = companyId;
+            } else {
+                const permittedCompanyIds = await CompanyPermission.findAll({
+                    where: { user_id: req.user.id, is_active: true },
+                    attributes: ['company_id']
+                }).then(perms => perms.map(p => p.company_id));
+                
+                const createdCompanyIds = await Company.findAll({
+                    where: { created_by: req.user.id },
+                    attributes: ['id']
+                }).then(comps => comps.map(c => c.id));
+                
+                const allCompanyIds = [...new Set([...permittedCompanyIds, ...createdCompanyIds])];
+                if (allCompanyIds.length === 0) {
+                    return res.json({ count: 0 });
+                }
+                whereClause.company_id = { [Op.in]: allCompanyIds };
+            }
+        } else {
+            const company = await Company.findOne({ where: { user_id: req.user.id } });
+            if (!company) {
+                return res.json({ count: 0 });
+            }
+            whereClause.company_id = company.id;
+        }
+
+        const count = await AccessRequest.count({ where: whereClause });
+
+        res.json({ count });
+    } catch (error) {
+        console.error('[Company] 获取待审批请求数量错误:', error);
+        res.status(500).json({ error: '获取数量失败' });
+    }
+});
+
 module.exports = router;

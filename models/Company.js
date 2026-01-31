@@ -118,9 +118,11 @@ const Company = sequelize.define('Company', {
         type: DataTypes.STRING(20),
         defaultValue: 'draft'
     },
+    // 可见性: private(私有), admin_only(仅管理员), partial(部分公开-可见信息不可见BP/DataRoom), public(完全公开-可见信息和BP)
     visibility: {
         type: DataTypes.STRING(20),
-        defaultValue: 'private'
+        defaultValue: 'private',
+        comment: '可见性: private, admin_only, partial, public'
     },
     // 管理员备注
     admin_notes: {

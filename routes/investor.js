@@ -135,16 +135,17 @@ router.get('/projects', authenticate, requireInvestor, async (req, res) => {
             attributes: ['company_id']
         }).then(perms => perms.map(p => p.company_id));
 
-        // 构建查询条件：公开可见的企业 或 被授权访问的企业
+        // 构建查询条件：根据可见性过滤
+        // visibility: private(仅自己), admin_only(仅管理员), partial(部分公开), public(完全公开)
         // engage 状态的企业也对投资人可见
         const where = {
             [Op.or]: [
-                // 公开对投资人可见的（包括 engage 状态）
+                // 部分公开或完全公开的企业（投资人可见）
                 {
-                    status: { [Op.in]: ['approved', 'engage'] },
-                    visibility: { [Op.in]: ['investors', 'whitelist'] }
+                    status: { [Op.in]: ['approved', 'engage', 'explore'] },
+                    visibility: { [Op.in]: ['partial', 'public'] }
                 },
-                // 被授权访问的
+                // 被授权访问的（通过 CompanyPermission）
                 ...(permittedCompanyIds.length > 0 ? [{ id: { [Op.in]: permittedCompanyIds } }] : [])
             ]
         };
@@ -223,33 +224,62 @@ router.get('/projects', authenticate, requireInvestor, async (req, res) => {
         const interestMap = {};
         interests.forEach(i => { interestMap[i.company_id] = i.interest_type; });
 
+        // 检查投资人已批准的访问请求（用于判断是否有 BP 访问权限）
+        const approvedAccessRequests = await AccessRequest.findAll({
+            where: {
+                investor_id: req.user.id,
+                company_id: { [Op.in]: companyIds },
+                status: 'approved'
+            },
+            attributes: ['company_id', 'request_type']
+        });
+        const approvedAccessMap = {};
+        approvedAccessRequests.forEach(r => { 
+            if (!approvedAccessMap[r.company_id]) approvedAccessMap[r.company_id] = [];
+            approvedAccessMap[r.company_id].push(r.request_type);
+        });
+
         // 返回数据，标记是否为授权访问和兴趣状态
-        const projects = companies.map(company => ({
-            id: company.id,
-            name_cn: company.name_cn,
-            name_en: company.name_en,
-            industry_primary: company.industry_primary,
-            industry_secondary: company.industry_secondary,
-            location_headquarters: company.location_headquarters,
-            description: company.description,
-            stage: company.stage,
-            tags: company.tags,
-            status: company.status,
-            deal_status: company.deal_status,
-            sg_ready: company.sg_ready,
-            data_room_enabled: company.data_room_enabled,
-            hasPermission: permittedCompanyIds.includes(company.id),
-            hasExpressedInterest: !!interestMap[company.id],
-            interestType: interestMap[company.id] || null,
-            fundraising: company.fundraisingInfo ? {
-                purpose: company.fundraisingInfo.purpose,
-                financing_type: company.fundraisingInfo.financing_type,
-                amount_min: company.fundraisingInfo.amount_min,
-                amount_max: company.fundraisingInfo.amount_max,
-                timeline: company.fundraisingInfo.timeline
-            } : null,
-            created_at: company.created_at
-        }));
+        const projects = companies.map(company => {
+            const hasPermission = permittedCompanyIds.includes(company.id);
+            const hasApprovedAccess = !!approvedAccessMap[company.id];
+            const visibility = company.visibility || 'private';
+            
+            // 根据可见性决定是否显示 BP 信息
+            // public: 可以直接看 BP
+            // partial: 需要申请批准后才能看 BP
+            const canViewBP = visibility === 'public' || hasPermission || hasApprovedAccess;
+            
+            return {
+                id: company.id,
+                name_cn: company.name_cn,
+                name_en: company.name_en,
+                industry_primary: company.industry_primary,
+                industry_secondary: company.industry_secondary,
+                location_headquarters: company.location_headquarters,
+                description: company.description,
+                stage: company.stage,
+                tags: company.tags,
+                status: company.status,
+                visibility: visibility,
+                deal_status: company.deal_status,
+                sg_ready: company.sg_ready,
+                data_room_enabled: company.data_room_enabled,
+                hasPermission: hasPermission,
+                hasApprovedAccess: hasApprovedAccess,
+                canViewBP: canViewBP,
+                hasExpressedInterest: !!interestMap[company.id],
+                interestType: interestMap[company.id] || null,
+                fundraising: company.fundraisingInfo ? {
+                    purpose: company.fundraisingInfo.purpose,
+                    financing_type: company.fundraisingInfo.financing_type,
+                    amount_min: company.fundraisingInfo.amount_min,
+                    amount_max: company.fundraisingInfo.amount_max,
+                    timeline: company.fundraisingInfo.timeline
+                } : null,
+                created_at: company.created_at
+            };
+        });
 
         res.json({
             projects,
@@ -294,11 +324,11 @@ router.get('/projects/:id', authenticate, requireInvestor, async (req, res) => {
             // 有授权权限，直接按ID查询
             whereCondition = { id: req.params.id };
         } else {
-            // 没有授权权限，需要检查企业是否公开可见
+            // 没有授权权限，需要检查企业是否公开可见（partial 或 public）
             whereCondition = {
                 id: req.params.id,
-                status: 'approved',
-                visibility: { [Op.in]: ['investors', 'whitelist'] }
+                status: { [Op.in]: ['approved', 'engage', 'explore'] },
+                visibility: { [Op.in]: ['partial', 'public'] }
             };
         }
 
@@ -402,12 +432,12 @@ router.post('/request-access', authenticate, requireInvestor, async (req, res) =
             return res.status(400).json({ error: '请填写必要信息' });
         }
 
-        // 检查企业是否存在且可见
+        // 检查企业是否存在且可见（partial 或 public 可见性）
         const company = await Company.findOne({
             where: {
                 id: company_id,
-                status: 'approved',
-                visibility: { [Op.in]: ['investors', 'whitelist'] }
+                status: { [Op.in]: ['approved', 'engage', 'explore'] },
+                visibility: { [Op.in]: ['partial', 'public'] }
             }
         });
 
