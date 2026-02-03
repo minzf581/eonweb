@@ -67,6 +67,17 @@ const User = sequelize.define('User', {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    // 临时密码功能
+    temp_password: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: '是否正在使用临时密码'
+    },
+    temp_password_expires: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: '临时密码过期时间'
+    },
     created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
@@ -110,6 +121,7 @@ User.prototype.toSafeObject = function() {
         referral_code: this.referral_code,
         referral_count: this.referral_count,
         is_priority: this.is_priority,
+        temp_password: this.temp_password,
         created_at: this.created_at
     };
 };
@@ -124,8 +136,20 @@ function generateReferralCode() {
     return code;
 }
 
+// 生成临时密码
+function generateTempPassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 10; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
 // 添加为模型的静态方法
 User.generateReferralCode = generateReferralCode;
+User.generateTempPassword = generateTempPassword;
 
 module.exports = User;
 module.exports.generateReferralCode = generateReferralCode;
+module.exports.generateTempPassword = generateTempPassword;

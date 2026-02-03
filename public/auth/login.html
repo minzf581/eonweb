@@ -12,6 +12,7 @@
             --secondary-color: #4AD8FD;
             --success-color: #10B981;
             --danger-color: #EF4444;
+            --warning-color: #F59E0B;
             --bg-color: #F3F4F6;
             --card-bg: #FFFFFF;
             --text-color: #1F2937;
@@ -143,6 +144,16 @@
             transform: translateY(-1px);
         }
 
+        .btn-secondary {
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -166,6 +177,22 @@
             text-decoration: underline;
         }
 
+        .forgot-password {
+            text-align: right;
+            margin-top: -0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .forgot-password a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .forgot-password a:hover {
+            color: var(--primary-color);
+        }
+
         .error-message {
             background: #FEE2E2;
             color: #991B1B;
@@ -179,6 +206,16 @@
         .success-message {
             background: #D1FAE5;
             color: #065F46;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            font-size: 0.875rem;
+        }
+
+        .warning-message {
+            background: #FEF3C7;
+            color: #92400E;
             padding: 0.75rem 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
@@ -238,6 +275,57 @@
             color: var(--primary-color);
         }
 
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            margin: 1rem;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            color: var(--text-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .modal-close:hover {
+            color: var(--text-color);
+        }
+
         /* 移动端优化 */
         @media (max-width: 480px) {
             body {
@@ -264,7 +352,7 @@
         <div class="spinner"></div>
     </div>
 
-    <div class="container">
+    <div class="container" id="loginContainer">
         <div class="header-row">
             <a href="/" class="back-link">
                 <i class="fas fa-arrow-left"></i> 
@@ -298,6 +386,10 @@
                        placeholder="输入密码">
             </div>
 
+            <div class="forgot-password">
+                <a href="#" onclick="showForgotPasswordModal(); return false;" data-zh="忘记密码？" data-en="Forgot password?">忘记密码？</a>
+            </div>
+
             <button type="submit" class="btn btn-primary" id="submitBtn">
                 <i class="fas fa-sign-in-alt"></i> 
                 <span data-zh="登录" data-en="Login">登录</span>
@@ -321,8 +413,67 @@
         </div>
     </div>
 
+    <!-- 忘记密码弹窗 -->
+    <div class="modal" id="forgotPasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-zh="忘记密码" data-en="Forgot Password">忘记密码</h2>
+                <button class="modal-close" onclick="closeForgotPasswordModal()">&times;</button>
+            </div>
+            <div id="forgotErrorMessage" class="error-message"></div>
+            <div id="forgotSuccessMessage" class="success-message"></div>
+            <form id="forgotPasswordForm">
+                <div class="form-group">
+                    <label class="form-label" data-zh="邮箱地址" data-en="Email Address">邮箱地址</label>
+                    <input type="email" class="form-control" id="forgotEmail" required 
+                           data-placeholder-zh="输入您的注册邮箱" data-placeholder-en="Enter your registered email"
+                           placeholder="输入您的注册邮箱">
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;" data-zh="我们将发送临时密码到您的邮箱" data-en="We will send a temporary password to your email">我们将发送临时密码到您的邮箱</p>
+                <button type="submit" class="btn btn-primary" id="forgotSubmitBtn">
+                    <i class="fas fa-paper-plane"></i> 
+                    <span data-zh="发送临时密码" data-en="Send Temporary Password">发送临时密码</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 强制修改密码弹窗 -->
+    <div class="modal" id="forceChangePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-zh="设置新密码" data-en="Set New Password">设置新密码</h2>
+            </div>
+            <div id="changeErrorMessage" class="error-message"></div>
+            <div id="changeWarningMessage" class="warning-message" style="display: block;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span data-zh="您正在使用临时密码，请设置新密码" data-en="You are using a temporary password, please set a new password">您正在使用临时密码，请设置新密码</span>
+            </div>
+            <form id="forceChangePasswordForm">
+                <div class="form-group">
+                    <label class="form-label" data-zh="新密码" data-en="New Password">新密码</label>
+                    <input type="password" class="form-control" id="newPassword" required minlength="6"
+                           data-placeholder-zh="至少6位字符" data-placeholder-en="At least 6 characters"
+                           placeholder="至少6位字符">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-zh="确认新密码" data-en="Confirm New Password">确认新密码</label>
+                    <input type="password" class="form-control" id="confirmPassword" required minlength="6"
+                           data-placeholder-zh="再次输入新密码" data-placeholder-en="Enter new password again"
+                           placeholder="再次输入新密码">
+                </div>
+                <button type="submit" class="btn btn-primary" id="changeSubmitBtn">
+                    <i class="fas fa-key"></i> 
+                    <span data-zh="确认修改" data-en="Confirm Change">确认修改</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script src="/static/js/lang.js"></script>
     <script>
+        let currentToken = null;
+
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             // 检查是否已登录
@@ -333,17 +484,25 @@
 
             // 表单提交
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('forgotPasswordForm').addEventListener('submit', handleForgotPassword);
+            document.getElementById('forceChangePasswordForm').addEventListener('submit', handleForceChangePassword);
         });
 
         async function checkAuth(token) {
             try {
                 const response = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    redirectByRole(data.user.role);
+                    // 检查是否需要修改密码
+                    if (data.user.temp_password) {
+                        currentToken = token;
+                        showForceChangePasswordModal();
+                    } else {
+                        redirectByRole(data.user.role);
+                    }
                 }
             } catch (error) {
                 // 忽略错误
@@ -375,6 +534,14 @@
                 // 保存 token
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
+                currentToken = result.token;
+
+                // 检查是否需要修改密码
+                if (result.requirePasswordChange) {
+                    showLoading(false);
+                    showForceChangePasswordModal();
+                    return;
+                }
 
                 showSuccess(getLang() === 'en' ? 'Login successful, redirecting...' : '登录成功，正在跳转...');
 
@@ -390,6 +557,133 @@
             }
         }
 
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('forgotEmail').value.trim();
+            const submitBtn = document.getElementById('forgotSubmitBtn');
+
+            submitBtn.disabled = true;
+            document.getElementById('forgotErrorMessage').style.display = 'none';
+            document.getElementById('forgotSuccessMessage').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || (getLang() === 'en' ? 'Reset failed' : '重置失败'));
+                }
+
+                const successEl = document.getElementById('forgotSuccessMessage');
+                successEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + (getLang() === 'en' 
+                    ? 'If the email is registered, you will receive a temporary password shortly. Please check your inbox (and spam folder).' 
+                    : '如果该邮箱已注册，您将很快收到临时密码。请检查您的收件箱（和垃圾邮件文件夹）。');
+                successEl.style.display = 'block';
+
+                // 清空表单
+                document.getElementById('forgotEmail').value = '';
+
+                // 3秒后关闭弹窗
+                setTimeout(() => {
+                    closeForgotPasswordModal();
+                }, 5000);
+
+            } catch (error) {
+                const errorEl = document.getElementById('forgotErrorMessage');
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function handleForceChangePassword(e) {
+            e.preventDefault();
+
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const submitBtn = document.getElementById('changeSubmitBtn');
+
+            document.getElementById('changeErrorMessage').style.display = 'none';
+
+            if (newPassword !== confirmPassword) {
+                const errorEl = document.getElementById('changeErrorMessage');
+                errorEl.textContent = getLang() === 'en' ? 'Passwords do not match' : '两次输入的密码不一致';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                const errorEl = document.getElementById('changeErrorMessage');
+                errorEl.textContent = getLang() === 'en' ? 'Password must be at least 6 characters' : '密码长度至少为6位';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/auth/force-change-password', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + currentToken
+                    },
+                    body: JSON.stringify({ newPassword })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || (getLang() === 'en' ? 'Change failed' : '修改失败'));
+                }
+
+                // 清除 token，需要重新登录
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                currentToken = null;
+
+                // 关闭弹窗并显示成功消息
+                closeForceChangePasswordModal();
+                showSuccess(getLang() === 'en' ? 'Password changed successfully, please login with your new password' : '密码修改成功，请使用新密码登录');
+
+            } catch (error) {
+                const errorEl = document.getElementById('changeErrorMessage');
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        function showForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.add('active');
+            document.getElementById('forgotEmail').value = document.getElementById('email').value;
+            document.getElementById('forgotErrorMessage').style.display = 'none';
+            document.getElementById('forgotSuccessMessage').style.display = 'none';
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.remove('active');
+        }
+
+        function showForceChangePasswordModal() {
+            document.getElementById('forceChangePasswordModal').classList.add('active');
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('changeErrorMessage').style.display = 'none';
+        }
+
+        function closeForceChangePasswordModal() {
+            document.getElementById('forceChangePasswordModal').classList.remove('active');
+        }
+
         function redirectByRole(role) {
             const redirect = new URLSearchParams(window.location.search).get('redirect');
             
@@ -402,7 +696,7 @@
             } else if (role === 'admin') {
                 window.location.href = '/admin';
             } else if (role === 'staff') {
-                window.location.href = '/staff';
+                window.location.href = '/company';
             } else {
                 window.location.href = '/dashboard';
             }
