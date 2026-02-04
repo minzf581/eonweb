@@ -156,7 +156,7 @@ router.put('/companies/:id/review', authenticate, requireAdmin, async (req, res)
 
         await company.update(updateData);
 
-        const companyName = company.name_cn || company.name_en;
+        const companyName = company.name_en || company.name_cn;
 
         // 如果状态发生变化，发送邮件通知给所有相关人员
         let emailSent = false;
@@ -406,7 +406,7 @@ router.put('/requests/:id', authenticate, requireAdmin, async (req, res) => {
         if ((status === 'approved' || status === 'rejected') && request.investor?.email) {
             const result = await emailService.sendAccessRequestNotification({
                 to: request.investor.email,
-                companyName: request.company?.name_cn || request.company?.name_en || '未知企业',
+                companyName: request.company?.name_en || request.company?.name_cn || 'Unknown Company',
                 requestType: request.request_type,
                 status,
                 adminResponse: admin_response
@@ -1042,9 +1042,9 @@ router.post('/companies/:id/comments', authenticate, requireAdmin, async (req, r
             ]
         });
 
-        const commentType = isInternalComment ? '内部评论' : '反馈';
-        const companyName = company.name_cn || company.name_en;
-        console.log(`[Admin] 管理员 ${req.user.email} 给企业 ${companyName} 添加${commentType}`);
+        const commentType = isInternalComment ? 'Internal Note' : 'Feedback';
+        const companyName = company.name_en || company.name_cn;
+        console.log(`[Admin] Admin ${req.user.email} added ${commentType} for company ${companyName}`);
 
         // 发送邮件通知
         try {
@@ -1289,7 +1289,7 @@ router.post('/companies/:id/permissions', authenticate, requireAdmin, async (req
             ]
         });
 
-        console.log(`[Admin] 管理员 ${req.user.email} 授权用户 ${targetUser.email} 访问企业 ${company.name_cn}`);
+        console.log(`[Admin] Admin ${req.user.email} granted access to company ${company.name_en || company.name_cn} for user ${targetUser.email}`);
 
         res.status(201).json({ 
             message: '权限已设置',
@@ -1352,7 +1352,7 @@ router.post('/companies/:id/permissions/batch', authenticate, requireAdmin, asyn
             }
         }
 
-        console.log(`[Admin] 管理员 ${req.user.email} 批量授权企业 ${company.name_cn}: ${user_ids.length} 个用户`);
+        console.log(`[Admin] Admin ${req.user.email} bulk granted access to company ${company.name_en || company.name_cn} for ${user_ids.length} users`);
 
         res.json({ 
             message: '批量授权完成',

@@ -1184,7 +1184,7 @@
                 if (data.companies && data.companies.length > 0) {
                     document.getElementById('companiesTable').innerHTML = data.companies.map(c => `
                         <tr>
-                            <td><strong>${c.name_cn}</strong></td>
+                            <td><strong>${c.name_en || c.name_cn || '-'}</strong></td>
                             <td>${formatIndustry(c.industry_primary)}</td>
                             <td>${formatStage(c.stage)}</td>
                             <td><span class="status-badge status-${c.status}">${formatStatus(c.status)}</span></td>
@@ -1265,7 +1265,7 @@
                     document.getElementById('requestsTable').innerHTML = data.requests.map(r => `
                         <tr>
                             <td>${r.investor?.email || '-'}</td>
-                            <td>${r.company?.name_cn || '-'}</td>
+                            <td>${r.company?.name_en || r.company?.name_cn || '-'}</td>
                             <td>${formatRequestType(r.request_type)}</td>
                             <td>${r.message || '-'}</td>
                             <td><span class="status-badge status-${r.status}">${formatStatus(r.status)}</span></td>
@@ -1349,8 +1349,8 @@
 
                 document.getElementById('companyModalContent').innerHTML = `
                     <div class="detail-grid">
-                        <div class="detail-item"><div class="detail-label">${t('companyName')}</div><div class="detail-value">${c.name_cn}</div></div>
-                        <div class="detail-item"><div class="detail-label">${t('companyNameEn')}</div><div class="detail-value">${c.name_en || '-'}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('companyName')}</div><div class="detail-value">${c.name_en || c.name_cn || '-'}</div></div>
+                        <div class="detail-item"><div class="detail-label">${t('companyNameEn')}</div><div class="detail-value">${c.name_cn || '-'}</div></div>
                         <div class="detail-item"><div class="detail-label">${t('industry')}</div><div class="detail-value">${formatIndustry(c.industry_primary)}</div></div>
                         <div class="detail-item"><div class="detail-label">${t('stage')}</div><div class="detail-value">${formatStage(c.stage)}</div></div>
                         <div class="detail-item"><div class="detail-label">${t('headquarters')}</div><div class="detail-value">${c.location_headquarters || '-'}</div></div>
@@ -2006,7 +2006,7 @@
                 const compSelect = document.getElementById('messageCompany');
                 compSelect.innerHTML = `<option value="">${t('selectCompany')}</option>` +
                     compData.companies.map(c =>
-                        `<option value="${c.id}">${c.name_cn}</option>`
+                        `<option value="${c.id}">${c.name_en || c.name_cn || '-'}</option>`
                     ).join('');
 
             } catch (error) {
