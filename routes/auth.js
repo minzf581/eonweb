@@ -4,40 +4,40 @@ const { User, Company, InvestorProfile } = require('../models');
 const { generateToken, authenticate } = require('../middleware/auth');
 const emailService = require('../services/EmailService');
 
-// 注册
+// Register
 router.post('/register', async (req, res) => {
     try {
         const { email, password, role, name, referral_code } = req.body;
 
-        // 验证必填字段
+        // Validate required fields
         if (!email || !password || !role) {
-            return res.status(400).json({ error: '请填写所有必填字段' });
+            return res.status(400).json({ error: 'Please fill in all required fields' });
         }
 
-        // 验证角色
+        // Validate role
         if (!['company', 'investor'].includes(role)) {
-            return res.status(400).json({ error: '无效的角色类型' });
+            return res.status(400).json({ error: 'Invalid role type' });
         }
 
-        // 检查邮箱是否已存在
+        // Check if email exists
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
-            return res.status(400).json({ error: '该邮箱已被注册' });
+            return res.status(400).json({ error: 'This email is already registered' });
         }
 
-        // 处理推荐码
+        // Process referral code
         let referrer = null;
         let isPriority = false;
         if (referral_code) {
             referrer = await User.findOne({ where: { referral_code: referral_code.toUpperCase() } });
             if (!referrer) {
-                return res.status(400).json({ error: '无效的推荐码' });
+                return res.status(400).json({ error: 'Invalid referral code' });
             }
-            isPriority = true; // 有推荐码的用户优先处理
-            console.log(`[Auth] 用户 ${email} 由 ${referrer.email} 推荐注册`);
+            isPriority = true;
+            console.log(`[Auth] User ${email} registered via referral from ${referrer.email}`);
         }
 
-        // 为新用户生成推荐码
+        // Generate referral code for new user
         let newReferralCode;
         let attempts = 0;
         while (!newReferralCode && attempts < 10) {
@@ -49,7 +49,7 @@ router.post('/register', async (req, res) => {
             attempts++;
         }
 
-        // 创建用户
+        // Create user
         const user = await User.create({
             email,
             password,
@@ -58,15 +58,15 @@ router.post('/register', async (req, res) => {
             referral_code: newReferralCode,
             referred_by: referrer?.id,
             is_priority: isPriority,
-            status: role === 'investor' ? 'pending' : 'active' // 投资人需要审核
+            status: role === 'investor' ? 'pending' : 'active'
         });
 
-        // 更新推荐人的推荐计数
+        // Update referrer's referral count
         if (referrer) {
             await referrer.increment('referral_count');
         }
 
-        // 如果是投资人，创建投资人资料
+        // Create investor profile if investor
         if (role === 'investor') {
             await InvestorProfile.create({
                 user_id: user.id,
@@ -79,45 +79,45 @@ router.post('/register', async (req, res) => {
         const token = generateToken(user);
 
         res.status(201).json({
-            message: '注册成功',
+            message: 'Registration successful',
             user: user.toSafeObject(),
             token,
             referrer: referrer ? { email: referrer.email, name: referrer.name } : null
         });
     } catch (error) {
-        console.error('[Auth] 注册错误:', error);
-        res.status(500).json({ error: '注册失败，请稍后重试' });
+        console.error('[Auth] Registration error:', error);
+        res.status(500).json({ error: 'Registration failed, please try again later' });
     }
 });
 
-// 登录
+// Login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json({ error: '请输入邮箱和密码' });
+            return res.status(400).json({ error: 'Please enter email and password' });
         }
 
         const user = await User.findOne({ where: { email } });
         if (!user) {
-            return res.status(401).json({ error: '邮箱或密码错误' });
+            return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         const isValid = await user.validatePassword(password);
         if (!isValid) {
-            return res.status(401).json({ error: '邮箱或密码错误' });
+            return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         if (user.status === 'suspended') {
-            return res.status(403).json({ error: '账户已被暂停，请联系管理员' });
+            return res.status(403).json({ error: 'Account has been suspended, please contact admin' });
         }
 
-        // 检查临时密码是否过期
+        // Check if temp password is expired
         if (user.temp_password && user.temp_password_expires) {
             if (new Date() > new Date(user.temp_password_expires)) {
                 return res.status(401).json({ 
-                    error: '临时密码已过期，请重新申请密码重置',
+                    error: 'Temporary password has expired, please request a new password reset',
                     code: 'TEMP_PASSWORD_EXPIRED'
                 });
             }
@@ -125,7 +125,7 @@ router.post('/login', async (req, res) => {
 
         const token = generateToken(user);
 
-        // 获取额外信息
+        // Get additional info
         let additionalInfo = {};
         if (user.role === 'company') {
             const company = await Company.findOne({ where: { user_id: user.id } });
@@ -137,22 +137,22 @@ router.post('/login', async (req, res) => {
         }
 
         res.json({
-            message: '登录成功',
+            message: 'Login successful',
             user: {
                 ...user.toSafeObject(),
                 ...additionalInfo,
-                requirePasswordChange: user.temp_password // 如果使用临时密码，需要修改
+                requirePasswordChange: user.temp_password
             },
             token,
-            requirePasswordChange: user.temp_password // 顶级字段方便前端判断
+            requirePasswordChange: user.temp_password
         });
     } catch (error) {
-        console.error('[Auth] 登录错误:', error);
-        res.status(500).json({ error: '登录失败，请稍后重试' });
+        console.error('[Auth] Login error:', error);
+        res.status(500).json({ error: 'Login failed, please try again later' });
     }
 });
 
-// 获取当前用户信息
+// Get current user info
 router.get('/me', authenticate, async (req, res) => {
     try {
         const user = req.user;
@@ -179,141 +179,27 @@ router.get('/me', authenticate, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('[Auth] 获取用户信息错误:', error);
-        res.status(500).json({ error: '获取用户信息失败' });
+        console.error('[Auth] Get user info error:', error);
+        res.status(500).json({ error: 'Failed to get user info' });
     }
 });
 
-// 修改密码
+// Change password
 router.post('/change-password', authenticate, async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword) {
-            return res.status(400).json({ error: '请填写当前密码和新密码' });
+            return res.status(400).json({ error: 'Please fill in current password and new password' });
         }
 
         if (newPassword.length < 6) {
-            return res.status(400).json({ error: '新密码长度至少为6位' });
+            return res.status(400).json({ error: 'New password must be at least 6 characters' });
         }
 
         const isValid = await req.user.validatePassword(currentPassword);
         if (!isValid) {
-            return res.status(401).json({ error: '当前密码错误' });
-        }
-
-        req.user.password = newPassword;
-        req.user.temp_password = false; // 重置临时密码标记
-        req.user.temp_password_expires = null;
-        await req.user.save();
-
-        res.json({ message: '密码修改成功' });
-    } catch (error) {
-        console.error('[Auth] 修改密码错误:', error);
-        res.status(500).json({ error: '修改密码失败' });
-    }
-});
-
-// ==================== 密码重置功能 ====================
-
-// 请求密码重置（发送临时密码到邮箱）
-router.post('/reset-password', async (req, res) => {
-    try {
-        const { email } = req.body;
-
-        if (!email) {
-            return res.status(400).json({ error: '请输入邮箱地址' });
-        }
-
-        const user = await User.findOne({ where: { email } });
-        if (!user) {
-            // 为安全起见，不透露用户是否存在
-            return res.json({ 
-                message: '如果该邮箱已注册，您将收到一封包含临时密码的邮件' 
-            });
-        }
-
-        // 生成临时密码
-        const tempPassword = User.generateTempPassword();
-        
-        // 设置临时密码（有效期24小时）
-        const bcrypt = require('bcryptjs');
-        const hashedPassword = await bcrypt.hash(tempPassword, 10);
-        
-        await user.update({
-            password: hashedPassword,
-            temp_password: true,
-            temp_password_expires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24小时后过期
-        }, {
-            hooks: false // 跳过 beforeUpdate hook，因为我们已经手动哈希了
-        });
-
-        console.log(`[Auth] 为用户 ${email} 生成临时密码`);
-
-        // 发送邮件
-        try {
-            if (emailService.isConfigured()) {
-                const html = emailService.generateTemplate({
-                    title: '密码重置',
-                    content: `
-                        <p>您好，</p>
-                        <p>您请求了密码重置。以下是您的临时密码：</p>
-                        <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                            <code style="font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #1E40AF;">${tempPassword}</code>
-                        </div>
-                        <p><strong>重要提示：</strong></p>
-                        <ul style="color: #4B5563;">
-                            <li>此临时密码有效期为 <strong>24 小时</strong></li>
-                            <li>登录后系统会提示您设置新密码</li>
-                            <li>如果您没有请求密码重置，请忽略此邮件</li>
-                        </ul>
-                    `,
-                    actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/auth/login.html`,
-                    actionText: '前往登录'
-                });
-
-                await emailService.sendEmail({
-                    to: email,
-                    subject: '[EON Protocol] 密码重置 - 您的临时密码',
-                    html
-                });
-
-                console.log(`[Auth] 临时密码邮件已发送至 ${email}`);
-            } else {
-                console.log(`[Auth] 邮件服务未配置，临时密码: ${tempPassword}`);
-            }
-        } catch (emailError) {
-            console.error('[Auth] 发送密码重置邮件失败:', emailError);
-            // 即使邮件发送失败，也返回成功消息（安全考虑）
-        }
-
-        res.json({ 
-            message: '如果该邮箱已注册，您将收到一封包含临时密码的邮件',
-            // 开发环境下返回临时密码（生产环境应删除）
-            ...(process.env.NODE_ENV !== 'production' && { debug_temp_password: tempPassword })
-        });
-    } catch (error) {
-        console.error('[Auth] 密码重置错误:', error);
-        res.status(500).json({ error: '密码重置失败，请稍后重试' });
-    }
-});
-
-// 强制修改密码（临时密码登录后）
-router.post('/force-change-password', authenticate, async (req, res) => {
-    try {
-        const { newPassword } = req.body;
-
-        if (!newPassword) {
-            return res.status(400).json({ error: '请输入新密码' });
-        }
-
-        if (newPassword.length < 6) {
-            return res.status(400).json({ error: '密码长度至少为6位' });
-        }
-
-        // 检查是否需要修改密码
-        if (!req.user.temp_password) {
-            return res.status(400).json({ error: '当前不需要修改密码' });
+            return res.status(401).json({ error: 'Current password is incorrect' });
         }
 
         req.user.password = newPassword;
@@ -321,23 +207,135 @@ router.post('/force-change-password', authenticate, async (req, res) => {
         req.user.temp_password_expires = null;
         await req.user.save();
 
-        console.log(`[Auth] 用户 ${req.user.email} 已设置新密码`);
-
-        res.json({ message: '密码已更新，请使用新密码登录' });
+        res.json({ message: 'Password changed successfully' });
     } catch (error) {
-        console.error('[Auth] 强制修改密码错误:', error);
-        res.status(500).json({ error: '修改密码失败' });
+        console.error('[Auth] Change password error:', error);
+        res.status(500).json({ error: 'Failed to change password' });
     }
 });
 
-// ==================== 推荐码功能 ====================
+// ==================== Password Reset ====================
 
-// 获取我的推荐码和推荐链接
+// Request password reset (send temp password to email)
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Please enter your email address' });
+        }
+
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            // For security, don't reveal if user exists
+            return res.json({ 
+                message: 'If this email is registered, you will receive a temporary password shortly' 
+            });
+        }
+
+        // Generate temp password
+        const tempPassword = User.generateTempPassword();
+        
+        // Set temp password (valid for 24 hours)
+        const bcrypt = require('bcryptjs');
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        
+        await user.update({
+            password: hashedPassword,
+            temp_password: true,
+            temp_password_expires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }, {
+            hooks: false
+        });
+
+        console.log(`[Auth] Generated temp password for user ${email}`);
+
+        // Send email
+        try {
+            if (emailService.isConfigured()) {
+                const html = emailService.generateTemplate({
+                    title: 'Password Reset',
+                    content: `
+                        <p>Hello,</p>
+                        <p>You requested a password reset. Here is your temporary password:</p>
+                        <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                            <code style="font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #1E40AF;">${tempPassword}</code>
+                        </div>
+                        <p><strong>Important:</strong></p>
+                        <ul style="color: #4B5563;">
+                            <li>This temporary password is valid for <strong>24 hours</strong></li>
+                            <li>After logging in, you will be prompted to set a new password</li>
+                            <li>If you did not request this password reset, please ignore this email</li>
+                        </ul>
+                    `,
+                    actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/auth/login.html`,
+                    actionText: 'Go to Login'
+                });
+
+                await emailService.sendEmail({
+                    to: email,
+                    subject: '[EON Protocol] Password Reset - Your Temporary Password',
+                    html
+                });
+
+                console.log(`[Auth] Temp password email sent to ${email}`);
+            } else {
+                console.log(`[Auth] Email service not configured, temp password: ${tempPassword}`);
+            }
+        } catch (emailError) {
+            console.error('[Auth] Failed to send password reset email:', emailError);
+        }
+
+        res.json({ 
+            message: 'If this email is registered, you will receive a temporary password shortly',
+            ...(process.env.NODE_ENV !== 'production' && { debug_temp_password: tempPassword })
+        });
+    } catch (error) {
+        console.error('[Auth] Password reset error:', error);
+        res.status(500).json({ error: 'Password reset failed, please try again later' });
+    }
+});
+
+// Force change password (after temp password login)
+router.post('/force-change-password', authenticate, async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+
+        if (!newPassword) {
+            return res.status(400).json({ error: 'Please enter a new password' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+
+        // Check if password change is needed
+        if (!req.user.temp_password) {
+            return res.status(400).json({ error: 'Password change is not required' });
+        }
+
+        req.user.password = newPassword;
+        req.user.temp_password = false;
+        req.user.temp_password_expires = null;
+        await req.user.save();
+
+        console.log(`[Auth] User ${req.user.email} has set a new password`);
+
+        res.json({ message: 'Password updated successfully, please login with your new password' });
+    } catch (error) {
+        console.error('[Auth] Force change password error:', error);
+        res.status(500).json({ error: 'Failed to change password' });
+    }
+});
+
+// ==================== Referral Code ====================
+
+// Get my referral code and link
 router.get('/referral', authenticate, async (req, res) => {
     try {
         const user = req.user;
         
-        // 如果用户还没有推荐码，生成一个
+        // Generate referral code if user doesn't have one
         if (!user.referral_code) {
             let newReferralCode;
             let attempts = 0;
@@ -356,7 +354,7 @@ router.get('/referral', authenticate, async (req, res) => {
             }
         }
 
-        // 获取被推荐的用户列表
+        // Get referred users list
         const referrals = await User.findAll({
             where: { referred_by: user.id },
             attributes: ['id', 'email', 'name', 'role', 'status', 'created_at'],
@@ -377,12 +375,12 @@ router.get('/referral', authenticate, async (req, res) => {
             }))
         });
     } catch (error) {
-        console.error('[Auth] 获取推荐码错误:', error);
-        res.status(500).json({ error: '获取推荐码失败' });
+        console.error('[Auth] Get referral code error:', error);
+        res.status(500).json({ error: 'Failed to get referral code' });
     }
 });
 
-// 验证推荐码是否有效
+// Validate referral code
 router.get('/referral/validate/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -393,7 +391,7 @@ router.get('/referral/validate/:code', async (req, res) => {
         });
 
         if (!referrer) {
-            return res.status(404).json({ valid: false, error: '推荐码无效' });
+            return res.status(404).json({ valid: false, error: 'Invalid referral code' });
         }
 
         res.json({
@@ -404,12 +402,12 @@ router.get('/referral/validate/:code', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('[Auth] 验证推荐码错误:', error);
-        res.status(500).json({ error: '验证推荐码失败' });
+        console.error('[Auth] Validate referral code error:', error);
+        res.status(500).json({ error: 'Failed to validate referral code' });
     }
 });
 
-// 获取我的推荐人信息
+// Get my referrer info
 router.get('/referrer', authenticate, async (req, res) => {
     try {
         const user = req.user;
@@ -430,8 +428,8 @@ router.get('/referrer', authenticate, async (req, res) => {
             } : null
         });
     } catch (error) {
-        console.error('[Auth] 获取推荐人错误:', error);
-        res.status(500).json({ error: '获取推荐人信息失败' });
+        console.error('[Auth] Get referrer error:', error);
+        res.status(500).json({ error: 'Failed to get referrer info' });
     }
 });
 
