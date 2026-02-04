@@ -700,39 +700,106 @@ router.post('/messages', authenticate, requireAdmin, upload.array('attachments',
             status_change: statusChange
         });
 
-        // 可选发送邮件
+        // Send email notification
         let emailSent = false;
         if (send_email === 'true' || send_email === true) {
             if (emailService.isConfigured()) {
                 try {
                     const statusChangeText = statusChange 
-                        ? `您的状态已更新为: ${statusChange.to}` 
+                        ? `Your status has been updated to: ${statusChange.to}` 
                         : null;
 
-                    const result = await emailService.sendMessageNotification({
-                        to: recipient.email,
-                        senderName: req.user.name || 'EON Protocol 管理员',
-                        subject,
-                        content: content.replace(/\n/g, '<br>'),
-                        statusChange: statusChangeText
+                    const recipients = [];
+                    let companyName = null;
+                    
+                    // Always notify the recipient
+                    recipients.push(recipient.email);
+                    
+                    // If message is for a company, also notify authorized users
+                    if (company_id) {
+                        const company = await Company.findByPk(company_id, {
+                            include: [{ model: User, as: 'user', attributes: ['email'] }]
+                        });
+                        
+                        if (company) {
+                            companyName = company.name_en || company.name_cn || 'Company';
+                            
+                            // Get all admins (excluding the sender)
+                            const admins = await User.findAll({
+                                where: { role: 'admin', status: 'active', id: { [Op.ne]: req.user.id } },
+                                attributes: ['email']
+                            });
+                            admins.forEach(a => {
+                                if (!recipients.includes(a.email)) {
+                                    recipients.push(a.email);
+                                }
+                            });
+                            
+                            // Get staff with permissions for this company
+                            const permissions = await CompanyPermission.findAll({
+                                where: { 
+                                    company_id: company.id, 
+                                    is_active: true,
+                                    [Op.or]: [
+                                        { expires_at: null },
+                                        { expires_at: { [Op.gt]: new Date() } }
+                                    ]
+                                },
+                                include: [{ 
+                                    model: User, 
+                                    as: 'permittedUser', 
+                                    where: { 
+                                        role: 'staff', 
+                                        status: 'active',
+                                        id: { [Op.ne]: req.user.id }
+                                    },
+                                    attributes: ['email']
+                                }]
+                            });
+                            permissions.forEach(p => {
+                                if (p.permittedUser?.email && !recipients.includes(p.permittedUser.email)) {
+                                    recipients.push(p.permittedUser.email);
+                                }
+                            });
+                            
+                            // Also include company creator if different from sender
+                            if (company.created_by && company.created_by !== req.user.id) {
+                                const creator = await User.findByPk(company.created_by, {
+                                    attributes: ['email', 'role'],
+                                    where: { status: 'active' }
+                                });
+                                if (creator && creator.role === 'staff' && !recipients.includes(creator.email)) {
+                                    recipients.push(creator.email);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Send to all recipients
+                    const result = await emailService.sendFeedbackNotification({
+                        to: [...new Set(recipients)],
+                        companyName: companyName || 'Company',
+                        senderName: req.user.name || req.user.email,
+                        senderRole: req.user.role,
+                        content: content.replace(/\n/g, '<br>')
                     });
 
                     if (result.success) {
                         emailSent = true;
                         await message.update({ email_sent: true, email_sent_at: new Date() });
-                        console.log(`[Admin] 邮件发送成功: ${recipient.email}`);
+                        console.log(`[Admin] Message notification sent to ${recipients.length} recipients`);
                     } else {
-                        console.error('[Admin] 邮件发送失败:', result.error);
+                        console.error('[Admin] Email send failed:', result.error);
                     }
                 } catch (emailError) {
-                    console.error('[Admin] 邮件发送失败:', emailError);
+                    console.error('[Admin] Email send failed:', emailError);
                 }
             } else {
-                console.log('[Admin] 邮件服务未配置，跳过发送');
+                console.log('[Admin] Email service not configured, skipping');
             }
         }
 
-        console.log(`[Admin] 管理员 ${req.user.email} 发送消息给 ${recipient.email}`);
+        console.log(`[Admin] Admin ${req.user.email} sent message to ${recipient.email}`);
 
         res.status(201).json({
             message: '消息发送成功',

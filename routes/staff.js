@@ -435,7 +435,103 @@ router.post('/companies/:id/upload-bp', authenticate, requireStaffOrAdmin, uploa
             requires_approval: true
         });
 
-        console.log(`[Staff] 用户 ${req.user.email} 上传 BP: ${filename} for company ${company.id}`);
+        console.log(`[Staff] User ${req.user.email} uploaded BP: ${filename} for company ${company.id}`);
+
+        // Send email notification to authorized users
+        try {
+            if (emailService.isConfigured()) {
+                const recipients = [];
+                
+                // Get all admins (excluding the sender)
+                const admins = await User.findAll({
+                    where: { role: 'admin', status: 'active', id: { [Op.ne]: req.user.id } },
+                    attributes: ['email']
+                });
+                recipients.push(...admins.map(a => a.email));
+                
+                // Get staff with permissions for this company
+                const permissions = await CompanyPermission.findAll({
+                    where: { 
+                        company_id: company.id, 
+                        is_active: true,
+                        [Op.or]: [
+                            { expires_at: null },
+                            { expires_at: { [Op.gt]: new Date() } }
+                        ]
+                    },
+                    include: [{ 
+                        model: User, 
+                        as: 'permittedUser', 
+                        where: { 
+                            role: 'staff', 
+                            status: 'active',
+                            id: { [Op.ne]: req.user.id }
+                        },
+                        attributes: ['email']
+                    }]
+                });
+                permissions.forEach(p => {
+                    if (p.permittedUser?.email) {
+                        recipients.push(p.permittedUser.email);
+                    }
+                });
+                
+                // Also include company creator if different from sender
+                if (company.created_by && company.created_by !== req.user.id) {
+                    const creator = await User.findByPk(company.created_by, {
+                        attributes: ['email', 'role'],
+                        where: { status: 'active' }
+                    });
+                    if (creator && creator.role === 'staff' && !recipients.includes(creator.email)) {
+                        recipients.push(creator.email);
+                    }
+                }
+                
+                const uniqueRecipients = [...new Set(recipients)];
+                
+                if (uniqueRecipients.length > 0) {
+                    const companyName = company.name_en || company.name_cn || 'Company';
+                    const uploaderName = req.user.name || req.user.email;
+                    
+                    const html = emailService.generateTemplate({
+                        title: 'New File Uploaded',
+                        content: `
+                            <p>A new file has been uploaded for company <strong>${companyName}</strong>.</p>
+                            <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500; width: 120px;">File Name</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${document.filename}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">File Type</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${document.type === 'bp' ? 'Business Plan' : document.type}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">File Size</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${(document.filesize / 1024).toFixed(2)} KB</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">Uploaded By</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${uploaderName}</td>
+                                </tr>
+                            </table>
+                        `,
+                        actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/admin/fundraising.html#companies`,
+                        actionText: 'View Company'
+                    });
+
+                    await emailService.sendBulkEmail({
+                        recipients: uniqueRecipients,
+                        subject: `[EON Protocol] New File Uploaded - ${companyName}`,
+                        html
+                    });
+
+                    console.log(`[Staff] File upload notification sent to ${uniqueRecipients.length} recipients`);
+                }
+            }
+        } catch (emailError) {
+            console.error('[Staff] Failed to send file upload notification:', emailError);
+        }
 
         res.json({ 
             message: 'BP 文件上传成功',
@@ -866,23 +962,87 @@ router.post('/messages', authenticate, requireStaffOrAdmin, async (req, res) => 
             content
         });
 
-        // 发送邮件通知
+        // Send email notification to company and authorized users
         let emailSent = false;
-        if ((send_email === true || send_email === 'true') && emailService.isConfigured()) {
-            const result = await emailService.sendMessageNotification({
-                to: company.user.email,
-                senderName: req.user.name || 'EON Protocol',
-                subject,
-                content: content.replace(/\n/g, '<br>')
-            });
-            emailSent = result.success;
-            if (result.success) {
-                await message.update({ email_sent: true, email_sent_at: new Date() });
-                console.log(`[Staff] 邮件发送成功: ${company.user.email}`);
+        try {
+            if (emailService.isConfigured()) {
+                const recipients = [];
+                
+                // Always notify the company
+                if (company.user?.email) {
+                    recipients.push(company.user.email);
+                }
+                
+                // Get all admins (excluding the sender)
+                const admins = await User.findAll({
+                    where: { role: 'admin', status: 'active', id: { [Op.ne]: req.user.id } },
+                    attributes: ['email']
+                });
+                recipients.push(...admins.map(a => a.email));
+                
+                // Get staff with permissions for this company
+                const permissions = await CompanyPermission.findAll({
+                    where: { 
+                        company_id: company.id, 
+                        is_active: true,
+                        [Op.or]: [
+                            { expires_at: null },
+                            { expires_at: { [Op.gt]: new Date() } }
+                        ]
+                    },
+                    include: [{ 
+                        model: User, 
+                        as: 'permittedUser', 
+                        where: { 
+                            role: 'staff', 
+                            status: 'active',
+                            id: { [Op.ne]: req.user.id }
+                        },
+                        attributes: ['email']
+                    }]
+                });
+                permissions.forEach(p => {
+                    if (p.permittedUser?.email) {
+                        recipients.push(p.permittedUser.email);
+                    }
+                });
+                
+                // Also include company creator if different from sender
+                if (company.created_by && company.created_by !== req.user.id) {
+                    const creator = await User.findByPk(company.created_by, {
+                        attributes: ['email', 'role'],
+                        where: { status: 'active' }
+                    });
+                    if (creator && creator.role === 'staff' && !recipients.includes(creator.email)) {
+                        recipients.push(creator.email);
+                    }
+                }
+                
+                const uniqueRecipients = [...new Set(recipients)];
+                
+                if (uniqueRecipients.length > 0) {
+                    const companyName = company.name_en || company.name_cn || 'Company';
+                    const result = await emailService.sendFeedbackNotification({
+                        to: uniqueRecipients,
+                        companyName,
+                        senderName: req.user.name || req.user.email,
+                        senderRole: req.user.role,
+                        content: content.replace(/\n/g, '<br>')
+                    });
+                    
+                    emailSent = result.success;
+                    if (result.success) {
+                        await message.update({ email_sent: true, email_sent_at: new Date() });
+                        console.log(`[Staff] Message notification sent to ${uniqueRecipients.length} recipients`);
+                    }
+                }
             }
+        } catch (emailError) {
+            console.error('[Staff] Failed to send message notification:', emailError);
         }
 
-        console.log(`[Staff] 用户 ${req.user.email} 发送消息给企业 ${company.name_cn}: ${subject}`);
+        const companyName = company.name_en || company.name_cn || 'Company';
+        console.log(`[Staff] User ${req.user.email} sent message to company ${companyName}: ${subject}`);
 
         res.json({ 
             message: '消息发送成功', 

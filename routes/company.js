@@ -7,6 +7,74 @@ const { User, Company, FundraisingInfo, Document, AccessRequest, Message, Compan
 const { authenticate, requireCompany, requireStaffOrAdmin } = require('../middleware/auth');
 const emailService = require('../services/EmailService');
 
+// Helper function: Get authorized users who can view a company (admins + staff with permissions)
+async function getAuthorizedUsersForCompany(companyId, excludeUserId = null) {
+    const recipients = [];
+    
+    // Get all admins (excluding the sender if specified)
+    const adminWhere = { role: 'admin', status: 'active' };
+    if (excludeUserId) {
+        adminWhere.id = { [Op.ne]: excludeUserId };
+    }
+    const admins = await User.findAll({
+        where: adminWhere,
+        attributes: ['email', 'name']
+    });
+    recipients.push(...admins.map(a => a.email));
+    
+    // Get staff with permissions for this company
+    const permissions = await CompanyPermission.findAll({
+        where: { 
+            company_id: companyId, 
+            is_active: true,
+            [Op.or]: [
+                { expires_at: null },
+                { expires_at: { [Op.gt]: new Date() } }
+            ]
+        },
+        include: [{ 
+            model: User, 
+            as: 'permittedUser', 
+            where: { 
+                role: 'staff', 
+                status: 'active',
+                ...(excludeUserId ? { id: { [Op.ne]: excludeUserId } } : {})
+            },
+            attributes: ['email', 'name']
+        }]
+    });
+    permissions.forEach(p => {
+        if (p.permittedUser?.email) {
+            recipients.push(p.permittedUser.email);
+        }
+    });
+    
+    // Also include company creator if it's a staff user
+    const company = await Company.findByPk(companyId, {
+        attributes: ['created_by'],
+        include: [{
+            model: User,
+            as: 'user',
+            attributes: ['email', 'name']
+        }]
+    });
+    
+    if (company?.created_by) {
+        const creator = await User.findByPk(company.created_by, {
+            attributes: ['email', 'name', 'role'],
+            where: { status: 'active' }
+        });
+        if (creator && creator.role === 'staff' && creator.id !== excludeUserId) {
+            if (!recipients.includes(creator.email)) {
+                recipients.push(creator.email);
+            }
+        }
+    }
+    
+    // Return unique emails
+    return [...new Set(recipients)];
+}
+
 // 配置文件上传 - 使用内存存储（Railway不支持本地文件系统写入）
 // 注意：Railway 平台上传大文件容易超时，建议文件大小不超过 2MB
 const storage = multer.memoryStorage();
@@ -449,6 +517,56 @@ router.post('/upload-bp', (req, res, next) => {
         console.log(`[Company][Upload] ===== 上传成功 =====`);
         console.log(`[Company][Upload] 文档ID: ${document.id}`);
         console.log(`[Company][Upload] 总耗时: ${duration}ms`);
+
+        // Send email notification to authorized users
+        try {
+            if (emailService.isConfigured()) {
+                const recipients = await getAuthorizedUsersForCompany(company.id, req.user.id);
+                
+                if (recipients.length > 0) {
+                    const companyName = company.name_en || company.name_cn || 'Company';
+                    const uploaderName = req.user.name || req.user.email;
+                    
+                    const html = emailService.generateTemplate({
+                        title: 'New File Uploaded',
+                        content: `
+                            <p>A new file has been uploaded for company <strong>${companyName}</strong>.</p>
+                            <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500; width: 120px;">File Name</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${document.filename}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">File Type</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${document.type === 'bp' ? 'Business Plan' : document.type}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">File Size</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${(document.filesize / 1024).toFixed(2)} KB</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; background: #F9FAFB; border: 1px solid #E5E7EB; font-weight: 500;">Uploaded By</td>
+                                    <td style="padding: 12px; border: 1px solid #E5E7EB;">${uploaderName}</td>
+                                </tr>
+                            </table>
+                        `,
+                        actionUrl: `${process.env.SITE_URL || 'https://eonprotocol.ai'}/admin/fundraising.html#companies`,
+                        actionText: 'View Company'
+                    });
+
+                    await emailService.sendBulkEmail({
+                        recipients,
+                        subject: `[EON Protocol] New File Uploaded - ${companyName}`,
+                        html
+                    });
+
+                    console.log(`[Company] File upload notification sent to ${recipients.length} recipients`);
+                }
+            }
+        } catch (emailError) {
+            console.error('[Company] Failed to send file upload notification:', emailError);
+            // Don't fail the upload if email fails
+        }
 
         res.json({ 
             message: 'BP 文件上传成功',
@@ -1081,7 +1199,30 @@ router.post('/feedback', authenticate, requireCompany, async (req, res) => {
             ]
         });
 
-        console.log(`[Company] 企业 ${company.name_cn} 添加了反馈回复`);
+        const companyName = company.name_en || company.name_cn || 'Company';
+        console.log(`[Company] Company ${companyName} added feedback reply`);
+
+        // Send email notification to authorized users
+        try {
+            if (emailService.isConfigured()) {
+                const recipients = await getAuthorizedUsersForCompany(company.id, req.user.id);
+                
+                if (recipients.length > 0) {
+                    await emailService.sendFeedbackNotification({
+                        to: recipients,
+                        companyName,
+                        senderName: req.user.name || req.user.email,
+                        senderRole: 'company',
+                        content: content.trim()
+                    });
+
+                    console.log(`[Company] Feedback notification sent to ${recipients.length} recipients`);
+                }
+            }
+        } catch (emailError) {
+            console.error('[Company] Failed to send feedback notification:', emailError);
+            // Don't fail the request if email fails
+        }
 
         res.status(201).json({ 
             message: '回复已发送',
