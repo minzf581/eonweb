@@ -949,6 +949,17 @@
             contactInfoSaved: { zh: '联系人信息已保存', en: 'Contact information saved successfully' },
             contactEmailRequired: { zh: '联系人邮箱为必填项', en: 'Contact email is required' },
             invalidEmail: { zh: '邮箱格式无效', en: 'Invalid email format' },
+            companyContacts: { zh: '公司联系人', en: 'Company Contacts' },
+            companyContactsHint: { zh: '可以添加多个用户作为公司联系人。所有联系人都可以登录查看和管理该公司信息。', en: 'Multiple users can be added as company contacts. All contacts can log in to view and manage this company.' },
+            addContact: { zh: '添加联系人', en: 'Add Contact' },
+            loadingContacts: { zh: '加载联系人中...', en: 'Loading contacts...' },
+            primaryContact: { zh: '主联系人', en: 'Primary Contact' },
+            additionalContact: { zh: '附加联系人', en: 'Additional Contact' },
+            removeContact: { zh: '移除', en: 'Remove' },
+            confirmRemoveContact: { zh: '确定要移除该联系人吗？', en: 'Are you sure you want to remove this contact?' },
+            contactAdded: { zh: '联系人添加成功', en: 'Contact added successfully' },
+            contactRemoved: { zh: '联系人已移除', en: 'Contact removed successfully' },
+            noAdditionalContacts: { zh: '暂无附加联系人', en: 'No additional contacts' },
             name: { zh: '姓名', en: 'Name' },
             email: { zh: '邮箱', en: 'Email' },
             phone: { zh: '电话', en: 'Phone' },
@@ -1434,6 +1445,31 @@
                         </div>
                     </div>
 
+                    <!-- 多联系人管理 -->
+                    <h4 style="margin: 1.5rem 0 1rem;">
+                        <i class="fas fa-users" style="color: var(--secondary-color);"></i> ${t('companyContacts') || 'Company Contacts'}
+                    </h4>
+                    <div style="background: #F9FAFB; padding: 1rem; border-radius: 8px; border: 1px solid #E5E7EB;">
+                        <p style="font-size: 0.875rem; color: #6B7280; margin-bottom: 1rem;">
+                            ${t('companyContactsHint') || 'Multiple users can be added as company contacts. All contacts can log in to view and manage this company.'}
+                        </p>
+                        
+                        <!-- 添加联系人 -->
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="email" id="newContactEmail_${c.id}" class="form-control" 
+                                placeholder="${t('enterContactEmail') || 'Enter contact email...'}" 
+                                style="flex: 1;">
+                            <button class="btn btn-primary" onclick="addCompanyContact('${c.id}')">
+                                <i class="fas fa-plus"></i> ${t('addContact') || 'Add Contact'}
+                            </button>
+                        </div>
+                        
+                        <!-- 联系人列表 -->
+                        <div id="contactsList_${c.id}" style="margin-top: 1rem;">
+                            <p style="color: #6B7280; text-align: center;">${t('loadingContacts') || 'Loading contacts...'}</p>
+                        </div>
+                    </div>
+
                     <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-check-circle" style="color: var(--warning-color);"></i> ${t('reviewActions')}</h4>
                     <div class="form-group">
                         <label class="form-label">${t('visibilitySetting')}</label>
@@ -1523,15 +1559,16 @@
                             <button class="btn btn-danger" onclick="saveCompanyReview('${c.id}', 'pass')" title="Reject - 不跟进">
                                 <i class="fas fa-times"></i> PASS
                             </button>
-                            <button class="btn btn-secondary" onclick="closeModal('companyModal')">${t('close')}</button>
+                        <button class="btn btn-secondary" onclick="closeModal('companyModal')">${t('close')}</button>
                         </div>
                     </div>
                 `;
 
-                // 加载反馈和权限数据
+                // 加载反馈、权限和联系人数据
                 loadFeedback(c.id);
                 loadPermissions(c.id);
                 loadPermissibleUsers();
+                loadCompanyContacts(c.id);
             } catch (error) {
                 document.getElementById('companyModalContent').innerHTML = `<p style="color:red;">${t('loadFailed')}</p>`;
             }
@@ -2275,7 +2312,7 @@
                                     <span style="color: #999; font-weight: normal;">(${formatRole(c.user_role)})</span>
                                 </strong>
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
+                                <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
                                     <button onclick="deleteComment('${c.id}', '${companyId}')" style="background: none; border: none; cursor: pointer; color: #999; padding: 0.25rem;" title="${t('delete')}">
                                         <i class="fas fa-trash-alt" style="font-size: 0.75rem;"></i>
                                     </button>
@@ -2461,6 +2498,134 @@
         }
 
         // 保存联系人信息
+        // 加载公司联系人列表
+        async function loadCompanyContacts(companyId) {
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/contacts`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load contacts');
+                
+                const { contacts } = await response.json();
+                const container = document.getElementById(`contactsList_${companyId}`);
+                
+                if (!contacts || contacts.length === 0) {
+                    container.innerHTML = `<p style="color: #6B7280; text-align: center;">${t('noAdditionalContacts')}</p>`;
+                    return;
+                }
+                
+                let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+                
+                contacts.forEach(contact => {
+                    const isPrimary = contact.isPrimary;
+                    const badgeColor = isPrimary ? '#3B82F6' : '#10B981';
+                    const badgeText = isPrimary ? t('primaryContact') : t('additionalContact');
+                    
+                    html += `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #E5E7EB;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #1F2937;">
+                                    ${contact.name || contact.email}
+                                    <span style="display: inline-block; padding: 0.125rem 0.5rem; background: ${badgeColor}; color: white; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">
+                                        ${badgeText}
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.875rem; color: #6B7280; margin-top: 0.25rem;">
+                                    ${contact.email}
+                                    ${contact.role ? `<span style="margin-left: 0.5rem; color: #9CA3AF;">(${formatRole(contact.role)})</span>` : ''}
+                                </div>
+                                ${contact.expiresAt ? `<div style="font-size: 0.75rem; color: #EF4444; margin-top: 0.25rem;">Expires: ${new Date(contact.expiresAt).toLocaleDateString()}</div>` : ''}
+                            </div>
+                            ${!isPrimary ? `
+                                <button class="btn btn-sm" onclick="removeCompanyContact('${companyId}', '${contact.id}')" 
+                                    style="background: #EF4444; color: white; padding: 0.375rem 0.75rem;">
+                                    <i class="fas fa-times"></i> ${t('removeContact')}
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Load contacts error:', error);
+                document.getElementById(`contactsList_${companyId}`).innerHTML = 
+                    `<p style="color: #EF4444; text-align: center;">Failed to load contacts</p>`;
+            }
+        }
+        
+        // 添加公司联系人
+        async function addCompanyContact(companyId) {
+            const emailInput = document.getElementById(`newContactEmail_${companyId}`);
+            const email = emailInput?.value?.trim();
+            
+            if (!email) {
+                showMessage(t('contactEmailRequired'), 'error');
+                return;
+            }
+            
+            if (!email.includes('@')) {
+                showMessage(t('invalidEmail'), 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/contacts`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, permissionType: 'full' })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to add contact');
+                }
+                
+                showMessage(t('contactAdded'), 'success');
+                emailInput.value = '';
+                
+                // 重新加载联系人列表
+                await loadCompanyContacts(companyId);
+            } catch (error) {
+                console.error('Add contact error:', error);
+                showMessage(error.message || 'Failed to add contact', 'error');
+            }
+        }
+        
+        // 移除公司联系人
+        async function removeCompanyContact(companyId, userId) {
+            if (!confirm(t('confirmRemoveContact'))) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/contacts/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to remove contact');
+                }
+                
+                showMessage(t('contactRemoved'), 'success');
+                
+                // 重新加载联系人列表
+                await loadCompanyContacts(companyId);
+            } catch (error) {
+                console.error('Remove contact error:', error);
+                showMessage(error.message || 'Failed to remove contact', 'error');
+            }
+        }
+
         async function saveContactInfo(companyId) {
             const contactName = document.getElementById('contact_name')?.value?.trim();
             const contactEmail = document.getElementById('contact_email')?.value?.trim();

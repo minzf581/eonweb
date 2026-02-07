@@ -1443,6 +1443,28 @@
                     </div>
                 </div>
 
+                <!-- 公司联系人管理 -->
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h3 class="card-title"><i class="fas fa-users"></i> <span data-zh="公司联系人" data-en="Company Contacts">公司联系人</span></h3>
+                    <p class="form-hint" style="margin-bottom: 1.5rem;" data-zh="添加多个联系人，所有联系人都可以登录查看和管理公司信息" data-en="Add multiple contacts. All contacts can log in to view and manage company information.">添加多个联系人，所有联系人都可以登录查看和管理公司信息</p>
+                    
+                    <!-- 添加联系人 -->
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+                        <input type="email" id="newContactEmail" class="form-control" 
+                            data-placeholder-zh="输入联系人邮箱..." data-placeholder-en="Enter contact email..." 
+                            placeholder="Enter contact email..." 
+                            style="flex: 1;">
+                        <button class="btn btn-primary" onclick="addCompanyContact()">
+                            <i class="fas fa-plus"></i> <span data-zh="添加联系人" data-en="Add Contact">添加联系人</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 联系人列表 -->
+                    <div id="companyContactsList">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+
                 <!-- 访问请求审批 -->
                 <div class="card" style="margin-top: 1.5rem;">
                     <h3 class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -2013,6 +2035,13 @@
 
             document.getElementById(panelId).classList.add('active');
             document.querySelector(`[data-panel="${panelId}"]`)?.classList.add('active');
+            
+            // 如果切换到访问控制面板，加载相关数据
+            if (panelId === 'accessControl') {
+                loadVisibility();
+                loadAccessRequests();
+                loadCompanyContacts();
+            }
         }
 
         // 保存企业资料
@@ -2840,6 +2869,172 @@
             } catch (error) {
                 console.error('Save visibility error:', error);
                 showMessage(error.message || getLangText('保存失败', 'Save failed'), 'error');
+            }
+        }
+
+        // ==================== 公司联系人管理 ====================
+        
+        // 加载公司联系人列表
+        async function loadCompanyContacts() {
+            try {
+                const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+                if (!targetCompanyId) {
+                    document.getElementById('companyContactsList').innerHTML = `
+                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                            ${getLangText('请先创建企业', 'Please create a company first')}
+                        </p>
+                    `;
+                    return;
+                }
+                
+                const url = `/api/company/contacts?companyId=${targetCompanyId}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load contacts');
+                
+                const { contacts } = await response.json();
+                const container = document.getElementById('companyContactsList');
+                
+                if (!contacts || contacts.length === 0) {
+                    container.innerHTML = `
+                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                            ${getLangText('暂无联系人', 'No contacts yet')}
+                        </p>
+                    `;
+                    return;
+                }
+                
+                let html = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+                
+                contacts.forEach(contact => {
+                    const isPrimary = contact.isPrimary;
+                    const badgeColor = isPrimary ? '#3B82F6' : '#10B981';
+                    const badgeText = isPrimary 
+                        ? getLangText('主联系人', 'Primary Contact')
+                        : getLangText('附加联系人', 'Additional Contact');
+                    
+                    html += `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-color);">
+                                    ${contact.name || contact.email}
+                                    <span style="display: inline-block; padding: 0.125rem 0.5rem; background: ${badgeColor}; color: white; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">
+                                        ${badgeText}
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                    ${contact.email}
+                                </div>
+                                ${contact.expiresAt ? `<div style="font-size: 0.75rem; color: var(--danger-color); margin-top: 0.25rem;">
+                                    ${getLangText('过期时间', 'Expires')}: ${new Date(contact.expiresAt).toLocaleDateString()}
+                                </div>` : ''}
+                            </div>
+                            ${!isPrimary ? `
+                                <button class="btn btn-sm" onclick="removeCompanyContact('${contact.id}')" 
+                                    style="background: var(--danger-color); color: white; padding: 0.375rem 0.75rem;">
+                                    <i class="fas fa-times"></i> ${getLangText('移除', 'Remove')}
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Load contacts error:', error);
+                document.getElementById('companyContactsList').innerHTML = 
+                    `<p style="color: var(--danger-color); text-align: center; padding: 2rem;">
+                        ${getLangText('加载失败', 'Failed to load')}
+                    </p>`;
+            }
+        }
+        
+        // 添加公司联系人
+        async function addCompanyContact() {
+            const emailInput = document.getElementById('newContactEmail');
+            const email = emailInput?.value?.trim();
+            
+            if (!email) {
+                showMessage(getLangText('请输入联系人邮箱', 'Please enter contact email'), 'error');
+                return;
+            }
+            
+            if (!email.includes('@')) {
+                showMessage(getLangText('邮箱格式无效', 'Invalid email format'), 'error');
+                return;
+            }
+            
+            try {
+                const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+                if (!targetCompanyId) {
+                    showMessage(getLangText('请先创建企业', 'Please create a company first'), 'error');
+                    return;
+                }
+                
+                const response = await fetch('/api/company/contacts', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        email, 
+                        permissionType: 'full',
+                        companyId: targetCompanyId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to add contact');
+                }
+                
+                showMessage(getLangText('联系人添加成功', 'Contact added successfully'), 'success');
+                emailInput.value = '';
+                
+                // 重新加载联系人列表
+                await loadCompanyContacts();
+            } catch (error) {
+                console.error('Add contact error:', error);
+                showMessage(error.message || getLangText('添加失败', 'Failed to add'), 'error');
+            }
+        }
+        
+        // 移除公司联系人
+        async function removeCompanyContact(userId) {
+            if (!confirm(getLangText('确定要移除该联系人吗？', 'Are you sure you want to remove this contact?'))) {
+                return;
+            }
+            
+            try {
+                const targetCompanyId = isStaffRole && currentCompanyId ? currentCompanyId : (companyData?.id);
+                if (!targetCompanyId) {
+                    showMessage(getLangText('请先创建企业', 'Please create a company first'), 'error');
+                    return;
+                }
+                
+                const response = await fetch(`/api/company/contacts/${userId}?companyId=${targetCompanyId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to remove contact');
+                }
+                
+                showMessage(getLangText('联系人已移除', 'Contact removed successfully'), 'success');
+                
+                // 重新加载联系人列表
+                await loadCompanyContacts();
+            } catch (error) {
+                console.error('Remove contact error:', error);
+                showMessage(error.message || getLangText('移除失败', 'Failed to remove'), 'error');
             }
         }
 

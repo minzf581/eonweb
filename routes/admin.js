@@ -1701,4 +1701,221 @@ router.get('/companies/:id/dataroom-stats', authenticate, requireAdmin, async (r
     }
 });
 
+// ==================== 公司联系人管理 ====================
+
+// 获取公司的所有联系人（包括主联系人和授权联系人）
+router.get('/companies/:id/contacts', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const companyId = req.params.id;
+        
+        // 获取公司信息（包括主联系人）
+        const company = await Company.findByPk(companyId, {
+            include: [
+                { 
+                    model: User, 
+                    as: 'user', 
+                    attributes: ['id', 'email', 'name', 'role'] 
+                }
+            ]
+        });
+        
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+        
+        // 获取所有授权的联系人
+        const permissions = await CompanyPermission.findAll({
+            where: {
+                company_id: companyId,
+                is_active: true,
+                [Op.or]: [
+                    { expires_at: null },
+                    { expires_at: { [Op.gt]: new Date() } }
+                ]
+            },
+            include: [
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'email', 'name', 'role']
+                }
+            ],
+            order: [['created_at', 'ASC']]
+        });
+        
+        // 构建联系人列表
+        const contacts = [];
+        
+        // 主联系人
+        if (company.user) {
+            contacts.push({
+                id: company.user.id,
+                email: company.user.email,
+                name: company.user.name,
+                role: company.user.role,
+                isPrimary: true,
+                permissionType: 'full',
+                addedAt: company.created_at
+            });
+        }
+        
+        // 授权联系人
+        permissions.forEach(perm => {
+            if (perm.user && perm.user.id !== company.user_id) {
+                contacts.push({
+                    id: perm.user.id,
+                    email: perm.user.email,
+                    name: perm.user.name,
+                    role: perm.user.role,
+                    isPrimary: false,
+                    permissionType: perm.permission_type,
+                    permissionId: perm.id,
+                    expiresAt: perm.expires_at,
+                    addedAt: perm.created_at
+                });
+            }
+        });
+        
+        res.json({ contacts });
+    } catch (error) {
+        console.error('[Admin] 获取公司联系人错误:', error);
+        res.status(500).json({ error: '获取联系人失败' });
+    }
+});
+
+// 添加公司联系人（通过邮箱）
+router.post('/companies/:id/contacts', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const companyId = req.params.id;
+        const { email, permissionType = 'full' } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ error: '请提供联系人邮箱' });
+        }
+        
+        // 查找公司
+        const company = await Company.findByPk(companyId);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+        
+        // 查找用户
+        const user = await User.findOne({ where: { email: email.toLowerCase().trim() } });
+        if (!user) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+        
+        // 检查用户状态
+        if (!user.is_active) {
+            return res.status(400).json({ error: '该用户账号已被禁用' });
+        }
+        
+        // 检查是否已是主联系人
+        if (company.user_id === user.id) {
+            return res.status(400).json({ error: '该用户已是公司的主联系人' });
+        }
+        
+        // 检查是否已有权限
+        const existingPermission = await CompanyPermission.findOne({
+            where: {
+                company_id: companyId,
+                user_id: user.id,
+                is_active: true
+            }
+        });
+        
+        if (existingPermission) {
+            return res.status(400).json({ error: '该用户已是公司联系人' });
+        }
+        
+        // 创建权限
+        const permission = await CompanyPermission.create({
+            company_id: companyId,
+            user_id: user.id,
+            permission_type: permissionType,
+            granted_by: req.user.id,
+            is_active: true
+        });
+        
+        // 发送通知邮件
+        try {
+            const companyName = company.name_en || company.name_cn || 'Company';
+            await emailService.sendEmail({
+                to: user.email,
+                subject: `You've been added as a contact for ${companyName}`,
+                html: `
+                    <h2>Contact Access Granted</h2>
+                    <p>You have been added as a contact person for <strong>${companyName}</strong>.</p>
+                    <p>You can now log in to view and manage this company's information.</p>
+                    <p>Permission Type: <strong>${permissionType}</strong></p>
+                    <p><a href="${process.env.BASE_URL || 'http://localhost:3000'}/auth/login">Log in to your account</a></p>
+                `
+            });
+        } catch (emailError) {
+            console.error('[Admin] 发送联系人通知邮件失败:', emailError);
+            // 不影响主流程
+        }
+        
+        // 返回新增的联系人信息
+        const newContact = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            isPrimary: false,
+            permissionType: permission.permission_type,
+            permissionId: permission.id,
+            expiresAt: permission.expires_at,
+            addedAt: permission.created_at
+        };
+        
+        res.json({ 
+            message: '添加联系人成功',
+            contact: newContact
+        });
+    } catch (error) {
+        console.error('[Admin] 添加公司联系人错误:', error);
+        res.status(500).json({ error: '添加联系人失败' });
+    }
+});
+
+// 删除公司联系人（不能删除主联系人）
+router.delete('/companies/:id/contacts/:userId', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { id: companyId, userId } = req.params;
+        
+        // 查找公司
+        const company = await Company.findByPk(companyId);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+        
+        // 检查是否是主联系人
+        if (company.user_id === userId) {
+            return res.status(400).json({ error: '不能删除主联系人，请先转移公司所有权' });
+        }
+        
+        // 删除权限（软删除）
+        const result = await CompanyPermission.update(
+            { is_active: false },
+            {
+                where: {
+                    company_id: companyId,
+                    user_id: userId,
+                    is_active: true
+                }
+            }
+        );
+        
+        if (result[0] === 0) {
+            return res.status(404).json({ error: '该用户不是公司联系人' });
+        }
+        
+        res.json({ message: '删除联系人成功' });
+    } catch (error) {
+        console.error('[Admin] 删除公司联系人错误:', error);
+        res.status(500).json({ error: '删除联系人失败' });
+    }
+});
+
 module.exports = router;

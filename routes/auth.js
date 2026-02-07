@@ -159,11 +159,37 @@ router.get('/me', authenticate, async (req, res) => {
         let additionalInfo = {};
 
         if (user.role === 'company') {
-            const company = await Company.findOne({ 
+            // 查找用户作为主要联系人的公司
+            const ownCompany = await Company.findOne({ 
                 where: { user_id: user.id },
-                attributes: ['id', 'name_cn', 'status']
+                attributes: ['id', 'name_cn', 'name_en', 'status']
             });
-            additionalInfo.company = company;
+            
+            // 查找用户有权限访问的公司
+            const { Op } = require('sequelize');
+            const CompanyPermission = require('../models/CompanyPermission');
+            const permittedCompanyIds = await CompanyPermission.findAll({
+                where: {
+                    user_id: user.id,
+                    is_active: true,
+                    [Op.or]: [
+                        { expires_at: null },
+                        { expires_at: { [Op.gt]: new Date() } }
+                    ]
+                },
+                attributes: ['company_id']
+            }).then(perms => perms.map(p => p.company_id));
+            
+            let permittedCompanies = [];
+            if (permittedCompanyIds.length > 0) {
+                permittedCompanies = await Company.findAll({
+                    where: { id: { [Op.in]: permittedCompanyIds } },
+                    attributes: ['id', 'name_cn', 'name_en', 'status']
+                });
+            }
+            
+            additionalInfo.company = ownCompany;
+            additionalInfo.permittedCompanies = permittedCompanies;
         } else if (user.role === 'investor') {
             const profile = await InvestorProfile.findOne({ 
                 where: { user_id: user.id },
