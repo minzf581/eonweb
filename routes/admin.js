@@ -105,14 +105,7 @@ router.get('/companies/:id', authenticate, requireAdmin, async (req, res) => {
     try {
         const company = await Company.findByPk(req.params.id, {
             include: [
-                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'created_at'] },
-                { 
-                    model: User, 
-                    as: 'contactPerson', 
-                    required: false,
-                    attributes: ['id', 'email', 'name', 'role'],
-                    foreignKey: 'contact_person_id'
-                },
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'created_at', 'role'] },
                 { model: FundraisingInfo, as: 'fundraisingInfo' },
                 { model: Document, as: 'documents' },
                 { 
@@ -1467,48 +1460,55 @@ router.delete('/companies/:companyId/permissions/:permissionId', authenticate, r
     }
 });
 
-// 更改公司联系人
+// 更改公司联系人（更新user_id和contact_email）
 router.put('/companies/:id/contact-person', authenticate, requireAdmin, async (req, res) => {
     try {
-        const { contact_person_id } = req.body;
+        const { contact_email } = req.body;
+
+        if (!contact_email) {
+            return res.status(400).json({ error: '请提供联系人邮箱' });
+        }
 
         const company = await Company.findByPk(req.params.id);
         if (!company) {
             return res.status(404).json({ error: '企业不存在' });
         }
 
-        // 如果提供了contact_person_id，验证用户存在
-        if (contact_person_id) {
-            const contactUser = await User.findByPk(contact_person_id);
-            if (!contactUser) {
-                return res.status(404).json({ error: '联系人用户不存在' });
-            }
-            if (contactUser.status !== 'active') {
-                return res.status(400).json({ error: '联系人用户未激活' });
-            }
+        // 根据邮箱查找用户
+        const contactUser = await User.findOne({ 
+            where: { email: contact_email, status: 'active' }
+        });
+        
+        if (!contactUser) {
+            return res.status(404).json({ error: `未找到邮箱为 ${contact_email} 的激活用户` });
         }
 
-        const oldContactPersonId = company.contact_person_id;
-        await company.update({ contact_person_id: contact_person_id || null });
+        // 如果用户角色不是company，建议先修改角色
+        if (contactUser.role !== 'company') {
+            return res.status(400).json({ 
+                error: `用户角色是 ${contactUser.role}，需要先将其角色改为 'company'` 
+            });
+        }
 
-        // 获取更新后的联系人信息
+        const oldUserId = company.user_id;
+        const oldContactEmail = company.contact_email;
+
+        // 更新user_id和contact_email
+        await company.update({ 
+            user_id: contactUser.id,
+            contact_email: contact_email,
+            contact_name: contactUser.name || company.contact_name
+        });
+
+        // 获取更新后的公司信息
         const updatedCompany = await Company.findByPk(req.params.id, {
             include: [
-                { 
-                    model: User, 
-                    as: 'contactPerson', 
-                    required: false,
-                    attributes: ['id', 'email', 'name', 'role']
-                }
+                { model: User, as: 'user', attributes: ['id', 'email', 'name', 'role'] }
             ]
         });
 
         const companyName = company.name_en || company.name_cn || 'Company';
-        const contactInfo = updatedCompany.contactPerson 
-            ? `${updatedCompany.contactPerson.name || updatedCompany.contactPerson.email} (${updatedCompany.contactPerson.role})`
-            : 'None';
-
-        console.log(`[Admin] Admin ${req.user.email} changed contact person for company ${companyName} to ${contactInfo}`);
+        console.log(`[Admin] Admin ${req.user.email} changed contact for company ${companyName} from ${oldContactEmail} (${oldUserId}) to ${contact_email} (${contactUser.id})`);
 
         res.json({ 
             message: '联系人已更新',

@@ -21,10 +21,6 @@ const InterestExpression = require('./InterestExpression');
 User.hasOne(Company, { foreignKey: 'user_id', as: 'company' });
 Company.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-// User - Company (联系人关系)
-User.hasMany(Company, { foreignKey: 'contact_person_id', as: 'contactCompanies' });
-Company.belongsTo(User, { foreignKey: 'contact_person_id', as: 'contactPerson' });
-
 // User - InvestorProfile (一对一)
 User.hasOne(InvestorProfile, { foreignKey: 'user_id', as: 'investorProfile' });
 InvestorProfile.belongsTo(User, { foreignKey: 'user_id', as: 'user' });

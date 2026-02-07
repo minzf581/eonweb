@@ -25,16 +25,6 @@ const Company = sequelize.define('Company', {
         },
         comment: '创建此企业的管理员用户ID'
     },
-    // 联系人（管理员可以更改公司的联系人）
-    contact_person_id: {
-        type: DataTypes.UUID,
-        allowNull: true,
-        references: {
-            model: 'users',
-            key: 'id'
-        },
-        comment: '公司联系人用户ID（可由管理员更改）'
-    },
     // 基本信息（所有字段可选，只需要 name_cn 或 name_en 其中一个）
     name_cn: {
         type: DataTypes.STRING,
