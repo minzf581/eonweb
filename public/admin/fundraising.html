@@ -935,6 +935,14 @@
             bpDocuments: { zh: 'BP/文档', en: 'BP/Documents' },
             noDocuments: { zh: '暂无上传文档', en: 'No documents uploaded' },
             contactPerson: { zh: '联系人', en: 'Contact Person' },
+            changeContactPerson: { zh: '更改联系人', en: 'Change Contact Person' },
+            selectContactPerson: { zh: '选择联系人...', en: 'Select contact person...' },
+            searchUser: { zh: '搜索用户（邮箱或姓名）...', en: 'Search user by email or name...' },
+            currentContactPerson: { zh: '当前联系人', en: 'Current Contact Person' },
+            clearContactPerson: { zh: '清除联系人', en: 'Clear Contact Person' },
+            contactPersonUpdated: { zh: '联系人已更新', en: 'Contact person updated successfully' },
+            contactPersonCleared: { zh: '联系人已清除', en: 'Contact person cleared successfully' },
+            confirmClearContactPerson: { zh: '确定要清除联系人吗？', en: 'Are you sure you want to clear the contact person?' },
             name: { zh: '姓名', en: 'Name' },
             email: { zh: '邮箱', en: 'Email' },
             phone: { zh: '电话', en: 'Phone' },
@@ -1380,6 +1388,36 @@
                         <div class="detail-item"><div class="detail-label">${t('phone')}</div><div class="detail-value">${c.contact_phone || '-'}</div></div>
                         <div class="detail-item"><div class="detail-label">${t('wechat')}</div><div class="detail-value">${c.contact_wechat || '-'}</div></div>
                     </div>
+                    <div style="margin-top: 1rem; padding: 1rem; background: #F9FAFB; border-radius: 8px; border: 1px solid #E5E7EB;">
+                        <label style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">${t('changeContactPerson') || 'Change Contact Person'}</label>
+                        <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <input type="text" id="contactPersonSearch" class="form-control" placeholder="${t('searchUser') || 'Search user by email or name...'}" 
+                                    style="width: 100%; margin-bottom: 0.5rem;" 
+                                    oninput="searchContactPerson(this.value)">
+                                <select id="contactPersonSelect" class="filter-select" style="width: 100%;">
+                                    <option value="">${t('selectContactPerson') || 'Select contact person...'}</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="changeContactPerson('${c.id}')">
+                                <i class="fas fa-save"></i> ${t('save') || 'Save'}
+                            </button>
+                            ${c.contactPerson ? `
+                                <button class="btn btn-secondary" onclick="clearContactPerson('${c.id}')" title="${t('clearContactPerson') || 'Clear contact person'}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                        ${c.contactPerson ? `
+                            <div style="margin-top: 0.75rem; padding: 0.75rem; background: #EFF6FF; border-radius: 6px; border-left: 3px solid #3B82F6;">
+                                <div style="font-size: 0.875rem; color: #1E40AF;">
+                                    <strong>${t('currentContactPerson') || 'Current Contact Person'}:</strong> 
+                                    ${c.contactPerson.name || c.contactPerson.email} 
+                                    <span style="color: #6B7280;">(${formatRole(c.contactPerson.role)})</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
 
                     <h4 style="margin: 1.5rem 0 1rem;"><i class="fas fa-check-circle" style="color: var(--warning-color);"></i> ${t('reviewActions')}</h4>
                     <div class="form-group">
@@ -1432,6 +1470,10 @@
                         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end;">
                             <div style="flex: 1; min-width: 200px;">
                                 <label style="font-size: 0.75rem; color: #666;">${t('selectUser')}</label>
+                                <input type="text" id="permissionUserSearch" class="form-control" 
+                                    placeholder="${t('searchUser') || 'Search user...'}" 
+                                    style="width: 100%; margin-bottom: 0.5rem;" 
+                                    oninput="searchPermissionUser(this.value)">
                                 <select id="permissionUserSelect" class="filter-select" style="width: 100%;">
                                     <option value="">${t('selectUser')}</option>
                                 </select>
@@ -1474,7 +1516,13 @@
                 // 加载反馈和权限数据
                 loadFeedback(c.id);
                 loadPermissions(c.id);
-                loadPermissibleUsers();
+                loadPermissibleUsers().then(() => {
+                    // 设置当前联系人
+                    const contactSelect = document.getElementById('contactPersonSelect');
+                    if (contactSelect && c.contactPerson) {
+                        contactSelect.value = c.contactPerson.id;
+                    }
+                });
             } catch (error) {
                 document.getElementById('companyModalContent').innerHTML = `<p style="color:red;">${t('loadFailed')}</p>`;
             }
@@ -2355,25 +2403,123 @@
         // ============ 权限管理功能 ============
         let permissibleUsers = [];
 
-        async function loadPermissibleUsers() {
+        async function loadPermissibleUsers(searchTerm = '') {
             try {
-                const response = await fetch('/api/admin/permissible-users', {
+                let url = '/api/admin/permissible-users';
+                if (searchTerm) {
+                    url += `?search=${encodeURIComponent(searchTerm)}`;
+                }
+                const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
                 permissibleUsers = data.users || [];
 
+                // 更新权限选择器
                 const select = document.getElementById('permissionUserSelect');
                 if (select) {
+                    const currentValue = select.value; // 保存当前值
                     select.innerHTML = `<option value="">${t('selectUser')}</option>` +
                         permissibleUsers.map(u => {
                             const displayName = u.investorProfile?.name || u.name || u.email;
                             const org = u.investorProfile?.organization ? ` - ${u.investorProfile.organization}` : '';
                             return `<option value="${u.id}">${displayName}${org} (${formatRole(u.role)})</option>`;
                         }).join('');
+                    if (currentValue) select.value = currentValue; // 恢复当前值
+                }
+
+                // 更新联系人选择器
+                const contactSelect = document.getElementById('contactPersonSelect');
+                if (contactSelect) {
+                    const currentValue = contactSelect.value; // 保存当前值
+                    contactSelect.innerHTML = `<option value="">${t('selectContactPerson')}</option>` +
+                        permissibleUsers.map(u => {
+                            const displayName = u.name || u.email;
+                            const roleText = formatRole(u.role);
+                            return `<option value="${u.id}">${displayName} (${roleText})</option>`;
+                        }).join('');
+                    if (currentValue) contactSelect.value = currentValue; // 恢复当前值
                 }
             } catch (error) {
                 console.error('Load permissible users failed:', error);
+            }
+        }
+
+        // 搜索联系人
+        let searchTimeout;
+        function searchContactPerson(searchTerm) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadPermissibleUsers(searchTerm);
+            }, 300);
+        }
+
+        // 搜索权限用户
+        let permissionSearchTimeout;
+        function searchPermissionUser(searchTerm) {
+            clearTimeout(permissionSearchTimeout);
+            permissionSearchTimeout = setTimeout(() => {
+                loadPermissibleUsers(searchTerm);
+            }, 300);
+        }
+
+        // 更改联系人
+        async function changeContactPerson(companyId) {
+            const select = document.getElementById('contactPersonSelect');
+            const contactPersonId = select?.value;
+
+            if (!contactPersonId) {
+                showMessage(t('selectContactPerson'), 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/contact-person`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ contact_person_id: contactPersonId })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage(t('contactPersonUpdated') || 'Contact person updated successfully', 'success');
+                
+                // 重新加载公司详情
+                viewCompany(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 清除联系人
+        async function clearContactPerson(companyId) {
+            if (!confirm(t('confirmClearContactPerson') || 'Are you sure you want to clear the contact person?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/companies/${companyId}/contact-person`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ contact_person_id: null })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
+
+                showMessage(t('contactPersonCleared') || 'Contact person cleared successfully', 'success');
+                
+                // 重新加载公司详情
+                viewCompany(companyId);
+            } catch (error) {
+                showMessage(error.message, 'error');
             }
         }
 

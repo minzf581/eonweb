@@ -106,6 +106,13 @@ router.get('/companies/:id', authenticate, requireAdmin, async (req, res) => {
         const company = await Company.findByPk(req.params.id, {
             include: [
                 { model: User, as: 'user', attributes: ['id', 'email', 'name', 'created_at'] },
+                { 
+                    model: User, 
+                    as: 'contactPerson', 
+                    required: false,
+                    attributes: ['id', 'email', 'name', 'role'],
+                    foreignKey: 'contact_person_id'
+                },
                 { model: FundraisingInfo, as: 'fundraisingInfo' },
                 { model: Document, as: 'documents' },
                 { 
@@ -1315,13 +1322,13 @@ router.post('/companies/:id/permissions', authenticate, requireAdmin, async (req
             return res.status(404).json({ error: '企业不存在' });
         }
 
-        // 验证用户存在且是 staff 或 investor
+        // 验证用户存在且是 staff、investor 或 company
         const targetUser = await User.findByPk(user_id);
         if (!targetUser) {
             return res.status(404).json({ error: '用户不存在' });
         }
-        if (!['staff', 'investor'].includes(targetUser.role)) {
-            return res.status(400).json({ error: '只能授权给 Staff 或投资人' });
+        if (!['staff', 'investor', 'company'].includes(targetUser.role)) {
+            return res.status(400).json({ error: '只能授权给 Staff、投资人或企业用户' });
         }
 
         // 检查是否已存在权限，存在则更新
@@ -1460,18 +1467,81 @@ router.delete('/companies/:companyId/permissions/:permissionId', authenticate, r
     }
 });
 
+// 更改公司联系人
+router.put('/companies/:id/contact-person', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { contact_person_id } = req.body;
+
+        const company = await Company.findByPk(req.params.id);
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        // 如果提供了contact_person_id，验证用户存在
+        if (contact_person_id) {
+            const contactUser = await User.findByPk(contact_person_id);
+            if (!contactUser) {
+                return res.status(404).json({ error: '联系人用户不存在' });
+            }
+            if (contactUser.status !== 'active') {
+                return res.status(400).json({ error: '联系人用户未激活' });
+            }
+        }
+
+        const oldContactPersonId = company.contact_person_id;
+        await company.update({ contact_person_id: contact_person_id || null });
+
+        // 获取更新后的联系人信息
+        const updatedCompany = await Company.findByPk(req.params.id, {
+            include: [
+                { 
+                    model: User, 
+                    as: 'contactPerson', 
+                    required: false,
+                    attributes: ['id', 'email', 'name', 'role']
+                }
+            ]
+        });
+
+        const companyName = company.name_en || company.name_cn || 'Company';
+        const contactInfo = updatedCompany.contactPerson 
+            ? `${updatedCompany.contactPerson.name || updatedCompany.contactPerson.email} (${updatedCompany.contactPerson.role})`
+            : 'None';
+
+        console.log(`[Admin] Admin ${req.user.email} changed contact person for company ${companyName} to ${contactInfo}`);
+
+        res.json({ 
+            message: '联系人已更新',
+            company: updatedCompany
+        });
+    } catch (error) {
+        console.error('[Admin] 更改联系人错误:', error);
+        res.status(500).json({ error: '更改联系人失败' });
+    }
+});
+
 // 获取可授权的用户列表（Staff 和已审核的投资人）
 router.get('/permissible-users', authenticate, requireAdmin, async (req, res) => {
     try {
-        const { role } = req.query;
+        const { role, search } = req.query;
         
+        // 默认返回所有角色（staff, investor, company）
         const where = {
-            role: ['staff', 'investor'],
+            role: ['staff', 'investor', 'company'],
             status: 'active'
         };
 
-        if (role && ['staff', 'investor'].includes(role)) {
+        if (role && ['staff', 'investor', 'company'].includes(role)) {
             where.role = role;
+        }
+
+        // 支持搜索（按邮箱或姓名）
+        if (search && search.trim()) {
+            const { Op } = require('sequelize');
+            where[Op.or] = [
+                { email: { [Op.iLike]: `%${search.trim()}%` } },
+                { name: { [Op.iLike]: `%${search.trim()}%` } }
+            ];
         }
 
         const users = await User.findAll({
