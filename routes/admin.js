@@ -1104,9 +1104,12 @@ router.get('/companies/:id/comments', authenticate, requireAdmin, async (req, re
 router.post('/companies/:id/comments', authenticate, requireAdmin, upload.array('attachments', 5), async (req, res) => {
     try {
         const { content, is_internal = false } = req.body;
+        const hasAttachments = req.files && req.files.length > 0;
 
-        if (!content || !content.trim()) {
-            return res.status(400).json({ error: '请输入评论内容' });
+        console.log(`[Admin] 收到评论请求: content="${content ? content.substring(0, 50) : ''}", attachments=${hasAttachments ? req.files.length : 0}`);
+
+        if ((!content || !content.trim()) && !hasAttachments) {
+            return res.status(400).json({ error: '请输入评论内容或上传附件' });
         }
 
         const company = await Company.findByPk(req.params.id, {
@@ -1134,7 +1137,7 @@ router.post('/companies/:id/comments', authenticate, requireAdmin, upload.array(
         const comment = await CompanyComment.create({
             company_id: req.params.id,
             user_id: req.user.id,
-            content: content.trim(),
+            content: (content || '').trim() || (attachments.length > 0 ? '[Attachment]' : ''),
             user_role: req.user.role,
             is_internal: isInternalComment,
             attachments: attachments,

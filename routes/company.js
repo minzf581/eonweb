@@ -1179,9 +1179,12 @@ router.get('/feedback', authenticate, requireCompany, async (req, res) => {
 router.post('/feedback', authenticate, requireCompany, uploadAttachments.array('attachments', 5), async (req, res) => {
     try {
         const { content } = req.body;
+        const hasAttachments = req.files && req.files.length > 0;
 
-        if (!content || !content.trim()) {
-            return res.status(400).json({ error: '请输入回复内容' });
+        console.log(`[Company] 收到反馈请求: content="${content ? content.substring(0, 50) : ''}", attachments=${hasAttachments ? req.files.length : 0}`);
+
+        if ((!content || !content.trim()) && !hasAttachments) {
+            return res.status(400).json({ error: '请输入回复内容或上传附件' });
         }
 
         const company = await Company.findOne({ where: { user_id: req.user.id } });
@@ -1205,7 +1208,7 @@ router.post('/feedback', authenticate, requireCompany, uploadAttachments.array('
         const comment = await CompanyComment.create({
             company_id: company.id,
             user_id: req.user.id,
-            content: content.trim(),
+            content: (content || '').trim() || (attachments.length > 0 ? '[Attachment]' : ''),
             user_role: 'company',
             attachments: attachments,
             is_read_by_company: true, // 企业自己发的，自己已读

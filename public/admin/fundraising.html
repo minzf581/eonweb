@@ -1513,7 +1513,7 @@
                                 </button>
                             </div>
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="file" id="feedbackAttachments" multiple style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.zip,.rar">
+                                <input type="file" id="feedbackAttachments" multiple style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.zip,.rar" onchange="updateAttachmentsList(this, 'feedbackAttachmentsList')">
                                 <button type="button" class="btn" onclick="document.getElementById('feedbackAttachments').click()" style="background: #f0f0f0; border: 1px solid #ddd;">
                                     <i class="fas fa-paperclip"></i> ${t('addAttachments') || 'Add Attachments'}
                                 </button>
@@ -2391,6 +2391,19 @@
                 console.error('Load feedback failed:', error);
                 feedbackContainer.innerHTML = `<p style="color: red; text-align: center;">${t('loadFailed')}</p>`;
                 internalContainer.innerHTML = `<p style="color: red; text-align: center;">${t('loadFailed')}</p>`;
+            }
+        }
+
+        // 更新附件列表显示
+        function updateAttachmentsList(input, listId) {
+            const list = document.getElementById(listId);
+            if (!list) return;
+            if (input.files && input.files.length > 0) {
+                const names = Array.from(input.files).map(f => f.name).join(', ');
+                list.textContent = `${input.files.length} file(s) selected: ${names}`;
+                list.style.color = '#2196f3';
+            } else {
+                list.textContent = '';
             }
         }
 
