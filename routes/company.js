@@ -94,6 +94,12 @@ const upload = multer({
     }
 });
 
+// 附件上传配置 - 支持更多格式，更大文件
+const uploadAttachments = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+
 // 获取企业列表（仅 staff/admin 可见）
 router.get('/companies', authenticate, requireCompany, async (req, res) => {
     try {
@@ -1170,7 +1176,7 @@ router.get('/feedback', authenticate, requireCompany, async (req, res) => {
 });
 
 // 企业添加回复/评论（支持附件）
-router.post('/feedback', authenticate, requireCompany, upload.array('attachments', 5), async (req, res) => {
+router.post('/feedback', authenticate, requireCompany, uploadAttachments.array('attachments', 5), async (req, res) => {
     try {
         const { content } = req.body;
 
@@ -1645,7 +1651,7 @@ router.get('/contacts', authenticate, requireCompany, async (req, res) => {
             include: [
                 {
                     model: User,
-                    as: 'user',
+                    as: 'permittedUser',
                     attributes: ['id', 'email', 'name', 'role']
                 }
             ],
@@ -1670,12 +1676,12 @@ router.get('/contacts', authenticate, requireCompany, async (req, res) => {
         
         // 授权联系人
         permissions.forEach(perm => {
-            if (perm.user && perm.user.id !== company.user_id) {
+            if (perm.permittedUser && perm.permittedUser.id !== company.user_id) {
                 contacts.push({
-                    id: perm.user.id,
-                    email: perm.user.email,
-                    name: perm.user.name,
-                    role: perm.user.role,
+                    id: perm.permittedUser.id,
+                    email: perm.permittedUser.email,
+                    name: perm.permittedUser.name,
+                    role: perm.permittedUser.role,
                     isPrimary: false,
                     permissionType: perm.permission_type,
                     permissionId: perm.id,

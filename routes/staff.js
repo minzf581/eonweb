@@ -25,6 +25,12 @@ const upload = multer({
     }
 });
 
+// 附件上传配置 - 支持更多格式，更大文件
+const uploadAttachments = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+
 // ==================== 仪表盘统计 ====================
 
 // 获取普通管理员的统计数据（包括自己创建的企业和被授权访问的企业）
@@ -244,25 +250,25 @@ router.post('/companies', authenticate, requireStaffOrAdmin, async (req, res) =>
         // 如果提供了联系人邮箱，创建/关联企业用户账户
         let companyUser = null;
         if (contact_email) {
-            const existingUser = await User.findOne({ where: { email: contact_email } });
-            
-            if (existingUser) {
-                if (existingUser.role !== 'company') {
+        const existingUser = await User.findOne({ where: { email: contact_email } });
+        
+        if (existingUser) {
+            if (existingUser.role !== 'company') {
                     return res.status(400).json({ 
                         error: '该邮箱已被其他角色使用，请使用其他邮箱',
                         field: 'contact_email'
                     });
-                }
-                companyUser = existingUser;
-            } else {
-                // 创建新用户
-                companyUser = await User.create({
-                    email: contact_email,
-                    password: Math.random().toString(36).slice(-12), // 随机密码，需要重置
-                    role: 'company',
+            }
+            companyUser = existingUser;
+        } else {
+            // 创建新用户
+            companyUser = await User.create({
+                email: contact_email,
+                password: Math.random().toString(36).slice(-12), // 随机密码，需要重置
+                role: 'company',
                     name: contact_name || name_cn || name_en,
-                    status: 'active'
-                });
+                status: 'active'
+            });
             }
         }
 
@@ -1027,14 +1033,14 @@ router.post('/messages', authenticate, requireStaffOrAdmin, async (req, res) => 
                         companyName,
                         senderName: req.user.name || req.user.email,
                         senderRole: req.user.role,
-                        content: content.replace(/\n/g, '<br>')
-                    });
+                content: content.replace(/\n/g, '<br>')
+            });
                     
-                    emailSent = result.success;
-                    if (result.success) {
-                        await message.update({ email_sent: true, email_sent_at: new Date() });
+            emailSent = result.success;
+            if (result.success) {
+                await message.update({ email_sent: true, email_sent_at: new Date() });
                         console.log(`[Staff] Message notification sent to ${uniqueRecipients.length} recipients`);
-                    }
+            }
                 }
             }
         } catch (emailError) {
@@ -1154,7 +1160,7 @@ router.get('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (
 });
 
 // 添加评论/反馈（需要 full 权限，支持内部评论）
-router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, upload.array('attachments', 5), async (req, res) => {
+router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, uploadAttachments.array('attachments', 5), async (req, res) => {
     try {
         const { content, is_internal = false } = req.body;
 
@@ -1213,7 +1219,7 @@ router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, upload
                 });
             }
         }
-        
+
         const comment = await CompanyComment.create({
             company_id: req.params.id,
             user_id: req.user.id,

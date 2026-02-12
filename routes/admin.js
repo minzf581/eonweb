@@ -1809,7 +1809,7 @@ router.get('/companies/:id/contacts', authenticate, requireAdmin, async (req, re
             include: [
                 {
                     model: User,
-                    as: 'user',
+                    as: 'permittedUser',
                     attributes: ['id', 'email', 'name', 'role']
                 }
             ],
@@ -1834,12 +1834,12 @@ router.get('/companies/:id/contacts', authenticate, requireAdmin, async (req, re
         
         // 授权联系人
         permissions.forEach(perm => {
-            if (perm.user && perm.user.id !== company.user_id) {
+            if (perm.permittedUser && perm.permittedUser.id !== company.user_id) {
                 contacts.push({
-                    id: perm.user.id,
-                    email: perm.user.email,
-                    name: perm.user.name,
-                    role: perm.user.role,
+                    id: perm.permittedUser.id,
+                    email: perm.permittedUser.email,
+                    name: perm.permittedUser.name,
+                    role: perm.permittedUser.role,
                     isPrimary: false,
                     permissionType: perm.permission_type,
                     permissionId: perm.id,
