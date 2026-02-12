@@ -25,6 +25,26 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
+// 请求超时中间件（30秒）
+app.use((req, res, next) => {
+    const timeout = 30000; // 30秒超时
+    const timer = setTimeout(() => {
+        if (!res.headersSent) {
+            console.error(`[Timeout] ${req.method} ${req.path} 请求超时 (${timeout}ms)`);
+            res.status(504).json({ 
+                error: 'Request timeout', 
+                message: '请求处理超时，请稍后重试' 
+            });
+        }
+    }, timeout);
+    
+    // 请求完成时清除定时器
+    res.on('finish', () => clearTimeout(timer));
+    res.on('close', () => clearTimeout(timer));
+    
+    next();
+});
+
 // 请求日志（含响应跟踪）
 app.use((req, res, next) => {
     const startTime = Date.now();

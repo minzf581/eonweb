@@ -16,6 +16,20 @@ const upload = multer({
 // 仪表盘统计
 router.get('/stats', authenticate, requireAdmin, async (req, res) => {
     try {
+        // 设置查询超时（20秒）
+        const queryTimeout = 20000;
+        
+        const statsPromise = Promise.all([
+            Company.count(),
+            Company.count({ where: { status: 'pending' } }),
+            Company.count({ where: { status: 'approved' } }),
+            InvestorProfile.count(),
+            InvestorProfile.count({ where: { status: 'pending' } }),
+            InvestorProfile.count({ where: { status: 'approved' } }),
+            AccessRequest.count({ where: { status: 'pending' } }),
+            AccessRequest.count()
+        ]);
+
         const [
             totalCompanies,
             pendingCompanies,
@@ -25,15 +39,11 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
             approvedInvestors,
             pendingRequests,
             totalRequests
-        ] = await Promise.all([
-            Company.count(),
-            Company.count({ where: { status: 'pending' } }),
-            Company.count({ where: { status: 'approved' } }),
-            InvestorProfile.count(),
-            InvestorProfile.count({ where: { status: 'pending' } }),
-            InvestorProfile.count({ where: { status: 'approved' } }),
-            AccessRequest.count({ where: { status: 'pending' } }),
-            AccessRequest.count()
+        ] = await Promise.race([
+            statsPromise,
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Stats query timeout')), queryTimeout)
+            )
         ]);
 
         res.json({
@@ -73,17 +83,33 @@ router.get('/companies', authenticate, requireAdmin, async (req, res) => {
         }
         if (stage) where.stage = stage;
 
-        const { count, rows: companies } = await Company.findAndCountAll({
-            where,
-            include: [
-                { model: User, as: 'user', attributes: ['email'] },
-                { model: FundraisingInfo, as: 'fundraisingInfo' },
-                { model: Document, as: 'documents', attributes: ['id', 'type', 'filename', 'filesize', 'mimetype', 'dataroom_link'] }
-            ],
-            order: [['created_at', 'DESC']],
-            limit: parseInt(limit),
-            offset: (parseInt(page) - 1) * parseInt(limit)
-        });
+        // 设置查询超时（25秒）
+        const queryTimeout = 25000;
+        const queryStartTime = Date.now();
+
+        const { count, rows: companies } = await Promise.race([
+            Company.findAndCountAll({
+                where,
+                include: [
+                    { model: User, as: 'user', attributes: ['email'], required: false },
+                    { model: FundraisingInfo, as: 'fundraisingInfo', required: false },
+                    { model: Document, as: 'documents', attributes: ['id', 'type', 'filename', 'filesize', 'mimetype', 'dataroom_link'], required: false, limit: 5 }
+                ],
+                order: [['created_at', 'DESC']],
+                limit: parseInt(limit),
+                offset: (parseInt(page) - 1) * parseInt(limit),
+                distinct: true, // 避免重复计数
+                subQuery: false // 优化关联查询
+            }),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Query timeout')), queryTimeout)
+            )
+        ]);
+
+        const queryDuration = Date.now() - queryStartTime;
+        if (queryDuration > 5000) {
+            console.warn(`[Admin] 查询耗时较长: ${queryDuration}ms`);
+        }
 
         res.json({
             companies,
