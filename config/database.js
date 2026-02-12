@@ -7,14 +7,14 @@ const sequelize = new Sequelize(
         dialect: 'postgres',
         logging: process.env.NODE_ENV === 'development' ? console.log : false,
         pool: {
-            max: 20,              // 增加最大连接数
-            min: 2,              // 保持最小连接数
-            acquire: 60000,      // 增加获取连接超时时间到60秒
-            idle: 30000,         // 增加空闲连接超时时间
-            evict: 10000         // 连接回收检查间隔
+            max: 20,              // 最大连接数
+            min: 2,               // 保持最小连接数
+            acquire: 60000,       // 获取连接超时时间60秒
+            idle: 30000,          // 空闲连接超时时间
+            evict: 10000          // 连接回收检查间隔
         },
         retry: {
-            max: 3,              // 最大重试次数
+            max: 5,               // 单次查询最大重试次数
             match: [
                 /ETIMEDOUT/,
                 /EHOSTUNREACH/,
@@ -45,12 +45,16 @@ const sequelize = new Sequelize(
     }
 );
 
-// 连接重试机制
-const testConnection = async (retries = 3, delay = 5000) => {
+// 数据库连接状态
+let dbConnected = false;
+
+// 连接测试（启动时用，重试次数多、间隔长，等待数据库启动）
+const testConnection = async (retries = 15, delay = 10000) => {
     for (let i = 0; i < retries; i++) {
         try {
             await sequelize.authenticate();
             console.log('[Database] 数据库连接成功');
+            dbConnected = true;
             return true;
         } catch (error) {
             console.error(`[Database] 数据库连接失败 (尝试 ${i + 1}/${retries}):`, error.message);
@@ -66,4 +70,27 @@ const testConnection = async (retries = 3, delay = 5000) => {
     return false;
 };
 
-module.exports = { sequelize, testConnection };
+// 后台重连机制 - 当初始连接失败时在后台持续重试
+const startBackgroundReconnect = (onConnected, interval = 15000) => {
+    console.log('[Database] 启动后台重连机制...');
+    const timer = setInterval(async () => {
+        try {
+            await sequelize.authenticate();
+            console.log('[Database] 后台重连成功！');
+            dbConnected = true;
+            clearInterval(timer);
+            if (onConnected) {
+                await onConnected();
+            }
+        } catch (error) {
+            console.log(`[Database] 后台重连尝试失败: ${error.message}`);
+        }
+    }, interval);
+    
+    // 返回 timer 以便需要时清除
+    return timer;
+};
+
+const isConnected = () => dbConnected;
+
+module.exports = { sequelize, testConnection, startBackgroundReconnect, isConnected };

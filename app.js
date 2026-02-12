@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 
 // 初始化数据库
 const { sequelize, syncDatabase } = require('./models');
-const { testConnection } = require('./config/database');
+const { testConnection, startBackgroundReconnect, isConnected } = require('./config/database');
 
 // 导入路由
 const authRoutes = require('./routes/auth');
@@ -198,23 +198,37 @@ app.use((err, req, res, next) => {
     }
 });
 
+// 数据库连接成功后的初始化流程
+const onDatabaseConnected = async () => {
+    try {
+        // 同步数据库模型
+        await syncDatabase(false); // false = 不强制重建表
+        console.log('[Server] 数据库初始化完成');
+        
+        // 自动创建默认管理员账户
+        await createDefaultAdmin();
+    } catch (error) {
+        console.error('[Server] 数据库初始化后处理失败:', error.message);
+    }
+};
+
 // 初始化数据库并启动服务器
 const initializeApp = async () => {
     try {
-        // 测试数据库连接
-        const connected = await testConnection();
+        // 测试数据库连接（最多重试15次，每次间隔10秒 = 最多等150秒）
+        const connected = await testConnection(15, 10000);
         if (connected) {
-            // 同步数据库模型
-            await syncDatabase(false); // false = 不强制重建表
-            console.log('[Server] 数据库初始化完成');
-            
-            // 自动创建默认管理员账户
-            await createDefaultAdmin();
+            await onDatabaseConnected();
         } else {
-            console.warn('[Server] 数据库连接失败，将以无数据库模式运行');
+            console.warn('[Server] 初始连接失败，启动后台重连机制（数据库可能还在启动中）');
+            // 启动后台重连，每15秒尝试一次，连接成功后自动初始化
+            startBackgroundReconnect(onDatabaseConnected, 15000);
         }
     } catch (error) {
         console.error('[Server] 初始化错误:', error);
+        // 即使出错也启动后台重连
+        console.warn('[Server] 启动后台重连机制...');
+        startBackgroundReconnect(onDatabaseConnected, 15000);
     }
 };
 
