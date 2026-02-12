@@ -2728,10 +2728,11 @@
         }
 
         function getAttachmentUrl(commentId, index) {
+            const tk = localStorage.getItem('token');
             if (isStaffRole && currentCompanyId) {
-                return `/api/staff/companies/${currentCompanyId}/comments/${commentId}/attachments/${index}`;
+                return `/api/staff/companies/${currentCompanyId}/comments/${commentId}/attachments/${index}?token=${tk}`;
             }
-            return `/api/company/feedback/${commentId}/attachments/${index}`;
+            return `/api/company/feedback/${commentId}/attachments/${index}?token=${tk}`;
         }
 
         async function loadFeedback() {

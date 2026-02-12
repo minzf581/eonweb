@@ -19,12 +19,18 @@ const generateToken = (user) => {
 // 验证 token 中间件
 const authenticate = async (req, res, next) => {
     try {
+        let token;
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: '未提供认证令牌' });
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        } else if (req.query && req.query.token) {
+            // 支持 query parameter 传 token（用于文件下载等浏览器直接访问的场景）
+            token = req.query.token;
         }
 
-        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: '未提供认证令牌' });
+        }
         const decoded = jwt.verify(token, JWT_SECRET);
 
         const user = await User.findByPk(decoded.id);
