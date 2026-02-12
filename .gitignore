@@ -9,6 +9,7 @@ node_modules/
 # Logs
 logs
 *.log
+logs.md
 npm-debug.log*
 
 # OS generated files
