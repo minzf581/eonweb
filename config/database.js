@@ -66,9 +66,4 @@ const testConnection = async (retries = 3, delay = 5000) => {
     return false;
 };
 
-// 监听连接错误
-sequelize.connectionManager.pool.on('error', (err) => {
-    console.error('[Database] 连接池错误:', err);
-});
-
 module.exports = { sequelize, testConnection };
