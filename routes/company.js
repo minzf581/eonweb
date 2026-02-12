@@ -1169,8 +1169,8 @@ router.get('/feedback', authenticate, requireCompany, async (req, res) => {
     }
 });
 
-// 企业添加回复/评论
-router.post('/feedback', authenticate, requireCompany, async (req, res) => {
+// 企业添加回复/评论（支持附件）
+router.post('/feedback', authenticate, requireCompany, upload.array('attachments', 5), async (req, res) => {
     try {
         const { content } = req.body;
 
@@ -1183,11 +1183,25 @@ router.post('/feedback', authenticate, requireCompany, async (req, res) => {
             return res.status(400).json({ error: '请先创建企业信息' });
         }
 
+        // 处理附件
+        const attachments = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                attachments.push({
+                    filename: file.originalname,
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    content: file.buffer.toString('base64')
+                });
+            }
+        }
+
         const comment = await CompanyComment.create({
             company_id: company.id,
             user_id: req.user.id,
             content: content.trim(),
             user_role: 'company',
+            attachments: attachments,
             is_read_by_company: true, // 企业自己发的，自己已读
             is_read_by_admin: false // 管理员未读
         });
@@ -1231,6 +1245,44 @@ router.post('/feedback', authenticate, requireCompany, async (req, res) => {
     } catch (error) {
         console.error('[Company] 添加回复错误:', error);
         res.status(500).json({ error: '发送回复失败' });
+    }
+});
+
+// 下载反馈附件
+router.get('/feedback/:commentId/attachments/:index', authenticate, requireCompany, async (req, res) => {
+    try {
+        const company = await Company.findOne({ where: { user_id: req.user.id } });
+        if (!company) {
+            return res.status(404).json({ error: '企业不存在' });
+        }
+
+        const comment = await CompanyComment.findOne({
+            where: { 
+                id: req.params.commentId,
+                company_id: company.id
+            }
+        });
+
+        if (!comment) {
+            return res.status(404).json({ error: '评论不存在' });
+        }
+
+        const index = parseInt(req.params.index);
+        if (!comment.attachments || index < 0 || index >= comment.attachments.length) {
+            return res.status(404).json({ error: '附件不存在' });
+        }
+
+        const attachment = comment.attachments[index];
+        const buffer = Buffer.from(attachment.content, 'base64');
+
+        res.setHeader('Content-Type', attachment.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`);
+        res.setHeader('Content-Length', buffer.length);
+
+        res.send(buffer);
+    } catch (error) {
+        console.error('[Company] 下载附件错误:', error);
+        res.status(500).json({ error: '下载附件失败' });
     }
 });
 

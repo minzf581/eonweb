@@ -915,11 +915,20 @@
                     <div id="feedbackMessages" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem; padding: 0.5rem; background: #f9f9f9; border-radius: 8px;">
                         <p style="color: #666; text-align: center;" data-zh="加载中..." data-en="Loading...">加载中...</p>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <textarea id="feedbackInput" class="form-control" rows="2" style="flex: 1; resize: none;" data-zh-placeholder="输入您的回复或问题..." data-en-placeholder="Enter your reply or question..." placeholder="输入您的回复或问题..."></textarea>
-                        <button class="btn btn-primary" onclick="sendFeedback()" style="align-self: flex-end;">
-                            <i class="fas fa-paper-plane"></i> <span data-zh="发送" data-en="Send">发送</span>
-                        </button>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <textarea id="feedbackInput" class="form-control" rows="2" style="flex: 1; resize: none;" data-zh-placeholder="输入您的回复或问题..." data-en-placeholder="Enter your reply or question..." placeholder="输入您的回复或问题..."></textarea>
+                            <button class="btn btn-primary" onclick="sendFeedback()" style="align-self: flex-end;">
+                                <i class="fas fa-paper-plane"></i> <span data-zh="发送" data-en="Send">发送</span>
+                            </button>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="file" id="feedbackAttachments" multiple style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.zip,.rar">
+                            <button type="button" class="btn" onclick="document.getElementById('feedbackAttachments').click()" style="background: #f0f0f0; border: 1px solid #ddd;">
+                                <i class="fas fa-paperclip"></i> <span data-zh="添加附件" data-en="Add Attachments">添加附件</span>
+                            </button>
+                            <span id="feedbackAttachmentsList" style="font-size: 0.875rem; color: #666; flex: 1;"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -2720,6 +2729,20 @@
                                 <span style="font-size: 0.75rem; color: #999;">${new Date(c.created_at).toLocaleString()}</span>
                             </div>
                             <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.content)}</p>
+                            ${c.attachments && c.attachments.length > 0 ? `
+                                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #e0e0e0;">
+                                    <strong style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 0.25rem;">
+                                        <i class="fas fa-paperclip"></i> ${getLangText('附件', 'Attachments')} (${c.attachments.length}):
+                                    </strong>
+                                    ${c.attachments.map((att, idx) => `
+                                        <a href="/api/company/feedback/${c.id}/attachments/${idx}" 
+                                           target="_blank" 
+                                           style="display: inline-block; margin-right: 0.5rem; margin-bottom: 0.25rem; padding: 0.25rem 0.5rem; background: #f0f0f0; border-radius: 4px; text-decoration: none; color: #2196f3; font-size: 0.75rem;">
+                                            <i class="fas fa-file"></i> ${escapeHtml(att.filename)} (${formatFileSize(att.size)})
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
                         </div>
                     `).join('');
                     
@@ -2737,32 +2760,64 @@
         async function sendFeedback() {
             const input = document.getElementById('feedbackInput');
             const content = input.value.trim();
+            const fileInput = document.getElementById('feedbackAttachments');
             const token = localStorage.getItem('token');
 
-            if (!content) {
+            if (!content && (!fileInput || !fileInput.files || fileInput.files.length === 0)) {
+                showMessage(getLangText('请输入内容或添加附件', 'Please enter content or attach a file'), 'error');
                 return;
             }
 
             try {
+                const formData = new FormData();
+                formData.append('content', content);
+                
+                // 添加附件
+                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        formData.append('attachments', fileInput.files[i]);
+                    }
+                }
+
                 const response = await fetch('/api/company/feedback', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ content })
+                    body: formData
                 });
 
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
 
                 input.value = '';
+                if (fileInput) {
+                    fileInput.value = '';
+                    const list = document.getElementById('feedbackAttachmentsList');
+                    if (list) list.textContent = '';
+                }
                 showMessage(getLangText('回复已发送', 'Reply sent'), 'success');
                 loadFeedback();
             } catch (error) {
                 showMessage(error.message, 'error');
             }
         }
+
+        // 监听附件选择
+        document.addEventListener('DOMContentLoaded', () => {
+            const feedbackFileInput = document.getElementById('feedbackAttachments');
+            if (feedbackFileInput) {
+                feedbackFileInput.addEventListener('change', function() {
+                    const list = document.getElementById('feedbackAttachmentsList');
+                    if (this.files && this.files.length > 0) {
+                        const fileNames = Array.from(this.files).map(f => f.name).join(', ');
+                        list.textContent = `${this.files.length} ${getLangText('个文件已选择', 'file(s) selected')}: ${fileNames}`;
+                    } else {
+                        list.textContent = '';
+                    }
+                });
+            }
+        });
 
         async function loadUnreadCount() {
             const token = localStorage.getItem('token');

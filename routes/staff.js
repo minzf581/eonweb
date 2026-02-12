@@ -1154,7 +1154,7 @@ router.get('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (
 });
 
 // 添加评论/反馈（需要 full 权限，支持内部评论）
-router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async (req, res) => {
+router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, upload.array('attachments', 5), async (req, res) => {
     try {
         const { content, is_internal = false } = req.body;
 
@@ -1201,12 +1201,26 @@ router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async 
 
         const isInternalComment = is_internal === true || is_internal === 'true';
         
+        // 处理附件
+        const attachments = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                attachments.push({
+                    filename: file.originalname,
+                    mimetype: file.mimetype,
+                    size: file.size,
+                    content: file.buffer.toString('base64')
+                });
+            }
+        }
+        
         const comment = await CompanyComment.create({
             company_id: req.params.id,
             user_id: req.user.id,
             content: content.trim(),
             user_role: req.user.role,
             is_internal: isInternalComment,
+            attachments: attachments,
             is_read_by_admin: true,
             is_read_by_company: isInternalComment ? true : false // 内部评论不需要企业读取
         });
@@ -1326,6 +1340,39 @@ router.post('/companies/:id/comments', authenticate, requireStaffOrAdmin, async 
 });
 
 // 删除评论
+// 下载评论附件
+router.get('/companies/:companyId/comments/:commentId/attachments/:index', authenticate, requireStaffOrAdmin, async (req, res) => {
+    try {
+        const comment = await CompanyComment.findOne({
+            where: { 
+                id: req.params.commentId,
+                company_id: req.params.companyId
+            }
+        });
+
+        if (!comment) {
+            return res.status(404).json({ error: '评论不存在' });
+        }
+
+        const index = parseInt(req.params.index);
+        if (!comment.attachments || index < 0 || index >= comment.attachments.length) {
+            return res.status(404).json({ error: '附件不存在' });
+        }
+
+        const attachment = comment.attachments[index];
+        const buffer = Buffer.from(attachment.content, 'base64');
+
+        res.setHeader('Content-Type', attachment.mimetype || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`);
+        res.setHeader('Content-Length', buffer.length);
+
+        res.send(buffer);
+    } catch (error) {
+        console.error('[Staff] 下载附件错误:', error);
+        res.status(500).json({ error: '下载附件失败' });
+    }
+});
+
 router.delete('/companies/:companyId/comments/:commentId', authenticate, requireStaffOrAdmin, async (req, res) => {
     try {
         const comment = await CompanyComment.findOne({

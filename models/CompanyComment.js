@@ -66,6 +66,12 @@ const CompanyComment = sequelize.define('CompanyComment', {
         defaultValue: false,
         comment: '内部评论标记，true表示仅admin/staff可见'
     },
+    // 附件 (JSON 数组，存储文件信息)
+    attachments: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        comment: '附件列表 [{filename, mimetype, size, content (base64)}]'
+    },
     created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
